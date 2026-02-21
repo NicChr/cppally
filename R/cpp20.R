@@ -151,3 +151,27 @@ test_list_to_scalars <- function(x) {
 test_coerce1 <- function(x) {
   .Call(`_cpp20_test_coerce1`, x)
 }
+
+test_constructions <- function(x) {
+  .Call(`_cpp20_test_constructions`, x)
+}
+
+test_constructions2 <- function(x) {
+  .Call(`_cpp20_test_constructions2`, x)
+}
+
+test_constructions3 <- function(x) {
+  .Call(`_cpp20_test_constructions3`, x)
+}
+
+test_constructions4 <- function(x) {
+  .Call(`_cpp20_test_constructions4`, x)
+}
+
+test_set_strs <- function(x) {
+  .Call(`_cpp20_test_set_strs`, x)
+}
+
+test_set_strs2 <- function(x) {
+  .Call(`_cpp20_test_set_strs2`, x)
+}
