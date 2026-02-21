@@ -250,3 +250,71 @@ SEXP test_list_to_scalars(r_vec<r_sexp> x){
 r_vec<r_int> test_coerce1(const r_vec<r_sexp>& x){
   return as<r_vec<r_int>>(x);
 }
+
+[[cpp20::register]]
+r_vec<r_sexp> test_constructions(SEXP x){
+  r_vec<r_sexp> out(100000);
+
+  for (int i = 0; i < 100000; ++i){
+    out.set(i, r_vec<r_int>(x));
+  }
+  return out;
+}
+
+[[cpp20::register]]
+r_vec<r_sexp> test_constructions2(r_vec<r_int> x){
+  r_vec<r_sexp> out(100000);
+
+  for (int i = 0; i < 100000; ++i){
+    out.set(i, x);
+  }
+  return out;
+}
+
+[[cpp20::register]]
+r_vec<r_sexp> test_constructions3(r_vec<r_int> x){
+  r_vec<r_sexp> out(100000);
+
+  auto val = as<r_sexp>(x);
+
+  for (int i = 0; i < 100000; ++i){
+    out.set(i, val);
+  }
+  return out;
+}
+
+[[cpp20::register]]
+r_vec<r_sexp> test_constructions4(r_vec<r_int> x){
+  r_vec<r_sexp> out(100000);
+
+  for (int i = 0; i < 100000; ++i){
+    SET_VECTOR_ELT(out, i, x);
+  }
+  return out;
+}
+
+[[cpp20::register]]
+r_vec<r_str_view> test_set_strs(r_vec<r_str_view> x){
+
+  r_str a = r_str(x.get(0).c_str());
+
+  r_size_t n = x.length();
+
+  for (r_size_t i = 0; i < n; ++i){
+    x.set(i, a);
+  }
+  return x;
+}
+
+[[cpp20::register]]
+r_vec<r_str_view> test_set_strs2(r_vec<r_str_view> x){
+
+  SEXP a = x.view(0);
+
+  r_size_t n = x.length();
+
+  for (r_size_t i = 0; i < n; ++i){
+    SET_STRING_ELT(x, i, a);
+  }
+  return x;
+}
