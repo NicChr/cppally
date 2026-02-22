@@ -6,6 +6,10 @@ test_that("Correct registration of cpp fns to R", {
 
   expect_null(test_null())
 
+})
+
+test_that("Type deduction on template disptch", {
+
   expect_null(test_multiple_deduction(1, 2))
   expect_error(test_multiple_deduction(1, 2L))
 
@@ -38,6 +42,9 @@ test_that("Correct registration of cpp fns to R", {
   expect_identical(test_deduced_scalar_type(as.symbol("a")), "r_sym")
   expect_error(test_deduced_scalar_type(mean)) # Not an RScalar
 
+})
+
+test_that("Simple registration tests", {
   expect_error(test_scalar(1, "2"))
   expect_error(test_scalar(1, 2))
   expect_identical(test_scalar(1L, 2L), 3L)
@@ -120,4 +127,19 @@ test_that("Correct registration of cpp fns to R", {
   expect_identical(test_coerce(as.list(1:3), character()), c("1", "2", "3"))
 
   expect_identical(test_coerce(1:3, list()), as.list(1:3))
+})
+
+test_that("make_vec<>", {
+  expect_identical(
+    test_combine2(1, 2),
+    list(first = c(1, 2), second = c(x = 1, y = 2))
+  )
+  expect_identical(
+    test_combine2(list(1), list(2)),
+    list(first = list(list(1), list(2)), second = list(x = list(1), y = list(2)))
+  )
+  expect_identical(
+    test_combine2("a", "b"),
+    list(first = c("a", "b"), second = c(x = "a", y = "b"))
+  )
 })

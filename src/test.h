@@ -17,8 +17,6 @@ r_vec<r_str> test_deduced_type(T x){
 template <typename T>
 [[cpp20::register]]
 r_sexp test_multiple_deduction(T x, T y){
-  Rprintf("deduced x type: %s\n", type_str<decltype(x)>());
-  Rprintf("deduced y type: %s", type_str<decltype(y)>());
   if (!is<decltype(x), decltype(y)>){
     abort("deduced type of x: %s does not match deduced type of y %s", type_str<decltype(x)>(), type_str<decltype(y)>());
   }
@@ -56,7 +54,6 @@ SEXP test_identity2(SEXP x){
 template <typename T>
 [[cpp20::register]]
 r_sexp test_template_null(T x){
-  Rprintf("deduced_type: %s", type_str<decltype(x)>());
   return r_null;
 }
 
@@ -317,4 +314,15 @@ r_vec<r_str_view> test_set_strs2(r_vec<r_str_view> x){
     SET_STRING_ELT(x, i, a);
   }
   return x;
+}
+
+
+
+template <RVal T>
+[[cpp20::register]]
+auto test_combine2(T x, T y){
+  return make_vec<r_sexp>(
+    arg("first") = make_vec<T>(x, y),
+    arg("second") = make_vec<T>(arg("x") = x, arg("y") = y)
+  );
 }

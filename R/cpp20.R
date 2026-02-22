@@ -175,3 +175,7 @@ test_set_strs <- function(x) {
 test_set_strs2 <- function(x) {
   .Call(`_cpp20_test_set_strs2`, x)
 }
+
+test_combine2 <- function(x, y) {
+  .Call(`_cpp20_test_combine2`, x, y)
+}

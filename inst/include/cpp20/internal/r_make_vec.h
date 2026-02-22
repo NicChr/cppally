@@ -1,64 +1,49 @@
 #ifndef CPP20_R_MAKE_VEC_H
 #define CPP20_R_MAKE_VEC_H
 
-
 #include <cpp20/internal/r_vec.h>
 #include <cpp20/internal/r_coerce.h>
-#include <variant> // For variant
 
 namespace cpp20 {
 
-// Named argument
+// named_arg<V>
+// Carries name + value with full type info. Created by arg::operator=
+template <typename V>
+struct named_arg {
+  const char* name;
+  V           value;
+};
+
+// Type trait — detects any named_arg<V> specialisation
+template <typename T>          struct is_named_arg_t              : std::false_type {};
+template <typename V>          struct is_named_arg_t<named_arg<V>>: std::true_type  {};
+template <typename T>
+inline constexpr bool is_named_arg = is_named_arg_t<std::remove_cvref_t<T>>::value;
+
+// ── arg ──────────────────────────────────────────────────────────
 struct arg {
   const char* name;
-  using storage_t = std::variant<
-    std::monostate,
-    r_lgl,
-    r_int,
-    r_int64,
-    r_dbl,
-    r_str,
-    r_str_view,
-    r_cplx,
-    r_raw,
-    r_sexp
-  >;
 
-  storage_t storage;
+  explicit constexpr arg(const char* n) : name(n) {}
 
-  // Default: no value yet
-  explicit arg(const char* n)
-    : name(n), storage(std::monostate{}) {}
-
-  template <typename U>
-  arg(const char* n, U&& v)
-    : name(n), storage(as_r_val(std::forward<U>(v))) {}
-
-  template <typename U>
-  arg operator=(U&& v) const {
-    return arg{name, std::forward<U>(v)};
+  template <typename V>
+  [[nodiscard]] constexpr named_arg<std::remove_cvref_t<V>>
+  operator=(V&& v) const {
+    return {name, std::forward<V>(v)};
   }
 };
 
 
-template <RVal T>
-inline T as(const arg& a) {
-  return std::visit(
-    [](auto const& x) -> T {
-      using X = std::remove_cvref_t<decltype(x)>;
-      if constexpr (is<X, std::monostate>) {
-        return T();
-      } else {
-        return as<T>(x);
-      }
-    },
-    a.storage
-  );
+// ── as<T> for named_arg ──────────────────────────────────────────
+template <RVal T, typename V>
+inline T as(const named_arg<V>& a) {
+  return as<T>(a.value);
 }
 
 
-template<RVal T, typename... Args>
-inline r_vec<T> make_vec(Args... args) {
+// ── make_vec ─────────────────────────────────────────────────────
+template <RVal T, typename... Args>
+inline r_vec<T> make_vec(Args&&... args) {
 
   constexpr int n = sizeof...(args);
 
@@ -68,14 +53,13 @@ inline r_vec<T> make_vec(Args... args) {
 
     auto out = r_vec<T>(n);
 
-    // Are any args named?
-    constexpr bool any_named = (is<Args, arg> || ...);
+    constexpr bool any_named = (is_named_arg<Args> || ...);
 
     auto nms = any_named ? r_vec<r_str_view>(n) : r_vec<r_str_view>(r_null);
 
     int i = 0;
     (([&]() {
-      if constexpr (is<Args, arg>) {
+      if constexpr (is_named_arg<Args>) {
         out.set(i, as<T>(args));
         nms.set(i, as<r_str_view>(args.name));
       } else {
@@ -89,11 +73,12 @@ inline r_vec<T> make_vec(Args... args) {
   }
 }
 
+
 namespace attr {
 
-template<typename... Args>
-inline void modify_attrs(r_sexp x, Args... args) {
-  auto attrs = make_vec<r_sexp>(args...);
+template <typename... Args>
+inline void modify_attrs(r_sexp x, Args&&... args) {
+  auto attrs = make_vec<r_sexp>(std::forward<Args>(args)...);
   internal::modify_attrs_impl(x, attrs);
 }
 
