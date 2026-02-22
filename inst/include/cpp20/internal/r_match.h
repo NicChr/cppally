@@ -6,7 +6,7 @@
 namespace cpp20 {
 
 template <RVal T>
-r_vec<r_int> match(r_vec<T> needles, r_vec<T> haystack) {
+r_vec<r_int> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
 
   r_size_t n_needles = needles.length();
   r_size_t n_haystack = haystack.length();

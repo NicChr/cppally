@@ -7,7 +7,7 @@ namespace cpp20 {
 
 namespace internal {
 
-inline r_vec<r_sexp> new_df_impl(r_vec<r_sexp> cols){
+inline r_vec<r_sexp> new_df_impl(const r_vec<r_sexp>& cols){
 
     int n = cols.length();
     int nrows;
@@ -41,7 +41,7 @@ inline r_vec<r_sexp> new_df_impl(r_vec<r_sexp> cols){
     return out;
 }
 
-inline r_vec<r_sexp> new_df_impl(int nrows){
+inline r_vec<r_sexp> new_df_impl(r_int nrows){
 
     r_vec<r_sexp> out{};
     r_vec<r_int> row_names;
@@ -64,7 +64,7 @@ struct r_df {
     r_sexp sexp;
     
     // Default constructor (empty data frame)
-    r_df() : sexp(std::move(internal::new_df_impl(0).sexp)) {}
+    r_df() : sexp(std::move(internal::new_df_impl(r_int(0)).sexp)) {}
 
     // Constructor from existing SEXP
     explicit r_df(SEXP s) : sexp(s) {
