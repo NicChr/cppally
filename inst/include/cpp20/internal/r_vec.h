@@ -238,7 +238,7 @@ struct r_vec {
   }
 
   template <typename U>
-  void fill(r_size_t start, r_size_t n, const U val){
+  void fill(r_size_t start, r_size_t n, U const& val){
     auto val2 = internal::as_r<T>(val);
     if constexpr (internal::RPtrWritableType<T>){
       int n_threads = internal::calc_threads(n);
@@ -259,7 +259,7 @@ struct r_vec {
   }
 
   template <typename U1, typename U2>
-  void replace(r_size_t start, r_size_t n, const U1 old_val, const U2 new_val){
+  void replace(r_size_t start, r_size_t n, U1 const& old_val, U2 const& new_val){
     auto old_val2 = internal::as_r<T>(old_val);
     auto new_val2 = internal::as_r<T>(new_val);
     bool implicit_na_coercion = !cpp20::is_na(old_val) && cpp20::is_na(old_val2);

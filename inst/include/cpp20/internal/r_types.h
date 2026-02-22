@@ -295,7 +295,7 @@ inline const r_str_view na_str = r_str_view(NA_STRING);
   
 // Coerce to an R type based on the C type (useful for RVal templates)
 template<typename T>
-inline constexpr auto as_r_val(T x) { 
+inline constexpr auto as_r_val(T const& x) { 
   if constexpr (RVal<T>){
     return x;
   } else if constexpr (CastableToRVal<T>){
@@ -310,7 +310,7 @@ inline constexpr auto as_r_val(T x) {
 }
 
 template<typename T>
-inline constexpr auto as_r_scalar(T x) {
+inline constexpr auto as_r_scalar(T const& x) {
   if constexpr (RVector<T>){
     if (x.length() != 1){
       abort("Vector must be length-1 to be coerced to a scalar");

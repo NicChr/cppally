@@ -100,7 +100,7 @@ inline constexpr auto na(){
 namespace internal {
 
 template<typename T>
-inline constexpr bool is_na_impl(T x) {
+inline constexpr bool is_na_impl(T const& x) {
   if constexpr (RVal<T>){
     return unwrap(x) == unwrap(na<T>());
   } else if constexpr (CastableToRVal<T>){
@@ -111,44 +111,44 @@ inline constexpr bool is_na_impl(T x) {
 }
 
 template<>
-inline bool is_na_impl(r_str_view x) {
+inline bool is_na_impl(r_str_view const& x) {
   return unwrap(x) == unwrap(na_str);
 }
 
 template<>
-inline bool is_na_impl(r_str x) {
+inline bool is_na_impl(r_str const& x) {
   return unwrap(x) == unwrap(na_str);
 }
 
 template<>
-inline constexpr bool is_na_impl<r_dbl>(r_dbl x){
+inline constexpr bool is_na_impl<r_dbl>(r_dbl const& x){
   return x.value != x.value;
 }
 
 template<>
-inline constexpr bool is_na_impl<r_cplx>(r_cplx x){
+inline constexpr bool is_na_impl<r_cplx>(r_cplx const& x){
   return is_na_impl<r_dbl>(x.re()) || is_na_impl<r_dbl>(x.im());
 }
 
 template<>
-inline constexpr bool is_na_impl<r_raw>(r_raw x){
+inline constexpr bool is_na_impl<r_raw>(r_raw const& x){
   return false;
 }
 
 }
 
 template<typename T>
-inline constexpr bool is_na(T x) {
+inline constexpr bool is_na(T const& x) {
     return internal::is_na_impl<std::remove_cvref_t<T>>(x);
 }
 
 template <typename T>
-inline constexpr bool is_nan(T x){
+inline constexpr bool is_nan(T const& x){
   return false;
 }
 // NaN but not NA_REAL
 template <>
-inline constexpr bool is_nan(r_dbl x){
+inline constexpr bool is_nan(r_dbl const& x){
   return is_na(x) && !internal::is_na_real(unwrap(x));
 }
 

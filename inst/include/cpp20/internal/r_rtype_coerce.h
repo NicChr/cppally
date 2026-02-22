@@ -13,7 +13,7 @@ namespace internal {
 
 // Assumes no NAs at all
 template<typename T>
-inline constexpr bool can_be_int(T x){
+inline constexpr bool can_be_int(T const& x){
   constexpr int max_int = std::numeric_limits<int>::max();
   constexpr int min_int = -max_int; // Doesn't include lowest int (reserved for NA)
 
@@ -28,7 +28,7 @@ inline constexpr bool can_be_int(T x){
   }
 }
 template<typename T>
-inline constexpr bool can_be_int64(T x){
+inline constexpr bool can_be_int64(T const& x){
   constexpr int64_t max_int64 = std::numeric_limits<int64_t>::max();
   constexpr int64_t min_int64 = -max_int64; // Doesn't include lowest int (reserved for NA)
 
@@ -44,7 +44,7 @@ inline constexpr bool can_be_int64(T x){
 
 // Coerce functions that account for NA
 template<typename T>
-inline r_lgl as_bool(T x){
+inline r_lgl as_bool(T const& x){
   if constexpr (is<T, int> || is<T, r_lgl>){
     return r_lgl(unwrap(x));
   } else if constexpr (MathType<T>){
@@ -54,7 +54,7 @@ inline r_lgl as_bool(T x){
   }
 }
 template<typename T>
-inline r_int as_int(T x){
+inline r_int as_int(T const& x){
   if constexpr (is<T, int> || is<T, r_int>){
     return r_int(unwrap(x));
   } else if constexpr (MathType<T>){
@@ -64,7 +64,7 @@ inline r_int as_int(T x){
   }
 }
 template<typename T>
-inline r_int64 as_int64(T x){
+inline r_int64 as_int64(T const& x){
   if constexpr (is<T, int64_t> || is<T, r_int64>){
     return r_int64(unwrap(x));
   } else if constexpr (MathType<T>){
@@ -74,7 +74,7 @@ inline r_int64 as_int64(T x){
   }
 }
 template<typename T>
-inline r_dbl as_double(T x){
+inline r_dbl as_double(T const& x){
   if constexpr (is<T, double> || is<T, r_dbl>){
     return r_dbl(unwrap(x));
   } else if constexpr (MathType<T>){
@@ -84,7 +84,7 @@ inline r_dbl as_double(T x){
   }
 }
 template<typename T>
-inline r_cplx as_complex(T x){
+inline r_cplx as_complex(T const& x){
   if constexpr (is<T, std::complex<double>> || is<T, r_cplx>){
     return r_cplx(unwrap(x));
   } else if constexpr (MathType<T>){
@@ -94,7 +94,7 @@ inline r_cplx as_complex(T x){
   }
 }
 template<typename T>
-inline r_raw as_raw(T x){
+inline r_raw as_raw(T const& x){
   if constexpr (is<T, Rbyte> || is<T, r_raw>){
     return r_raw(unwrap(x));
   } else if constexpr (IntegerType<T> && sizeof(T) <= sizeof(int8_t)){
@@ -108,7 +108,7 @@ inline r_raw as_raw(T x){
 }
 // As CHARSXP
 template<typename T>
-inline r_str_view as_r_string(T x){
+inline r_str_view as_r_string(T const& x){
   if constexpr (is<T, r_str_view>){
     return x;
   } else if constexpr (is<T, r_str>){
@@ -181,7 +181,7 @@ inline r_str_view as_r_string(T x){
 
 // As SYMSXP
 template<typename T>
-inline r_sym as_r_sym(T x){
+inline r_sym as_r_sym(T const& x){
   if constexpr (is<T, r_sym>){
     return x;
   } else if constexpr (is<T, const char *>){
@@ -196,7 +196,7 @@ inline r_sym as_r_sym(T x){
 
 // CHARSXP is always converted to STRSXP here, see `r_types.h` for info
 template<typename T>
-inline r_sexp as_sexp(T x){
+inline r_sexp as_sexp(T const& x){
   if constexpr (is<T, r_sexp>){
     return x;
   } else if constexpr (RVector<T>){
@@ -211,35 +211,35 @@ inline r_sexp as_sexp(T x){
 }
 
 template<>
-inline r_sexp as_sexp<bool>(bool x){
+inline r_sexp as_sexp<bool>(bool const& x){
   return r_sexp(new_scalar_vec(r_lgl(static_cast<int>(x))));
 }
 template<>
-inline r_sexp as_sexp<const char *>(const char *x){
+inline r_sexp as_sexp<const char *>(const char * const& x){
   return new_scalar_vec(as_r_string(x));
 }
 template<>
-inline r_sexp as_sexp<r_sym>(r_sym x){
+inline r_sexp as_sexp<r_sym>(r_sym const& x){
   return r_sexp(x.value, internal::view_tag{});
 }
 template<>
-inline r_sexp as_sexp<r_str_view>(r_str_view x){
+inline r_sexp as_sexp<r_str_view>(r_str_view const& x){
   return r_sexp(static_cast<SEXP>(x));
 }
 template<>
-inline r_sexp as_sexp<r_str>(r_str x){
+inline r_sexp as_sexp<r_str>(r_str const& x){
   return x.value;
 }
 
 template<>
-inline r_sexp as_sexp<SEXP>(SEXP x){ 
+inline r_sexp as_sexp<SEXP>(SEXP const& x){ 
   return r_sexp(x);
 }
 
 // R version of static_cast
 template<typename T, typename U>
 struct as_impl {
-  static T cast(U x) {
+  static T cast(U const& x) {
     static_assert(
       always_false<T>,
       "Can't `as` this type, use `static_cast`"
@@ -252,56 +252,56 @@ struct as_impl {
 
 template<typename U>
 struct as_impl<r_lgl, U> {
-  static constexpr r_lgl cast(U x) {
+  static constexpr r_lgl cast(U const& x) {
     return as_bool(x);
   }
 };
 
 template<typename U>
 struct as_impl<r_int, U> {
-  static constexpr r_int cast(U x) {
+  static constexpr r_int cast(U const& x) {
     return as_int(x);
   }
 };
 
 template<typename U>
 struct as_impl<r_int64, U> {
-  static constexpr r_int64 cast(U x) {
+  static constexpr r_int64 cast(U const& x) {
     return as_int64(x);
   }
 };
 
 template<typename U>
 struct as_impl<r_dbl, U> {
-  static constexpr r_dbl cast(U x) {
+  static constexpr r_dbl cast(U const& x) {
     return as_double(x);
   }
 };
 
 template<typename U>
 struct as_impl<r_cplx, U> {
-  static constexpr r_cplx cast(U x) {
+  static constexpr r_cplx cast(U const& x) {
     return as_complex(x);
   }
 };
 
 template<typename U>
 struct as_impl<r_raw, U> {
-  static constexpr r_raw cast(U x) {
+  static constexpr r_raw cast(U const& x) {
     return as_raw(x);
   }
 };
 
 template<typename U>
 struct as_impl<r_str_view, U> {
-  static r_str_view cast(U x) {
+  static r_str_view cast(U const& x) {
     return as_r_string(x);
   }
 };
 
 template<typename U>
 struct as_impl<r_str, U> {
-  static r_str cast(U x) {
+  static r_str cast(U const& x) {
     r_str_view res = as_r_string(x);
     return r_str(unwrap(res));
   }
@@ -309,20 +309,20 @@ struct as_impl<r_str, U> {
 
 template<typename U>
 struct as_impl<r_sym, U> {
-  static r_sym cast(U x) {
+  static r_sym cast(U const& x) {
     return as_r_sym(x);
   }
 };
 
 template<typename U>
 struct as_impl<r_sexp, U> {
-  static r_sexp cast(U x) {
+  static r_sexp cast(U const& x) {
     return as_sexp(x);
   }
 };
 
 template<RVal T, typename U>
-inline T as_r(U x) {
+inline T as_r(U const& x) {
   if constexpr (is<U, T>){ 
     return x;
   } else {

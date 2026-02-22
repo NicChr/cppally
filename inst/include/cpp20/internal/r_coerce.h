@@ -10,7 +10,7 @@ namespace cpp20 {
 
 // Powerful and flexible coercion function that can handle many types and convert to R-specific C++ types and R vectors
 template<typename T, typename U>
-inline T as(U x) {
+inline T as(const U& x) {
   if constexpr (is<U, T>){
     return x;
   } else if constexpr (is<T, SEXP>){
@@ -105,7 +105,7 @@ inline T as(U x) {
 
 // Convert any C obj to an r_vec<>
 template<typename T>
-inline auto as_vector(T x){
+inline auto as_vector(const T& x){
   if constexpr (RVector<T>){
     return x;
   } else if constexpr (is_sexp<T>){
