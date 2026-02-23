@@ -143,7 +143,7 @@ template <typename T>
 concept RAtomicVector = internal::is_atomic_r_vector_v<T>;
 
 template <typename T>
-concept RVector = internal::is_r_vector_v<T> || any<T, r_dates, r_posixcts, r_factors>;
+concept RVector = internal::is_r_vector_v<T> || any<T, r_dates, r_posixcts>;
 
 template <typename T>
 concept RFactor = is<T, r_factors>;
@@ -161,12 +161,6 @@ concept CppType = !RType<T>;
 
 template <typename T>
 concept CppScalar = std::is_scalar_v<T>;
-
-template <typename T, typename U>
-concept AtLeastOneRVal = 
-(RVal<T> && RVal<U>) ||
-(RVal<T> && CppScalar<U>) ||
-(CppScalar<T> && RVal<U>);
 
 template <typename T>
 concept Scalar = CppScalar<T> || RScalar<T>;

@@ -20,11 +20,11 @@
 #include <cpp20/internal/r_vec_math.h>
 #include <cpp20/internal/r_attrs.h>
 #include <cpp20/internal/r_hash.h>
+#include <cpp20/internal/r_sort.h>
 #include <cpp20/internal/r_groups.h>
 #include <cpp20/internal/r_match.h>
 #include <cpp20/internal/r_subset.h>
 #include <cpp20/internal/r_unique.h>
-#include <cpp20/internal/r_sort.h>
 #include <cpp20/internal/r_copy.h>
 #include <cpp20/internal/r_factor.h>
 #include <cpp20/internal/r_coerce.h>
