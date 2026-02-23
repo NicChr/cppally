@@ -12,7 +12,7 @@ load_all <- function (path = ".", debug = FALSE, ...){
   if (rstudioapi::hasFun("documentSaveAll")) {
     rstudioapi::documentSaveAll()
   }
-  pkgload::load_all(path = path, debug = debug, compile = FALSE, quiet = TRUE, ...)
+  pkgload::load_all(path = path, debug = debug, compile = FALSE, quiet = TRUE, helpers = FALSE)
   cpp_register(path = path)
   pkgload::load_all(path = path, debug = debug, ...)
 }
