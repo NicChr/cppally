@@ -1,8 +1,7 @@
 #ifndef CPP20_R_SORT_H
 #define CPP20_R_SORT_H
 
-#include <cpp20/internal/r_groups.h>
-#include <cpp20/internal/r_unique.h>
+#include <cpp20/internal/r_vec.h>
 
 namespace cpp20 {
 
@@ -16,7 +15,7 @@ r_vec<r_int> cpp_order(const r_vec<T>& x) {
     int n = x.size();
     r_vec<r_int> p(n);
     OMP_SIMD
-    for (r_size_t i = 0; i < n; ++i) p.set(i, n);
+    for (r_size_t i = 0; i < n; ++i) p.set(i, i);
 
     auto *p_x = x.data();
 
@@ -48,7 +47,7 @@ r_vec<r_int> cpp_stable_order(const r_vec<T>& x) {
     int n = x.size();
     r_vec<r_int> p(n);
     OMP_SIMD
-    for (r_size_t i = 0; i < n; ++i) p.set(i, n);
+    for (r_size_t i = 0; i < n; ++i) p.set(i, i);
 
     auto *p_x = x.data();
 
@@ -331,57 +330,6 @@ inline r_lgl is_sorted(const r_vec<T>& x) {
         }
     }
     return r_true;
-}
-
-namespace internal {
-
-template <RSortable T>
-inline groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
-    r_size_t n = x.length();
-    groups g;
-    g.ids = r_vec<r_int>(n);
-    
-    if (n == 0) return g;
-
-    auto* RESTRICT p_id = g.ids.data();
-    auto* RESTRICT p_o = o.data();
-    
-    int current_group = 0;
-
-    p_id[p_o[0]] = 0;
-
-    for (r_size_t i = 1; i < n; ++i) {
-        int idx_curr = p_o[i];
-        int idx_prev = p_o[i - 1];
-
-        bool is_equal;
-        is_equal = identical(x.view(idx_curr), x.view(idx_prev));
-
-        if (!is_equal) {
-            current_group++;
-        }
-        
-        p_id[idx_curr] = current_group;
-    }
-
-    g.n_groups = current_group + 1;
-    g.sorted = is_sorted(g.ids).is_true();
-
-    return g;
-}
-
-}
-
-template <RVal T>
-r_vec<T> sorted_unique(const r_vec<T>& x) {
-    if constexpr (RSortable<T>){
-        groups group_info = internal::make_groups_from_order(x, order(x));
-        auto starts = group_starts(group_info);
-        starts += 1;
-        return x.subset(starts);
-    } else {
-        return unique(x); 
-    }
 }
 
 }

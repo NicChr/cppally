@@ -3,6 +3,7 @@
 
 #include <cpp20/internal/r_vec.h>
 #include <cpp20/internal/r_hash.h>
+#include <cpp20/internal/r_sort.h>
 
 namespace cpp20 {
 
@@ -18,8 +19,45 @@ struct groups {
   explicit groups(r_vec<r_int> x, int ngroups, bool groups_sorted) : ids(std::move(x)), n_groups(ngroups), sorted(groups_sorted) {}
 };
 
+namespace internal {
+
+template <RSortable T>
+inline groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
+    r_size_t n = x.length();
+    groups g;
+    g.ids = r_vec<r_int>(n);
+    
+    if (n == 0) return g;
+
+    auto* RESTRICT p_id = g.ids.data();
+    auto* RESTRICT p_o = o.data();
+    
+    int current_group = 0;
+
+    p_id[p_o[0]] = 0;
+
+    for (r_size_t i = 1; i < n; ++i) {
+        int idx_curr = p_o[i];
+        int idx_prev = p_o[i - 1];
+
+        bool is_equal;
+        is_equal = identical(x.view(idx_curr), x.view(idx_prev));
+
+        if (!is_equal) {
+            current_group++;
+        }
+        
+        p_id[idx_curr] = current_group;
+    }
+
+    g.n_groups = current_group + 1;
+    g.sorted = is_sorted(g.ids).is_true();
+
+    return g;
+}
+
 template <RVal T>
-inline groups make_groups(const r_vec<T>& x) {
+inline groups make_unordered_groups(const r_vec<T>& x) {
 
     using key_type = unwrap_t<T>;
     r_size_t n = x.length();
@@ -148,6 +186,27 @@ inline groups make_groups(const r_vec<T>& x) {
     
       g.n_groups = next_id;
       return g;
+}
+
+template <RVal T>
+inline groups make_ordered_groups(const r_vec<T>& x) {
+
+    if constexpr (!RSortable<T>){
+        return make_unordered_groups(x);
+    } else {
+        return make_groups_from_order(x, order(x));
+    }
+}
+
+}
+
+template <RVal T>
+inline groups make_groups(const r_vec<T>& x, bool ordered = false) {
+    if (ordered){
+        return internal::make_ordered_groups(x);
+    } else {
+        return internal::make_unordered_groups(x);
+    }
 }
 
 
