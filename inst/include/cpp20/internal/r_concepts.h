@@ -36,7 +36,7 @@ template <typename T>
 concept RIntegerType = any<T, r_lgl, r_int, r_int64>;
 
 template <typename T>
-concept CppIntegerType = std::is_integral_v<std::remove_cvref_t<T>>;
+concept CppIntegerType = std::is_integral_v<std::remove_cvref_t<T>> && !any<T, Rboolean, Rbyte>;
 
 template <typename T>
 concept IntegerType = RIntegerType<T> || CppIntegerType<T>;
@@ -240,14 +240,14 @@ struct r_val_mapping_impl {};
 template <RVal T>
 struct r_val_mapping_impl<T> { using type = T; };
 
-template<> struct r_val_mapping_impl<bool>          { using type = r_lgl; };
-template<> struct r_val_mapping_impl<int>           { using type = r_int; };
-template<> struct r_val_mapping_impl<int64_t>       { using type = r_int64; };
-template<> struct r_val_mapping_impl<double>        { using type = r_dbl; };
-template<> struct r_val_mapping_impl<const char*>   { using type = r_str; };
+template<> struct r_val_mapping_impl<bool>                      { using type = r_lgl; };
+template<> struct r_val_mapping_impl<int>                       { using type = r_int; };
+template<> struct r_val_mapping_impl<int64_t>                   { using type = r_int64; };
+template<> struct r_val_mapping_impl<double>                    { using type = r_dbl; };
+template<> struct r_val_mapping_impl<const char*>               { using type = r_str; };
 template<> struct r_val_mapping_impl<std::complex<double>>      { using type = r_cplx; };
-template<> struct r_val_mapping_impl<Rbyte>         { using type = r_raw; };
-template<> struct r_val_mapping_impl<SEXP>          { using type = r_sexp; };
+template<> struct r_val_mapping_impl<Rbyte>                     { using type = r_raw; };
+template<> struct r_val_mapping_impl<SEXP>                      { using type = r_sexp; };
 
 // R vectors & other containers
 template <RVector T>
@@ -326,20 +326,24 @@ template <> inline const char* type_str<r_cplx>(){return "r_cplx";}
 template <> inline const char* type_str<r_raw>(){return "r_raw";}
 template <> inline const char* type_str<r_sym>(){return "r_sym";}
 template <> inline const char* type_str<r_sexp>(){return "r_sexp";}
+template <> inline const char* type_str<r_dates>(){return "r_dates";}
+template <> inline const char* type_str<r_posixcts>(){return "r_posixcts";}
+template <> inline const char* type_str<r_factors>(){return "r_factors";}
+
 template<RVector T> 
 inline const char* type_str(){
     using r_t = typename T::data_type;
     static const std::string out = std::string("r_vec<") + type_str<r_t>() + ">";
     return out.c_str();
 }
+
 template<CppFloatType T> 
 inline const char* type_str(){
-    return "float";
+    return "C++ float";
 }
 template<CppIntegerType T> 
-requires (!is<T, Rbyte>)
 inline const char* type_str(){
-    return "integer";
+    return "C++ integer";
 }
 template<> 
 inline const char* type_str<const char*>(){
@@ -351,7 +355,7 @@ inline const char* type_str<std::string>(){
 }
 template<CppComplexType T> 
 inline const char* type_str(){
-    return "complex";
+    return "C++ complex";
 }
 template<> inline const char* type_str<Rboolean>(){return "Rboolean";}
 template<> inline const char* type_str<Rbyte>(){return "Rbyte";}
@@ -362,10 +366,10 @@ namespace internal {
 // Mapping from C++ type to R TYPEOF
 
 // Helper to get the runtime R typeof for a C++ type
-template<typename T> constexpr uint16_t r_typeof = std::numeric_limits<uint16_t>::max();
+template<typename T> constexpr uint16_t r_typeof =              std::numeric_limits<uint16_t>::max();
 template<> constexpr uint16_t r_typeof<r_vec<r_lgl>> =          LGLSXP;
 template<> constexpr uint16_t r_typeof<r_vec<r_int>> =          INTSXP;
-template<> constexpr uint16_t r_typeof<r_vec<r_int64>> =        internal::CPP20_INT64SXP;
+template<> constexpr uint16_t r_typeof<r_vec<r_int64>> =        CPP20_INT64SXP;
 template<> constexpr uint16_t r_typeof<r_vec<r_dbl>> =          REALSXP;
 template<> constexpr uint16_t r_typeof<r_vec<r_str_view>> =     STRSXP;
 template<> constexpr uint16_t r_typeof<r_vec<r_str>> =          STRSXP;
