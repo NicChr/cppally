@@ -105,14 +105,14 @@ concept RVal = RScalar<T> || is<T, r_sexp>;
 namespace internal {
 // A `SEXP` which we can write data to directly via a pointer
 template <typename T>
-concept RPtrWritableType = RMathType<T> || any<T, r_cplx, r_raw>;
+concept RPtrWritableType = RMathType<T> || RComplexType<T> || RRawType<T>;
 }
 
 // Forward declare structs to define concepts now
 template<RVal T>
 struct r_vec;
 
-struct r_dates; // Inherits from r_vec<r_int>
+struct r_dates; // Inherits from r_vec<r_dbl>
 struct r_posixcts; // Inherits from r_vec<r_dbl>
 struct r_factors;
 struct r_df;
@@ -140,10 +140,19 @@ inline constexpr bool is_atomic_r_vector_v = is_atomic_r_vector<std::remove_cvre
 }
 
 template <typename T>
-concept RAtomicVector = internal::is_atomic_r_vector_v<T>;
+concept RAtomicVector = internal::is_atomic_r_vector_v<T> || any<T, r_dates, r_posixcts>;
 
 template <typename T>
-concept RVector = internal::is_r_vector_v<T> || any<T, r_dates, r_posixcts>;
+concept RClassedVector = any<T, r_dates, r_posixcts>;
+
+template <typename T>
+concept RUnclassedVector = internal::is_r_vector_v<T> && !RClassedVector<T>;
+
+template <typename T>
+concept RVector = internal::is_r_vector_v<T> || RClassedVector<T>;
+
+template <typename T>
+concept RListVector = any<T, r_vec<r_sexp>, r_vec<r_sym>>;
 
 template <typename T>
 concept RFactor = is<T, r_factors>;
@@ -324,7 +333,7 @@ template <> inline const char* type_str<r_dates>(){return "r_dates";}
 template <> inline const char* type_str<r_posixcts>(){return "r_posixcts";}
 template <> inline const char* type_str<r_factors>(){return "r_factors";}
 
-template<RVector T> 
+template<RUnclassedVector T> 
 inline const char* type_str(){
     using r_t = typename T::data_type;
     static const std::string out = std::string("r_vec<") + type_str<r_t>() + ">";
@@ -374,6 +383,10 @@ template<> constexpr uint16_t r_typeof<r_vec<r_sexp>> =         VECSXP;
 template<> constexpr uint16_t r_typeof<r_str_view> =            CHARSXP;
 template<> constexpr uint16_t r_typeof<r_str> =                 CHARSXP;
 template<> constexpr uint16_t r_typeof<r_sym> =                 SYMSXP;
+
+// template<RClassedVector T> // dates, date-times, etc
+// constexpr uint16_t r_typeof<T> = r_typeof<r_vec<typename T::data_type>>;
+
 
 template <typename T>
 inline void check_valid_construction(SEXP x){
