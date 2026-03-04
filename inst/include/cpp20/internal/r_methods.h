@@ -164,7 +164,7 @@ inline constexpr r_lgl operator>=(T lhs, U rhs) {
   return is_na(rhs) ? r_na : r_lgl{lhs >= unwrap(rhs)};
 }
 
-template<RMathType T, RMathType U>
+template<RNumericType T, RNumericType U>
 inline constexpr T& operator+=(T &lhs, U rhs) {
   if (is_na(lhs) || is_na(rhs)) {
     lhs = na<T>();
@@ -173,7 +173,7 @@ inline constexpr T& operator+=(T &lhs, U rhs) {
   }
   return lhs;
 }
-template<RMathType T, CppMathType U>
+template<RNumericType T, CppNumericType U>
 inline constexpr T& operator+=(T &lhs, U rhs) {
   if (is_na(lhs)) {
     lhs = na<T>();
@@ -182,7 +182,7 @@ inline constexpr T& operator+=(T &lhs, U rhs) {
   }
   return lhs;
 }
-template<CppMathType T, RMathType U>
+template<CppNumericType T, RNumericType U>
 inline constexpr T& operator+=(T &lhs, U rhs) {
   if (is_na(rhs)) {
     lhs = na<T>();
@@ -199,8 +199,8 @@ inline constexpr r_dbl& operator+=(r_dbl &lhs, r_dbl rhs) {
   return lhs;
 }
 
-template<MathType T, MathType U>
-  requires (AtLeastOneRMathType<T, U>)
+template<NumericType T, NumericType U>
+  requires (RNumericType<T> || RNumericType<U>)
 inline constexpr auto operator+(T lhs, U rhs) {
 
   using common_t = common_math_t<T, U>;
@@ -214,8 +214,8 @@ inline constexpr auto operator+(T lhs, U rhs) {
   }
 }
 
-template<MathType T, MathType U>
-  requires (AtLeastOneRMathType<T, U>)
+template<NumericType T, NumericType U>
+  requires (RNumericType<T> || RNumericType<U>)
 inline constexpr auto operator-(T lhs, U rhs) {
 
   using common_t = common_math_t<T, U>;
@@ -229,8 +229,8 @@ inline constexpr auto operator-(T lhs, U rhs) {
   }
 }
 
-template<MathType T, MathType U>
-  requires (AtLeastOneRMathType<T, U>)
+template<NumericType T, NumericType U>
+  requires (RNumericType<T> || RNumericType<U>)
 inline constexpr auto operator*(T lhs, U rhs) {
 
   using common_t = common_math_t<T, U>;
@@ -244,8 +244,8 @@ inline constexpr auto operator*(T lhs, U rhs) {
   }
 }
 
-template<MathType T, MathType U>
-  requires (AtLeastOneRMathType<T, U>)
+template<NumericType T, NumericType U>
+  requires (RNumericType<T> || RNumericType<U>)
 inline constexpr r_dbl operator/(T lhs, U rhs) {
   return ( is_na(lhs) || is_na(rhs) ) ? na<r_dbl>() : r_dbl(static_cast<double>(unwrap(lhs)) / static_cast<double>(unwrap(rhs)));
 }
@@ -259,8 +259,8 @@ inline constexpr r_dbl operator%(T lhs, U rhs) {
     return na<r_dbl>();
   } else {
     // Donald Knuth floor division
-    double a = static_cast<double>(lhs);
-    double b = static_cast<double>(rhs);
+    double a = static_cast<double>(unwrap(lhs));
+    double b = static_cast<double>(unwrap(rhs));
     double q = std::floor(a / b);
     return r_dbl(a - (b * q));
   }
@@ -285,7 +285,7 @@ inline constexpr auto operator%(T lhs, U rhs) {
   }
 }
 
-template<RMathType T, RMathType U>
+template<RNumericType T, RNumericType U>
 inline constexpr T& operator-=(T &lhs, U rhs) {
   if (is_na(lhs) || is_na(rhs)) {
     lhs = na<T>();
@@ -295,7 +295,7 @@ inline constexpr T& operator-=(T &lhs, U rhs) {
   return lhs;
 }
 
-template<RMathType T, CppMathType U>
+template<RNumericType T, CppNumericType U>
 inline constexpr T& operator-=(T &lhs, U rhs) {
   if (is_na(lhs)) {
     lhs = na<T>();
@@ -305,7 +305,7 @@ inline constexpr T& operator-=(T &lhs, U rhs) {
   return lhs;
 }
 
-template<CppMathType T, RMathType U>
+template<CppNumericType T, RNumericType U>
 inline constexpr T& operator-=(T &lhs, U rhs) {
   if (is_na(rhs)) {
     lhs = na<T>();
@@ -320,7 +320,7 @@ inline constexpr r_dbl& operator-=(r_dbl &lhs, r_dbl rhs) {
   return lhs;
 }
 
-template<RMathType T, RMathType U>
+template<RNumericType T, RNumericType U>
 inline constexpr T& operator*=(T &lhs, U rhs) {
   if (is_na(lhs) || is_na(rhs)) {
     lhs = na<T>();
@@ -330,7 +330,7 @@ inline constexpr T& operator*=(T &lhs, U rhs) {
   return lhs;
 }
 
-template<RMathType T, CppMathType U>
+template<RNumericType T, CppNumericType U>
 inline constexpr T& operator*=(T &lhs, U rhs) {
   if (is_na(lhs)) {
     lhs = na<T>();
@@ -340,7 +340,7 @@ inline constexpr T& operator*=(T &lhs, U rhs) {
   return lhs;
 }
 
-template<CppMathType T, RMathType U>
+template<CppNumericType T, RNumericType U>
 inline constexpr T& operator*=(T &lhs, U rhs) {
   if (is_na(rhs)){
     lhs = na<T>();
@@ -356,7 +356,7 @@ inline constexpr r_dbl& operator*=(r_dbl &lhs, r_dbl rhs) {
   return lhs;
 }
 
-template<RMathType T, RMathType U>
+template<RNumericType T, RNumericType U>
 inline constexpr T& operator/=(T &lhs, U rhs) {
   if (is_na(lhs) || is_na(rhs)) {
     lhs = na<T>();
@@ -366,7 +366,7 @@ inline constexpr T& operator/=(T &lhs, U rhs) {
   return lhs;
 }
 
-template<RMathType T, CppMathType U>
+template<RNumericType T, CppNumericType U>
 inline constexpr T& operator/=(T &lhs, U rhs) {
   if (is_na(lhs)) {
     lhs = na<T>();
@@ -376,7 +376,7 @@ inline constexpr T& operator/=(T &lhs, U rhs) {
   return lhs;
 }
 
-template<CppMathType T, RMathType U>
+template<CppNumericType T, RNumericType U>
 inline constexpr T& operator/=(T &lhs, U rhs) {
   if (is_na(rhs)){
     lhs = na<T>();
