@@ -346,6 +346,28 @@ struct r_vec {
     return out;
   }
 
+
+  // Conditional member functions (only available for certain types)
+
+  // POSIXct-only members
+  r_str tzone() const requires RPsxctType<T> {
+    auto tz = r_vec<r_str_view>(Rf_getAttrib(sexp, r_sym("tzone")));
+    
+    if (tz.length() == 0){
+      abort("`r_vec<r_psxct_t>` vector must have a valid tzone attribute");
+    } else {
+      r_str_view tz_str = tz.view(0);
+      if (cpp20::is_na(tz_str)){
+        abort("tzone cannot be NA");
+      }
+      return r_str(tz_str);
+    }
+  }
+
+  void set_tzone(const char* tz) requires RPsxctType<T> {
+    Rf_setAttrib(sexp, r_sym("tzone"), Rf_ScalarString(Rf_mkCharCE(tz, CE_UTF8)));
+  }
+
 };
 
 template <RVal T>
