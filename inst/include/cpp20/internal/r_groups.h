@@ -11,6 +11,7 @@ namespace cpp20 {
 struct groups {
   r_vec<r_int> ids; 
   int n_groups = 0;
+  bool ordered = true;
   bool sorted = true;
 
   // Default constructor
@@ -90,6 +91,19 @@ r_vec<r_int> counts() const {
 
     return out;
 }
+
+// 0-indexed order vector
+r_vec<r_int> order() const {
+    if (sorted || is_sorted(ids)){
+        int n = ids.length();
+        r_vec<r_int> out(n);
+        for (int i = 0; i < n; ++i) out.set(i, i);
+        return out;
+    } else {
+        return cpp20::order(ids);
+    }
+}
+
 };
 
 namespace internal {
@@ -124,6 +138,7 @@ inline groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
     }
 
     g.n_groups = current_group + 1;
+    g.ordered = true;
     g.sorted = is_sorted(g.ids).is_true();
 
     return g;
@@ -137,6 +152,7 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
     groups g;
     g.ids = r_vec<r_int>(n);
     g.n_groups = 0;
+    g.ordered = false;
     g.sorted = true;
     
     if (n == 0) return groups();
