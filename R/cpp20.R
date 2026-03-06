@@ -124,6 +124,10 @@ test_as_date <- function(x) {
   .Call(`_cpp20_test_as_date`, x)
 }
 
+test_construct_date <- function(x) {
+  .Call(`_cpp20_test_construct_date`, x)
+}
+
 test_as_date2 <- function(x) {
   .Call(`_cpp20_test_as_date2`, x)
 }

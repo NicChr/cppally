@@ -342,6 +342,14 @@ extern "C" SEXP _cpp20_test_as_date(SEXP x) {
   END_CPP20
 }
 // test.h
+r_vec<r_date> test_construct_date(SEXP x);
+extern "C" SEXP _cpp20_test_construct_date(SEXP x) {
+  BEGIN_CPP20
+  cpp20::internal::check_r_cpp_mapping<SEXP>(x);
+  return cpp20::internal::cpp_to_sexp(test_construct_date(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
+  END_CPP20
+}
+// test.h
 r_vec<r_date> test_as_date2(r_vec<r_date> x);
 extern "C" SEXP _cpp20_test_as_date2(SEXP x) {
   BEGIN_CPP20
@@ -529,6 +537,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_test_coerce",              (DL_FUNC) &_cpp20_test_coerce,              2},
     {"_cpp20_test_coerce1",             (DL_FUNC) &_cpp20_test_coerce1,             1},
     {"_cpp20_test_combine2",            (DL_FUNC) &_cpp20_test_combine2,            2},
+    {"_cpp20_test_construct_date",      (DL_FUNC) &_cpp20_test_construct_date,      1},
     {"_cpp20_test_dates1",              (DL_FUNC) &_cpp20_test_dates1,              1},
     {"_cpp20_test_dates2",              (DL_FUNC) &_cpp20_test_dates2,              1},
     {"_cpp20_test_deduced_scalar_type", (DL_FUNC) &_cpp20_test_deduced_scalar_type, 1},

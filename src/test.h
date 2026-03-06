@@ -213,6 +213,11 @@ r_vec<r_date> test_as_date(SEXP x){
 } 
 
 [[cpp20::register]]
+r_vec<r_date> test_construct_date(SEXP x){
+  return r_vec<r_date>(x);
+} 
+
+[[cpp20::register]]
 r_vec<r_date> test_as_date2(r_vec<r_date> x){
   return as<r_vec<r_date>>(x);
 } 

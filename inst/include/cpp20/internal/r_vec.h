@@ -6,8 +6,7 @@
 #include <cpp20/internal/r_vec_utils.h>
 #include <cpp20/internal/r_rtype_coerce.h>
 
-// TO-DO Add check_class struct template
-// Also make unwrap work for all types including vectors
+// TO-DO - Also make unwrap work for all types including vectors
 
 namespace cpp20 {
 
@@ -24,8 +23,8 @@ struct r_vec {
   private:
 
   // Initialise read-only ptr to: 
-  // SEXP - If T is `r_sexp` or `r_str_view`
-  // T - Otherwise
+  // SEXP - If T is a type convertible to SEXP
+  // unwrap_t<T> - Otherwise
   using ptr_t = std::conditional_t<internal::RPtrWritableType<T>, unwrap_t<T>*, const SEXP*>;  
   ptr_t m_ptr = nullptr;
 
@@ -38,7 +37,27 @@ struct r_vec {
       m_ptr = (const SEXP*) STRING_PTR_RO(sexp);
     }
   }
-      
+
+  // By default do nothing (e.g. for vectors with no attrs)
+  template <typename U>
+  void validate_attrs(SEXP x){
+    return;
+  }
+
+  template <RDateType U>
+  void validate_attrs(SEXP x){
+    if (!Rf_inherits(x, "Date")){
+      abort("SEXP must be of class 'Date'");
+    }
+  }
+
+  template <RPsxctType U>
+  void validate_attrs(SEXP x){
+    if (!Rf_inherits(x, "POSIXct")){
+      abort("SEXP must inherit class 'POSIXct'");
+    }
+  }
+
   public:
 
   // Constructor that wraps new_vec_impl<T>
@@ -61,6 +80,7 @@ struct r_vec {
   explicit r_vec(r_sexp s) : sexp(std::move(s)) {
     if (!is_null()) {
       internal::check_valid_construction<r_vec<T>>(sexp);
+      validate_attrs<T>(s.value);
       initialise_ptr();
     }
   }
@@ -68,12 +88,13 @@ struct r_vec {
   explicit r_vec(const r_sexp& s, internal::view_tag) : sexp(s.value, internal::view_tag{}){
     if (!is_null()){
       internal::check_valid_construction<r_vec<T>>(sexp);
+      validate_attrs<T>(s.value);
       initialise_ptr();
     }
   }
 
-  explicit r_vec(SEXP s) : r_vec(r_sexp(s)) {}
-  explicit r_vec(SEXP s, internal::view_tag) : r_vec(r_sexp(s, internal::view_tag{}), internal::view_tag{}) {}
+  explicit r_vec(SEXP s) : r_vec(r_sexp(s)) {validate_attrs<T>(s);}
+  explicit r_vec(SEXP s, internal::view_tag) : r_vec(r_sexp(s, internal::view_tag{}), internal::view_tag{}) {validate_attrs<T>(s);}
 
   // Implicit conversion to SEXP
   constexpr operator SEXP() const noexcept {
@@ -406,6 +427,7 @@ inline void r_copy_n(r_vec<T>& target, const r_vec<T>& source, r_size_t target_o
 }
 
 // Compact seq generator as ALTREP, same as `seq_len()`
+// ALTREP is currently unsupported due to the overhead in checking altrep
 // inline r_vec<r_int> compact_seq_len(r_size_t n){
 //   if (n < 0){
 //     abort("`n` must be >= 0");
