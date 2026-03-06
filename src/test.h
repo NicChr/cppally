@@ -343,6 +343,20 @@ T test_factor2(T x){
   return x;
 }
 
+template <RVector T>
+[[cpp20::register]]
+r_vec<r_int> test_group_id(T x, bool order){
+  auto out = make_groups(x, order).ids;
+  out += 1;
+  return out;
+}
+
+template <RVector T>
+[[cpp20::register]]
+r_vec<r_int> test_group_counts(T x, bool order){
+  return make_groups(x, order).counts();
+}
+
 void static_tests(){
   static_assert(is<unwrap_t<r_lgl>, int>);
   static_assert(is<unwrap_t<r_dbl>, double>);

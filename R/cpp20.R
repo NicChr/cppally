@@ -203,3 +203,11 @@ test_factor1 <- function(x) {
 test_factor2 <- function(x) {
   .Call(`_cpp20_test_factor2`, x)
 }
+
+test_group_id <- function(x, order) {
+  .Call(`_cpp20_test_group_id`, x, order)
+}
+
+test_group_counts <- function(x, order) {
+  .Call(`_cpp20_test_group_counts`, x, order)
+}

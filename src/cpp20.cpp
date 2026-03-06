@@ -518,6 +518,30 @@ extern "C" SEXP _cpp20_test_factor2(SEXP x) {
   );
   END_CPP20
 }
+// test.h
+extern "C" SEXP _cpp20_test_group_id(SEXP x, SEXP order) {
+  BEGIN_CPP20
+  cpp20::internal::check_r_cpp_mapping<bool>(order);
+return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP order_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_group_id(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(order_internal)))) {
+        return cpp20::internal::cpp_to_sexp(test_group_id(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(order_internal)));
+    },
+    x, order
+  );
+  END_CPP20
+}
+// test.h
+extern "C" SEXP _cpp20_test_group_counts(SEXP x, SEXP order) {
+  BEGIN_CPP20
+  cpp20::internal::check_r_cpp_mapping<bool>(order);
+return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP order_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_group_counts(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(order_internal)))) {
+        return cpp20::internal::cpp_to_sexp(test_group_counts(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(order_internal)));
+    },
+    x, order
+  );
+  END_CPP20
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
@@ -545,6 +569,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_test_deduced_vec_type",    (DL_FUNC) &_cpp20_test_deduced_vec_type,    1},
     {"_cpp20_test_factor1",             (DL_FUNC) &_cpp20_test_factor1,             1},
     {"_cpp20_test_factor2",             (DL_FUNC) &_cpp20_test_factor2,             1},
+    {"_cpp20_test_group_counts",        (DL_FUNC) &_cpp20_test_group_counts,        2},
+    {"_cpp20_test_group_id",            (DL_FUNC) &_cpp20_test_group_id,            2},
     {"_cpp20_test_identity",            (DL_FUNC) &_cpp20_test_identity,            1},
     {"_cpp20_test_identity2",           (DL_FUNC) &_cpp20_test_identity2,           1},
     {"_cpp20_test_list_to_scalars",     (DL_FUNC) &_cpp20_test_list_to_scalars,     1},
