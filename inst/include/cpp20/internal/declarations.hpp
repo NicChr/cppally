@@ -1,6 +1,8 @@
 #ifndef CPP20_DECLARATIONS_HPP
 #define CPP20_DECLARATIONS_HPP
 
+// All credits go to cpp11 and its authors and contributors
+
 #include <cpp20/internal/r_setup.h>
 #include <exception>           // for std::exception
 

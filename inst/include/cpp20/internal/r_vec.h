@@ -6,8 +6,6 @@
 #include <cpp20/internal/r_vec_utils.h>
 #include <cpp20/internal/r_rtype_coerce.h>
 
-// TO-DO - Also make unwrap work for all types including vectors
-
 namespace cpp20 {
 
 template<RVal T>
