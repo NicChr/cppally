@@ -122,6 +122,11 @@ inline constexpr bool is_na_impl(T const& x) {
 }
 
 template<>
+inline constexpr bool is_na_impl(r_dbl const& x) {
+  return unwrap(x) != unwrap(x);
+}
+
+template<>
 inline bool is_na_impl(r_str_view const& x) {
   return unwrap(x) == unwrap(na_str);
 }

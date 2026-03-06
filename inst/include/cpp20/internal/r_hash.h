@@ -50,6 +50,22 @@ struct r_hash_impl {
 };
 
 template <>
+struct r_hash_impl<r_dbl> {
+    using is_avalanching = void;
+
+    uint64_t operator()(double x) const noexcept {
+        if (is_na(x)){
+            // Checks that x matches exactly to R's NA_REAL
+            return is_na_real(x) ? na_real_hash() : nan_hash();
+        } else {
+            // Hash normal double
+            // +0.0 to normalise -0.0 and 0.0 
+            return mix_u64(std::bit_cast<uint64_t>(x + 0.0));
+        }
+    }
+};
+
+template <>
 struct r_hash_impl<r_cplx> {
     using is_avalanching = void;
 
