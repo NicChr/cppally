@@ -342,3 +342,25 @@ template <RFactor T>
 T test_factor2(T x){
   return x;
 }
+
+void static_tests(){
+  static_assert(is<unwrap_t<r_lgl>, int>);
+  static_assert(is<unwrap_t<r_dbl>, double>);
+  static_assert(is<unwrap_t<r_cplx>, std::complex<double>>);
+  static_assert(is<unwrap_t<r_raw>, Rbyte>);
+  static_assert(is<unwrap_t<r_sexp>, SEXP>);
+  static_assert(is<unwrap_t<r_date_t<r_int>>, int>);
+  static_assert(is<unwrap_t<r_date_t<r_dbl>>, double>);
+  static_assert(is<unwrap_t<r_vec<r_str>>, SEXP>);
+  static_assert(is<unwrap_t<r_factors>, SEXP>);
+
+  static_assert(is<decltype(unwrap(r_lgl())), int>);
+  static_assert(is<decltype(unwrap(r_dbl())), double>);
+  static_assert(is<decltype(unwrap(r_cplx())), std::complex<double>>);
+  static_assert(is<decltype(unwrap(r_raw())), Rbyte>);
+  static_assert(is<decltype(unwrap(r_sexp())), SEXP>);
+  static_assert(is<decltype(unwrap(r_date_t<r_int>())), int>);
+  static_assert(is<decltype(unwrap(r_date_t<r_dbl>())), double>);
+  static_assert(is<decltype(unwrap(r_vec<r_int>())), SEXP>);
+  static_assert(is<decltype(unwrap(r_factors())), SEXP>);
+}
