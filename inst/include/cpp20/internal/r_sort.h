@@ -97,7 +97,7 @@ r_vec<r_int> stable_order(const r_vec<T>& x) {
         std::vector<uint64_t> pairs(n);
 
         for (int i = 0; i < n; ++i) {
-            int val = p_x[i];
+            auto val = p_x[i];
             uint32_t key;
             if (is_na(p_x[i])) {
                 key = 0xFFFFFFFF; // Force NA last
@@ -210,7 +210,7 @@ inline r_vec<r_int> order(const r_vec<T>& x) {
         std::vector<key_index> pairs(n);
 
         for (int i = 0; i < n; ++i) {
-            int val = px[i];
+            auto val = px[i];
             uint32_t key;
             if (is_na(val)) {
                 key = 0xFFFFFFFF; // NA Last
