@@ -1,7 +1,7 @@
 #ifndef CPP20_R_STATS_H
 #define CPP20_R_STATS_H
 
-#include <cpp20/internal/r_make_vec.h>
+#include <cpp20/internal/r_vec.h>
 
 namespace cpp20 {
     
@@ -98,7 +98,10 @@ r_vec<T> range(const r_vec<T> &x, bool na_rm = false){
             hi = max(hi, v);
         }
     }
-    return make_vec<T>(lo, hi);
+    r_vec<T> out(2);
+    out.set(0, lo);
+    out.set(1, hi);
+    return out;
 }
 
 // SIMD optimisation for integer types
@@ -154,7 +157,10 @@ r_vec<T> range(const r_vec<T> &x, bool na_rm = false){
             hi = na<T>();
         }
     }
-    return make_vec<T>(lo, hi);
+    r_vec<T> out(2);
+    out.set(0, lo);
+    out.set(1, hi);
+    return out;
 }
 
 template <RNumericType T>

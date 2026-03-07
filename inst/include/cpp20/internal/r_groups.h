@@ -2,6 +2,7 @@
 #define CPP20_R_GROUPS_H
 
 #include <cpp20/internal/r_vec.h>
+#include <cpp20/internal/r_stats.h>
 #include <cpp20/internal/r_hash.h>
 #include <cpp20/internal/r_sort.h>
 
