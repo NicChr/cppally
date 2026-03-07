@@ -188,99 +188,65 @@ r_vec<r_int> stable_order(const r_vec<T>& x) {
 // order function (doesn't preserve order of ties)
 template <RSortable T>
 inline r_vec<r_int> order(const r_vec<T>& x) {
-    int n = x.size();
 
-    if (n < 500){
-        return internal::cpp_order(x);
-    }
+    using base_t = unwrap_t<T>;
 
+    uint32_t n = x.size();
+    if (n < 500) return internal::cpp_order(x);
+
+    
     // ----------------------------------------------------------------------
-    // Integers (ska_sort)
+    // Types with numeric storage
     // ----------------------------------------------------------------------
+    
+    if constexpr (RNumericType<T>) {
 
-    if constexpr (RIntegerType<T>) {
-
-        r_vec<r_int> p(n);
+        using unsigned_t = decltype(detail::to_unsigned_or_bool(std::declval<base_t>()));
+        
+        r_vec<r_int> out(n);
         auto* RESTRICT px = x.data();
-
+        
         struct key_index {
-            uint32_t key;
-            int index;
+            unsigned_t key;
+            uint32_t index;
         };
+        
         std::vector<key_index> pairs(n);
 
-        for (int i = 0; i < n; ++i) {
-            auto val = px[i];
-            uint32_t key;
-            if (is_na(val)) {
-                key = 0xFFFFFFFF; // NA Last
-            } else {
-                key = detail::to_unsigned_or_bool(val);
-            }
+        OMP_SIMD
+        for (uint32_t i = 0; i < n; ++i) {
+            unsigned_t key = is_na(px[i]) ? std::numeric_limits<unsigned_t>::max() : detail::to_unsigned_or_bool(px[i]);
             pairs[i] = {key, i};
         }
 
-        ska_sort(pairs.begin(), pairs.end(), [](const key_index& k){ return k.key; });
+        ska_sort(pairs.begin(), pairs.end(), 
+            [](const key_index& k){ return k.key; });
 
-        int* RESTRICT p_out = p.data();
+        int* RESTRICT p_out = out.data();
+        auto* RESTRICT p_pairs = pairs.data();
         OMP_SIMD
-        for (int i = 0; i < n; ++i) {
-            p_out[i] = pairs[i].index;
+        for (uint32_t i = 0; i < n; ++i) {
+            p_out[i] = static_cast<int>(p_pairs[i].index);
         }
-        return p;
+        return out;
     }
 
     // ----------------------------------------------------------------------
-    // Doubles (unstable Radix Sort on Pair<u64, int>)
-    // ----------------------------------------------------------------------
-    // Since double is 64-bit, we can't pack (Value+Index) into one 64-bit int.
-    // We must use a struct { uint64_t key; int index; } and sort that
+    // Strings
+    // ---------------------------------------------------------------------- 
 
-    else if constexpr (RFloatType<T>) {
-
-        r_vec<r_int> p(n);
-        auto* RESTRICT px = x.data();
-
-        struct key_index { uint64_t key; int index; };
-        std::vector<key_index> pairs(n);
-
-        for (int i = 0; i < n; ++i) {
-            double val = px[i];
-            uint64_t key;
-            if (is_na(val)) {
-                key = 0xFFFFFFFFFFFFFFFFULL; // Force NA last
-            } else {
-                key = detail::to_unsigned_or_bool(val);
-
-            }
-            pairs[i] = {key, i};
-        }
-
-        ska_sort(pairs.begin(), pairs.end(), [](const key_index& k){ return k.key; });
-
-        int* RESTRICT p_out = p.data();
-        OMP_SIMD
-        for (int i = 0; i < n; ++i) {
-            p_out[i] = pairs[i].index;
-        }
-        return p;
-
-    // ----------------------------------------------------------------------
-    // Strings (unstable Radix Sort on trio<string, int, bool>
-    // ----------------------------------------------------------------------
-
-    } else if constexpr (RStringType<T>) {
+    else if constexpr (RStringType<T>) {
         r_vec<r_int> p(n);
     
         struct key_index {
             std::string str;
-            int index;
+            uint32_t index;
             bool is_na;
         };
         std::vector<key_index> pairs;
         pairs.reserve(n);
     
-        for (int i = 0; i < n; ++i) {
+        for (uint32_t i = 0; i < n; ++i) {
             if (is_na(x.view(i))) {
                 // Use empty string for NA, mark with flag
                 pairs.push_back({"", i, true});
@@ -303,7 +269,7 @@ inline r_vec<r_int> order(const r_vec<T>& x) {
     
         // Unpack indices
         int* RESTRICT p_out = p.data();
-        for (int i = 0; i < n; ++i) {
+        for (uint32_t i = 0; i < n; ++i) {
             p_out[i] = pairs[i].index;
         }
         return p;  
