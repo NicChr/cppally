@@ -46,7 +46,16 @@ using r_psxct = r_psxct_t<r_dbl>;
 // Concepts to enable R type templates
 
 template <typename T>
-concept RIntegerType = any<T, r_lgl, r_int, r_int64>;
+concept RLogicalType = is<T, r_lgl>; 
+
+template <typename T>
+concept RShortIntegerType = is<T, r_int>;
+
+template <typename T>
+concept RLongIntegerType = is<T, r_int64>;
+
+template <typename T>
+concept RIntegerType = RLogicalType<T> || RShortIntegerType<T> || RLongIntegerType<T>;
 
 template <typename T>
 concept CppIntegerType = std::is_integral_v<std::remove_cvref_t<T>>;

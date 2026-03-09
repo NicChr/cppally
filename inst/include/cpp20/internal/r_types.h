@@ -245,7 +245,7 @@ inline constexpr r_lgl r_na{std::numeric_limits<int>::min()};
 
   inline r_lgl::operator bool() const {
     if (is_na()){
-    abort("Cannot implicitly convert NA to bool, please check");
+    abort("Cannot implicitly convert r_lgl NA to bool, please check");
     }
     return static_cast<bool>(value);
   }

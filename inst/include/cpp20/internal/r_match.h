@@ -17,6 +17,65 @@ r_vec<r_int> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
   }
 
   using key_t = unwrap_t<T>;
+  auto out = r_vec<r_int>(n_needles);
+
+  // Integer optimization: use table lookup for small integer ranges
+  if constexpr (is<key_t, int>) {
+    r_vec<T> rng = range(haystack, /*na_rm=*/true);
+    
+    int min_val = unwrap(rng.get(0));
+    int max_val = unwrap(rng.get(1));
+    
+    bool all_nas = is_na(min_val) && is_na(max_val);
+    int64_t range_span = all_nas ? 0 : static_cast<int64_t>(max_val) - static_cast<int64_t>(min_val);
+    constexpr int64_t MAX_TABLE_SIZE = 20000000; 
+
+    if (!all_nas && range_span < MAX_TABLE_SIZE) {
+      // Table maps (value - min_val) -> position, init with NA
+      r_vec<r_int> table(range_span + 1, na<r_int>());
+      
+      auto* RESTRICT p_hay = haystack.data();
+      auto* RESTRICT p_table = table.data();
+      
+      // Build table: first occurrence wins
+      for (r_size_t i = 0; i < n_haystack; ++i) {
+        int val = p_hay[i];
+        if (!is_na(val)){
+          size_t idx = static_cast<size_t>(static_cast<int64_t>(val) - min_val);
+          if (is_na(p_table[idx])){
+            p_table[idx] = static_cast<int>(i) + 1;
+          }
+        }
+      }
+      
+      // Find first NA position in haystack (if any)
+      int na_pos = na<r_int>();
+      for (r_size_t i = 0; i < n_haystack; ++i) {
+        if (is_na(p_hay[i])){
+          na_pos = static_cast<int>(i) + 1;
+          break;
+        }
+      }
+      
+      // Match needles
+      auto* RESTRICT p_needles = needles.data();
+      auto* RESTRICT p_out = out.data();
+      
+      for (r_size_t i = 0; i < n_needles; ++i) {
+        int val = p_needles[i];
+        if (is_na(val)) {
+          p_out[i] = na_pos;
+        } else if (val >= min_val && val <= max_val) {
+          size_t idx = static_cast<size_t>(static_cast<int64_t>(val) - min_val);
+          p_out[i] = p_table[idx];
+        } else {
+          p_out[i] = na<r_int>();
+        }
+      }
+      
+      return out;
+    }
+  }
 
   // Build hash table
   ankerl::unordered_dense::map<key_t, int, internal::r_hash<T>, internal::r_hash_eq<T>> lookup;
@@ -27,7 +86,6 @@ r_vec<r_int> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
   }
 
   // Match needles
-  auto out = r_vec<r_int>(n_needles);
   for (r_size_t i = 0; i < n_needles; ++i) {
     auto it = lookup.find(unwrap(needles.view(i)));
     out.set(i, it != lookup.end() ? r_int(it->second) : na<r_int>());
