@@ -5,6 +5,7 @@
 
 namespace cpp20 {
 
+// 1-indexed match locations
 template <RVal T>
 r_vec<r_int> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
 

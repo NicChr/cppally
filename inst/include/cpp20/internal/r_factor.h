@@ -2,27 +2,31 @@
 #define CPP20_R_FACTOR_H
 
 #include <cpp20/internal/r_vec.h>
+#include <cpp20/internal/r_stats.h>
 #include <cpp20/internal/r_attrs.h>
 
 namespace cpp20 {
 
-struct r_factors : public r_vec<r_int> { 
+struct r_factors { 
 
   public: 
 
+  r_vec<r_int> value;
+
   r_vec<r_str_view> levels() const {
-    return r_vec<r_str_view>(attr::get_attr(*this, symbol::levels_sym));
+    return r_vec<r_str_view>(attr::get_attr(value, symbol::levels_sym));
   }
 
+  private: 
+  
   template <RStringType T>
-  void set_levels(const r_vec<T>& levels) {
-    attr::set_attr(*this, symbol::levels_sym, levels);
+  void validate_factor(const r_vec<r_int>& codes, const r_vec<T>& levels){
+    r_int max_code = max(codes, true);
+
+    if ((levels.length() < max_code).is_true()){
+      abort("Invalid factor levels");
+    }
   }
-
-  private:
-
-
-  explicit r_factors(r_vec<r_int>&& x) : r_vec<r_int>(std::move(x)) {}
 
   void validate_factor(SEXP x){
     if (TYPEOF(x) != INTSXP){
@@ -35,37 +39,60 @@ struct r_factors : public r_vec<r_int> {
     if (TYPEOF(levels) != STRSXP){
       abort("SEXP must have valid levels attribute to be constructed as a factor");
     }
+    r_vec<r_str_view> levels2 = r_vec<r_str_view>(levels, internal::view_tag{});
+    r_vec<r_int> codes = r_vec<r_int>(x, internal::view_tag{});
+    validate_factor(codes, levels2);
   }
 
+  // Internal direct constructor
   template <RStringType T>
-  void init_factor_attrs(const r_vec<T>& levels) {
+  explicit r_factors(r_vec<r_int>&& codes, const r_vec<T>& levels, 
+    bool check_valid_levels = true) : value(std::move(codes)){
+      validate_factor(value, levels);
+      init_factor(levels, false); 
+    }
+
+  public: 
+
+  template <RStringType T>
+  void set_levels(const r_vec<T>& levels, bool check_valid_levels = true) {
+    if (check_valid_levels){
+      validate_factor(value, levels);
+    }
+    attr::set_attr(value, symbol::levels_sym, levels);
+  }
+
+  private:
+
+  template <RStringType T>
+  void init_factor(const r_vec<T>& levels, bool check_valid_levels = true) {
       // Set class
-      attr::set_attr(*this, symbol::class_sym, r_vec<r_str_view>(1, "factor"));
+      attr::set_attr(value, symbol::class_sym, r_vec<r_str_view>(1, "factor"));
       // Set levels
-      set_levels(levels);
+      set_levels(levels, check_valid_levels);
   }
 
   public: 
 
   // Constructors
-  r_factors() : r_vec<r_int>() {
-    init_factor_attrs(r_vec<r_str_view>());
+  r_factors() : value() {
+    init_factor(r_vec<r_str_view>(), false);
   }
 
-  explicit r_factors(SEXP x) : r_vec<r_int>(x) {
-    if (!is_null()){
-      validate_factor(x); 
+  explicit r_factors(SEXP x) : value(x) {
+    if (!value.is_null()){
+      validate_factor(value); 
     }
   }
 
-  explicit r_factors(SEXP x, internal::view_tag) : r_vec<r_int>(x, internal::view_tag{}) {
-    if (!is_null()){
-      validate_factor(x); 
+  explicit r_factors(SEXP x, internal::view_tag) : value(x, internal::view_tag{}) {
+    if (!value.is_null()){
+      validate_factor(value); 
     }
   }
 
-  explicit r_factors(r_size_t n): r_vec<r_int>(n, na<r_int>()){
-    init_factor_attrs(r_vec<r_str_view>());
+  explicit r_factors(r_size_t n): value(n, na<r_int>()){
+    init_factor(r_vec<r_str_view>(), false);
   }
   
   template <RVal T>
@@ -74,30 +101,11 @@ struct r_factors : public r_vec<r_int> {
   template <RVal T>
   explicit r_factors(const r_vec<T>& x);
 
-  template <typename U>
-  r_factors subset(const r_vec<U>& indices) const {
-    r_factors out(r_vec<r_int>::subset(indices)); 
-    out.init_factor_attrs(levels());
-    return out;
-}
+  // Implicit coercion to r_vec<r_int> 
+  constexpr operator r_vec<r_int>&() noexcept { return value; }
+  constexpr operator const r_vec<r_int>&() const noexcept { return value; }
 
-  template <typename U>
-  r_factors subset(U index) const {
-    r_factors out(r_vec<r_int>::subset(index)); 
-    out.init_factor_attrs(levels());
-    return out;
-  }
-
-  r_factors resize(r_size_t n) {
-    r_factors out(r_vec<r_int>::resize(n)); 
-    out.init_factor_attrs(levels());
-    return out;
-  }
-  r_factors rep_len(r_size_t n) {
-    r_factors out(r_vec<r_int>::rep_len(n)); 
-    out.init_factor_attrs(levels());
-    return out;
-  }
+  constexpr operator SEXP() const noexcept { return static_cast<SEXP>(value); }
 
 };
 

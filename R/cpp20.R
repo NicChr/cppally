@@ -223,3 +223,7 @@ test_lengths <- function(x) {
 test_range <- function(x, na_rm) {
   .Call(`_cpp20_test_range`, x, na_rm)
 }
+
+test_match <- function(x, y) {
+  .Call(`_cpp20_test_match`, x, y)
+}

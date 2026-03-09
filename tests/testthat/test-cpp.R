@@ -21,6 +21,7 @@ test_that("Type deduction on template disptch", {
   expect_identical(test_deduced_type(0), "r_vec<r_dbl>")
   expect_identical(test_deduced_type(letters), "r_vec<r_str>")
   expect_identical(test_deduced_type(list(1)), "r_vec<r_sexp>")
+  expect_identical(test_deduced_type(iris$Species), "r_factors")
   expect_identical(test_deduced_type(as.symbol("a")), "r_sym")
   expect_identical(test_deduced_type(mean), "r_sexp")
 

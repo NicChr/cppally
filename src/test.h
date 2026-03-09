@@ -201,7 +201,7 @@ inline r_vec<r_int> test_specialisation<r_int>(r_vec<r_int> x) {
 }
 
 
-template <RVal T, RVector U>
+template <RVal T, typename U>
 [[cpp20::register]]
 auto test_coerce(r_vec<T> x, U ptype) {
   return as<U>(x);
@@ -382,6 +382,12 @@ template <RSortableType T>
 [[cpp20::register]]
 r_vec<T> test_range(r_vec<T> x, bool na_rm){
   return range(x, na_rm);
+}
+
+template <RVal T>
+[[cpp20::register]]
+auto test_match(r_vec<T> x, r_vec<T> y){
+  return match(x, y);
 }
 
 void static_tests(){

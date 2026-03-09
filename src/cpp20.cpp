@@ -573,6 +573,17 @@ return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
   );
   END_CPP20
 }
+// test.h
+extern "C" SEXP _cpp20_test_match(SEXP x, SEXP y) {
+  BEGIN_CPP20
+  return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
+    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_match(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<T>>>(y_internal)))) {
+        return cpp20::internal::cpp_to_sexp(test_match(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<T>>>(y_internal)));
+    },
+    x, y
+  );
+  END_CPP20
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
@@ -606,6 +617,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_test_identity2",           (DL_FUNC) &_cpp20_test_identity2,           1},
     {"_cpp20_test_lengths",             (DL_FUNC) &_cpp20_test_lengths,             1},
     {"_cpp20_test_list_to_scalars",     (DL_FUNC) &_cpp20_test_list_to_scalars,     1},
+    {"_cpp20_test_match",               (DL_FUNC) &_cpp20_test_match,               2},
     {"_cpp20_test_mix2",                (DL_FUNC) &_cpp20_test_mix2,                7},
     {"_cpp20_test_multiple_deduction",  (DL_FUNC) &_cpp20_test_multiple_deduction,  2},
     {"_cpp20_test_null",                (DL_FUNC) &_cpp20_test_null,                0},

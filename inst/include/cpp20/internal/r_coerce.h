@@ -10,9 +10,7 @@
 namespace cpp20 {
 
 template <RVal T>
-r_factors::r_factors(const r_vec<T>& x, const r_vec<T>& levels) {
-  auto fct = match(x, levels);
-  r_vec<r_int>::operator=(std::move(fct));
+r_factors::r_factors(const r_vec<T>& x, const r_vec<T>& levels) : value(match(x, levels)){
   r_vec<r_str_view> str_levels;
   if constexpr (RStringType<T>) {
       str_levels = r_vec<r_str_view>(levels);
@@ -23,7 +21,7 @@ r_factors::r_factors(const r_vec<T>& x, const r_vec<T>& levels) {
           str_levels.set(i, internal::as_r<r_str_view>(levels.view(i)));
       }
   }
-  init_factor_attrs(str_levels);
+  init_factor(str_levels, false);
 }
 
 template <RVal T>

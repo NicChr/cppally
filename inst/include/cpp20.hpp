@@ -17,6 +17,7 @@
 #include <cpp20/internal/r_vec_utils.h>
 #include <cpp20/internal/r_rtype_coerce.h>
 #include <cpp20/internal/r_vec.h>
+#include <cpp20/internal/r_stats.h>
 #include <cpp20/internal/r_factor.h>
 #include <cpp20/internal/r_vec_math.h>
 #include <cpp20/internal/r_attrs.h>
@@ -34,7 +35,6 @@
 #include <cpp20/internal/r_exprs.h>
 #include <cpp20/internal/r_fns.h>
 #include <cpp20/internal/r_math.h>
-#include <cpp20/internal/r_stats.h>
 #include <cpp20/internal/r_seq.h>
 
 #endif

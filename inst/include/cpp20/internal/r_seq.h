@@ -2,8 +2,8 @@
 #define CPP20_R_SEQ_H
 
 #include <cpp20/internal/r_vec.h>
-#include <cpp20/internal/r_coerce.h>
 #include <cpp20/internal/r_stats.h>
+#include <cpp20/internal/r_coerce.h>
 
 namespace cpp20 {
 

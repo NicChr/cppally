@@ -24,7 +24,7 @@ switch (internal::CPP20_TYPEOF(x)) {
     case internal::CPP20_REALDATESXP:   return f(r_vec<r_date_t<r_dbl>>(x));
     case internal::CPP20_INT64PSXTSXP:  return f(r_vec<r_psxct_t<r_int64>>(x));
     case internal::CPP20_REALPSXTSXP:   return f(r_vec<r_psxct_t<r_dbl>>(x));
-    case internal::CPP20_FCTSXP:        return f(r_factors(x));
+    // case internal::CPP20_FCTSXP:        return f(r_factors(x));
     // case CPP20_DFSXP:                return f(r_df(x));
     default:                            return f(r_sexp(x));
 }
@@ -45,7 +45,7 @@ switch (internal::CPP20_TYPEOF(x)) {
     case internal::CPP20_REALDATESXP:   return f(r_vec<r_date_t<r_dbl>>(x));
     case internal::CPP20_INT64PSXTSXP:  return f(r_vec<r_psxct_t<r_int64>>(x));
     case internal::CPP20_REALPSXTSXP:   return f(r_vec<r_psxct_t<r_dbl>>(x));
-    case internal::CPP20_FCTSXP:        return f(r_factors(x));
+    // case internal::CPP20_FCTSXP:        return f(r_factors(x));
     // case CPP20_DFSXP:                return f(r_df(x));
     default:                            return f(r_sexp(x));
 }

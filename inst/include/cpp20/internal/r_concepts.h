@@ -190,10 +190,10 @@ template <typename T>
 concept RFactor = is<T, r_factors>;
 
 template <typename T>
-concept RPrimitiveVector = internal::is_r_vector_v<T>;
+concept RVector = internal::is_r_vector_v<T>;
 
 template <typename T>
-concept RVector = RPrimitiveVector<T> || RFactor<T>;
+concept RMetaVector = RFactor<T>;
 
 // RObject is any object that can be represented in R - it excludes internal R types like CHARSXP
 // Also, these are all implicitly convertible to `SEXP`
@@ -318,9 +318,10 @@ struct unwrapped_type<T> {
     // Recursively call unwrapped_type on the inner type
     using type = typename unwrapped_type<typename T::value_type>::type;
 };
-template <RVector T>
+template <typename T>
+requires (RVector<T> || RMetaVector<T>)
 struct unwrapped_type<T> {
-    // All R vectors contain SEXP
+    // All R vectors + other R objects contain SEXP
     using type = SEXP;
 };
 

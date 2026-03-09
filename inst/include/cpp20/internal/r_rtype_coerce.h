@@ -168,16 +168,16 @@ inline r_str_view as_r_string(T const& x){
     char buffer[8];
     snprintf(buffer, sizeof(buffer), "%02x", x.value);
     return as_r_string(static_cast<const char *>(buffer));
-  } else if constexpr (is<T, SEXP> || is<T, r_sexp>){
+  } else if constexpr (RDateType<T>){
+    return x.date_str();
+  } else if constexpr (RPsxctType<T>){
+    return x.datetime_str();
+  } else if constexpr (RObject<T>){
     if (Rf_length(x) != 1){
       abort("`x` is a non-scalar vector and cannot be converted to an `r_str_view` in %s", __func__);
     }
     r_sexp str = r_sexp(cpp11::safe[Rf_coerceVector](x, STRSXP));
     return r_str_view(STRING_ELT(str, 0));
-  } else if constexpr (RDateType<T>){
-    return x.date_str();
-  } else if constexpr (RPsxctType<T>){
-    return x.datetime_str();
   } else {
     static_assert(always_false<T>, "Unsupported type for `as_r_string`");
   }

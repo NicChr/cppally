@@ -97,7 +97,7 @@ template <> inline const char* type_str<r_psxct_t<r_int64>>(){return "r_psxct_t<
 template <> inline const char* type_str<r_psxct_t<r_dbl>>(){return "r_psxct_t<r_dbl>";}
 template <> inline const char* type_str<r_factors>(){return "r_factors";}
 
-template<RPrimitiveVector T>
+template<RVector T>
 inline const char* type_str(){
     using r_t = typename T::data_type;
     static const std::string out = std::string("r_vec<") + type_str<r_t>() + ">";
@@ -523,7 +523,7 @@ template <typename T>
 inline constexpr auto unwrap(const T& x){
 if constexpr (RVal<T>){
     return unwrap(x.value);
-  } else if constexpr (RVector<T>){
+  } else if constexpr (RObject<T>){
     return static_cast<SEXP>(x);
   } else {
     return x;
