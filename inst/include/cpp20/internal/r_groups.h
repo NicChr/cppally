@@ -109,7 +109,7 @@ r_vec<r_int> order() const {
 
 namespace internal {
 
-template <RSortable T>
+template <RSortableType T>
 inline groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
     r_size_t n = x.length();
     groups g;
@@ -281,7 +281,7 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
 template <RVal T>
 inline groups make_ordered_groups(const r_vec<T>& x) {
 
-    if constexpr (!RSortable<T>){
+    if constexpr (!RSortableType<T>){
         return make_unordered_groups(x);
     } else {
         return make_groups_from_order(x, order(x));

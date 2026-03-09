@@ -23,7 +23,8 @@ inline constexpr T cpp_abs(T v) {
 
 }
 
-template <NumericType T, NumericType U>
+template <SortableType T, SortableType U>
+requires (RSortableType<T> || RSortableType<U>)
 inline constexpr r_lgl between(T x, U lo, U hi){
   return x >= lo && x <= hi;
 }
@@ -52,6 +53,40 @@ inline constexpr auto max(T x, U y){
     static_cast<unwrap_t<common_t>>(unwrap(x)), 
     static_cast<unwrap_t<common_t>>(unwrap(y))
   ));
+}
+
+inline r_str_view min(r_str_view x, r_str_view y){
+  r_lgl res = x < y;
+  if (res.is_na()){
+    return na<r_str_view>();
+  } else {
+    return res ? x : y;
+  }
+}
+inline r_str_view max(r_str_view x, r_str_view y){
+  r_lgl res = x < y;
+  if (res.is_na()){
+    return na<r_str_view>();
+  } else {
+    return res ? y : x;
+  }
+}
+
+inline r_str min(const r_str& x, const r_str& y){
+  r_lgl res = x < y;
+  if (res.is_na()){
+    return na<r_str>();
+  } else {
+    return res ? x : y;
+  }
+}
+inline r_str max(const r_str& x, const r_str& y){
+  r_lgl res = x < y;
+  if (res.is_na()){
+    return na<r_str>();
+  } else {
+    return res ? y : x;
+  }
 }
 
 template <typename T>

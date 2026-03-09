@@ -5,7 +5,7 @@
 
 namespace cpp20 {
     
-template <RMathType T>
+template <RMathType T> 
 r_dbl sum(const r_vec<T> &x, bool na_rm = false){
     r_size_t n = x.length();
     double out_ = 0;
@@ -72,7 +72,7 @@ auto sum_int(const r_vec<T> &x, bool na_rm = false){
     return r_int64(out_);
 }
 
-template <RNumericType T>
+template <RSortableType T>
 r_vec<T> range(const r_vec<T> &x, bool na_rm = false){
     
     r_size_t n = x.length();
@@ -98,6 +98,34 @@ r_vec<T> range(const r_vec<T> &x, bool na_rm = false){
             hi = max(hi, v);
         }
     }
+    r_vec<T> out(2);
+    out.set(0, lo);
+    out.set(1, hi);
+    return out;
+}
+
+template <RStringType T>
+r_vec<T> range(const r_vec<T> &x, bool na_rm = false){
+    r_size_t n = x.length();
+
+    r_str_view lo = na<r_str_view>();
+    r_str_view hi = na<r_str_view>();
+    bool any_na = false;
+
+    for (r_size_t i = 0; i < n; ++i){
+        const auto v = x.view(i);
+        if (is_na(v)) {
+            any_na = true;
+            continue;
+        }
+        lo = is_na(lo) ? v : min(lo, v);
+        hi = is_na(hi) ? v : max(hi, v);
+    }
+
+    if (!na_rm && any_na) {
+        lo = hi = na<r_str_view>();
+    }
+
     r_vec<T> out(2);
     out.set(0, lo);
     out.set(1, hi);

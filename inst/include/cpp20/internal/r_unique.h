@@ -17,7 +17,7 @@ T unsorted_unique(const T& x) {
 
 template <RVector T>
 T sorted_unique(const T& x) {
-    if constexpr (RSortable<T>){
+    if constexpr (RSortableType<T>){
         groups group_info = make_groups(x, true);
         auto starts = group_info.starts();
         starts += 1;

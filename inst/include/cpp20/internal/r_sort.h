@@ -10,7 +10,7 @@ namespace internal {
 // general order vector that sorts `x`
 // NAs are ordered last
 // Internal function to be used for low overhead sorting small vectors (n<500)
-template <RSortable T>
+template <RSortableType T>
 r_vec<r_int> cpp_order(const r_vec<T>& x) {
     int n = x.size();
     r_vec<r_int> p(n);
@@ -42,7 +42,7 @@ r_vec<r_int> cpp_order(const r_vec<T>& x) {
     return p;
 }
 
-template <RSortable T>
+template <RSortableType T>
 r_vec<r_int> cpp_stable_order(const r_vec<T>& x) {
     int n = x.size();
     r_vec<r_int> p(n);
@@ -77,7 +77,7 @@ r_vec<r_int> cpp_stable_order(const r_vec<T>& x) {
 }
 
 // Stable order that preserves order of ties
-template <RSortable T>
+template <RSortableType T>
 r_vec<r_int> stable_order(const r_vec<T>& x) {
     int n = x.size();
 
@@ -186,7 +186,7 @@ r_vec<r_int> stable_order(const r_vec<T>& x) {
 }
 
 // order function (doesn't preserve order of ties)
-template <RSortable T>
+template <RSortableType T>
 inline r_vec<r_int> order(const r_vec<T>& x) {
 
     using base_t = unwrap_t<T>;
@@ -281,7 +281,7 @@ inline r_vec<r_int> order(const r_vec<T>& x) {
 
 // Is x in a sorted order? i.e is x increasing but not necessarily monotonically?
 // To retrieve a bool result, use the `is_true` member function
-template <RSortable T>
+template <RSortableType T>
 inline r_lgl is_sorted(const r_vec<T>& x) {
     
     r_size_t n = x.length();

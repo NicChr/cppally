@@ -116,7 +116,13 @@ template <typename T>
 concept RStringType = any<T, r_str, r_str_view>;
 
 template <typename T>
-concept RSortable = RNumericType<T> || RStringType<T>;
+concept RSortableType = RNumericType<T> || RStringType<T>;
+
+template <typename T>
+concept CppSortableType = CppNumericType<T> || any<T, std::string, std::string_view>;
+
+template <typename T>
+concept SortableType = RSortableType<T> || CppSortableType<T>;
 
 template <typename T>
 concept RSymbolType = is<T, r_sym>;
