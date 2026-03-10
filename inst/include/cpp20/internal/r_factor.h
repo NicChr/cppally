@@ -107,7 +107,7 @@ struct r_factors {
 
   constexpr operator SEXP() const noexcept { return static_cast<SEXP>(value); }
 
-  r_vec<r_str_view> strings() const {
+  r_vec<r_str_view> as_character() const {
     return levels().subset(value);
   }
 
