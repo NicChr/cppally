@@ -174,7 +174,7 @@ struct r_hash_impl<r_sexp> {
 
             using vec_t = std::remove_cvref_t<decltype(vec)>;
             
-            if constexpr (is<vec_t, r_sexp>){
+            if constexpr (!RVector<vec_t>){
             abort("List contains non-vector element, current implementation can only hash vectors");
         } else {
             using data_t = typename vec_t::data_type;
@@ -247,7 +247,7 @@ struct r_hash_eq_impl<r_sexp> {
     return visit_sexp(x, [y](auto vec1) -> bool {
         using vec_t = decltype(vec1);
 
-        if constexpr (is<vec_t, r_sexp>){
+        if constexpr (!RVector<vec_t>){
             abort("List contains non-vector element, current implementation can only hash vectors");
         } else {
             
