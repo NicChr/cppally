@@ -4,9 +4,17 @@
 
 #include <cpp20/internal/declarations.hpp>
 #include <cpp20/internal/dispatch.hpp>
+using namespace cpp20;
 #include <R_ext/Visibility.h>
 #include "test.h"
 
+// dummy.cpp
+r_str dummy();
+extern "C" SEXP _cpp20_dummy() {
+  BEGIN_CPP20
+    return cpp20::internal::cpp_to_sexp(dummy());
+  END_CPP20
+}
 // test.h
 extern "C" SEXP _cpp20_test_deduced_type(SEXP x) {
   BEGIN_CPP20
@@ -589,6 +597,7 @@ extern "C" {
 static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_cpp_get_threads",          (DL_FUNC) &_cpp20_cpp_get_threads,          0},
     {"_cpp20_cpp_set_threads",          (DL_FUNC) &_cpp20_cpp_set_threads,          1},
+    {"_cpp20_dummy",                    (DL_FUNC) &_cpp20_dummy,                    0},
     {"_cpp20_scalar1",                  (DL_FUNC) &_cpp20_scalar1,                  1},
     {"_cpp20_scalar2",                  (DL_FUNC) &_cpp20_scalar2,                  1},
     {"_cpp20_scalar3",                  (DL_FUNC) &_cpp20_scalar3,                  2},
