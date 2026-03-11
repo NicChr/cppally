@@ -78,21 +78,10 @@ current_package <- function(path = "."){
   gsub("[.]", "_", package)
 }
 
-package_src <- function(path = "."){
-  file.path(path, "src")
-}
-
 package_dll <- function(path = "."){
   package <- current_package(path)
-  file.path(package_src(path), paste0(unname(package), .Platform$dynlib.ext))
+  file.path(path, "src", paste0(unname(package), .Platform$dynlib.ext))
 }
-
-# Cached list of src directory files and their modified timestamps
-get_curr_src_files <- function(path = "."){
-  as.list(modified_time(list.files(package_src(path), full.names = TRUE)))
-}
-cpp20_cache <- new.env(parent = emptyenv())
-cpp20_cache$src_files <- get_curr_src_files()
 
 get_registered_functions <- function(decorations, tag, quiet = !is_interactive()) {
   if (NROW(decorations) == 0) {
@@ -408,24 +397,14 @@ cpp_register <- function(path = ".", quiet = !is_interactive(), extension = c(".
   src_path <- file.path(path, "src")
   cpp_path <- file.path(src_path, paste0("cpp20", extension))
   dll_path <- package_dll(path)
-
-  # Get modified timestamps of current src/ files
-  curr_src_files <- get_curr_src_files()
-  # Cache the modified timestamps of current src/ files
-  on.exit(
-    {
-      cpp20_cache$src_files <- curr_src_files
-    }, add = TRUE
-  )
-
   if (file.exists(cpp_path) && file.exists(r_path) && file.exists(dll_path)){
     # If no C++ code has been modified after package dll, then no need to re-register
     dll_modified_time <- modified_time(dll_path)
-    # cpp_modified_times <- modified_time(list.files(src_path, full.names = TRUE))
+    cpp_modified_times <- modified_time(list.files(src_path, full.names = TRUE))
     r_modified_time <- modified_time(r_path)
 
     # Continue only if any modified times are > dll modified time
-    cpp_no_changes <- isTRUE(identical(curr_src_files, cpp20_cache$src_files))
+    cpp_no_changes <- isTRUE(all(cpp_modified_times <= dll_modified_time))
     r_no_changes <- isTRUE(r_modified_time <= dll_modified_time)
     no_changes <- cpp_no_changes && r_no_changes
 
