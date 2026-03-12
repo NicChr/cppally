@@ -237,237 +237,45 @@ inline r_vec<r_int> order(const r_vec<T>& x) {
     // ---------------------------------------------------------------------- 
 
     else if constexpr (RStringType<T>) {
+        
         r_vec<r_int> out(n);
-
-        // Collect unique strings manually as we don't yet have access to unique() or make_groups() due to header inclusion order
-        ankerl::unordered_dense::set<SEXP, internal::r_hash<T>, internal::r_hash_eq<T>> seen;
-        seen.reserve(n);
         
-        std::vector<SEXP> unique_vec;
-        unique_vec.reserve(n);
-        
-        auto* RESTRICT px = x.data();
-        
+        struct key_index {
+            std::string_view str;
+            uint32_t index;
+            bool is_na;
+        };
+        std::vector<key_index> pairs;
+        pairs.reserve(n);
+    
         for (uint32_t i = 0; i < n; ++i) {
-            SEXP str = px[i];
-            if (seen.insert(str).second) {
-                unique_vec.push_back(str);
+            if (is_na(x.view(i))){
+                // Use empty string for NA
+                pairs.push_back({"", i, true});
+            } else {
+                pairs.push_back({x.view(i).cpp_str(), i, false});
             }
         }
-        
-        uint32_t k = unique_vec.size();
-
-        // Use unique + sort approach if low number of unique strings
-        if (k < n / 2){
-            
-            // Sort the unique values
-            struct ptr_index {
-                SEXP ptr;
-                uint32_t index;
-                bool is_na;
-            };
-            std::vector<ptr_index> unique_pairs;
-            unique_pairs.reserve(k);
-            
-            for (uint32_t i = 0; i < k; ++i) {
-                SEXP str = unique_vec[i];
-                unique_pairs.push_back({str, i, str == NA_STRING});
-            }
-            
-            // Partition: NAs at the end, then sort non-NAs lexicographically
-            auto na_start = std::partition(unique_pairs.begin(), unique_pairs.end(),
-                [](const ptr_index& p) { return !p.is_na; });
-            
-            // Sort only the non-NA uniques using string content
-            if (na_start != unique_pairs.begin()) {
-                std::sort(unique_pairs.begin(), na_start,
-                    [](const ptr_index& a, const ptr_index& b) {
-                        // Pointer comparison uses R's string pool - uses strcmp internally
-                        return std::strcmp(CHAR(a.ptr), CHAR(b.ptr)) < 0;
-                    });
-            }
-            
-            // Build rank map from SEXP pointer -> sort rank (0 = smallest string)
-            ankerl::unordered_dense::map<SEXP, uint32_t> rank_map;
-            rank_map.reserve(k);
-            
-            uint32_t current_rank = 0;
-            for (const auto& pair : unique_pairs) {
-                rank_map[pair.ptr] = current_rank++;
-            }
-            
-            // Map all n elements to their integer ranks
-            struct key_index {
-                uint32_t key;  // sort rank
-                uint32_t index; // original index
-            };
-            std::vector<key_index> pairs(n);
-            
-            auto* RESTRICT px = x.data();
-            
-            OMP_SIMD
-            for (uint32_t i = 0; i < n; ++i) {
-                pairs[i] = {rank_map[px[i]], i};
-            }
-            
-            // Radix sort by integer rank
-            ska_sort(pairs.begin(), pairs.end(),
-                [](const key_index& ki) { return ki.key; });
-            
-            // Unpack
-            int* RESTRICT p_out = out.data();
-            OMP_SIMD
-            for (uint32_t i = 0; i < n; ++i) {
-                p_out[i] = static_cast<int>(pairs[i].index);
-            }
-            
-            return out;
-        } else {
-
-            struct key_index {
-                std::string str;
-                uint32_t index;
-                bool is_na;
-            };
-            std::vector<key_index> pairs;
-            pairs.reserve(n);
-        
-            for (uint32_t i = 0; i < n; ++i) {
-                if (is_na(x.view(i))) {
-                    // Use empty string for NA, mark with flag
-                    pairs.push_back({"", i, true});
-                } else {
-                    pairs.push_back({x.view(i).c_str(), i, false});
-                }
-            }
-        
-            // Partition: non-NA first, NAs at end
-            auto na_start = std::partition(pairs.begin(), pairs.end(),
-                [](const key_index& p) { return !p.is_na; });
-        
-            // Sort non-NA strings using ska_sort
-            if (na_start != pairs.begin()) {
-                ska_sort(pairs.begin(), na_start, 
-                    [](const key_index& s) -> const std::string& { 
-                        return s.str; 
-                    });
-            }
-        
-            // Unpack indices
-            int* RESTRICT p_out = out.data();
-            for (uint32_t i = 0; i < n; ++i) {
-                p_out[i] = pairs[i].index;
-            }
-            return out; 
-        } 
-        // r_vec<r_int> out(n);
-
-        // groups group_data = make_groups(x);
-
-        // // Use unique + sort approach if low number of unique strings
-        // if (group_data.n_groups < n / 2){
-        //     // Get unique strings
-        //     r_vec<T> uniques = unique(x);
-        //     uint32_t k = uniques.size();
-            
-        //     // Sort the unique values
-        //     struct ptr_index {
-        //         SEXP ptr;
-        //         uint32_t index;
-        //         bool is_na;
-        //     };
-        //     std::vector<ptr_index> unique_pairs;
-        //     unique_pairs.reserve(k);
-            
-        //     for (uint32_t i = 0; i < k; ++i) {
-        //         SEXP str = unwrap(uniques.view(i));
-        //         unique_pairs.push_back({str, i, is_na(uniques.view(i))});
-        //     }
-            
-        //     // Partition: NAs at the end, then sort non-NAs lexicographically
-        //     auto na_start = std::partition(unique_pairs.begin(), unique_pairs.end(),
-        //         [](const ptr_index& p) { return !p.is_na; });
-            
-        //     // Sort only the non-NA uniques using string content
-        //     if (na_start != unique_pairs.begin()) {
-        //         std::sort(unique_pairs.begin(), na_start,
-        //             [](const ptr_index& a, const ptr_index& b) {
-        //                 // Pointer comparison uses R's string pool - uses strcmp internally
-        //                 return std::strcmp(CHAR(a.ptr), CHAR(b.ptr)) < 0;
-        //             });
-        //     }
-            
-        //     // Build rank map from SEXP pointer -> sort rank (0 = smallest string)
-        //     ankerl::unordered_dense::map<SEXP, uint32_t> rank_map;
-        //     rank_map.reserve(k);
-            
-        //     uint32_t current_rank = 0;
-        //     for (const auto& pair : unique_pairs) {
-        //         rank_map[pair.ptr] = current_rank++;
-        //     }
-            
-        //     // Map all n elements to their integer ranks
-        //     struct key_index {
-        //         uint32_t key;  // sort rank
-        //         uint32_t index; // original index
-        //     };
-        //     std::vector<key_index> pairs(n);
-            
-        //     auto* RESTRICT px = x.data();
-            
-        //     OMP_SIMD
-        //     for (uint32_t i = 0; i < n; ++i) {
-        //         pairs[i] = {rank_map[px[i]], i};
-        //     }
-            
-        //     // Radix sort by integer rank
-        //     ska_sort(pairs.begin(), pairs.end(),
-        //         [](const key_index& ki) { return ki.key; });
-            
-        //     // Unpack
-        //     int* RESTRICT p_out = out.data();
-        //     OMP_SIMD
-        //     for (uint32_t i = 0; i < n; ++i) {
-        //         p_out[i] = static_cast<int>(pairs[i].index);
-        //     }
-            
-        //     return out;
-        // } else {
-        //     struct key_index {
-        //         std::string str;
-        //         uint32_t index;
-        //         bool is_na;
-        //     };
-        //     std::vector<key_index> pairs;
-        //     pairs.reserve(n);
-        
-        //     for (uint32_t i = 0; i < n; ++i) {
-        //         if (is_na(x.view(i))) {
-        //             // Use empty string for NA, mark with flag
-        //             pairs.push_back({"", i, true});
-        //         } else {
-        //             pairs.push_back({x.view(i).c_str(), i, false});
-        //         }
-        //     }
-        
-        //     // Partition: non-NA first, NAs at end
-        //     auto na_start = std::partition(pairs.begin(), pairs.end(),
-        //         [](const key_index& p) { return !p.is_na; });
-        
-        //     // Sort non-NA strings using ska_sort
-        //     if (na_start != pairs.begin()) {
-        //         ska_sort(pairs.begin(), na_start, 
-        //             [](const key_index& s) -> const std::string& { 
-        //                 return s.str; 
-        //             });
-        //     }
-        
-        //     // Unpack indices
-        //     int* RESTRICT p_out = out.data();
-        //     for (uint32_t i = 0; i < n; ++i) {
-        //         p_out[i] = pairs[i].index;
-        //     }
-        //     return out;  
+    
+        // Partition: non-NA first, NAs at end
+        auto na_start = std::partition(pairs.begin(), pairs.end(),
+            [](const key_index& p) { return !p.is_na; });
+    
+        // Sort non-NA strings
+        if (na_start != pairs.begin()) {
+            ska_sort(pairs.begin(), na_start, 
+                [](const key_index& s) -> const std::string_view& { 
+                    return s.str; 
+                });
+        }
+    
+        // Unpack indices
+        int* RESTRICT p_out = out.data();
+        OMP_SIMD
+        for (uint32_t i = 0; i < n; ++i) {
+            p_out[i] = pairs[i].index;
+        }
+        return out; 
     } else {
         return internal::cpp_order(x);
     }
