@@ -7,6 +7,8 @@
 
 namespace cpp20 {
 
+namespace internal {
+
 template <RVector T>
 T unsorted_unique(const T& x) {
     auto group_info = make_groups(x);
@@ -27,12 +29,14 @@ T sorted_unique(const T& x) {
     }
 }
 
+}
+
 template <RVector T>
 T unique(const T& x, bool sort = false) {
     if (sort){
-        return sorted_unique(x);
+        return internal::sorted_unique(x);
     } else {
-        return unsorted_unique(x);
+        return internal::unsorted_unique(x);
     }
 }
 

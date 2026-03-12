@@ -2,6 +2,7 @@
 #define CPP20_R_SORT_H
 
 #include <cpp20/internal/r_vec.h>
+// #include <cpp20/internal/r_unique.h>
 
 namespace cpp20 {
 
@@ -42,148 +43,148 @@ r_vec<r_int> cpp_order(const r_vec<T>& x) {
     return p;
 }
 
-template <RSortableType T>
-r_vec<r_int> cpp_stable_order(const r_vec<T>& x) {
-    int n = x.size();
-    r_vec<r_int> p(n);
-    OMP_SIMD
-    for (r_size_t i = 0; i < n; ++i) p.set(i, i);
+// template <RSortableType T>
+// r_vec<r_int> cpp_stable_order(const r_vec<T>& x) {
+//     int n = x.size();
+//     r_vec<r_int> p(n);
+//     OMP_SIMD
+//     for (r_size_t i = 0; i < n; ++i) p.set(i, i);
 
-    auto *p_x = x.data();
+//     auto *p_x = x.data();
 
-    if constexpr (RMathType<T>){
-        std::stable_sort(p.begin(), p.end(), [&](int i, int j) {
-            if (is_na(x.view(i))) return false;
-            if (is_na(x.view(j))) return true;
-            return p_x[i] < p_x[j];
-        });
-    } else {
-        // Below works on strings
-        std::stable_sort(p.begin(), p.end(), [&](int i, int j) {
-            auto res = x.view(i) < x.view(j);
-            if (is_na(res)){
-                if (is_na(x.view(i))){
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-            return static_cast<bool>(unwrap(res));
-        });
-    }
-    return p;
-}
+//     if constexpr (RMathType<T>){
+//         std::stable_sort(p.begin(), p.end(), [&](int i, int j) {
+//             if (is_na(x.view(i))) return false;
+//             if (is_na(x.view(j))) return true;
+//             return p_x[i] < p_x[j];
+//         });
+//     } else {
+//         // Below works on strings
+//         std::stable_sort(p.begin(), p.end(), [&](int i, int j) {
+//             auto res = x.view(i) < x.view(j);
+//             if (is_na(res)){
+//                 if (is_na(x.view(i))){
+//                     return false;
+//                 } else {
+//                     return true;
+//                 }
+//             }
+//             return static_cast<bool>(unwrap(res));
+//         });
+//     }
+//     return p;
+// }
 
 }
 
 // Stable order that preserves order of ties
-template <RSortableType T>
-r_vec<r_int> stable_order(const r_vec<T>& x) {
-    int n = x.size();
+// template <RSortableType T>
+// r_vec<r_int> stable_order(const r_vec<T>& x) {
+//     int n = x.size();
 
-    if (n < 500){
-        return internal::cpp_stable_order(x);
-    }
+//     if (n < 500){
+//         return internal::cpp_stable_order(x);
+//     }
 
-    // ----------------------------------------------------------------------
-    // Integers (Stable Radix Sort on uint64_t)
-    // ----------------------------------------------------------------------
+//     // ----------------------------------------------------------------------
+//     // Integers (Stable Radix Sort on uint64_t)
+//     // ----------------------------------------------------------------------
 
-    if constexpr (RIntegerType<T>){
+//     if constexpr (RIntegerType<T>){
 
-        r_vec<r_int> p(n);
-        auto* RESTRICT p_x = x.data();
+//         r_vec<r_int> p(n);
+//         auto* RESTRICT p_x = x.data();
 
-        std::vector<uint64_t> pairs(n);
+//         std::vector<uint64_t> pairs(n);
 
-        for (int i = 0; i < n; ++i) {
-            auto val = p_x[i];
-            uint32_t key;
-            if (is_na(p_x[i])) {
-                key = 0xFFFFFFFF; // Force NA last
-            } else {
-                key = detail::to_unsigned_or_bool(val);
-            }
-            // Pack: Key High, Index Low
-            pairs[i] = (static_cast<uint64_t>(key) << 32) | static_cast<uint32_t>(i);
-        }
+//         for (int i = 0; i < n; ++i) {
+//             auto val = p_x[i];
+//             uint32_t key;
+//             if (is_na(p_x[i])) {
+//                 key = 0xFFFFFFFF; // Force NA last
+//             } else {
+//                 key = detail::to_unsigned_or_bool(val);
+//             }
+//             // Pack: Key High, Index Low
+//             pairs[i] = (static_cast<uint64_t>(key) << 32) | static_cast<uint32_t>(i);
+//         }
 
-        // Fast & Stable (because index is part of the unique value)
-        ska_sort(pairs.begin(), pairs.end());
+//         // Fast & Stable (because index is part of the unique value)
+//         ska_sort(pairs.begin(), pairs.end());
 
-        int* RESTRICT p_out = p.data();
-        for (int i = 0; i < n; ++i) {
-            p_out[i] = static_cast<int>(pairs[i] & 0xFFFFFFFF);
-        }
-        return p;
-    }
+//         int* RESTRICT p_out = p.data();
+//         for (int i = 0; i < n; ++i) {
+//             p_out[i] = static_cast<int>(pairs[i] & 0xFFFFFFFF);
+//         }
+//         return p;
+//     }
 
-    // ----------------------------------------------------------------------
-    // Doubles (Stable Radix Sort on Pair<u64, u32>)
-    // ----------------------------------------------------------------------
-    // Since double is 64-bit, we can't pack (Value+Index) into one 64-bit int.
-    // We use a vector of key-index pairs and sort that
+//     // ----------------------------------------------------------------------
+//     // Doubles (Stable Radix Sort on Pair<u64, u32>)
+//     // ----------------------------------------------------------------------
+//     // Since double is 64-bit, we can't pack (Value+Index) into one 64-bit int.
+//     // We use a vector of key-index pairs and sort that
 
-    else if constexpr (RFloatType<T>) {
+//     else if constexpr (RFloatType<T>) {
 
-        r_vec<r_int> p(n);
-        auto* RESTRICT p_x = x.data();
+//         r_vec<r_int> p(n);
+//         auto* RESTRICT p_x = x.data();
 
-        std::vector<std::pair<uint64_t, uint32_t>> pairs(n);
+//         std::vector<std::pair<uint64_t, uint32_t>> pairs(n);
 
-        uint32_t vec_size = n;
+//         uint32_t vec_size = n;
 
-        for (uint32_t i = 0; i < vec_size; ++i) {
-            double val = p_x[i];
-            uint64_t key = is_na(p_x[i]) ? 0xFFFFFFFFFFFFFFFFULL : detail::to_unsigned_or_bool(val);
-            pairs[i] = {key, i};
-        }
+//         for (uint32_t i = 0; i < vec_size; ++i) {
+//             double val = p_x[i];
+//             uint64_t key = is_na(p_x[i]) ? 0xFFFFFFFFFFFFFFFFULL : detail::to_unsigned_or_bool(val);
+//             pairs[i] = {key, i};
+//         }
 
-        ska_sort(pairs.begin(), pairs.end());
+//         ska_sort(pairs.begin(), pairs.end());
 
-        int* RESTRICT p_out = p.data();
-        for (int i = 0; i < n; ++i) {
-            p_out[i] = static_cast<int>(pairs[i].second);
-        }
-        return p;
-    } else if constexpr (RStringType<T>) {
-        r_vec<r_int> p(n);
+//         int* RESTRICT p_out = p.data();
+//         for (int i = 0; i < n; ++i) {
+//             p_out[i] = static_cast<int>(pairs[i].second);
+//         }
+//         return p;
+//     } else if constexpr (RStringType<T>) {
+//         r_vec<r_int> p(n);
         
-        // Use pair for stable sorting: (string, index)
-        std::vector<std::pair<std::string, uint32_t>> non_na_pairs;
-        std::vector<uint32_t> na_indices;
+//         // Use pair for stable sorting: (string, index)
+//         std::vector<std::pair<std::string, uint32_t>> non_na_pairs;
+//         std::vector<uint32_t> na_indices;
         
-        non_na_pairs.reserve(n);
-        na_indices.reserve(n / 3);
+//         non_na_pairs.reserve(n);
+//         na_indices.reserve(n / 3);
         
-        for (int i = 0; i < n; ++i) {
-            if (is_na(x.view(i))) {
-                na_indices.push_back(i);
-            } else {
-                non_na_pairs.emplace_back(x.view(i).cpp_str(), static_cast<uint32_t>(i));
-            }
-        }
+//         for (int i = 0; i < n; ++i) {
+//             if (is_na(x.view(i))) {
+//                 na_indices.push_back(i);
+//             } else {
+//                 non_na_pairs.emplace_back(x.view(i).cpp_str(), static_cast<uint32_t>(i));
+//             }
+//         }
         
-        // sorts by string first, then index for ties
-        ska_sort(non_na_pairs.begin(), non_na_pairs.end());
+//         // sorts by string first, then index for ties
+//         ska_sort(non_na_pairs.begin(), non_na_pairs.end());
         
-        // Write results: non-NA first, then NAs
-        int* RESTRICT p_out = p.data();
-        int pos = 0;
+//         // Write results: non-NA first, then NAs
+//         int* RESTRICT p_out = p.data();
+//         int pos = 0;
         
-        for (const auto& pair : non_na_pairs) {
-            p_out[pos++] = static_cast<int>(pair.second);
-        }
+//         for (const auto& pair : non_na_pairs) {
+//             p_out[pos++] = static_cast<int>(pair.second);
+//         }
         
-        for (uint32_t na_idx : na_indices) {
-            p_out[pos++] = static_cast<int>(na_idx);
-        }
+//         for (uint32_t na_idx : na_indices) {
+//             p_out[pos++] = static_cast<int>(na_idx);
+//         }
         
-        return p;
-    } else {
-        return internal::cpp_stable_order(x);
-    }
-}
+//         return p;
+//     } else {
+//         return internal::cpp_stable_order(x);
+//     }
+// }
 
 // order function (doesn't preserve order of ties)
 template <RSortableType T>
@@ -236,43 +237,237 @@ inline r_vec<r_int> order(const r_vec<T>& x) {
     // ---------------------------------------------------------------------- 
 
     else if constexpr (RStringType<T>) {
-        r_vec<r_int> p(n);
-    
-        struct key_index {
-            std::string str;
-            uint32_t index;
-            bool is_na;
-        };
-        std::vector<key_index> pairs;
-        pairs.reserve(n);
-    
+        r_vec<r_int> out(n);
+
+        // Collect unique strings manually as we don't yet have access to unique() or make_groups() due to header inclusion order
+        ankerl::unordered_dense::set<SEXP, internal::r_hash<T>, internal::r_hash_eq<T>> seen;
+        seen.reserve(n);
+        
+        std::vector<SEXP> unique_vec;
+        unique_vec.reserve(n);
+        
+        auto* RESTRICT px = x.data();
+        
         for (uint32_t i = 0; i < n; ++i) {
-            if (is_na(x.view(i))) {
-                // Use empty string for NA, mark with flag
-                pairs.push_back({"", i, true});
-            } else {
-                pairs.push_back({x.view(i).c_str(), i, false});
+            SEXP str = px[i];
+            if (seen.insert(str).second) {
+                unique_vec.push_back(str);
             }
         }
-    
-        // Partition: non-NA first, NAs at end
-        auto na_start = std::partition(pairs.begin(), pairs.end(),
-            [](const key_index& p) { return !p.is_na; });
-    
-        // Sort non-NA strings using ska_sort
-        if (na_start != pairs.begin()) {
-            ska_sort(pairs.begin(), na_start, 
-                [](const key_index& s) -> const std::string& { 
-                    return s.str; 
-                });
-        }
-    
-        // Unpack indices
-        int* RESTRICT p_out = p.data();
-        for (uint32_t i = 0; i < n; ++i) {
-            p_out[i] = pairs[i].index;
-        }
-        return p;  
+        
+        uint32_t k = unique_vec.size();
+
+        // Use unique + sort approach if low number of unique strings
+        if (k < n / 2){
+            
+            // Sort the unique values
+            struct ptr_index {
+                SEXP ptr;
+                uint32_t index;
+                bool is_na;
+            };
+            std::vector<ptr_index> unique_pairs;
+            unique_pairs.reserve(k);
+            
+            for (uint32_t i = 0; i < k; ++i) {
+                SEXP str = unique_vec[i];
+                unique_pairs.push_back({str, i, str == NA_STRING});
+            }
+            
+            // Partition: NAs at the end, then sort non-NAs lexicographically
+            auto na_start = std::partition(unique_pairs.begin(), unique_pairs.end(),
+                [](const ptr_index& p) { return !p.is_na; });
+            
+            // Sort only the non-NA uniques using string content
+            if (na_start != unique_pairs.begin()) {
+                std::sort(unique_pairs.begin(), na_start,
+                    [](const ptr_index& a, const ptr_index& b) {
+                        // Pointer comparison uses R's string pool - uses strcmp internally
+                        return std::strcmp(CHAR(a.ptr), CHAR(b.ptr)) < 0;
+                    });
+            }
+            
+            // Build rank map from SEXP pointer -> sort rank (0 = smallest string)
+            ankerl::unordered_dense::map<SEXP, uint32_t> rank_map;
+            rank_map.reserve(k);
+            
+            uint32_t current_rank = 0;
+            for (const auto& pair : unique_pairs) {
+                rank_map[pair.ptr] = current_rank++;
+            }
+            
+            // Map all n elements to their integer ranks
+            struct key_index {
+                uint32_t key;  // sort rank
+                uint32_t index; // original index
+            };
+            std::vector<key_index> pairs(n);
+            
+            auto* RESTRICT px = x.data();
+            
+            OMP_SIMD
+            for (uint32_t i = 0; i < n; ++i) {
+                pairs[i] = {rank_map[px[i]], i};
+            }
+            
+            // Radix sort by integer rank
+            ska_sort(pairs.begin(), pairs.end(),
+                [](const key_index& ki) { return ki.key; });
+            
+            // Unpack
+            int* RESTRICT p_out = out.data();
+            OMP_SIMD
+            for (uint32_t i = 0; i < n; ++i) {
+                p_out[i] = static_cast<int>(pairs[i].index);
+            }
+            
+            return out;
+        } else {
+
+            struct key_index {
+                std::string str;
+                uint32_t index;
+                bool is_na;
+            };
+            std::vector<key_index> pairs;
+            pairs.reserve(n);
+        
+            for (uint32_t i = 0; i < n; ++i) {
+                if (is_na(x.view(i))) {
+                    // Use empty string for NA, mark with flag
+                    pairs.push_back({"", i, true});
+                } else {
+                    pairs.push_back({x.view(i).c_str(), i, false});
+                }
+            }
+        
+            // Partition: non-NA first, NAs at end
+            auto na_start = std::partition(pairs.begin(), pairs.end(),
+                [](const key_index& p) { return !p.is_na; });
+        
+            // Sort non-NA strings using ska_sort
+            if (na_start != pairs.begin()) {
+                ska_sort(pairs.begin(), na_start, 
+                    [](const key_index& s) -> const std::string& { 
+                        return s.str; 
+                    });
+            }
+        
+            // Unpack indices
+            int* RESTRICT p_out = out.data();
+            for (uint32_t i = 0; i < n; ++i) {
+                p_out[i] = pairs[i].index;
+            }
+            return out; 
+        } 
+        // r_vec<r_int> out(n);
+
+        // groups group_data = make_groups(x);
+
+        // // Use unique + sort approach if low number of unique strings
+        // if (group_data.n_groups < n / 2){
+        //     // Get unique strings
+        //     r_vec<T> uniques = unique(x);
+        //     uint32_t k = uniques.size();
+            
+        //     // Sort the unique values
+        //     struct ptr_index {
+        //         SEXP ptr;
+        //         uint32_t index;
+        //         bool is_na;
+        //     };
+        //     std::vector<ptr_index> unique_pairs;
+        //     unique_pairs.reserve(k);
+            
+        //     for (uint32_t i = 0; i < k; ++i) {
+        //         SEXP str = unwrap(uniques.view(i));
+        //         unique_pairs.push_back({str, i, is_na(uniques.view(i))});
+        //     }
+            
+        //     // Partition: NAs at the end, then sort non-NAs lexicographically
+        //     auto na_start = std::partition(unique_pairs.begin(), unique_pairs.end(),
+        //         [](const ptr_index& p) { return !p.is_na; });
+            
+        //     // Sort only the non-NA uniques using string content
+        //     if (na_start != unique_pairs.begin()) {
+        //         std::sort(unique_pairs.begin(), na_start,
+        //             [](const ptr_index& a, const ptr_index& b) {
+        //                 // Pointer comparison uses R's string pool - uses strcmp internally
+        //                 return std::strcmp(CHAR(a.ptr), CHAR(b.ptr)) < 0;
+        //             });
+        //     }
+            
+        //     // Build rank map from SEXP pointer -> sort rank (0 = smallest string)
+        //     ankerl::unordered_dense::map<SEXP, uint32_t> rank_map;
+        //     rank_map.reserve(k);
+            
+        //     uint32_t current_rank = 0;
+        //     for (const auto& pair : unique_pairs) {
+        //         rank_map[pair.ptr] = current_rank++;
+        //     }
+            
+        //     // Map all n elements to their integer ranks
+        //     struct key_index {
+        //         uint32_t key;  // sort rank
+        //         uint32_t index; // original index
+        //     };
+        //     std::vector<key_index> pairs(n);
+            
+        //     auto* RESTRICT px = x.data();
+            
+        //     OMP_SIMD
+        //     for (uint32_t i = 0; i < n; ++i) {
+        //         pairs[i] = {rank_map[px[i]], i};
+        //     }
+            
+        //     // Radix sort by integer rank
+        //     ska_sort(pairs.begin(), pairs.end(),
+        //         [](const key_index& ki) { return ki.key; });
+            
+        //     // Unpack
+        //     int* RESTRICT p_out = out.data();
+        //     OMP_SIMD
+        //     for (uint32_t i = 0; i < n; ++i) {
+        //         p_out[i] = static_cast<int>(pairs[i].index);
+        //     }
+            
+        //     return out;
+        // } else {
+        //     struct key_index {
+        //         std::string str;
+        //         uint32_t index;
+        //         bool is_na;
+        //     };
+        //     std::vector<key_index> pairs;
+        //     pairs.reserve(n);
+        
+        //     for (uint32_t i = 0; i < n; ++i) {
+        //         if (is_na(x.view(i))) {
+        //             // Use empty string for NA, mark with flag
+        //             pairs.push_back({"", i, true});
+        //         } else {
+        //             pairs.push_back({x.view(i).c_str(), i, false});
+        //         }
+        //     }
+        
+        //     // Partition: non-NA first, NAs at end
+        //     auto na_start = std::partition(pairs.begin(), pairs.end(),
+        //         [](const key_index& p) { return !p.is_na; });
+        
+        //     // Sort non-NA strings using ska_sort
+        //     if (na_start != pairs.begin()) {
+        //         ska_sort(pairs.begin(), na_start, 
+        //             [](const key_index& s) -> const std::string& { 
+        //                 return s.str; 
+        //             });
+        //     }
+        
+        //     // Unpack indices
+        //     int* RESTRICT p_out = out.data();
+        //     for (uint32_t i = 0; i < n; ++i) {
+        //         p_out[i] = pairs[i].index;
+        //     }
+        //     return out;  
     } else {
         return internal::cpp_order(x);
     }
