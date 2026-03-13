@@ -310,6 +310,8 @@ inline r_vec<r_int> order(const r_vec<T>& x) {
     else if constexpr (RStringType<T>) {
         
         r_vec<r_int> out(n);
+
+        r_vec<r_str_view> str_vec = r_vec<r_str_view>(unwrap(x), internal::view_tag{});
         
         struct key_index {
             std::string_view str;
@@ -320,11 +322,11 @@ inline r_vec<r_int> order(const r_vec<T>& x) {
         pairs.reserve(n);
     
         for (uint32_t i = 0; i < n; ++i) {
-            if (is_na(x.view(i))){
+            if (is_na(str_vec.view(i))){
                 // Use empty string for NA
                 pairs.push_back({"", i, true});
             } else {
-                pairs.push_back({x.view(i).cpp_str(), i, false});
+                pairs.push_back({str_vec.view(i).cpp_str(), i, false});
             }
         }
     
