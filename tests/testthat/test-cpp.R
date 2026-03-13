@@ -194,9 +194,17 @@ test_that("sorting", {
 
   d <- as.character(a)
 
+  # When n < 500, simple std::sort is used
+  e <- d[1:100]
+  f <- b[1:100]
+  g <- c[1:100]
+
   expect_identical(test_sort(a), radix_sort(a))
   expect_identical(test_sort(b), radix_sort(b))
   expect_identical(test_sort(c), radix_sort(c))
-  # expect_identical(test_sort(d), radix_sort(d)) # Not working :(
+  expect_identical(test_sort(d), radix_sort(d))
+  expect_identical(test_sort(e), radix_sort(e))
+  expect_identical(test_sort(f), radix_sort(f))
+  expect_identical(test_sort(g), radix_sort(g))
 
 })
