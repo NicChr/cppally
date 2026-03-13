@@ -20,7 +20,7 @@ r_vec<r_int> cpp_order(const r_vec<T>& x) {
 
     auto *p_x = x.data();
 
-    if constexpr (RMathType<T>){
+    if constexpr (RNumericType<T>){
         std::sort(p.begin(), p.end(), [&](int i, int j) {
             if (is_na(x.view(i))) return false;
             if (is_na(x.view(j))) return true;
@@ -52,7 +52,7 @@ r_vec<r_int> cpp_stable_order(const r_vec<T>& x) {
 
     auto *p_x = x.data();
 
-    if constexpr (RMathType<T>){
+    if constexpr (RNumericType<T>){
         std::stable_sort(p.begin(), p.end(), [&](int i, int j) {
             if (is_na(x.view(i))) return false;
             if (is_na(x.view(j))) return true;
