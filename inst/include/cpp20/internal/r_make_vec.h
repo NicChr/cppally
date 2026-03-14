@@ -2,7 +2,7 @@
 #define CPP20_R_MAKE_VEC_H
 
 #include <cpp20/internal/r_vec.h>
-#include <cpp20/internal/r_coerce.h>
+#include <cpp20/internal/r_attrs.h>
 
 namespace cpp20 {
 
@@ -41,10 +41,10 @@ struct arg {
 };
 
 
-// ── as<T> for named_arg ──────────────────────────────────────────
+// ── as_r<T> for named_arg ──────────────────────────────────────────
 template <RVal T, typename V>
-inline T as(const internal::named_arg<V>& a) {
-  return as<T>(a.value);
+inline T internal::as_r(const internal::named_arg<V>& a) {
+  return internal::as_r<T>(a.value);
 }
 
 
@@ -67,10 +67,10 @@ inline r_vec<T> make_vec(Args&&... args) {
     int i = 0;
     (([&]() {
       if constexpr (NamedArg<Args>) {
-        out.set(i, as<T>(args));
-        nms.set(i, as<r_str_view>(args.name));
+        out.set(i, internal::as_r<T>(args));
+        nms.set(i, internal::as_r<r_str_view>(args.name));
       } else {
-        out.set(i, as<T>(args));
+        out.set(i, internal::as_r<T>(args));
       }
       ++i;
     }()), ...);

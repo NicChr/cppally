@@ -1,7 +1,6 @@
 #ifndef CPP20_R_EXPRS_H
 #define CPP20_R_EXPRS_H
 
-#include <cpp20/internal/r_coerce.h>
 #include <cpp20/internal/r_make_vec.h>
 
 namespace cpp20 {

@@ -3,8 +3,6 @@
 
 #include <cpp20/internal/r_env.h>
 #include <cpp20/internal/r_symbols.h>
-#include <cpp20/internal/r_vec.h>
-#include <cpp20/internal/r_coerce.h>
 #include <cpp20/internal/r_exprs.h>
 
 namespace cpp20 {
