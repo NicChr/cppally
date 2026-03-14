@@ -2,8 +2,10 @@
 #define CPP20_R_SORT_H
 
 #include <cpp20/internal/r_vec.h>
+#include <cpp20/internal/r_vec_math.h>
 #include <cpp20/internal/r_hash.h>
 #include <cpp20/internal/r_stats.h>
+#include <cpp20/internal/r_fns.h>
 
 namespace cpp20 {
 
@@ -312,77 +314,12 @@ inline r_vec<r_int> order(const r_vec<T>& x) {
     // ---------------------------------------------------------------------- 
 
     else if constexpr (RStringType<T>) {
-    
-        r_vec<r_int> out(n);
-        auto* RESTRICT px = x.data();
-        
-        // Collect unique CHARSXP
-        ankerl::unordered_dense::set<SEXP, internal::r_hash<T>, internal::r_hash_eq<T>> unique_set;
-        unique_set.reserve(n);
-        std::vector<SEXP> uniques_vec;
-        uniques_vec.reserve(n);
-        
-        std::vector<uint32_t> na_indices;
-        na_indices.reserve(n / 3);
-        
-        for (uint32_t i = 0; i < n; ++i) {
-            SEXP str = px[i];
-            if (str == NA_STRING) {
-                na_indices.push_back(i);
-            } else if (unique_set.insert(str).second) {
-                uniques_vec.push_back(str);
-            }
-        }
-
-        uint32_t n_uniques = uniques_vec.size();
-
-        
-        // Sort the unique values lexicographically
-        std::sort(uniques_vec.begin(), uniques_vec.end(),
-        [](SEXP a, SEXP b) {
-            return std::strcmp(CHAR(a), CHAR(b)) < 0;
-        });
-        
-        // Build rank map from sorted uniques
-        ankerl::unordered_dense::map<SEXP, uint32_t, internal::r_hash<T>, internal::r_hash_eq<T>> rank_map;
-        rank_map.reserve(n_uniques);
-        
-        for (uint32_t i = 0; i < n_uniques; ++i) {
-            rank_map[uniques_vec[i]] = i;  // Rank = position in sorted order
-        }
-        
-        // Assign ranks and build pairs
-        struct rank_index {
-            uint32_t rank;
-            uint32_t index;
-        };
-        std::vector<rank_index> pairs;
-        pairs.reserve(n - na_indices.size());
-        
-        for (uint32_t i = 0; i < n; ++i) {
-            SEXP str = px[i];
-            if (str != NA_STRING) {
-                pairs.push_back({rank_map[str], i});
-            }
-        }
-        
-        // Sort by rank
-        ska_sort(pairs.begin(), pairs.end(),
-            [](const rank_index& r) { return r.rank; });
-        
-        // Unpack
-        int* RESTRICT p_out = out.data();
-        uint32_t pos = 0;
-        
-        for (const auto& p : pairs) {
-            p_out[pos++] = static_cast<int>(p.index);
-        }
-        for (uint32_t na_idx : na_indices) {
-            p_out[pos++] = static_cast<int>(na_idx);
-        }
-        
+        r_vec<r_int> out = r_vec<r_int>(fn::eval_fn(
+            fn::find_pkg_fun("order", "base", false), env::base_env, 
+        x, arg("method") = make_vec<r_str>("radix"), arg("na.last") = make_vec<r_lgl>(true)
+        ));
+        out -= 1; // Make it 0-indexed for consistency
         return out;
-
     } else {
         return internal::cpp_order(x);
     }
