@@ -149,6 +149,8 @@ r_vec<r_int> stable_order(const r_vec<T>& x) {
     } else if constexpr (RStringType<T>) {
 
         r_vec<r_int> out(n);
+
+        r_vec<r_str_view> str_vec = r_vec<r_str_view>(unwrap(x), internal::view_tag{});
         
         // Use pair for stable sorting: (string, index)
         std::vector<std::pair<std::string_view, uint32_t>> non_na_pairs;
@@ -158,10 +160,10 @@ r_vec<r_int> stable_order(const r_vec<T>& x) {
         na_indices.reserve(n / 3);
         
         for (uint32_t i = 0; i < n; ++i) {
-            if (is_na(x.view(i))) {
+            if (is_na(str_vec.view(i))){
                 na_indices.push_back(i);
             } else {
-                non_na_pairs.emplace_back(static_cast<std::string_view>(x.view(i).c_str()), i);
+                non_na_pairs.emplace_back(str_vec.view(i).cpp_str(), i);
             }
         }
         
@@ -185,6 +187,7 @@ r_vec<r_int> stable_order(const r_vec<T>& x) {
         return internal::cpp_stable_order(x);
     }
 }
+
 
 // order function (doesn't preserve order of ties)
 template <RSortableType T>
