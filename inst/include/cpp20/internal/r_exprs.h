@@ -38,19 +38,25 @@ inline r_sexp make_pairlist(Args... args) {
 
 
 template<typename... Args>
-inline r_sexp make_call(const r_sexp& fn, Args... args) { 
+inline r_sexp make_call(const r_sexp& fn, Args&&... args) { 
   if (!(Rf_isFunction(fn))){
     abort("`fn` must be a function");
   }
-  r_sexp pairlist = make_pairlist(args...);
+  r_sexp pairlist = make_pairlist(std::forward<Args>(args)...);
   return r_sexp(Rf_lcons(fn, pairlist));
 }
 
 template<typename... Args>
-inline r_sexp make_call(const r_sym& fn, Args... args) {
-  r_sexp pairlist = make_pairlist(args...);
+inline r_sexp make_call(const r_sym& fn, Args&&... args) {
+  r_sexp pairlist = make_pairlist(std::forward<Args>(args)...);
   return r_sexp(Rf_lcons(fn, pairlist));
 }
+
+template<typename... Args>
+inline r_sexp make_call(const r_str& fn, Args&&... args) {
+  return make_call(r_sym(fn), std::forward<Args>(args)...);
+}
+
 
 }
 
