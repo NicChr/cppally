@@ -16,11 +16,28 @@ r_vec<r_int> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
     abort("Cannot match to a long vector, please use a short vector");
   }
 
+  using key_t = unwrap_t<T>;
+
+  r_vec<r_int> out(n_needles);
+
+  if (n_needles == 0){
+    return out;
+  }
+
+  if (n_needles == 1){
+    auto val = needles.view(0);
+    for (r_size_t i = 0; i < n_haystack; ++i){
+      if ((val == haystack.view(i)).is_true()){
+        out.set(0, i + 1);
+        return out;
+      }
+    }
+    out.set(0, na<T>());
+    return out;
+  }
+
   auto* RESTRICT p_needles = needles.data();
   auto* RESTRICT p_haystack = haystack.data();
-
-  using key_t = unwrap_t<T>;
-  r_vec<r_int> out(n_needles);
   auto* RESTRICT p_out = out.data();
 
   // Integer optimization: use table lookup for small integer ranges
