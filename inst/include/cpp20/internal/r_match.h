@@ -79,7 +79,7 @@ r_vec<r_int> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
 
   // Build hash table
   ankerl::unordered_dense::map<key_t, int, internal::r_hash<T>, internal::r_hash_eq<T>> lookup;
-  lookup.reserve(n_haystack);
+  lookup.reserve(internal::get_hash_map_reserve_size<T>(n_haystack));
 
   for (r_size_t i = 0; i < n_haystack; ++i) {
     lookup.try_emplace(p_haystack[i], static_cast<int>(i) + 1);

@@ -246,7 +246,7 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
         internal::r_hash<T>,
         internal::r_hash_eq<T>
       > lookup;
-      lookup.reserve(n);
+      lookup.reserve(internal::get_hash_map_reserve_size<T>(n));
     
       auto* RESTRICT p_x = x.data();
       auto* RESTRICT p_id = g.ids.data();
