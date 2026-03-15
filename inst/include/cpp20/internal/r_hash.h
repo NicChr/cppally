@@ -4,6 +4,8 @@
 #include <cpp20/internal/r_vec.h>
 #include <cpp20/internal/r_visit.h>
 #include <cpp20/internal/r_attrs.h>
+#include <bit>
+#include <algorithm>
 
 // Hash functions + hash equality operators for RVal and RVector
 
@@ -276,14 +278,10 @@ struct r_hash_eq : r_hash_eq_impl<std::remove_cvref_t<T>> {};
 
 
 // Return initial hash map reserve size as power of 2
-inline uint64_t get_hash_map_reserve_size(uint64_t data_size){
-    if (data_size == 0) return 0;
-    
-    int64_t expn = std::floor((std::log(data_size) / std::log(2))) - 2;
-    uint64_t res = std::min<uint64_t>(data_size, std::pow(2, expn));
+inline uint64_t get_hash_map_reserve_size(uint64_t data_size) {
+    uint64_t res = std::bit_floor(data_size >> 2);
     return std::min<uint64_t>(res, std::pow(2, 19)); // Cap to 2^19
 }
-
 }
 
 // Useful helper to calculate n unique values - can be useful for various algorithms
