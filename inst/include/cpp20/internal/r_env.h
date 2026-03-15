@@ -8,8 +8,8 @@ namespace cpp20 {
 
 namespace env {
 
-inline const r_sexp empty_env = r_sexp(R_EmptyEnv);
-inline const r_sexp base_env = r_sexp(R_BaseEnv);
+inline const r_sexp empty_env = r_sexp(R_EmptyEnv, internal::view_tag{});
+inline const r_sexp base_env = r_sexp(R_BaseEnv, internal::view_tag{});
 
 inline r_sexp get(r_sym sym, const r_sexp& env, bool inherits = true){
 
