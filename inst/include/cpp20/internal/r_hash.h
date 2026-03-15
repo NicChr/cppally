@@ -280,7 +280,7 @@ struct r_hash_eq : r_hash_eq_impl<std::remove_cvref_t<T>> {};
 // Return initial hash map reserve size as power of 2
 inline uint64_t get_hash_map_reserve_size(uint64_t data_size) {
     uint64_t res = std::bit_floor(data_size >> 2);
-    return std::min<uint64_t>(res, std::pow(2, 19)); // Cap to 2^19
+    return std::min<uint64_t>(res, 1ULL << 19); // Cap to 2^19
 }
 }
 
