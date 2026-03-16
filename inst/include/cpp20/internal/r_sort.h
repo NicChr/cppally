@@ -313,76 +313,82 @@ inline r_vec<r_int> order(const r_vec<T>& x) {
 
     else if constexpr (RStringType<T>) {
     
+        r_size_t n = x.length();
         r_vec<r_int> out(n);
         auto* RESTRICT px = x.data();
         
-        // Collect unique CHARSXP
-        ankerl::unordered_dense::set<SEXP, internal::r_hash<T>, internal::r_hash_eq<T>> unique_set;
-        unique_set.reserve(n);
-        std::vector<SEXP> uniques_vec;
-        uniques_vec.reserve(n);
+        // Single Hash Map to assign group IDs and count frequencies
+        ankerl::unordered_dense::map<SEXP, uint32_t, internal::r_hash<T>, internal::r_hash_eq<T>> lookup;
+        lookup.reserve(internal::get_hash_map_reserve_size<T>(n));
         
-        std::vector<uint32_t> na_indices;
-        na_indices.reserve(n / 3);
+        std::vector<SEXP> uniques;
+        std::vector<uint32_t> counts;
+        std::vector<uint32_t> group_ids(n); // Caches the ID for each element
+        
+        uint32_t na_count = 0;
+        uint32_t last_id = uint32_t(-1);
         
         for (uint32_t i = 0; i < n; ++i) {
             SEXP str = px[i];
+            
             if (str == NA_STRING) {
-                na_indices.push_back(i);
-            } else if (unique_set.insert(str).second) {
-                uniques_vec.push_back(str);
+                group_ids[i] = uint32_t(-1);
+                last_id = uint32_t(-1); // Break linear cache
+                na_count++;
+            } 
+            // Linear Scan Cache - identical strings have identical pointers
+            else if (i > 0 && str == px[i - 1]) { 
+                group_ids[i] = last_id;
+                counts[last_id]++;
+            } 
+            else {
+                auto [it, inserted] = lookup.try_emplace(str, uniques.size());
+                if (inserted) {
+                    last_id = uniques.size();
+                    uniques.push_back(str);
+                    counts.push_back(1);
+                } else {
+                    last_id = it->second;
+                    counts[last_id]++;
+                }
+                group_ids[i] = last_id;
             }
         }
 
-        uint32_t n_uniques = uniques_vec.size();
+        uint32_t n_uniques = uniques.size();
 
+        // Sort the unique group IDs
+        std::vector<uint32_t> sorted_ids(n_uniques);
+        OMP_SIMD
+        for (uint32_t i = 0; i < sorted_ids.size(); ++i) sorted_ids[i] = i;
         
-        // Sort the unique values lexicographically
-        std::sort(uniques_vec.begin(), uniques_vec.end(),
-        [](SEXP a, SEXP b) {
-            return std::strcmp(CHAR(a), CHAR(b)) < 0;
+        std::sort(sorted_ids.begin(), sorted_ids.end(), [&](uint32_t a, uint32_t b) {
+            return std::strcmp(CHAR(uniques[a]), CHAR(uniques[b])) < 0;
         });
         
-        // Build rank map from sorted uniques
-        ankerl::unordered_dense::map<SEXP, uint32_t, internal::r_hash<T>, internal::r_hash_eq<T>> rank_map;
-        rank_map.reserve(n_uniques);
+        // Prefix Sums: calculate the starting write offset for each group
+        std::vector<uint32_t> offsets(n_uniques);
+        uint32_t current_offset = 0;
         
-        for (uint32_t i = 0; i < n_uniques; ++i) {
-            rank_map[uniques_vec[i]] = i;  // Rank = position in sorted order
+        for (uint32_t id : sorted_ids) {
+            offsets[id] = current_offset;
+            current_offset += counts[id];
         }
+        uint32_t na_offset = current_offset; // NAs go at the very end
         
-        // Assign ranks and build pairs
-        struct rank_index {
-            uint32_t rank;
-            uint32_t index;
-        };
-        std::vector<rank_index> pairs;
-        pairs.reserve(n - na_indices.size());
+        // Distribute indices (Counting Sort)
+        int* RESTRICT p_out = out.data();
         
         for (uint32_t i = 0; i < n; ++i) {
-            SEXP str = px[i];
-            if (str != NA_STRING) {
-                pairs.push_back({rank_map[str], i});
+            uint32_t id = group_ids[i];
+            if (id == uint32_t(-1)) {
+                p_out[na_offset++] = i;
+            } else {
+                p_out[offsets[id]++] = i;
             }
-        }
-        
-        // Sort by rank
-        ska_sort(pairs.begin(), pairs.end(),
-            [](const rank_index& r) { return r.rank; });
-        
-        // Unpack
-        int* RESTRICT p_out = out.data();
-        uint32_t pos = 0;
-        
-        for (const auto& p : pairs) {
-            p_out[pos++] = static_cast<int>(p.index);
-        }
-        for (uint32_t na_idx : na_indices) {
-            p_out[pos++] = static_cast<int>(na_idx);
         }
         
         return out;
-
     } else {
         return internal::cpp_order(x);
     }
