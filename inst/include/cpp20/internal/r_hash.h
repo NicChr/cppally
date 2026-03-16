@@ -286,7 +286,7 @@ inline uint64_t get_hash_map_reserve_size(uint64_t data_size) {
 
 template <>
 inline uint64_t get_hash_map_reserve_size<r_lgl>(uint64_t data_size) {
-    return std::min<uint64_t>(data_size, 3);
+    return std::min<uint64_t>(std::bit_floor(data_size >> 2), 4);
 }
 
 
