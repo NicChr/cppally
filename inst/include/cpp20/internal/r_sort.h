@@ -78,118 +78,6 @@ r_vec<r_int> cpp_stable_order(const r_vec<T>& x) {
 
 }
 
-// Stable order that preserves order of ties
-template <RSortableType T>
-r_vec<r_int> stable_order(const r_vec<T>& x) {
-
-    using base_t = unwrap_t<T>;
-
-    uint32_t n = x.size();
-
-    if (n < 500){
-        return internal::cpp_stable_order(x);
-    }
-
-    // ----------------------------------------------------------------------
-    // Numeric types
-    // ----------------------------------------------------------------------
-
-    if constexpr (RNumericType<T>){
-
-        using unsigned_t = decltype(detail::to_unsigned_or_bool(std::declval<base_t>()));
-
-        r_vec<r_int> out(n);
-        auto* RESTRICT p_x = x.data();
-
-        struct key_index {
-            unsigned_t key;
-            uint32_t index;
-        };
-        std::vector<key_index> pairs;
-        pairs.reserve(n);
-
-        OMP_SIMD
-        for (uint32_t i = 0; i < n; ++i) {
-            unsigned_t key = is_na(p_x[i]) ? std::numeric_limits<unsigned_t>::max() : detail::to_unsigned_or_bool(p_x[i]);
-            pairs.push_back({key, i});
-        }
-
-        ska_sort(pairs.begin(), pairs.end(),
-        [](const key_index& k) { 
-            return std::make_pair(k.key, k.index); 
-        });
-
-        int* RESTRICT p_out = out.data();
-        OMP_SIMD
-        for (uint32_t i = 0; i < n; ++i) {
-            p_out[i] = static_cast<int>(pairs[i].index);
-        }
-        return out;
-
-        // r_vec<r_int> out(n);
-        // auto* RESTRICT p_x = x.data();
-
-        // std::vector<uint64_t> pairs;
-        // pairs.reserve(n);
-
-        // for (uint32_t i = 0; i < n; ++i) {
-        //     auto val = p_x[i];
-        //     uint32_t key = is_na(val) ? std::numeric_limits<uint32_t>::max() : detail::to_unsigned_or_bool(val);
-        //     // Pack: Key High, Index Low
-        //     pairs.push_back((static_cast<uint64_t>(key) << 32) | i);
-        // }
-
-        // // Fast & Stable (because index is part of the unique value)
-        // ska_sort(pairs.begin(), pairs.end());
-
-        // int* RESTRICT p_out = out.data();
-        // for (uint32_t i = 0; i < n; ++i) {
-        //     p_out[i] = static_cast<int>(pairs[i] & static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()));
-        // }
-        // return out;
-    } else if constexpr (RStringType<T>) {
-
-        r_vec<r_int> out(n);
-
-        r_vec<r_str_view> str_vec = r_vec<r_str_view>(unwrap(x), internal::view_tag{});
-        
-        // Use pair for stable sorting: (string, index)
-        std::vector<std::pair<std::string_view, uint32_t>> non_na_pairs;
-        std::vector<uint32_t> na_indices;
-        
-        non_na_pairs.reserve(n);
-        na_indices.reserve(n / 3);
-        
-        for (uint32_t i = 0; i < n; ++i) {
-            if (is_na(str_vec.view(i))){
-                na_indices.push_back(i);
-            } else {
-                non_na_pairs.emplace_back(str_vec.view(i).cpp_str(), i);
-            }
-        }
-        
-        // sorts by string first, then index for ties
-        ska_sort(non_na_pairs.begin(), non_na_pairs.end());
-        
-        // Write results: non-NA first, then NAs
-        int* RESTRICT p_out = out.data();
-        uint32_t pos = 0;
-        
-        for (const auto& pair : non_na_pairs) {
-            p_out[pos++] = static_cast<int>(pair.second);
-        }
-        
-        for (uint32_t na_idx : na_indices) {
-            p_out[pos++] = static_cast<int>(na_idx);
-        }
-        
-        return out;
-    } else {
-        return internal::cpp_stable_order(x);
-    }
-}
-
-
 // order function (doesn't preserve order of ties)
 template <RSortableType T>
 inline r_vec<r_int> order(const r_vec<T>& x) {
@@ -296,8 +184,13 @@ inline r_vec<r_int> order(const r_vec<T>& x) {
             unsigned_t key = is_na(px[i]) ? std::numeric_limits<unsigned_t>::max() : detail::to_unsigned_or_bool(px[i]);
             pairs.push_back({key, i});
         }
+        
         ska_sort(pairs.begin(), pairs.end(), 
-            [](const key_index& k){ return k.key; });
+        [](const key_index& k){ return k.key; });
+
+        // Use this instead of above for stable sorting
+        // ska_sort(pairs.begin(), pairs.end(), 
+        //     [](const key_index& k){ return std::make_tuple(k.key, k.index); });
 
         int* RESTRICT p_out = out.data();
         OMP_SIMD
