@@ -35,13 +35,8 @@ is_template_arg <- function(type, arg) {
   # Strip pointers, references, and all whitespace
   cleaned <- gsub("[*&\\s]+", "", cleaned, perl = TRUE)
 
-  #  Check Exact Match
-  if (cleaned == arg) {
-    return(TRUE)
-  }
-
   pattern <- paste0("(<|,)", arg, "(>|,)")
-  stringr::str_detect(cleaned, pattern)
+  cleaned == arg | stringr::str_detect(cleaned, pattern)
 }
 
 
