@@ -28,10 +28,41 @@ is_requires_signature <- function(x){
   stringr::str_detect(x, requires_pattern)
 }
 
-is_template_arg <- function(type, template_param) {
-  pattern <- paste0("^", template_param, "$|<", template_param, "[,>]|,\\s*", template_param, "[,>]")
-  stringr::str_detect(type, pattern)
+is_template_arg <- function(type, arg) {
+  # Strip keywords using word boundaries (\\b) so we don't mangle type names
+  cleaned <- gsub("\\b(const|volatile|struct|class|enum)\\b", "", type, perl = TRUE)
+
+  # Strip pointers, references, and all whitespace
+  cleaned <- gsub("[*&\\s]+", "", cleaned, perl = TRUE)
+
+  #  Check Exact Match
+  if (cleaned == arg) {
+    return(TRUE)
+  }
+
+  pattern <- paste0("(<|,)", arg, "(>|,)")
+  stringr::str_detect(cleaned, pattern)
+
+  # Check if it exists cleanly inside a template structure
+  # We construct the 4 possible ways it can exist in a cleaned template string:
+
+  # p1 <- paste0("<", arg, ">")
+  #
+  # # First arg: "<T,"
+  # p2 <- paste0("<", arg, ",")
+  #
+  # # Middle arg: ",T,"
+  # p3 <- paste0(",", arg, ",")
+  #
+  # # Last arg: ",T>"
+  # p4 <- paste0(",", arg, ">")
+  #
+  # stringr::str_detect(cleaned, stringr::fixed(p1)) |
+  #   stringr::str_detect(cleaned, string::fixed(p2)) |
+  #   stringr::str_detect(cleaned, stringr::fixed(p3)) |
+  #   stringr::str_detect(cleaned, string::fixed(p4))
 }
+
 
 get_template_params <- function(context) {
   # Extract content between template < ... >
