@@ -3,6 +3,28 @@
 #include <cpp20.hpp>
 using namespace cpp20;
 
+void static_tests(){
+  static_assert(is<unwrap_t<r_lgl>, int>);
+  static_assert(is<unwrap_t<r_dbl>, double>);
+  static_assert(is<unwrap_t<r_cplx>, std::complex<double>>);
+  static_assert(is<unwrap_t<r_raw>, Rbyte>);
+  static_assert(is<unwrap_t<r_sexp>, SEXP>);
+  static_assert(is<unwrap_t<r_date_t<r_int>>, int>);
+  static_assert(is<unwrap_t<r_date_t<r_dbl>>, double>);
+  static_assert(is<unwrap_t<r_vec<r_str>>, SEXP>);
+  static_assert(is<unwrap_t<r_factors>, SEXP>);
+
+  static_assert(is<decltype(unwrap(r_lgl())), int>);
+  static_assert(is<decltype(unwrap(r_dbl())), double>);
+  static_assert(is<decltype(unwrap(r_cplx())), std::complex<double>>);
+  static_assert(is<decltype(unwrap(r_raw())), Rbyte>);
+  static_assert(is<decltype(unwrap(r_sexp())), SEXP>);
+  static_assert(is<decltype(unwrap(r_date_t<r_int>())), int>);
+  static_assert(is<decltype(unwrap(r_date_t<r_dbl>())), double>);
+  static_assert(is<decltype(unwrap(r_vec<r_int>())), SEXP>);
+  static_assert(is<decltype(unwrap(r_factors())), SEXP>);
+}
+
 // What type is deduced by dispatch?
 template <typename T>
 [[cpp20::register]]
@@ -393,24 +415,12 @@ int test_n_unique(T x){
   return n_unique(x);
 }
 
-void static_tests(){
-  static_assert(is<unwrap_t<r_lgl>, int>);
-  static_assert(is<unwrap_t<r_dbl>, double>);
-  static_assert(is<unwrap_t<r_cplx>, std::complex<double>>);
-  static_assert(is<unwrap_t<r_raw>, Rbyte>);
-  static_assert(is<unwrap_t<r_sexp>, SEXP>);
-  static_assert(is<unwrap_t<r_date_t<r_int>>, int>);
-  static_assert(is<unwrap_t<r_date_t<r_dbl>>, double>);
-  static_assert(is<unwrap_t<r_vec<r_str>>, SEXP>);
-  static_assert(is<unwrap_t<r_factors>, SEXP>);
+[[cpp20::register]]
+bool test_identical(SEXP x, SEXP y){
+  return identical(x, y);
+}
 
-  static_assert(is<decltype(unwrap(r_lgl())), int>);
-  static_assert(is<decltype(unwrap(r_dbl())), double>);
-  static_assert(is<decltype(unwrap(r_cplx())), std::complex<double>>);
-  static_assert(is<decltype(unwrap(r_raw())), Rbyte>);
-  static_assert(is<decltype(unwrap(r_sexp())), SEXP>);
-  static_assert(is<decltype(unwrap(r_date_t<r_int>())), int>);
-  static_assert(is<decltype(unwrap(r_date_t<r_dbl>())), double>);
-  static_assert(is<decltype(unwrap(r_vec<r_int>())), SEXP>);
-  static_assert(is<decltype(unwrap(r_factors())), SEXP>);
+[[cpp20::register]]
+SEXP test_copy(SEXP x){ 
+  return deep_copy(r_sexp(x));
 }

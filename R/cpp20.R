@@ -235,3 +235,11 @@ test_factor2 <- function(x) {
 test_n_unique <- function(x) {
   .Call(`_cpp20_test_n_unique`, x)
 }
+
+test_identical <- function(x, y) {
+  .Call(`_cpp20_test_identical`, x, y)
+}
+
+test_copy <- function(x) {
+  .Call(`_cpp20_test_copy`, x)
+}

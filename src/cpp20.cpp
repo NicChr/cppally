@@ -603,6 +603,23 @@ extern "C" SEXP _cpp20_test_n_unique(SEXP x) {
   );
   END_CPP20
 }
+// test.h
+bool test_identical(SEXP x, SEXP y);
+extern "C" SEXP _cpp20_test_identical(SEXP x, SEXP y) {
+  BEGIN_CPP20
+  cpp20::internal::check_r_cpp_mapping<SEXP>(x);
+	cpp20::internal::check_r_cpp_mapping<SEXP>(y);
+  return cpp20::internal::cpp_to_sexp(test_identical(cpp20::as<std::remove_cvref_t<SEXP>>(x), cpp20::as<std::remove_cvref_t<SEXP>>(y)));
+  END_CPP20
+}
+// test.h
+SEXP test_copy(SEXP x);
+extern "C" SEXP _cpp20_test_copy(SEXP x) {
+  BEGIN_CPP20
+  cpp20::internal::check_r_cpp_mapping<SEXP>(x);
+  return cpp20::internal::cpp_to_sexp(test_copy(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
+  END_CPP20
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
@@ -624,6 +641,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_test_coerce1",             (DL_FUNC) &_cpp20_test_coerce1,             1},
     {"_cpp20_test_combine2",            (DL_FUNC) &_cpp20_test_combine2,            2},
     {"_cpp20_test_construct_date",      (DL_FUNC) &_cpp20_test_construct_date,      1},
+    {"_cpp20_test_copy",                (DL_FUNC) &_cpp20_test_copy,                1},
     {"_cpp20_test_dates1",              (DL_FUNC) &_cpp20_test_dates1,              1},
     {"_cpp20_test_dates2",              (DL_FUNC) &_cpp20_test_dates2,              1},
     {"_cpp20_test_deduced_scalar_type", (DL_FUNC) &_cpp20_test_deduced_scalar_type, 1},
@@ -633,6 +651,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_test_factor2",             (DL_FUNC) &_cpp20_test_factor2,             1},
     {"_cpp20_test_group_counts",        (DL_FUNC) &_cpp20_test_group_counts,        2},
     {"_cpp20_test_group_id",            (DL_FUNC) &_cpp20_test_group_id,            2},
+    {"_cpp20_test_identical",           (DL_FUNC) &_cpp20_test_identical,           2},
     {"_cpp20_test_identity",            (DL_FUNC) &_cpp20_test_identity,            1},
     {"_cpp20_test_identity2",           (DL_FUNC) &_cpp20_test_identity2,           1},
     {"_cpp20_test_lengths",             (DL_FUNC) &_cpp20_test_lengths,             1},
