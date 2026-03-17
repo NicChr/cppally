@@ -42,25 +42,6 @@ is_template_arg <- function(type, arg) {
 
   pattern <- paste0("(<|,)", arg, "(>|,)")
   stringr::str_detect(cleaned, pattern)
-
-  # Check if it exists cleanly inside a template structure
-  # We construct the 4 possible ways it can exist in a cleaned template string:
-
-  # p1 <- paste0("<", arg, ">")
-  #
-  # # First arg: "<T,"
-  # p2 <- paste0("<", arg, ",")
-  #
-  # # Middle arg: ",T,"
-  # p3 <- paste0(",", arg, ",")
-  #
-  # # Last arg: ",T>"
-  # p4 <- paste0(",", arg, ">")
-  #
-  # stringr::str_detect(cleaned, stringr::fixed(p1)) |
-  #   stringr::str_detect(cleaned, string::fixed(p2)) |
-  #   stringr::str_detect(cleaned, stringr::fixed(p3)) |
-  #   stringr::str_detect(cleaned, string::fixed(p4))
 }
 
 
