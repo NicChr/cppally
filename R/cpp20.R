@@ -256,6 +256,10 @@ test_sum <- function(x, na_rm) {
   .Call(`_cpp20_test_sum`, x, na_rm)
 }
 
+test_mean <- function(x, na_rm) {
+  .Call(`_cpp20_test_mean`, x, na_rm)
+}
+
 test_var <- function(x, na_rm) {
   .Call(`_cpp20_test_var`, x, na_rm)
 }

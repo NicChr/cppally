@@ -12,6 +12,9 @@ test_that("C++ summary stats", {
   expect_equal(test_sum(x, na_rm = TRUE), sum(x, na.rm = TRUE))
   expect_equal(test_sum(x, na_rm = FALSE), NA_real_)
 
+  expect_equal(test_mean(x, na_rm = TRUE), mean(x, na.rm = TRUE))
+  expect_equal(test_mean(x, na_rm = FALSE), NA_real_)
+
   expect_equal(test_var(x, na_rm = TRUE), stats::var(x, na.rm = TRUE))
   expect_equal(test_var(x, na_rm = FALSE), NA_real_)
 

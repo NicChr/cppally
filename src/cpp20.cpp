@@ -658,6 +658,18 @@ return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
   END_CPP20
 }
 // test_stats.h
+extern "C" SEXP _cpp20_test_mean(SEXP x, SEXP na_rm) {
+  BEGIN_CPP20
+  cpp20::internal::check_r_cpp_mapping<bool>(na_rm);
+return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_mean(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)))) {
+        return cpp20::internal::cpp_to_sexp(test_mean(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)));
+    },
+    x, na_rm
+  );
+  END_CPP20
+}
+// test_stats.h
 extern "C" SEXP _cpp20_test_var(SEXP x, SEXP na_rm) {
   BEGIN_CPP20
   cpp20::internal::check_r_cpp_mapping<bool>(na_rm);
@@ -706,6 +718,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_test_lengths",             (DL_FUNC) &_cpp20_test_lengths,             1},
     {"_cpp20_test_list_to_scalars",     (DL_FUNC) &_cpp20_test_list_to_scalars,     1},
     {"_cpp20_test_match",               (DL_FUNC) &_cpp20_test_match,               2},
+    {"_cpp20_test_mean",                (DL_FUNC) &_cpp20_test_mean,                2},
     {"_cpp20_test_mix2",                (DL_FUNC) &_cpp20_test_mix2,                7},
     {"_cpp20_test_multiple_deduction",  (DL_FUNC) &_cpp20_test_multiple_deduction,  2},
     {"_cpp20_test_n_unique",            (DL_FUNC) &_cpp20_test_n_unique,            1},
