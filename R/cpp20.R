@@ -240,6 +240,10 @@ test_copy <- function(x) {
   .Call(`_cpp20_test_copy`, x)
 }
 
+test_nas <- function(x) {
+  .Call(`_cpp20_test_nas`, x)
+}
+
 test_order <- function(x) {
   .Call(`_cpp20_test_order`, x)
 }
