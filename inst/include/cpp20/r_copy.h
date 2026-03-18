@@ -1,9 +1,9 @@
 #ifndef CPP20_R_COPY_H
 #define CPP20_R_COPY_H
 
-#include <cpp20/internal/r_vec.h>
-#include <cpp20/internal/r_visit.h>
-#include <cpp20/internal/r_attrs.h>
+#include <cpp20/r_vec.h>
+#include <cpp20/r_visit.h>
+#include <cpp20/r_attrs.h>
 
 namespace cpp20 {
 

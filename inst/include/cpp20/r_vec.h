@@ -1,10 +1,10 @@
 #ifndef CPP20_R_VECTOR_H
 #define CPP20_R_VECTOR_H
 
-#include <cpp20/internal/r_symbols.h>
-#include <cpp20/internal/r_methods.h>
-#include <cpp20/internal/r_vec_utils.h>
-#include <cpp20/internal/r_rtype_coerce.h>
+#include <cpp20/r_symbols.h>
+#include <cpp20/r_methods.h>
+#include <cpp20/r_vec_utils.h>
+#include <cpp20/r_rtype_coerce.h>
 
 namespace cpp20 {
 

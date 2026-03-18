@@ -1,7 +1,7 @@
 #ifndef CPP20_R_SYMBOLS_H
 #define CPP20_R_SYMBOLS_H
 
-#include <cpp20/internal/r_types.h>
+#include <cpp20/r_types.h>
 
 namespace cpp20 {
 

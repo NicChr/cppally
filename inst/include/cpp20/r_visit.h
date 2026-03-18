@@ -1,8 +1,8 @@
 #ifndef CPP20_R_VISIT_H
 #define CPP20_R_VISIT_H
 
-#include <cpp20/internal/r_vec.h>
-#include <cpp20/internal/r_factor.h>
+#include <cpp20/r_vec.h>
+#include <cpp20/r_factor.h>
 
 namespace cpp20 {
 

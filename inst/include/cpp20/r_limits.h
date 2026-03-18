@@ -1,8 +1,8 @@
 #ifndef CPP20_R_LIMITS_H
 #define CPP20_R_LIMITS_H
 
-#include <cpp20/internal/r_setup.h>
-#include <cpp20/internal/r_types.h>
+#include <cpp20/r_setup.h>
+#include <cpp20/r_types.h>
 
 // R-specific numerical limits
 // Currently includes the following members

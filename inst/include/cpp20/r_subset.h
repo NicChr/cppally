@@ -1,7 +1,7 @@
 #ifndef CPP20_R_SUBSET_H
 #define CPP20_R_SUBSET_H
 
-#include <cpp20/internal/r_match.h>
+#include <cpp20/r_match.h>
 
 namespace cpp20 {
 

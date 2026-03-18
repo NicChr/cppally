@@ -1,9 +1,9 @@
 #ifndef CPP20_R_NAS_H
 #define CPP20_R_NAS_H
 
-#include <cpp20/internal/r_setup.h>
-#include <cpp20/internal/r_types.h>
-#include <cpp20/internal/r_symbols.h>
+#include <cpp20/r_setup.h>
+#include <cpp20/r_types.h>
+#include <cpp20/r_symbols.h>
 #include <bit>
 
 namespace cpp20 {

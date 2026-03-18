@@ -10,7 +10,7 @@
 // then checking that the constraints of the template are satisfied.
 // Where there are one-to-many mappings, vector and scalars are both used to check if either of them can satisfy the constraints
 
-#include <cpp20/internal/r_coerce.h>
+#include <cpp20/r_coerce.h>
 #include <tuple>
 #include <utility>
 #include <array>

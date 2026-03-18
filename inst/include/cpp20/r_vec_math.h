@@ -1,7 +1,7 @@
 #ifndef CPP20_R_VEC_MATH_H
 #define CPP20_R_VEC_MATH_H
 
-#include <cpp20/internal/r_vec.h>
+#include <cpp20/r_vec.h>
 
 namespace cpp20 {
 

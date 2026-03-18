@@ -1,9 +1,9 @@
 #ifndef CPP20_R_ATTRS_H
 #define CPP20_R_ATTRS_H
 
-#include <cpp20/internal/r_setup.h>
-#include <cpp20/internal/r_symbols.h>
-#include <cpp20/internal/r_vec.h>
+#include <cpp20/r_setup.h>
+#include <cpp20/r_symbols.h>
+#include <cpp20/r_vec.h>
 
 namespace cpp20 {
 

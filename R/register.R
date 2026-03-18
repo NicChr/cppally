@@ -474,8 +474,8 @@ cpp_register <- function(path = ".", quiet = !is_interactive(), extension = c(".
       // clang-format off
 
       {extra_includes}
-      #include <cpp20/internal/declarations.hpp>
-      #include <cpp20/internal/dispatch.hpp>
+      #include <cpp20/declarations.hpp>
+      #include <cpp20/dispatch.hpp>
       using namespace cpp20;
       #include <R_ext/Visibility.h>
       {user_includes}

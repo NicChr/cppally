@@ -1,8 +1,8 @@
 #ifndef CPP20_VECTOR_UTILS_H
 #define CPP20_VECTOR_UTILS_H
 
-#include <cpp20/internal/r_types.h>
-#include <cpp20/internal/r_symbols.h>
+#include <cpp20/r_types.h>
+#include <cpp20/r_symbols.h>
 
 namespace cpp20 {
 

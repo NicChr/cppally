@@ -1,8 +1,8 @@
 #ifndef CPP20_R_ENV_H
 #define CPP20_R_ENV_H
 
-#include <cpp20/internal/r_setup.h>
-#include <cpp20/internal/r_exprs.h>
+#include <cpp20/r_setup.h>
+#include <cpp20/r_exprs.h>
 
 namespace cpp20 {
 

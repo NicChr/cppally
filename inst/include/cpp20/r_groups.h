@@ -1,10 +1,10 @@
 #ifndef CPP20_R_GROUPS_H
 #define CPP20_R_GROUPS_H
 
-#include <cpp20/internal/r_vec.h>
-#include <cpp20/internal/r_stats.h>
-#include <cpp20/internal/r_hash.h>
-#include <cpp20/internal/r_sort.h>
+#include <cpp20/r_vec.h>
+#include <cpp20/r_stats.h>
+#include <cpp20/r_hash.h>
+#include <cpp20/r_sort.h>
 
 namespace cpp20 {
 

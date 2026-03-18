@@ -3,7 +3,7 @@
 
 // All credits go to cpp11 and its authors and contributors
 
-#include <cpp20/internal/r_setup.h>
+#include <cpp20/r_setup.h>
 #include <exception>           // for std::exception
 
 // Buffer size for error messages (matches cpp11 default)

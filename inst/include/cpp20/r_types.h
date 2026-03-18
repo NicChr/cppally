@@ -1,8 +1,8 @@
 #ifndef CPP20_R_TYPES_H
 #define CPP20_R_TYPES_H
 
-#include <cpp20/internal/r_setup.h>
-#include <cpp20/internal/r_concepts.h>
+#include <cpp20/r_setup.h>
+#include <cpp20/r_concepts.h>
 
 // R-based C++ types that closely align with their R equivalents
 // Further methods (e.g. operators) are defined in r_methods.h

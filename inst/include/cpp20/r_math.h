@@ -1,9 +1,9 @@
 #ifndef CPP20_R_MATH_H
 #define CPP20_R_MATH_H
 
-#include <cpp20/internal/r_methods.h>
-#include <cpp20/internal/r_limits.h>
-#include <cpp20/internal/r_coerce.h> 
+#include <cpp20/r_methods.h>
+#include <cpp20/r_limits.h>
+#include <cpp20/r_coerce.h> 
 
 // R math functions that propagate NA values in the way R expects
 

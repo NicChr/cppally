@@ -1,9 +1,9 @@
 #ifndef CPP20_R_FNS_H
 #define CPP20_R_FNS_H
 
-#include <cpp20/internal/r_env.h>
-#include <cpp20/internal/r_symbols.h>
-#include <cpp20/internal/r_exprs.h>
+#include <cpp20/r_env.h>
+#include <cpp20/r_symbols.h>
+#include <cpp20/r_exprs.h>
 
 namespace cpp20 {
 

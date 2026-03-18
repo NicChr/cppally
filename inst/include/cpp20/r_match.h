@@ -1,7 +1,7 @@
 #ifndef CPP20_R_MATCH_H
 #define CPP20_R_MATCH_H
 
-#include <cpp20/internal/r_hash.h>
+#include <cpp20/r_hash.h>
 
 namespace cpp20 {
 
