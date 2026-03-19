@@ -219,7 +219,7 @@ generate_r_functions <- function(funs, package = "cpp20", use_package = FALSE) {
 wrap_call <- function(name, return_type, args, is_template, template_params) {
 
   if (is_template){
-    return(wrap_call_template(name, args, template_params))
+    return(wrap_call_template(name, return_type, args, template_params))
   }
 
   checks <- ""
@@ -241,7 +241,7 @@ wrap_call <- function(name, return_type, args, is_template, template_params) {
   }
 }
 
-wrap_call_template <- function(name, args, template_params) {
+wrap_call_template <- function(name, return_type, args, template_params) {
 
   # Number of unique template parameters
   num_template_params <- length(template_params)
@@ -273,7 +273,6 @@ wrap_call_template <- function(name, args, template_params) {
   call_args_str <- paste(conversions, collapse = ", ")
 
   call_str <- paste0(name, "(", call_args_str, ")")
-  full_expr <- glue::glue("cpp20::internal::cpp_to_sexp({call_str})")
 
   outer_args <- glue::glue_collapse(args$name, ", ")
 
@@ -290,18 +289,34 @@ wrap_call_template <- function(name, args, template_params) {
     non_template_checks <- paste0(non_template_checks, "\n")
   }
 
-  # Generate code with indices
-  result <- glue::glue('
-  {non_template_checks}return cpp20::internal::dispatch_template_impl<{num_template_params}, {num_args}, std::array<int, {num_args}>{map_str}>(
-      []<{template_args_def}>({lambda_params}) -> decltype({full_expr}) {{
-          return {full_expr};
-      }},
-      {outer_args}
-    );
-  ')
+  is_void <- type_is_void(return_type)
+
+  if (is_void) {
+    result <- glue::glue('
+    {non_template_checks}return cpp20::internal::dispatch_template_impl<{num_template_params}, {num_args}, std::array<int, {num_args}>{map_str}>(
+        []<{template_args_def}>({lambda_params}) -> decltype({call_str}, R_NilValue) {{
+            {call_str};
+            return R_NilValue;
+        }},
+        {outer_args}
+      );
+    ')
+  } else {
+    full_expr <- glue::glue("cpp20::internal::cpp_to_sexp({call_str})")
+
+    result <- glue::glue('
+    {non_template_checks}return cpp20::internal::dispatch_template_impl<{num_template_params}, {num_args}, std::array<int, {num_args}>{map_str}>(
+        []<{template_args_def}>({lambda_params}) -> decltype({full_expr}) {{
+            return {full_expr};
+        }},
+        {outer_args}
+      );
+    ')
+  }
 
   unclass(result)
 }
+
 
 
 
