@@ -10,6 +10,7 @@ using namespace cpp20;
 #include "test_nas.h"
 #include "test_sort.h"
 #include "test_stats.h"
+#include "test_subset.hpp"
 
 // dummy.cpp
 r_str dummy();
@@ -688,6 +689,18 @@ return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
   );
   END_CPP20
 }
+// test_subset.hpp
+extern "C" SEXP _cpp20_test_subset(SEXP x, SEXP i) {
+  BEGIN_CPP20
+  cpp20::internal::check_r_cpp_mapping<r_vec<r_int>>(i);
+return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP i_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_subset(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<r_int>>>(i_internal)))) {
+        return cpp20::internal::cpp_to_sexp(test_subset(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<r_int>>>(i_internal)));
+    },
+    x, i
+  );
+  END_CPP20
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
@@ -749,6 +762,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_test_str2",                (DL_FUNC) &_cpp20_test_str2,                1},
     {"_cpp20_test_str3",                (DL_FUNC) &_cpp20_test_str3,                1},
     {"_cpp20_test_str4",                (DL_FUNC) &_cpp20_test_str4,                1},
+    {"_cpp20_test_subset",              (DL_FUNC) &_cpp20_test_subset,              2},
     {"_cpp20_test_sum",                 (DL_FUNC) &_cpp20_test_sum,                 2},
     {"_cpp20_test_sym",                 (DL_FUNC) &_cpp20_test_sym,                 1},
     {"_cpp20_test_template_null",       (DL_FUNC) &_cpp20_test_template_null,       1},

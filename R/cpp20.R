@@ -267,3 +267,7 @@ test_mean <- function(x, na_rm) {
 test_var <- function(x, na_rm) {
   .Call(`_cpp20_test_var`, x, na_rm)
 }
+
+test_subset <- function(x, i) {
+  .Call(`_cpp20_test_subset`, x, i)
+}
