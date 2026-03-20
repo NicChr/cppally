@@ -78,14 +78,21 @@ r_vec<r_int> cpp_stable_order(const r_vec<T>& x) {
 
 }
 
-// order function (doesn't preserve order of ties)
+// 0-indexed ordering permutation vector that represents in sequential order, 
+// the indices of `x` elements that need to be chosen to return a sorted `x`
 template <RSortableType T>
-inline r_vec<r_int> order(const r_vec<T>& x) {
+inline r_vec<r_int> order(const r_vec<T>& x, bool preserve_ties = true) {
 
     using base_t = unwrap_t<T>;
 
     uint32_t n = x.size();
-    if (n < 500) return internal::cpp_order(x);
+    if (n < 500){
+        if (preserve_ties){
+            return internal::cpp_stable_order(x);
+        } else {
+            return internal::cpp_order(x);
+        }
+    }
 
     
     // ----------------------------------------------------------------------
@@ -184,13 +191,15 @@ inline r_vec<r_int> order(const r_vec<T>& x) {
             unsigned_t key = is_na(px[i]) ? std::numeric_limits<unsigned_t>::max() : ska_sort::detail::to_unsigned_or_bool(px[i]);
             pairs.push_back({key, i});
         }
-        
-        ska_sort::ska_sort(pairs.begin(), pairs.end(), 
-        [](const key_index& k){ return k.key; });
 
-        // Use this instead of above for stable sorting
-        // ska_sort(pairs.begin(), pairs.end(), 
-        //     [](const key_index& k){ return std::make_tuple(k.key, k.index); });
+        if (preserve_ties){
+            
+        ska_sort::ska_sort(pairs.begin(), pairs.end(), 
+            [](const key_index& k){ return std::make_tuple(k.key, k.index); });
+        } else {
+            ska_sort::ska_sort(pairs.begin(), pairs.end(), 
+            [](const key_index& k){ return k.key; });
+        }
 
         int* RESTRICT p_out = out.data();
         OMP_SIMD
@@ -293,7 +302,11 @@ inline r_vec<r_int> order(const r_vec<T>& x) {
         
         return out;
     } else {
-        return internal::cpp_order(x);
+        if (preserve_ties){
+            return internal::cpp_stable_order(x);
+        } else {
+            return internal::cpp_order(x);
+        }
     }
 }
 

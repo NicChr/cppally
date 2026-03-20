@@ -620,24 +620,26 @@ extern "C" SEXP _cpp20_test_na_types() {
   END_CPP20
 }
 // test_sort.h
-extern "C" SEXP _cpp20_test_order(SEXP x) {
+extern "C" SEXP _cpp20_test_order(SEXP x, SEXP preserve_ties) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_order(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_order(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  cpp20::internal::check_r_cpp_mapping<bool>(preserve_ties);
+return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP preserve_ties_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_order(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(preserve_ties_internal)))) {
+        return cpp20::internal::cpp_to_sexp(test_order(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(preserve_ties_internal)));
     },
-    x
+    x, preserve_ties
   );
   END_CPP20
 }
 // test_sort.h
-extern "C" SEXP _cpp20_test_sort(SEXP x) {
+extern "C" SEXP _cpp20_test_sort(SEXP x, SEXP preserve_ties) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_sort(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_sort(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  cpp20::internal::check_r_cpp_mapping<bool>(preserve_ties);
+return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP preserve_ties_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_sort(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(preserve_ties_internal)))) {
+        return cpp20::internal::cpp_to_sexp(test_sort(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(preserve_ties_internal)));
     },
-    x
+    x, preserve_ties
   );
   END_CPP20
 }
@@ -745,7 +747,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_test_na_types",            (DL_FUNC) &_cpp20_test_na_types,            0},
     {"_cpp20_test_nas",                 (DL_FUNC) &_cpp20_test_nas,                 1},
     {"_cpp20_test_null",                (DL_FUNC) &_cpp20_test_null,                0},
-    {"_cpp20_test_order",               (DL_FUNC) &_cpp20_test_order,               1},
+    {"_cpp20_test_order",               (DL_FUNC) &_cpp20_test_order,               2},
     {"_cpp20_test_range",               (DL_FUNC) &_cpp20_test_range,               2},
     {"_cpp20_test_rval_identity",       (DL_FUNC) &_cpp20_test_rval_identity,       1},
     {"_cpp20_test_scalar",              (DL_FUNC) &_cpp20_test_scalar,              2},
@@ -756,7 +758,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_test_sexp2",               (DL_FUNC) &_cpp20_test_sexp2,               1},
     {"_cpp20_test_sexp3",               (DL_FUNC) &_cpp20_test_sexp3,               1},
     {"_cpp20_test_sexp4",               (DL_FUNC) &_cpp20_test_sexp4,               1},
-    {"_cpp20_test_sort",                (DL_FUNC) &_cpp20_test_sort,                1},
+    {"_cpp20_test_sort",                (DL_FUNC) &_cpp20_test_sort,                2},
     {"_cpp20_test_specialisation",      (DL_FUNC) &_cpp20_test_specialisation,      1},
     {"_cpp20_test_str1",                (DL_FUNC) &_cpp20_test_str1,                1},
     {"_cpp20_test_str2",                (DL_FUNC) &_cpp20_test_str2,                1},

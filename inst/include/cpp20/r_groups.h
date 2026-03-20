@@ -101,7 +101,7 @@ r_vec<r_int> order() const {
         for (int i = 0; i < n; ++i) out.set(i, i);
         return out;
     } else {
-        return cpp20::order(ids);
+        return cpp20::order(ids, /*preserve_ties = */ false);
     }
 }
 
@@ -284,7 +284,7 @@ inline groups make_ordered_groups(const r_vec<T>& x) {
     if constexpr (!RSortableType<T>){
         return make_unordered_groups(x);
     } else {
-        return make_groups_from_order(x, order(x));
+        return make_groups_from_order(x, order(x, /*preserve_ties = */ false));
     }
 }
 

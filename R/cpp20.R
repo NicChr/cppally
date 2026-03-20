@@ -244,12 +244,12 @@ test_na_types <- function() {
   .Call(`_cpp20_test_na_types`)
 }
 
-test_order <- function(x) {
-  .Call(`_cpp20_test_order`, x)
+test_order <- function(x, preserve_ties) {
+  .Call(`_cpp20_test_order`, x, preserve_ties)
 }
 
-test_sort <- function(x) {
-  .Call(`_cpp20_test_sort`, x)
+test_sort <- function(x, preserve_ties) {
+  .Call(`_cpp20_test_sort`, x, preserve_ties)
 }
 
 test_range <- function(x, na_rm) {
