@@ -30,7 +30,7 @@ r_factors::r_factors(const r_vec<T>& x) : r_factors(x, unique(x)) {}
 // Powerful and flexible coercion function that can handle many types and convert to R-specific C++ types and R vectors
 template <typename to_t, typename from_t>
 inline to_t as(const from_t& x) {
-  if constexpr (is<from_t, to_t> && is<unwrap_t<from_t>, unwrap_t<to_t>>){
+  if constexpr (is<from_t, to_t>){
     return x;
   } else if constexpr (is<to_t, SEXP>){
     // Special case for SEXP
@@ -62,13 +62,12 @@ inline to_t as(const from_t& x) {
     }
   } else if constexpr (RVal<to_t> && is_sexp<from_t>){
 
-      // since r_sym is a special case in general (there is no vector of symbols except for a list)
-      // We check the case that r_sym is being constructed from a valid SEXP (SYMSXP)
-      // Will likely remove r_sym in the future and encourage usage of r_str/r_str_view
+      // Composite scalars are the opposite of atomic scalars which means only lists can hold them
+      // e.g. symbols, NULL, etc
       
-      if constexpr (is<to_t, r_sym>){
-        if (TYPEOF(x) == SYMSXP){
-        return r_sym(x);
+      if constexpr (RCompositeScalar<to_t>){
+        if (internal::CPP20_TYPEOF(x) == internal::r_typeof<to_t>){
+        return to_t(x);
       }
     }
     

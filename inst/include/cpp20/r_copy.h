@@ -43,8 +43,13 @@ inline r_factors deep_copy(const r_factors& x){
     return r_factors(unwrap(out), false);
 }
 
+// Symbols can't be deep copied
+inline r_sym deep_copy(const r_sym& x){
+    return x;
+}
+
 inline r_sexp deep_copy(const r_sexp& x){
-    return visit_sexp(x, [&](auto vec) -> r_sexp {
+    return view_sexp(x, [&](const auto& vec) -> r_sexp {
         if constexpr (!is<decltype(vec), r_sexp>){
             return r_sexp(static_cast<SEXP>(deep_copy(vec)));
         } else {

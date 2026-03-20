@@ -25,6 +25,7 @@ switch (internal::CPP20_TYPEOF(x)) {
     case internal::CPP20_INT64PSXTSXP:  return f(r_vec<r_psxct_t<r_int64>>(x));
     case internal::CPP20_REALPSXTSXP:   return f(r_vec<r_psxct_t<r_dbl>>(x));
     case internal::CPP20_FCTSXP:        return f(r_factors(x));
+    case SYMSXP:                        return f(r_sym(x));
     // case CPP20_DFSXP:                return f(r_df(x));
     default:                            return f(r_sexp(x));
 }
@@ -46,6 +47,7 @@ switch (internal::CPP20_TYPEOF(x)) {
     case internal::CPP20_INT64PSXTSXP:  return f(r_vec<r_psxct_t<r_int64>>(x));
     case internal::CPP20_REALPSXTSXP:   return f(r_vec<r_psxct_t<r_dbl>>(x));
     case internal::CPP20_FCTSXP:        return f(r_factors(x));
+    case SYMSXP:                        return f(r_sym(x));
     // case CPP20_DFSXP:                return f(r_df(x));
     default:                            return f(r_sexp(x));
 }
@@ -89,8 +91,6 @@ switch (internal::CPP20_TYPEOF(x)) {
 }
 }
 
-namespace internal {
-
 template <class F>
 decltype(auto) view_sexp(const r_sexp& x, F&& f) {
 switch (internal::CPP20_TYPEOF(x)) {
@@ -107,11 +107,13 @@ switch (internal::CPP20_TYPEOF(x)) {
     case internal::CPP20_INT64PSXTSXP:  return f(r_vec<r_psxct_t<r_int64>>(x, internal::view_tag{}));
     case internal::CPP20_REALPSXTSXP:   return f(r_vec<r_psxct_t<r_dbl>>(x, internal::view_tag{}));
     case internal::CPP20_FCTSXP:        return f(r_factors(x, internal::view_tag{}));
+    case SYMSXP:                        return f(r_sym(x, internal::view_tag{}));
     // case CPP20_DFSXP:                return f(r_df(x));
     default:                            return f(r_sexp(x, internal::view_tag{}));
 }
 }
 
+namespace internal {
 
 // visits all elements, visitor receives (r_size_t i, r_vec<T> elem)
 template <typename Visitor>
@@ -119,10 +121,10 @@ void view_elements(const r_vec<r_sexp>& x, Visitor&& vis) {
     r_size_t n = x.length();
     for (r_size_t i = 0; i < n; ++i) {
         view_sexp(x.view(i), [&]<typename T>(const T& elem) {
-            if constexpr (!RVector<T>){
-                abort("Don't know how to deal with object of type %s", Rf_type2char(TYPEOF(elem)));
-            } else {
+            if constexpr (RVector<T> || RFactor<T>){
                 vis(i, elem);
+            } else {
+                abort("Don't know how to deal with object of type %s", internal::r_type_to_str(internal::CPP20_TYPEOF(elem)));
             }
         });
     }

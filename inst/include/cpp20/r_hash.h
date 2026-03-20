@@ -268,7 +268,7 @@ struct r_hash_impl<r_sexp> {
         if (x_.is_null()) return 0;
         
         // Recursively hash the element
-        return internal::view_sexp(x_, [](const auto& vec) -> uint64_t {
+        return view_sexp(x_, [](const auto& vec) -> uint64_t {
 
             using vec_t = std::remove_cvref_t<decltype(vec)>;
 
@@ -312,7 +312,7 @@ struct r_hash_impl<r_vec<T>> {
             for (r_size_t i = 0; i < n; ++i){
 
                 // Recursively hash the elements
-                uint64_t h = internal::view_sexp(x.view(i), [](const auto& vec) -> uint64_t {
+                uint64_t h = view_sexp(x.view(i), [](const auto& vec) -> uint64_t {
         
                     using vec_t = std::remove_cvref_t<decltype(vec)>;
         
