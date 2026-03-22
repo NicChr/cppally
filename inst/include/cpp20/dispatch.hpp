@@ -1,6 +1,7 @@
 #ifndef CPP20_DISPATCH_HPP
 #define CPP20_DISPATCH_HPP
 
+
 // Runtime dispatch for templated and non-templated C++ functions registered to R
 // The dispatch is mainly driven by a modified version of R's TYPEOF
 // This is done by providing a map of C++20 types to SEXP tag-types
@@ -10,17 +11,22 @@
 // then checking that the constraints of the template are satisfied.
 // Where there are one-to-many mappings, vector and scalars are both used to check if either of them can satisfy the constraints
 
+
 #include <cpp20/r_coerce.h>
 #include <tuple>
 #include <utility>
 #include <array>
 #include <limits>
 
+
 namespace cpp20 {
+
 
 namespace internal {
 
+
 template <typename> struct fn_traits;
+
 
 template <typename Ret, typename... Args>
 struct fn_traits<Ret(*)(Args...)> {
@@ -29,10 +35,12 @@ struct fn_traits<Ret(*)(Args...)> {
     static constexpr size_t arity = sizeof...(Args);
 };
 
+
 template <typename T>
 T sexp_to_cpp(SEXP x) {
     return as<std::remove_cvref_t<T>>(x);
 }
+
 
 // The reverse of above
 // Special case - never return CHARSXP
@@ -44,6 +52,7 @@ SEXP cpp_to_sexp(const T& x) {
         return as<SEXP>(x);
     }
 }
+
 
 using r_types = std::tuple<
     r_lgl, 
@@ -59,7 +68,9 @@ using r_types = std::tuple<
     r_sexp // Catch-all
 >;
 
+
 using r_classed_vector_types = std::tuple<r_factors>;
+
 
 template<typename Tuple> struct to_r_vec_tuple_impl;
 template<typename... Ts>
@@ -68,19 +79,24 @@ struct to_r_vec_tuple_impl<std::tuple<Ts...>> {
 };
 using r_vector_types = typename to_r_vec_tuple_impl<r_types>::type;
 
+
 // ── TYPE BOUNDARY MAP ──
 
+
 template <typename T> constexpr uint16_t r_cpp_boundary_map_v = r_typeof<T>;
+
 
 // Essentially make it so that scalars (that have natural vector extensions) can be mapped to from R
 // r_sym for example doesn't have a natural vector extension, only a list (VECSXP) can hold it and VECSXP already maps to r_vec<r_sexp>
 template <RAtomicScalar T>
 inline constexpr uint16_t r_cpp_boundary_map_v<T> = r_cpp_boundary_map_v<r_vec<T>>;
 
+
 // Pure C/C++ types that are constructible to an RVal
 template <typename T>
 requires (CastableToRVal<T> && CppType<T>)
 inline constexpr uint16_t r_cpp_boundary_map_v<T> = r_cpp_boundary_map_v<as_r_val_t<T>>;
+
 
 template <typename T>
 inline void check_r_cpp_mapping(SEXP x){
@@ -90,6 +106,7 @@ inline void check_r_cpp_mapping(SEXP x){
         abort("Expected input type: %s", type_str<data_t>());
     }
 }
+
 
 // ArgToTemplateMap maps argument positions to template parameter indices
 // e.g., {0, 0, 1} means args 0 and 1 share template param T, arg 2 uses U.
@@ -101,6 +118,7 @@ constexpr size_t first_arg_for_template() {
         if (ArgToTemplateMap[i] == static_cast<int>(TemplateParamIdx)) return i;
     return NumArgs;
 }
+
 
 // When multiple arguments share the same template parameter (e.g., f(T x, T y)),
 // they must all have the same R TYPEOF at runtime
@@ -118,6 +136,7 @@ void check_template_homogeneity(uint16_t expected_type, SEXP* args) {
     }
 }
 
+
 // ── FLAT FUNCTION POINTER TABLE ───────────────────────────────────────────────
 // The dispatcher pre-builds two flat arrays at compile time, indexed by a
 // flat combo index I (0 to N_CANDIDATES^NumTemplateParams - 1):
@@ -130,7 +149,14 @@ void check_template_homogeneity(uint16_t expected_type, SEXP* args) {
 //   - dispatch_table[I] is non-null (combination is valid for the lambda's concepts)
 //   - type_table[I][K] matches the actual CPP20_TYPEOF of the K-th template arg
 //
-// Crucially, the final call is through a function pointer
+// Crucially, the final call is through a function pointer.
+//
+// Type erasure: combo_invoker::invoke takes void* instead of Functor&.
+// This allows type_table to be keyed on NumTemplateParams alone (not Functor),
+// so it is built once and shared across all registered functions with the same
+// number of template parameters. Only dispatch_table remains per-Functor,
+// since it requires is_combo_callable<Functor, ...> to determine valid entries.
+
 
 // Classed types first (highest priority in linear scan), then vectors, then scalars
 // r_sexp (catch-all) is last in r_types, so it is always tried last
@@ -141,11 +167,13 @@ using all_candidate_types = decltype(std::tuple_cat(
 ));
 constexpr size_t N_CANDIDATES = std::tuple_size_v<all_candidate_types>;
 
+
 constexpr size_t static_pow(size_t base, size_t exp) {
     size_t r = 1;
     for (size_t i = 0; i < exp; ++i) r *= base;
     return r;
 }
+
 
 // Maps a flat index I to an N-tuple of candidate types by treating I as a
 // base-N_CANDIDATES number. Each "digit" selects one type from all_candidate_types.
@@ -165,6 +193,7 @@ struct extract_combo<Val, 0, Is...> {
 template <size_t I, size_t N>
 using combo_t = typename extract_combo<I, N>::type;
 
+
 // SFINAE check: "Is this lambda callable with these N types and NumArgs SEXP arguments?"
 // std::void_t<decltype(...)> puts the entire expression in a deduction context,
 // so a failed concept/requires on the lambda becomes a soft substitution failure
@@ -177,6 +206,7 @@ using combo_t = typename extract_combo<I, N>::type;
 template <typename Functor, typename ComboTuple, typename IndexSeq, typename = void>
 struct is_combo_callable : std::false_type {};
 
+
 template <typename Functor, typename... Ts, size_t... Is>
 struct is_combo_callable<
     Functor,
@@ -187,36 +217,50 @@ struct is_combo_callable<
     )>
 > : std::true_type {};
 
-template <typename Functor>
-using combo_fn_t = SEXP(*)(Functor&, SEXP*);
 
-// Small invoker: each valid combination becomes a tiny, separate function
-// GCC cannot inline across function pointer calls
+// Type-erased function pointer — stores void* instead of Functor&
+// This is the key to sharing type_table across all Functor instantiations
+using erased_fn_t = SEXP(*)(void*, SEXP*);
+
+
+// Small invoker: each valid combination becomes a tiny, separate function.
+// GCC cannot inline across function pointer calls.
+// void* erases the Functor type — cast back inside invoke() to call correctly.
 template <typename Functor, size_t NumArgs, typename ComboTuple>
 struct combo_invoker;
 
+
 template <typename Functor, size_t NumArgs, typename... Ts>
 struct combo_invoker<Functor, NumArgs, std::tuple<Ts...>> {
-    static SEXP invoke(Functor& f, SEXP* args) {
+    static SEXP invoke(void* f, SEXP* args) {
+        auto& functor = *static_cast<Functor*>(f);
         return [&]<size_t... Is>(std::index_sequence<Is...>) {
-            return f.template operator()<Ts...>(args[Is]...);
+            return functor.template operator()<Ts...>(args[Is]...);
         }(std::make_index_sequence<NumArgs>{});
     }
 };
 
+
+// Uses a template struct (not a constexpr function) to store the pointer value.
+// Lambda types are non-literal (non-trivially destructible), making a constexpr
+// function templated on Functor illegal in constant expression contexts in GCC.
+// A static constexpr member of a template struct has no such restriction.
+// Primary: invalid combo → nullptr. Partial specialisation: valid → invoker address.
 template <size_t I, size_t NumTemplateParams, size_t NumArgs, typename Functor,
           bool Valid = is_combo_callable<
               Functor, combo_t<I, NumTemplateParams>, std::make_index_sequence<NumArgs>
           >::value>
 struct dispatch_entry_impl {
-    static constexpr combo_fn_t<Functor> value = nullptr;
+    static constexpr erased_fn_t value = nullptr;
 };
+
 
 template <size_t I, size_t NumTemplateParams, size_t NumArgs, typename Functor>
 struct dispatch_entry_impl<I, NumTemplateParams, NumArgs, Functor, true> {
-    static constexpr combo_fn_t<Functor> value =
+    static constexpr erased_fn_t value =
         &combo_invoker<Functor, NumArgs, combo_t<I, NumTemplateParams>>::invoke;
 };
+
 
 // Type table helpers: standalone constexpr functions are more reliably
 // evaluated than lambdas inside constexpr contexts
@@ -229,44 +273,61 @@ constexpr uint32_t type_entry_element() {
     else return static_cast<uint32_t>(r_cpp_boundary_map_v<T>);
 }
 
+
 template <size_t I, size_t NumTemplateParams, size_t... Ks>
 constexpr std::array<uint32_t, NumTemplateParams> make_type_entry_impl(std::index_sequence<Ks...>) {
     return { type_entry_element<I, NumTemplateParams, Ks>()... };
 }
 
+
+// dispatch_table: per-Functor — validity depends on is_combo_callable<Functor, ...>
 template <size_t NumTemplateParams, size_t NumArgs, typename Functor, size_t... Is>
 constexpr auto make_dispatch_table(std::index_sequence<Is...>) {
-    return std::array<combo_fn_t<Functor>, sizeof...(Is)>{
+    return std::array<erased_fn_t, sizeof...(Is)>{
         dispatch_entry_impl<Is, NumTemplateParams, NumArgs, Functor>::value...
     };
 }
 
-template <size_t NumTemplateParams, size_t... Is>
-constexpr auto make_type_table(std::index_sequence<Is...>) {
-    return std::array<std::array<uint32_t, NumTemplateParams>, sizeof...(Is)>{
-        make_type_entry_impl<Is, NumTemplateParams>(
-            std::make_index_sequence<NumTemplateParams>{}
-        )...
-    };
-}
+
+// type_table: NOT per-Functor — depends only on NumTemplateParams and the candidate
+// type list. Hoisted into a struct so the static constexpr member is shared across
+// all Functor instantiations with the same NumTemplateParams, rather than being
+// re-instantiated once per registered function.
+template <size_t NumTemplateParams>
+struct shared_type_table {
+    static constexpr size_t Total = static_pow(N_CANDIDATES, NumTemplateParams);
+    static constexpr auto value = []<size_t... Is>(std::index_sequence<Is...>) {
+        return std::array<std::array<uint32_t, NumTemplateParams>, sizeof...(Is)>{
+            make_type_entry_impl<Is, NumTemplateParams>(
+                std::make_index_sequence<NumTemplateParams>{}
+            )...
+        };
+    }(std::make_index_sequence<Total>{});
+};
+
 
 // ── DISPATCH ENTRY POINT ─────────────────────────────────────────────────────
+
 
 template <size_t NumTemplateParams, size_t NumArgs, std::array<int, NumArgs> ArgToTemplateMap,
           typename Functor, typename... SexpArgs>
 SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
     static_assert(sizeof...(SexpArgs) == NumArgs, "Argument count mismatch");
 
+
     SEXP args[NumArgs > 0 ? NumArgs : 1] = { static_cast<SEXP>(sexp_args)... };
     using F = std::remove_reference_t<Functor>;
 
+
     constexpr size_t Total = static_pow(N_CANDIDATES, NumTemplateParams);
 
-    // Built once per unique (Functor type x NumTemplateParams x NumArgs)
+
+    // dispatch_table: built once per unique (Functor type x NumTemplateParams x NumArgs)
     static constexpr auto dispatch_table =
         make_dispatch_table<NumTemplateParams, NumArgs, F>(std::make_index_sequence<Total>{});
-    static constexpr auto type_table =
-        make_type_table<NumTemplateParams>(std::make_index_sequence<Total>{});
+    // type_table: shared across ALL Functor types with the same NumTemplateParams
+    constexpr const auto& type_table = shared_type_table<NumTemplateParams>::value;
+
 
     // Compile-time unroll to collect runtime types into a plain array
     uint32_t runtime_types[NumTemplateParams > 0 ? NumTemplateParams : 1]{};
@@ -280,10 +341,12 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
         }());
     }(std::make_index_sequence<NumTemplateParams>{});
 
-    // Linear scan — one indirect call, no inlining possible
+
+    // Linear scan — one indirect call through void*, no inlining possible
     for (size_t I = 0; I < Total; ++I) {
-        combo_fn_t<F> fn = dispatch_table[I];
+        erased_fn_t fn = dispatch_table[I];
         if (!fn) continue;
+
 
         bool match = true;
         for (size_t K = 0; K < NumTemplateParams; ++K) {
@@ -292,12 +355,14 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
                 break;
             }
         }
-        if (match) return fn(functor, args);
+        if (match) return fn(static_cast<void*>(&functor), args);
     }
+
 
     abort("No matching template instantiation found for input types");
     return nullptr;
 }
+
 
 template <auto Fn, typename Ret, typename... Args, size_t... Is>
 SEXP invoke_impl(SEXP* sexp_args, std::index_sequence<Is...>) {
@@ -309,7 +374,9 @@ SEXP invoke_impl(SEXP* sexp_args, std::index_sequence<Is...>) {
     }
 }
 
+
 } // namespace internal
+
 
 template <auto Fn, typename... SexpArgs>
 SEXP dispatch(SexpArgs... args) {
@@ -317,6 +384,7 @@ SEXP dispatch(SexpArgs... args) {
     using ArgsTuple = typename Traits::args_tuple;
     static_assert(sizeof...(SexpArgs) == Traits::arity, "Argument count mismatch");
     static_assert((is<SexpArgs, SEXP> && ...), "dispatch<Fn>: all arguments must be SEXP");
+
 
     SEXP arg_array[] = { args... };
     return []<typename... Args>(SEXP* arr, std::tuple<Args...>*) {
@@ -326,6 +394,8 @@ SEXP dispatch(SexpArgs... args) {
     }(arg_array, static_cast<ArgsTuple*>(nullptr));
 }
 
+
 }
+
 
 #endif
