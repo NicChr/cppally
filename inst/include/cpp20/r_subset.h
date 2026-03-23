@@ -54,29 +54,39 @@ inline r_size_t count_true(const r_vec<r_lgl>& x, const uint_fast64_t n){
 }
 
 }
-
-inline r_vec<r_int> which(const r_vec<r_lgl>& x, bool invert = false){
+template <typename U = r_int>
+requires (any<U, r_int, r_int64>)
+inline r_vec<U> which(const r_vec<r_lgl>& x, bool invert = false){
   r_size_t n = x.length();
-  r_size_t true_count = internal::count_true(x, n);
-  int whichi = 0; 
-  int i = 0; 
+
+  using int_t = unwrap_t<U>;
+
+  if constexpr (is<U, r_int>){
+    if (n > r_limits<r_int>::max()){
+      abort("`x` is a long vector, please use which<r_int64> instead");
+    }
+  }
+
+  int_t true_count = internal::count_true(x, n);
+  int_t whichi = 0; 
+  int_t i = 0; 
 
   if (invert){
-      r_size_t out_size = n - true_count;
-      r_vec<r_int> out(out_size);
-      while (whichi < out_size){
-          out.set(whichi, i + 1);
-          whichi += static_cast<int>(!x.get(i++).is_true());
-      }
-      return out;
+    int_t out_size = n - true_count;
+    r_vec<U> out(out_size);
+    while (whichi < out_size){
+        out.set(whichi, i + 1);
+        whichi += static_cast<int_t>(!x.get(i++).is_true());
+    }
+    return out;
   } else {
-      r_size_t out_size = true_count;
-      r_vec<r_int> out(out_size);
-      while (whichi < out_size){
-          out.set(whichi, i + 1);
-          whichi += static_cast<int>(x.get(i++).is_true());
-      }
-      return out;
+    int_t out_size = true_count;
+    r_vec<U> out(out_size);
+    while (whichi < out_size){
+      out.set(whichi, i + 1);
+      whichi += static_cast<int_t>(x.get(i++).is_true());
+  }
+  return out;
   }
 }
 
@@ -202,6 +212,27 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check) const {
     return out;
   }
 }
+
+
+// template <typename U, typename U1, typename U2>
+// requires (any<U, r_lgl, r_int, r_int64, r_str_view, r_str>)
+// void replace(const r_vec<U>& where, const r_vec<T>& with);
+
+//   // Clean where vector
+//   r_vec<U> where_clean = clean_locs(where, *this);
+
+//   r_size_t where_size = where_clean.length();
+//   r_size_t with_size = with.length();
+
+//   r_size_t xi;
+//   r_size_t withi = 0;
+
+//   if (is_null()) return;
+
+//   for (r_size_t i = 0; i < where_size; recycle_index(withi, with_size), ++i){
+//     x.set(where_clean.get(i) - 1, with.get(withi));
+//   }
+// }
 
 
 // 0-indexed negative locations (can't do "everything but first location" with this approach)
