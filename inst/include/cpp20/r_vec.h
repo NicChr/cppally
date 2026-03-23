@@ -285,6 +285,48 @@ struct r_vec {
     return na_count() == length();
   }
 
+  template <typename U>
+  r_size_t count(U const& value) const {
+    r_size_t out = 0;
+    r_size_t n = length();
+
+    if constexpr (is<T, U>){
+      if constexpr (is<T, r_sexp>){
+        for (r_size_t i = 0; i < n; ++i){
+          out += identical(view(i), value);
+        }
+      } else {
+        #pragma omp simd reduction(+:out)
+        for (r_size_t i = 0; i < n; ++i){
+          out += identical(view(i), value);
+        }
+      }
+    } else {
+      T v = internal::as_r<T>(value);
+
+      // If there was implicit coercion, then avoid counting matches
+      if (is_na(v) && !is_na(value)){
+        return out;
+      }
+      if constexpr (is<T, r_sexp>){
+        for (r_size_t i = 0; i < n; ++i){
+          out += identical(view(i), v);
+        }
+      } else {
+        #pragma omp simd reduction(+:out)
+        for (r_size_t i = 0; i < n; ++i){
+          out += identical(view(i), v);
+        }
+      }
+
+    }
+    return out;
+  }
+  // template <typename U>
+  // void remove(r_size_t start, r_size_t n, U const& val);
+  // template <typename U>
+  // void find(r_size_t start, r_size_t n, U const& val);
+
   // Sequential fill
   template <typename U>
   void fill(r_size_t start, r_size_t n, U const& val){
