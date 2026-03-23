@@ -7,8 +7,7 @@ namespace cpp20 {
 
 namespace internal {
 
-template <typename U, typename V = r_int>
-requires (any<U, r_int, r_int64> && any<V, r_int, r_int64>)
+template <RIntegerLocation U, RIntegerLocation V = r_int>
 r_vec<V> exclude_locs(const r_vec<U>& exclude, unwrap_t<U> xn) {
 
   using int_t = unwrap_t<common_math_t<U, V>>;
@@ -63,10 +62,10 @@ inline r_size_t count_true(const r_vec<r_lgl>& x, const uint_fast64_t n){
 }
 
 }
-template <typename U = r_int>
-requires (any<U, r_int, r_int64>)
+
+template <internal::RIntegerLocation U = r_int>
 inline r_vec<U> which(const r_vec<r_lgl>& x, bool invert = false){
-  
+
   r_size_t n = x.length();
 
   using int_t = unwrap_t<U>;
@@ -101,8 +100,7 @@ inline r_vec<U> which(const r_vec<r_lgl>& x, bool invert = false){
 }
 
 
-template <typename T, typename U, typename V = r_int>
-requires (any<U, r_lgl, r_int, r_int64, r_str_view, r_str> && any<V, r_int, r_int64>)
+template <typename T, internal::RLocation U, internal::RIntegerLocation V = r_int>
 r_vec<V> clean_locs(const r_vec<U>& locs, const r_vec<T>& x){
 
   if (locs.is_null()){
@@ -176,8 +174,7 @@ r_vec<V> clean_locs(const r_vec<U>& locs, const r_vec<T>& x){
 }
 
 template <RVal T>
-template <typename U>
-requires (any<U, r_lgl, r_int, r_int64, r_str_view, r_str>)
+template <internal::RLocation U>
 inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check) const {
 
   if (indices.is_null()){
@@ -222,27 +219,37 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check) const {
     return out;
   }
 }
+}
 
+template <RVal T>
+template <internal::RLocation U>
+void r_vec<T>::replace(const r_vec<U>& where, const r_vec<T>& with) {
 
-// template <typename U, typename U1, typename U2>
-// requires (any<U, r_lgl, r_int, r_int64, r_str_view, r_str>)
-// void replace(const r_vec<U>& where, const r_vec<T>& with);
+  if (is_null()) return;
 
-//   // Clean where vector
-//   r_vec<U> where_clean = clean_locs(where, *this);
+  r_size_t with_size = with.length();
 
-//   r_size_t where_size = where_clean.length();
-//   r_size_t with_size = with.length();
+  r_size_t xi;
+  r_size_t withi = 0;
 
-//   r_size_t xi;
-//   r_size_t withi = 0;
-
-//   if (is_null()) return;
-
-//   for (r_size_t i = 0; i < where_size; recycle_index(withi, with_size), ++i){
-//     x.set(where_clean.get(i) - 1, with.get(withi));
-//   }
-// }
+  if (is_long()){
+    // Clean where vector
+    r_vec<r_int64> where_clean = clean_locs<T, U, r_int64>(where, *this);
+    r_size_t where_size = where_clean.length();
+  
+    for (r_size_t i = 0; i < where_size; recycle_index(withi, with_size), ++i){
+      set(where_clean.get(i) - 1, with.get(withi));
+    }
+  } else {
+    // Clean where vector
+    r_vec<r_int> where_clean = clean_locs<T, U, r_int>(where, *this);
+    r_size_t where_size = where_clean.length();
+  
+    for (r_size_t i = 0; i < where_size; recycle_index(withi, with_size), ++i){
+      set(where_clean.get(i) - 1, with.get(withi));
+    }
+  }
+}
 
 
 // 0-indexed negative locations (can't do "everything but first location" with this approach)
@@ -317,8 +324,6 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check) const {
 //   return out.resize(k);
 // }
 
-
-}
 
 }
 

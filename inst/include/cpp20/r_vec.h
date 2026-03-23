@@ -7,6 +7,15 @@
 #include <cpp20/r_rtype_coerce.h>
 
 namespace cpp20 {
+  
+namespace internal {
+// Concept helpers for location-based subset helpers
+template <typename T>
+concept RLocation = any<T, r_lgl, r_int, r_int64, r_dbl, r_str_view, r_str>;
+
+template <typename T>
+concept RIntegerLocation = any<T, r_int, r_int64>;
+}
 
 template<RVal T>
 struct r_vec {
@@ -127,6 +136,10 @@ struct r_vec {
     return length();
   }
 
+  bool is_long() const noexcept {
+    return length() > unwrap(r_limits<r_int>::max());
+  }
+
   r_str address() const {
     return sexp.address();
   }
@@ -178,8 +191,7 @@ struct r_vec {
 
   // IMPORTANT - indices are 1-indexed
   // This has the benefit of allowing empty locations (0) and negative indexing
-  template <typename U> 
-  requires (any<U, r_lgl, r_int, r_int64, r_str_view, r_str>)
+  template <internal::RLocation U> 
   r_vec<T> subset(const r_vec<U>& indices, bool check = true) const;
 
   template <IntegerType U>
@@ -332,9 +344,8 @@ struct r_vec {
     }
   }
 
-  // template <typename U, typename U1, typename U2>
-  // requires (any<U, r_lgl, r_int, r_int64, r_str_view, r_str>)
-  // void replace(const r_vec<U>& where, const r_vec<T>& with);
+  template <internal::RLocation U>
+  void replace(const r_vec<U>& where, const r_vec<T>& with);
 
   r_vec<T> resize(r_size_t n){
     r_size_t vec_size = length();
