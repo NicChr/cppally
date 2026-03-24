@@ -290,13 +290,19 @@ r_vec<T> r_vec<T>::remove(const r_vec<U>& values) const {
 }
 
 template <RVal T>
-template <internal::RSubscript U>
-void r_vec<T>::fill(const r_vec<U>& where, const r_vec<T>& with) {
+template <internal::RSubscript U, typename V>
+void r_vec<T>::fill(const r_vec<U>& where, const r_vec<V>& with) {
 
   if (is_null()) return;
 
   r_size_t with_size = with.length();
   r_size_t withi = 0;
+
+  if (with_size == 0){
+    return;
+  }
+
+  r_vec<T> with_clean = as<r_vec<T>>(with);
 
   if (is_long()){
     // Clean where vector
@@ -304,7 +310,7 @@ void r_vec<T>::fill(const r_vec<U>& where, const r_vec<T>& with) {
     r_size_t where_size = where_clean.length();
   
     for (r_size_t i = 0; i < where_size; recycle_index(withi, with_size), ++i){
-      set(unwrap(where_clean.get(i)) - 1, with.get(withi));
+      set(unwrap(where_clean.get(i)) - 1, with_clean.get(withi));
     }
   } else {
     // Clean where vector
@@ -312,7 +318,7 @@ void r_vec<T>::fill(const r_vec<U>& where, const r_vec<T>& with) {
     r_size_t where_size = where_clean.length();
   
     for (r_size_t i = 0; i < where_size; recycle_index(withi, with_size), ++i){
-      set(unwrap(where_clean.get(i)) - 1, with.get(withi));
+      set(unwrap(where_clean.get(i)) - 1, with_clean.get(withi));
     }
   }
 }
