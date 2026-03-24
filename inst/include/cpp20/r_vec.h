@@ -309,12 +309,19 @@ struct r_vec {
     if (cpp20::is_na(v) && !cpp20::is_na(value)){
       return out;
     }
-    if constexpr (is<T, r_sexp>){
+    if constexpr (any<T, r_lgl, r_int, r_int64, r_str, r_str_view, r_sym, r_cplx, r_raw>){
+      auto* RESTRICT p_x = data();
+      auto val_ = unwrap(v);
+
+      // SIMD vectorisation isn't working with identical function (sad)
+      // Even though the code is simply: unwrap(x) == unwrap(y)
+      // At least we know this is equivalent to identical for the specified types above
+      #pragma omp simd reduction(+:out)
       for (r_size_t i = 0; i < n; ++i){
-        out += identical(view(i), v);
+        out += (p_x[i] == val_);
       }
     } else {
-      #pragma omp simd reduction(+:out)
+      // Fall-back
       for (r_size_t i = 0; i < n; ++i){
         out += identical(view(i), v);
       }
@@ -366,11 +373,11 @@ struct r_vec {
     int_t i = 0; 
   
     if (invert){
-      r_size_t out_size = n - n_vals;
+      int_t out_size = n - n_vals;
       r_vec<V> out(out_size);
       while (whichi < out_size){
           out.set(whichi, i + 1);
-          whichi += static_cast<int_t>(!identical(get(i++), v));
+          whichi += static_cast<int_t>(!identical(view(i++), v));
       }
       return out;
     } else {
@@ -378,7 +385,7 @@ struct r_vec {
       r_vec<V> out(out_size);
       while (whichi < out_size){
         out.set(whichi, i + 1);
-        whichi += static_cast<int_t>(identical(get(i++), v));
+        whichi += static_cast<int_t>(identical(view(i++), v));
     }
     return out;
     }
