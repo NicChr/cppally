@@ -45,7 +45,7 @@ struct r_vec {
   // Initialise read-only ptr to: 
   // SEXP - If T is a type convertible to SEXP
   // unwrap_t<T> - Otherwise
-  using ptr_t = std::conditional_t<internal::RPtrWritableType<T>, unwrap_t<T>*, const SEXP*>;  
+  using ptr_t = std::conditional_t<RObject<T>, const SEXP*, unwrap_t<T>*>;
   ptr_t m_ptr = nullptr;
 
   void initialise_ptr(){
@@ -291,11 +291,19 @@ struct r_vec {
   }
 
   bool any_na() const {
-    return na_count() > 0;
+    r_size_t n = length();
+    for (r_size_t i = 0; i < n; ++i){
+      if (cpp20::is_na(view(i))) return true;
+    }
+    return false;
   }
 
   bool all_na() const {
-    return na_count() == length();
+    r_size_t n = length();
+    for (r_size_t i = 0; i < n; ++i){
+      if (!cpp20::is_na(view(i))) return false;
+    }
+    return true;
   }
 
   template <typename U>
