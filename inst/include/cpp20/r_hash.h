@@ -210,7 +210,7 @@ struct r_hash_eq {
 };
 
 
-// Return initial hash map reserve size as power of 2
+// Initial guess of unique size is N/4 floored to the nearest power of 2
 template <typename T>
 inline uint64_t get_hash_map_reserve_size(uint64_t data_size) {
     uint64_t res = std::bit_floor(data_size >> 2);
