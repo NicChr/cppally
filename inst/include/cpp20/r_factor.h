@@ -146,6 +146,10 @@ struct r_factors {
   FORWARD_METHOD(na_count)
   FORWARD_METHOD(any_na)
   FORWARD_METHOD(all_na)
+  FORWARD_METHOD(count)
+  FORWARD_METHOD(fill)
+  FORWARD_METHOD(replace)
+  FORWARD_METHOD(find)
 
   // Methods that return factors
   FORWARD_FACTOR_METHOD(subset)
