@@ -307,6 +307,26 @@ struct r_vec {
   }
 
   template <typename U>
+  bool any_v(const U& val) const {
+    T val_ = internal::as_r<T>(val);
+    r_size_t n = length();
+    for (r_size_t i = 0; i < n; ++i){
+      if (identical(view(i), val_)) return true;
+    }
+    return false;
+  }
+
+  template <typename U>
+  bool all_v(const U& val) const {
+    T val_ = internal::as_r<T>(val);
+    r_size_t n = length();
+    for (r_size_t i = 0; i < n; ++i){
+      if (!identical(view(i), val_)) return false;
+    }
+    return true;
+  } 
+
+  template <typename U>
   r_size_t count(U const& value) const {
     r_size_t out = 0;
     r_size_t n = length();
