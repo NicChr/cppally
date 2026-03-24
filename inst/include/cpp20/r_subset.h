@@ -8,7 +8,7 @@ namespace cpp20 {
 
 namespace internal {
 
-template <RNumericSubscript U, RNumericSubscript V = r_int>
+template <RNumericSubscript V = r_int, RNumericSubscript U>
 r_vec<V> exclude_locs(const r_vec<U>& exclude, r_size_t xn) {
 
   if (xn < 0){
@@ -16,7 +16,7 @@ r_vec<V> exclude_locs(const r_vec<U>& exclude, r_size_t xn) {
   }
   if constexpr (is<V, r_int>){
     if (xn > unwrap(r_limits<r_int>::max())){
-     abort("`xn > r_limits<r_int>::max()`, please use `exclude_locs<%s, r_int64>`", internal::type_str<U>());
+     abort("`xn > r_limits<r_int>::max()`, please use `exclude_locs<r_int64>`");
    }
  }
 
@@ -107,7 +107,7 @@ r_vec<V> clean_locs(const r_vec<U>& locs, const r_vec<T>& x){
   }
 
   if (neg_count > 0){
-    return internal::exclude_locs<U, V>(locs, xn);
+    return internal::exclude_locs<V>(locs, xn);
   }
   if (zero_count > 0 || oob_count > 0 || na_count > 0){
     r_size_t out_size = pos_count - oob_count;
@@ -161,9 +161,9 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check) const {
         // If j > n_val then it is a negative signed integer
         else if (j > na_val){
           if (is_long()){
-            return subset(internal::exclude_locs<U, r_int64>(indices, xn));
+            return subset(internal::exclude_locs<r_int64>(indices, xn));
           } else {
-            return subset(internal::exclude_locs<U, r_int>(indices, xn));
+            return subset(internal::exclude_locs<r_int>(indices, xn));
           }
         } 
         else if (j != 0U){
@@ -223,6 +223,50 @@ r_size_t r_vec<T>::count(const r_vec<U>& values) const {
     out = std::max(out, r_size_t(0));
     return out;
   }
+}
+
+template <RVal T>
+template <internal::RNumericSubscript V, typename U>
+r_vec<V> r_vec<T>::find(const r_vec<U>& values, bool invert) const {
+
+
+  if constexpr (is<V, r_int>){
+    if (is_long()){
+      abort("`x` is a long vector, please use `find<r_int64>` for 64-bit locations");
+    }
+  }
+
+  r_size_t n_values = values.length();
+
+  if (n_values == 0){
+    return r_vec<V>();
+  } else if (n_values == 1){
+    // Just simple find loop
+    return find<V>(values.view(0)); 
+  }
+
+  // Coerce values to same vec type as r_vec<T>
+
+  r_vec<T> values2 = as<r_vec<T>>(values);
+
+  // Remove values that were implicitly coerced to NA
+  // r_size_t n_implicit_na_coercions = 0;
+  // for (r_size_t i = 0; i < n_values; ++i){
+  //   n_implicit_na_coercions += (cpp20::is_na(values2.view(i)) && !cpp20::is_na(values.view(i)));
+  // } 
+  r_size_t k = 0;
+  r_vec<V> exclude(n_values, 0); // Fill with 0 to signify no exclusions by default
+  for (r_size_t i = 0; i < n_values; ++i){
+    bool implicit_na_coercion = (cpp20::is_na(values2.view(i)) && !cpp20::is_na(values.view(i)));
+    if (implicit_na_coercion){
+      exclude.set(k++, -(i + 1));
+    }
+  }
+  if (k > 0){
+    values2 = values2.subset(exclude);
+  }
+  r_vec<V> matches = match<V>(*this, values2);
+  return matches.template find<V>(na<V>(), !invert);
 }
 
 template <RVal T>
