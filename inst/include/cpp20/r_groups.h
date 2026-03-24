@@ -20,7 +20,7 @@ struct groups {
   // Manual constructor
   explicit groups(r_vec<r_int> x, int ngroups, bool groups_sorted) : ids(std::move(x)), n_groups(ngroups), sorted(groups_sorted) {}
 
-  // 0-indexed group start locations
+  // 1-indexed group start locations
   r_vec<r_int> starts() const {
 
     int n = ids.length();
@@ -40,12 +40,12 @@ struct groups {
         int* RESTRICT p_out = out.data();
 
         curr_group = 0;
-        p_out[0] = 0;
+        p_out[0] = 1;
         
         for (int i = 1; i < n; ++i){
             // New group
-            if (p_ids[i] == (curr_group + 1)){
-                p_out[++curr_group] = i;
+            if (p_ids[i] > curr_group){
+                p_out[++curr_group] = (i + 1);
             }
             //
             // if (p_ids[i] > p_ids[i - 1]){
@@ -61,12 +61,19 @@ struct groups {
         
         const int* RESTRICT p_ids = ids.data();
         int* RESTRICT p_out = out.data();
-        int curr_group_start;
         
         for (int i = 0; i < n; ++i){
             curr_group = p_ids[i];
-            curr_group_start = p_out[curr_group];
-            p_out[curr_group] = std::min(curr_group_start, i);
+            p_out[curr_group] = std::min(p_out[curr_group], i);
+          }
+
+          // Make 1-indexed start indices
+          for (int i = 0; i < n_groups; ++i){
+            if (p_out[i] == unwrap(r_limits<r_int>::max())){
+                p_out[i] = 0; // This can happen with unused factor levels for example
+            } else {
+                ++p_out[i];
+            }
           }
     
         // This will set groups with no start locations to 0
