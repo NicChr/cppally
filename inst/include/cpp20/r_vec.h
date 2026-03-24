@@ -331,6 +331,8 @@ struct r_vec {
       return out;
     }
   }
+
+  // 1-indexed locations of value in vector
   template <internal::RNumericSubscript V = r_int, typename U>
   r_vec<V> find(U const& value, bool invert = false) const {
 

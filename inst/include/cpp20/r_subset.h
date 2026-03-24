@@ -239,10 +239,18 @@ r_vec<V> r_vec<T>::find(const r_vec<U>& values, bool invert) const {
   r_size_t n_values = values.length();
 
   if (n_values == 0){
-    return r_vec<V>();
+    if (invert){
+      r_size_t n = length();
+      r_vec<V> out(n);
+      OMP_SIMD
+      for (r_size_t i = 0; i < n; ++i) out.set(i, i + 1);
+      return out;
+    } else {
+      return r_vec<V>();
+    }
   } else if (n_values == 1){
     // Just simple find loop
-    return find<V>(values.view(0)); 
+    return find<V>(values.view(0), /*invert=*/ invert); 
   }
 
   // Coerce values to same vec type as r_vec<T>
@@ -267,6 +275,18 @@ r_vec<V> r_vec<T>::find(const r_vec<U>& values, bool invert) const {
   }
   r_vec<V> matches = match<V>(*this, values2);
   return matches.template find<V>(na<V>(), !invert);
+}
+
+template <RVal T>
+template <typename U>
+r_vec<T> r_vec<T>::remove(const r_vec<U>& values) const {
+  if (is_long()){
+    r_vec<r_int64> keep = find<r_int64>(values, /*invert=*/ true);
+    return subset(keep, false);
+  } else {
+    r_vec<r_int> keep = find<r_int>(values, /*invert=*/ true);
+    return subset(keep, false);
+  }
 }
 
 template <RVal T>
@@ -309,7 +329,7 @@ void r_vec<T>::replace(const r_vec<U>& where, const r_vec<T>& old_values, const 
 
   if (is_long()){
     // Clean where vector
-    r_vec<r_int64> where_clean = clean_locs<r_int64>(where, *this);
+    r_vec<r_int64> where_clean = internal::clean_locs<r_int64>(where, *this);
     r_size_t where_size = where_clean.length();
     auto* RESTRICT p_where = where_clean.data();
   
@@ -317,7 +337,7 @@ void r_vec<T>::replace(const r_vec<U>& where, const r_vec<T>& old_values, const 
       recycle_index(oldvi, oldv_size), 
       recycle_index(newvi, newv_size),
       ++i){
-        auto loc = p_where[i] - 1;
+        r_size_t loc = static_cast<r_size_t>(p_where[i]) - 1;
 
         if ( (view(loc) == old_values.view(oldvi)).is_true()){
           set(loc, new_values.view(newvi));
@@ -325,7 +345,7 @@ void r_vec<T>::replace(const r_vec<U>& where, const r_vec<T>& old_values, const 
     }
   } else {
     // Clean where vector
-    r_vec<r_int> where_clean = clean_locs<r_int>(where, *this);
+    r_vec<r_int> where_clean = internal::clean_locs<r_int>(where, *this);
     r_size_t where_size = where_clean.length();
     auto* RESTRICT p_where = where_clean.data();
   
@@ -333,7 +353,7 @@ void r_vec<T>::replace(const r_vec<U>& where, const r_vec<T>& old_values, const 
       recycle_index(oldvi, oldv_size), 
       recycle_index(newvi, newv_size), 
       ++i){
-        auto loc = p_where[i] - 1;
+        r_size_t loc = static_cast<r_size_t>(p_where[i]) - 1;
 
         if ( (view(loc) == old_values.view(oldvi)).is_true()){
           set(loc, new_values.view(newvi));
