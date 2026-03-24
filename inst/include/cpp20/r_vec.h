@@ -8,9 +8,12 @@
 
 namespace cpp20 {
 
-// Forward declaration
+// Forward declarations
 template <typename T, typename U>
 inline constexpr bool identical(const T& a, const U& b);
+
+template <RVal T>
+inline void r_copy_n(r_vec<T>& target, const r_vec<T>& source, r_size_t target_offset, r_size_t n);
   
 namespace internal {
 
@@ -535,6 +538,10 @@ inline void r_copy_n(r_vec<T>& target, const r_vec<T>& source, r_size_t target_o
     } else {
       std::copy_n(p_source, n, p_target + target_offset);
     }
+  } else if constexpr (RObject<T>){
+    // Cast const SEXP* to SEXP* and write directly
+    auto* p_target = const_cast<unwrap_t<T>*>(target.data());
+    std::copy_n(source.data(), n, p_target + target_offset);
   } else {
     for (r_size_t i = 0; i < n; ++i) {
       target.set(target_offset + i, source.view(i));
