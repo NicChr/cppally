@@ -336,6 +336,11 @@ void r_vec<T>::replace(const r_vec<U1>& old_values, const r_vec<U2>& new_values)
 
   if (oldv_size == 0 || newv_size == 0) return;
 
+  if (oldv_size == 1 && newv_size == 1){
+    replace(old_values.view(0), new_values.view(0));
+    return;
+  }
+
   r_vec<T> prev = as<r_vec<T>>(old_values);
   r_vec<T> repl = as<r_vec<T>>(new_values);
 
