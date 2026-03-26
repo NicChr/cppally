@@ -8,7 +8,7 @@
 #include <cpp11/sexp.hpp> // For cpp11::sexp
 #include <complex> // For complex<double>
 #include <cstdint> // For uint32_t and similar
-#include <string> // For C++ strings
+#include <iosfwd> // Forward declarations for strings
 
 #ifdef _MSC_VER
 #define RESTRICT __restrict
