@@ -122,9 +122,6 @@ template<CppComplexType T>
 inline const char* type_str(){
     return "C++ complex";
 }
-template<> inline const char* type_str<Rboolean>(){return "Rboolean";}
-// template<> inline const char* type_str<Rbyte>(){return "Rbyte";}
-template<> inline const char* type_str<Rcomplex>(){return "Rcomplex";}
 
 // Mapping from C++ type to R TYPEOF
 
@@ -392,16 +389,17 @@ struct r_cplx {
 };
 
 // Alias type for Rbyte
+// In the future we will use std::byte
 struct r_raw {
-  Rbyte value;
-  using value_type = Rbyte;
+  unsigned char value;
+  using value_type = unsigned char;
 
   // Constructors
-  constexpr r_raw() : value{static_cast<Rbyte>(0)} {}
+  constexpr r_raw() : value{static_cast<unsigned char>(0)} {}
 
   // Conversion handling
-  explicit constexpr r_raw(Rbyte x) : value{x} {}
-  constexpr operator Rbyte() const { return value; }
+  explicit constexpr r_raw(unsigned char x) : value{x} {}
+  constexpr operator unsigned char() const { return value; }
 };
 
 inline r_str r_sexp::address() const {

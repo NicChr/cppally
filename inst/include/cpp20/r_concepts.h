@@ -304,7 +304,7 @@ template<> struct r_val_mapping_impl<int64_t>                   { using type = r
 template<> struct r_val_mapping_impl<double>                    { using type = r_dbl; };
 template<> struct r_val_mapping_impl<const char*>               { using type = r_str; };
 template<> struct r_val_mapping_impl<std::complex<double>>      { using type = r_cplx; };
-template<> struct r_val_mapping_impl<Rbyte>                     { using type = r_raw; };
+template<> struct r_val_mapping_impl<unsigned char>             { using type = r_raw; };
 template<> struct r_val_mapping_impl<SEXP>                      { using type = r_sexp; };
 
 // R vectors & other containers

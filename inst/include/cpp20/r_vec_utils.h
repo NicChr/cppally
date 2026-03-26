@@ -82,11 +82,11 @@ inline const std::complex<double>* vector_ptr<const r_cplx>(SEXP x) {
 }
 
 template<>
-inline Rbyte* vector_ptr<r_raw>(SEXP x) {
+inline unsigned char* vector_ptr<r_raw>(SEXP x) {
   return RAW(x);
 }
 template<>
-inline const Rbyte* vector_ptr<const r_raw>(SEXP x) {
+inline const unsigned char* vector_ptr<const r_raw>(SEXP x) {
   return RAW_RO(x);
 }
 
