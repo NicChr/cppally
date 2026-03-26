@@ -2,6 +2,7 @@
 #define CPP20_R_MATCH_H
 
 #include <cpp20/r_hash.h>
+#include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 
 namespace cpp20 {
 

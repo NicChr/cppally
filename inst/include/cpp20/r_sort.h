@@ -6,6 +6,7 @@
 #include <cpp20/r_stats.h>
 #include <vector> // For C++ vectors
 #include <limits>
+#include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 
 namespace cpp20 {
 
