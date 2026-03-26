@@ -16,9 +16,9 @@
 #define STRICT_R_HEADERS
 #endif
 
-#include "R_ext/Boolean.h"
-#include "Rinternals.h"
-#include "Rversion.h"
+#include <R_ext/Boolean.h>
+#include <Rinternals.h>
+#include <Rversion.h>
 
 // clang-format off
 #ifdef __clang__

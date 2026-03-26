@@ -7,12 +7,12 @@
 #include <tuple>      // for tuple, make_tuple
 
 // NB: cpp11/R.hpp must precede R_ext/Error.h to ensure R_NO_REMAP is defined
-#include "cpp11/R.hpp"  // for SEXP, SEXPREC, CDR, R_NilValue, CAR, R_Pres...
+#include <cpp11/R.hpp>  // for SEXP, SEXPREC, CDR, R_NilValue, CAR, R_Pres...
 
-#include "R_ext/Boolean.h"  // for Rboolean
-#include "R_ext/Error.h"    // for Rf_error, Rf_warning
-#include "R_ext/Print.h"    // for REprintf
-#include "R_ext/Utils.h"    // for R_CheckUserInterrupt
+#include <R_ext/Boolean.h>  // for Rboolean
+#include <R_ext/Error.h>    // for Rf_error, Rf_warning
+#include <R_ext/Print.h>    // for REprintf
+#include <R_ext/Utils.h>    // for R_CheckUserInterrupt
 
 // We would like to remove this, since all supported versions of R now support proper
 // unwind protect, but some groups rely on it existing, like arrow and systemfonts
