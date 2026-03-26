@@ -4,9 +4,11 @@
 #include <cpp20/r_vec.h>
 #include <cpp20/r_hash.h>
 #include <cpp20/r_stats.h>
+#include <cstring> // For strcmp
 #include <vector> // For C++ vectors
 #include <limits>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
+#include <ska_sort/ska_sort.hpp> // For radix sorting via ska_sort
 
 namespace cpp20 {
 

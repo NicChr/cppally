@@ -6,12 +6,9 @@
 #endif
 
 #include <cpp11/sexp.hpp> // For cpp11::sexp
-#include <cstdint> // For uint32_t and similar
-#include <cstring> // For strcmp
-#include <string> // For C++ strings
-#include <charconv> // For to_chars
 #include <complex> // For complex<double>
-#include <ska_sort/ska_sort.hpp> // For radix sorting via ska_sort
+#include <cstdint> // For uint32_t and similar
+#include <string> // For C++ strings
 
 #ifdef _MSC_VER
 #define RESTRICT __restrict

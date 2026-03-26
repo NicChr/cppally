@@ -5,6 +5,7 @@
 #include <cpp20/r_concepts.h>
 #include <cpp20/r_types.h>
 #include <cpp20/r_nas.h>
+#include <cstring> // For strcmp
 
 namespace cpp20 {
 

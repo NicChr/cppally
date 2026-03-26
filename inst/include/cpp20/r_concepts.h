@@ -1,8 +1,10 @@
 #ifndef CPP20_R_CONCEPTS_H
 #define CPP20_R_CONCEPTS_H
 
+#include <cpp20/r_setup.h>
 #include <type_traits> // For concepts
 #include <limits>
+#include <cstring>
 
 namespace cpp20 {
 
@@ -260,7 +262,7 @@ inline consteval bool can_definitely_be_int(){
 
     if constexpr (sizeof(xt) <= sizeof(int)) {
         if constexpr (std::is_unsigned_v<xt>) {
-             return std::cmp_less_equal(std::numeric_limits<xt>::max(), max_int);
+             return std::numeric_limits<xt>::max() <= static_cast<unsigned int>(max_int);
         }
         return true;
     }
@@ -278,7 +280,7 @@ inline consteval bool can_definitely_be_int64(){
 
     if constexpr (sizeof(xt) <= sizeof(int64_t)) {
         if constexpr (std::is_unsigned_v<xt>) {
-             return std::cmp_less_equal(std::numeric_limits<xt>::max(), max_int64);
+             return std::numeric_limits<xt>::max() <= static_cast<uint64_t>(max_int64);
         }
         return true; 
     }

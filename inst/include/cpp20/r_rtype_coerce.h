@@ -7,6 +7,7 @@
 #include <cpp20/r_nas.h>
 #include <cpp20/r_vec_utils.h>
 #include <limits>
+#include <charconv> // For to_chars
 
 namespace cpp20 {
 
