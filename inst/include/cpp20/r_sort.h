@@ -198,9 +198,8 @@ inline r_vec<r_int> order(const r_vec<T>& x, bool preserve_ties = true) {
         }
 
         if (preserve_ties){
-            
         ska_sort::ska_sort(pairs.begin(), pairs.end(), 
-            [](const key_index& k){ return std::make_tuple(k.key, k.index); });
+            [](const key_index& k){ return std::make_pair(k.key, k.index); });
         } else {
             ska_sort::ska_sort(pairs.begin(), pairs.end(), 
             [](const key_index& k){ return k.key; });
