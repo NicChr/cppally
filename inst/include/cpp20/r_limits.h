@@ -3,6 +3,7 @@
 
 #include <cpp20/r_setup.h>
 #include <cpp20/r_types.h>
+#include <limits>
 
 // R-specific numerical limits
 // Currently includes the following members

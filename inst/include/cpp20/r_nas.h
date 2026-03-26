@@ -4,6 +4,7 @@
 #include <cpp20/r_setup.h>
 #include <cpp20/r_types.h>
 #include <cpp20/r_symbols.h>
+#include <limits>
 #include <bit>
 
 namespace cpp20 {

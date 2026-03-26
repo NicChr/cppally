@@ -13,7 +13,6 @@
 #include <string> // For C++ strings
 #include <charconv> // For to_chars
 #include <complex> // For complex<double>
-#include <limits> // For numeric limits
 #include <ska_sort/ska_sort.hpp> // For radix sorting via ska_sort
 
 #ifdef _MSC_VER

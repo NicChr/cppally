@@ -5,6 +5,7 @@
 #include <cpp20/r_hash.h>
 #include <cpp20/r_stats.h>
 #include <vector> // For C++ vectors
+#include <limits>
 
 namespace cpp20 {
 

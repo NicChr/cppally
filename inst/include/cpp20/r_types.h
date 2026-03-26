@@ -4,6 +4,7 @@
 #include <cpp20/r_setup.h>
 #include <cpp20/r_concepts.h>
 #include <chrono> // For r_date/r_psxt
+#include <limits>
 
 // R-based C++ types that closely align with their R equivalents
 // Further methods (e.g. operators) are defined in r_methods.h

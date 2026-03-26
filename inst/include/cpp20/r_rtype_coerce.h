@@ -6,6 +6,7 @@
 #include <cpp20/r_limits.h>
 #include <cpp20/r_nas.h>
 #include <cpp20/r_vec_utils.h>
+#include <limits>
 
 namespace cpp20 {
 
