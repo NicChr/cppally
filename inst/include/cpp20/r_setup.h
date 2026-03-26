@@ -15,7 +15,6 @@
 #include <complex> // For complex<double>
 #include <limits> // For numeric limits
 #include <algorithm> // For sort + other utilities
-#include <bit> // For bit_cast
 #include <ska_sort/ska_sort.hpp> // For radix sorting via ska_sort
 
 #ifdef _MSC_VER
