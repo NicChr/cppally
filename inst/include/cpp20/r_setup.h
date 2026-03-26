@@ -5,7 +5,7 @@
 #define R_NO_REMAP 
 #endif
 
-#include <cpp11/sexp.hpp> // For cpp11::sexp
+#include <cpp20/R.hpp>
 #include <complex> // For complex<double>
 #include <cstdint> // For uint32_t and similar
 #include <iosfwd> // Forward declarations for strings
@@ -45,7 +45,7 @@
 #endif
 
 namespace cpp20 {
-    
+
 using r_size_t = R_xlen_t;
 
 namespace internal {
@@ -79,7 +79,7 @@ inline constexpr bool between_impl(const T x, const U lo, const U hi) {
 //   - takes (auto&&... args)
 //   - calls f(args...) inside cpp11::unwind_protect
 
-// Like cpp11::safe but works also  for variadic fns
+// Like safe but works also  for variadic fns
 template <typename F>
 auto r_safe_impl(F f) {
   return [f](auto&&... args)
@@ -88,12 +88,12 @@ auto r_safe_impl(F f) {
       using result_t = decltype(f(std::forward<decltype(args)>(args)...));
 
       if constexpr (std::is_void_v<result_t>) {
-        cpp11::unwind_protect([&] {
+        unwind_protect([&] {
           f(std::forward<decltype(args)>(args)...);
         });
         // no return; result_t is void
       } else {
-        return cpp11::unwind_protect([&]() -> result_t {
+        return unwind_protect([&]() -> result_t {
           return f(std::forward<decltype(args)>(args)...);
         });
       }
@@ -161,21 +161,6 @@ inline int calc_threads(r_size_t data_size){
 template<typename T>
 inline constexpr void recycle_index(T& v, T size) {
   v = (++v == size) ? T(0) : v;
-}
-
-template <typename... Args>
-inline void print(const char *fmt, Args&&... args) noexcept {
-  Rprintf(fmt, std::forward<Args>(args)...);
-}
-
-template <typename... Args>
-inline void warn(const char *fmt, Args&&... args){
-  cpp11::warning(fmt, std::forward<Args>(args)...);
-}
-
-template <typename... Args>
-[[noreturn]] inline void abort(const char *fmt, Args&&... args){
-  cpp11::stop(fmt, std::forward<Args>(args)...);
 }
 
 } // end of cpp20 namespace

@@ -3,7 +3,7 @@
 
 // All credits go to cpp11 and its authors and contributors
 
-#include <cpp20/r_setup.h>
+#include <cpp20/R.hpp>
 #include <exception>           // for std::exception
 
 // Buffer size for error messages (matches cpp11 default)
@@ -16,7 +16,7 @@
 
 #define END_CPP20                                               \
   }                                                             \
-  catch (cpp11::unwind_exception & e) {                         \
+  catch (cpp20::unwind_exception & e) {                         \
     err = e.token;                                              \
   }                                                             \
   catch (std::exception & e) {                                  \

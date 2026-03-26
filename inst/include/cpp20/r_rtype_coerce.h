@@ -178,7 +178,7 @@ inline r_str_view as_r_string(T const& x){
     if (Rf_length(x) != 1){
       abort("`x` is a non-scalar vector and cannot be converted to an `r_str_view` in %s", __func__);
     }
-    r_sexp str = r_sexp(cpp11::safe[Rf_coerceVector](x, STRSXP));
+    r_sexp str = r_sexp(safe[Rf_coerceVector](x, STRSXP));
     return r_str_view(STRING_ELT(str, 0));
   } else {
     static_assert(always_false<T>, "Unsupported type for `as_r_string`");

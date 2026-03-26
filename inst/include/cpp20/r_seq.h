@@ -55,7 +55,7 @@ r_vec<r_sexp> sequences(const r_vec<r_int>& size, const r_vec<T>& from, const r_
 
             for (int j = 0; j < seq_size; ++j, ++interrupt_counter){
                 if (interrupt_counter == 100000000){
-                    cpp11::check_user_interrupt();
+                    check_user_interrupt();
                     interrupt_counter = 0;
                 }
                 if constexpr (RIntegerType<common_t>){

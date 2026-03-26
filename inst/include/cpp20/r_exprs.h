@@ -6,7 +6,7 @@
 namespace cpp20 {
 
 inline r_sexp eval(const r_sexp& expr, const r_sexp& env){
-  return r_sexp(cpp11::safe[Rf_eval](expr, env));
+  return r_sexp(safe[Rf_eval](expr, env));
 }
 
 namespace internal {
@@ -18,7 +18,7 @@ inline r_sexp make_pairlist(Args... args) {
   if constexpr (n == 0){
     return r_sexp(Rf_allocList(0));
   } else {
-    r_sexp out = r_sexp(cpp11::safe[Rf_allocList](n));
+    r_sexp out = r_sexp(safe[Rf_allocList](n));
 
     SEXP current = out;
 

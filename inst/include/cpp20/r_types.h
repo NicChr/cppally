@@ -2,6 +2,8 @@
 #define CPP20_R_TYPES_H
 
 #include <cpp20/r_setup.h>
+#include <cpp20/protect.hpp>
+#include <cstddef>  // for size_t
 #include <cpp20/r_concepts.h>
 #include <chrono> // For r_date/r_psxt
 #include <limits>
@@ -175,27 +177,66 @@ struct view_tag {};
 // All credits go to cpp11 authors/maintainers for `cpp11::sexp`
 struct r_sexp {
 
-  SEXP value;
+  public:
+
+  SEXP value = R_NilValue;
   using value_type = SEXP;
 
-  private: 
+  private:
 
-  cpp11::sexp protector;
+  SEXP preserve_token_ = R_NilValue;
 
   public: 
 
-  // Default constructor
-  r_sexp() : value(R_NilValue), protector(R_NilValue) {}
+  r_sexp() = default;
+  r_sexp(SEXP data) : value(data), preserve_token_(detail::store::insert(value)) {}
 
-  // Constructor from SEXP
-  explicit r_sexp(SEXP s) : value(s), protector(s) {}
+  // We maintain our own new `preserve_token_`
+  r_sexp(const r_sexp& rhs) : value(rhs.value), preserve_token_(detail::store::insert(rhs.value)) {}
 
-  // Optimized constructor
-  // convert SEXP -> r_sexp directly without extra protection
-  explicit r_sexp(SEXP s, internal::view_tag) : value(s), protector(R_NilValue) {}
+  // We take ownership over the `rhs.preserve_token_`.
+  // Importantly we clear it in the `rhs` so it can't release the object upon destruction.
+  r_sexp(r_sexp&& rhs) noexcept : value(rhs.value), preserve_token_(rhs.preserve_token_) {
+    rhs.value = R_NilValue;
+    rhs.preserve_token_ = R_NilValue;
+  }
+
+  r_sexp& operator=(const r_sexp& rhs) noexcept {
+
+    if (this != &rhs) {
+      detail::store::release(preserve_token_);
+  
+      value = rhs.value;
+      preserve_token_ = detail::store::insert(value);
+    }
+      
+
+    return *this;
+  }
+
+  r_sexp& operator=(r_sexp&& rhs) noexcept {
+    if (this != &rhs) {
+      detail::store::release(preserve_token_);
+      value = rhs.value;
+      
+      // Steal the token, do not create a new one
+      preserve_token_ = rhs.preserve_token_;
+      
+      rhs.value = R_NilValue;
+      rhs.preserve_token_ = R_NilValue;
+    }
+    return *this;
+  }
+
+  ~r_sexp() { detail::store::release(preserve_token_); }
 
   // Implicit conversion to SEXP
   constexpr operator SEXP() const noexcept { return value; }
+  constexpr SEXP data() const noexcept { return value; }
+
+  // Optimized constructor
+  // convert SEXP -> r_sexp directly without extra protection
+  explicit r_sexp(SEXP s, internal::view_tag) : value(s) {}
 
   r_size_t length() const noexcept {
     return Rf_xlength(value);
