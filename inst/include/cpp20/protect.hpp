@@ -2,7 +2,7 @@
 
 #include <csetjmp>
 #include <exception>
-#include <cpp20/R.hpp>
+#include <cpp20/r_setup.h>
 
 namespace cpp20 {
 
