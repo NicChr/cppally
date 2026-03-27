@@ -8,6 +8,7 @@
 #include <cpp20/r_symbols.h>
 #include <cpp20/r_methods.h>
 #include <cpp20/r_vec_utils.h>
+#include <cpp20/r_coerce_impl.h>
 
 namespace cpp20 {
 
@@ -196,11 +197,11 @@ struct r_vec {
       }
     } else {
       if constexpr (RStringType<T>){
-        SET_STRING_ELT(sexp, index, cpp20::as<T>(val));
+        SET_STRING_ELT(sexp, index, cpp20::internal::as_r<T>(val));
       } else if constexpr (RObject<T>){
-        SET_VECTOR_ELT(sexp, index, cpp20::as<T>(val));
+        SET_VECTOR_ELT(sexp, index, cpp20::internal::as_r<T>(val));
       } else {
-        m_ptr[index] = unwrap(cpp20::as<T>(val));
+        m_ptr[index] = unwrap(cpp20::internal::as_r<T>(val));
       }
     }
   }
@@ -214,9 +215,9 @@ struct r_vec {
   requires (!any<U, r_lgl, bool>)
   r_vec<T> subset(U index, bool check = true) const {
     if constexpr (internal::can_definitely_be_int<unwrap_t<U>>()){
-      return subset(r_vec<r_int>(1, as<r_int>(index)), check);
+      return subset(r_vec<r_int>(1, internal::as_r<r_int>(index)), check);
     } else {
-      return subset(r_vec<r_int64>(1, as<r_int64>(index)), check);
+      return subset(r_vec<r_int64>(1, internal::as_r<r_int64>(index)), check);
     }
   }
 
@@ -311,7 +312,7 @@ struct r_vec {
 
   template <typename U>
   bool any_v(const U& val) const {
-    T val_ = as<T>(val);
+    T val_ = internal::as_r<T>(val);
     r_size_t n = length();
     for (r_size_t i = 0; i < n; ++i){
       if (identical(view(i), val_)) return true;
@@ -321,7 +322,7 @@ struct r_vec {
 
   template <typename U>
   bool all_v(const U& val) const {
-    T val_ = as<T>(val);
+    T val_ = internal::as_r<T>(val);
     r_size_t n = length();
     for (r_size_t i = 0; i < n; ++i){
       if (!identical(view(i), val_)) return false;
@@ -334,7 +335,7 @@ struct r_vec {
     r_size_t out = 0;
     r_size_t n = length();
     
-    T v = as<T>(value);
+    T v = internal::as_r<T>(value);
 
     // If there was implicit coercion, then avoid counting matches
     if (cpp20::is_na(v) && !cpp20::is_na(value)){
@@ -372,7 +373,7 @@ struct r_vec {
     } else {
       r_vec<T> out(n - n_remove);
       r_size_t k = 0;
-      T v = as<T>(value);
+      T v = internal::as_r<T>(value);
 
       for (r_size_t i = 0; i < n; ++i){
         if (!identical(view(i), v)){
@@ -397,7 +398,7 @@ struct r_vec {
       }
     }
 
-    T v = as<T>(value);
+    T v = internal::as_r<T>(value);
   
     r_size_t n_vals = count(value);
     int_t whichi = 0; 
@@ -425,7 +426,7 @@ struct r_vec {
   // Sequential fill
   template <typename U>
   void fill(r_size_t start, r_size_t n, U const& val){
-    auto val2 = as<T>(val);
+    auto val2 = internal::as_r<T>(val);
     if constexpr (internal::RPtrWritableType<T>){
       int n_threads = internal::calc_threads(n);
       auto* RESTRICT p_target = data();
@@ -452,8 +453,8 @@ struct r_vec {
 
   template <typename U1, typename U2>
   void replace(r_size_t start, r_size_t n, U1 const& old_val, U2 const& new_val){
-    T old_val2 = as<T>(old_val);
-    T new_val2 = as<T>(new_val);
+    T old_val2 = internal::as_r<T>(old_val);
+    T new_val2 = internal::as_r<T>(new_val);
     if (!internal::is_implicit_na_coercion(old_val, old_val2)){
         for (r_size_t i = 0; i < n; ++i) {
           r_size_t idx = start + i;

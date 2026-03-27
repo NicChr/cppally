@@ -16,7 +16,7 @@
 #include <cpp20/r_nas.h>
 #include <cpp20/r_methods.h>
 #include <cpp20/r_vec_utils.h>
-#include <cpp20/r_rtype_coerce.h>
+#include <cpp20/r_coerce_impl.h>
 #include <cpp20/r_vec.h>
 #include <cpp20/r_stats.h>
 #include <cpp20/r_factor.h>

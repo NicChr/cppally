@@ -169,38 +169,11 @@ template <typename T, typename U>
 concept AtLeastOneRMathType =
 (RMathType<T> || RMathType<U>) && (MathType<T> && MathType<U>);
 
-
-
-// Forward declare r_limits
-template <RNumericType T>
-struct r_limits;
-
 // Forward declare vector-based structs
 template<RVal T>
 struct r_vec;
 struct r_factors;
 // struct r_df;
-
-// Forward declarations of inline vector creators
-struct arg;
-template <RVal T, typename... Args>
-inline r_vec<T> make_vec(Args... args);
-
-// Forward declarations of NA helpers
-template <typename T>
-inline constexpr bool is_na(T const& x);
-template <typename T>
-inline constexpr bool is_nan(T const& x);
-
-// Forward declaration of coercion functions
-
-namespace internal {
-template<RVal T, typename U>
-inline T as_r(U const& x);
-}
-
-template <typename to_t, typename from_t>
-inline to_t as(const from_t& x);
 
 namespace internal {
 

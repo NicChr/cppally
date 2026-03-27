@@ -1,5 +1,5 @@
-#ifndef CPP20_R_RTYPE_COERCE_H
-#define CPP20_R_RTYPE_COERCE_H
+#ifndef CPP20_R_COERCE_IMPL_H
+#define CPP20_R_COERCE_IMPL_H
 
 #include <cpp20/r_setup.h>
 #include <cpp20/r_utils.h>
