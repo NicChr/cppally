@@ -252,7 +252,9 @@ struct r_sexp {
 };
 
 // bool type, similar to Rboolean
-// Implicit coercion to bool (not int) provided no NA
+// Can only implicitly convert to bool in if statements
+// If during implicit conversion, an NA is detected, an error is thrown
+// Detect NA manually via the `is_na` member function
 struct r_lgl {
   int value;
   using value_type = int;

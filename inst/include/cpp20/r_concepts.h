@@ -3,7 +3,10 @@
 
 #include <type_traits> // For concepts
 #include <limits>
-#include <cstring>
+
+// struct SEXPREC;
+// using SEXP = SEXPREC*;
+
 
 namespace cpp20 {
 

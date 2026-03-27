@@ -7,6 +7,7 @@
 
 #include <cpp20/register.hpp>
 #include <cpp20/r_setup.h>
+#include <cpp20/r_utils.h>
 #include <cpp20/r_concepts.h>
 #include <cpp20/r_types.h>
 #include <cpp20/r_symbols.h>

@@ -2,6 +2,7 @@
 #define CPP20_R_RTYPE_COERCE_H
 
 #include <cpp20/r_setup.h>
+#include <cpp20/r_utils.h>
 #include <cpp20/r_types.h>
 #include <cpp20/r_limits.h>
 #include <cpp20/r_nas.h>

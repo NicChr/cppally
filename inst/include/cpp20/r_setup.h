@@ -99,12 +99,6 @@ namespace internal {
 //     r_unk = 13
 // };
 
-
-template<typename T, typename U>
-inline constexpr bool between_impl(const T x, const U lo, const U hi) {
-  return x >= lo && x <= hi;
-}
-
 // If we find out eager initialisation of R symbols is a problem, we can use the constants below
 // // Generic Lazy Loader for R Constants
 // // Ptr: A pointer to the global R variable (e.g., &R_NilValue)
@@ -125,37 +119,8 @@ inline constexpr bool between_impl(const T x, const U lo, const U hi) {
 // inline constexpr lazy_r_constant<SEXP, &R_MissingArg> missing_arg_constant{};
 
 inline constexpr int64_t CPP20_OMP_THRESHOLD = 100000;
-inline int cpp20_n_threads = 1;
+inline int CPP20_N_THREADS = 1;
 
-}
-
-// Set & get the number of OMP threads
-inline int get_threads(){
-  auto n_threads = std::min(internal::cpp20_n_threads, OMP_MAX_THREADS);
-  return n_threads > 1 ? n_threads : 1;
-}
-inline void set_threads(int n){
-  int max_threads = OMP_MAX_THREADS;
-  internal::cpp20_n_threads = std::min(n, max_threads);
-}
-
-
-// inline bool xor_(bool a, bool b) noexcept {
-//   return (a + b) == 1;
-// }
-
-namespace internal {
-
-inline int calc_threads(r_size_t data_size){
-  return data_size >= CPP20_OMP_THRESHOLD ? get_threads() : 1;
-}
-
-}
-
-// Recycle loop indices
-template<typename T>
-inline constexpr void recycle_index(T& v, T size) {
-  v = (++v == size) ? T(0) : v;
 }
 
 } // end of cpp20 namespace
