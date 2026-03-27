@@ -5,8 +5,6 @@
 #define R_NO_REMAP 
 #endif
 
-#pragma once
-
 #ifdef R_INTERNALS_H_
 #if !(defined(R_NO_REMAP) && defined(STRICT_R_HEADERS))
 #error R headers were included before cpp20 headers \
