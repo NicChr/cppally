@@ -110,10 +110,14 @@ struct r_hash_impl<r_str> {
 
 // Vector hashing
 
-// Forward declare helper before r_hash_impl<r_sexp>
-inline uint64_t hash_factors_impl(const r_factors& x);
+// // Forward declarations before r_hash_impl<r_sexp>
+inline uint64_t hash_factor(const r_factors& x);
 
-// Forward declare partial specialization
+template <RVector T>
+uint64_t hash_vec(const T& x);
+
+inline uint64_t hash_sym(const r_sym& x);
+
 template <RVal T>
 struct r_hash_impl<r_vec<T>>;
 
@@ -131,9 +135,11 @@ struct r_hash_impl<r_sexp> {
             if constexpr (is<vec_t, r_sexp>){
                 abort("Unsupported element type, current implementation can only hash vectors and factors");
             } else if constexpr (RFactor<vec_t>){
-                return hash_factors_impl(vec);
+                return hash_factor(vec);
+            } else if constexpr (RSymbolType<vec_t>){
+                return hash_sym(vec);
             } else {
-                return r_hash_impl<vec_t>{}(vec);
+                return hash_vec(vec);
             }
         });
     }
@@ -187,8 +193,17 @@ struct r_hash_impl<r_factors> {
 };
 
 // Defined after r_vec<T> and r_factors are complete
-inline uint64_t hash_factors_impl(const r_factors& x) {
+inline uint64_t hash_factor(const r_factors& x) {
     return r_hash_impl<r_vec<r_int>>{}(x.value);
+}
+
+template <RVector T>
+uint64_t hash_vec(const T& x) {
+    return r_hash_impl<T>{}(x);
+}
+
+inline uint64_t hash_sym(const r_sym& x) {
+    return r_hash_impl<r_sym>{}(x);
 }
 
 template <typename T>
