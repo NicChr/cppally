@@ -82,14 +82,28 @@ template <typename... Args>
     unwind_protect([&] { Rf_errorcall(R_NilValue, msg, std::forward<Args>(args)...); });
     throw std::exception(); // satisfy compiler [[noreturn]]
 }
+
+[[noreturn]] inline void abort(const char* msg) {
+    unwind_protect([&] { Rf_errorcall(R_NilValue, "%s", msg); });
+    throw std::exception();
+}
+
 template <typename... Args>
 inline void warn(const char* msg, Args&&... args) {
     safe[Rf_warningcall](R_NilValue, msg, std::forward<Args>(args)...);
 }
 
+inline void warn(const char* msg) {
+    safe[Rf_warningcall](R_NilValue, "%s", msg);
+}
+
 template <typename... Args>
 inline void print(const char* msg, Args&&... args) {
     Rprintf(msg, std::forward<Args>(args)...);
+}
+
+inline void print(const char* msg) {
+    Rprintf("%s", msg);
 }
 
 namespace detail {
