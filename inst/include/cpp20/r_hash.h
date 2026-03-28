@@ -107,7 +107,11 @@ struct r_hash_impl<r_str> {
     }
 };
 
+
 // Vector hashing
+
+template<>
+struct r_hash_impl<r_factors>;
 
 // Specialization for elements of lists
 template<>
@@ -194,7 +198,6 @@ struct r_hash_impl<r_factors> {
         return r_hash_impl<r_vec<r_int>>{}(x.value);
     }
 };
-
 
 template <typename T>
 struct r_hash : r_hash_impl<std::remove_cvref_t<T>> {};

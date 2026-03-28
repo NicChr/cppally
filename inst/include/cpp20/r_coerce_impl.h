@@ -347,7 +347,7 @@ struct as_impl<r_sexp, U> {
   }
 };
 
-template<RVal T, typename U>
+template <RVal T, typename U>
 inline T as_r(U const& x) {
   if constexpr (is<U, T> && is<unwrap_t<U>, unwrap_t<T>>){
     return x;

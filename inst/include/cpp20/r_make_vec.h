@@ -42,13 +42,13 @@ struct arg {
   }
 };
 
-
+namespace internal {
 // ── as_r<T> for named_arg ──────────────────────────────────────────
-template <RVal T, typename V>
-inline T internal::as_r(const internal::named_arg<V>& a) {
+template <RVal T, NamedArg U>
+inline T as_r(U const& a) {
   return internal::as_r<T>(a.value);
 }
-
+}
 
 // ── make_vec ─────────────────────────────────────────────────────
 template <RVal T, typename... Args>
