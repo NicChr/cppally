@@ -110,27 +110,28 @@ struct r_hash_impl<r_str> {
 
 // Vector hashing
 
-template<>
-struct r_hash_impl<r_factors>;
+// Forward declare helper before r_hash_impl<r_sexp>
+inline uint64_t hash_factors_impl(const r_factors& x);
+
+// Forward declare partial specialization
+template <RVal T>
+struct r_hash_impl<r_vec<T>>;
 
 // Specialization for elements of lists
 template<>
 struct r_hash_impl<r_sexp> {
     using is_avalanching = void;
-
     [[nodiscard]] uint64_t operator()(SEXP x) const {
-
         auto x_ = r_sexp(x, internal::view_tag{});
-
         if (x_.is_null()) return 0;
         
         // Recursively hash the element
         return view_sexp(x_, [](const auto& vec) -> uint64_t {
-
             using vec_t = std::remove_cvref_t<decltype(vec)>;
-
             if constexpr (is<vec_t, r_sexp>){
                 abort("Unsupported element type, current implementation can only hash vectors and factors");
+            } else if constexpr (RFactor<vec_t>){
+                return hash_factors_impl(vec);
             } else {
                 return r_hash_impl<vec_t>{}(vec);
             }
@@ -141,38 +142,25 @@ struct r_hash_impl<r_sexp> {
 template <RVal T>
 struct r_hash_impl<r_vec<T>> {
     using is_avalanching = void;
-
     [[nodiscard]] uint64_t operator()(const r_vec<T>& x) const noexcept {
         
         if (x.is_null()) return 0;
-
         r_size_t n = x.length();
-
         // Initialise the seed using the hashed vector type
         uint64_t seed = r_hash_impl<r_int>{}(r_typeof<r_vec<T>>);
-
         // Hash the attributes list if it exists
-
         if (attr::has_attrs(x)){
             r_vec<r_sexp> attrs = attr::get_attrs(x);
-
             seed = hash_combine(seed, r_hash_impl<r_vec<r_str_view>>{}(attrs.names()));
             for (r_size_t i = 0; i < attrs.length(); ++i){
                 seed = hash_combine(seed, r_hash_impl<r_sexp>{}(attrs.view(i)));
             }
         }
-
         // If vector is a list then we recursively combine hashes of vector elements
-        
         if constexpr (is<T, r_sexp>){
-            
             for (r_size_t i = 0; i < n; ++i){
-
-                // Recursively hash the elements
                 uint64_t h = view_sexp(x.view(i), [](const auto& vec) -> uint64_t {
-        
                     using vec_t = std::remove_cvref_t<decltype(vec)>;
-        
                     if constexpr (is<vec_t, r_sexp>){
                         abort("List contains unsupported element type, current implementation can only hash vectors and factors");
                     } else {
@@ -180,24 +168,28 @@ struct r_hash_impl<r_vec<T>> {
                     }
                 });
                 seed = hash_combine(seed, h);
+            }
+        } else {
+            for (r_size_t i = 0; i < n; ++i) {
+                seed = hash_combine(seed, r_hash_impl<T>{}(unwrap(x.view(i))));
+            }
         }
-    } else {
-        for (r_size_t i = 0; i < n; ++i) {
-            seed = hash_combine(seed, r_hash_impl<T>{}(unwrap(x.view(i))));
-        }
+        return seed;
     }
-    return seed;
-}
 };
 
 template<>
 struct r_hash_impl<r_factors> {
     using is_avalanching = void;
-
     [[nodiscard]] uint64_t operator()(const r_factors& x) const noexcept {
         return r_hash_impl<r_vec<r_int>>{}(x.value);
     }
 };
+
+// Defined after r_vec<T> and r_factors are complete
+inline uint64_t hash_factors_impl(const r_factors& x) {
+    return r_hash_impl<r_vec<r_int>>{}(x.value);
+}
 
 template <typename T>
 struct r_hash : r_hash_impl<std::remove_cvref_t<T>> {};
