@@ -1,6 +1,8 @@
 #ifndef CPP20_R_MAKE_VEC_H
 #define CPP20_R_MAKE_VEC_H
 
+#include <cpp20/r_setup.h>
+#include <cpp20/r_coerce_impl.h>
 #include <cpp20/r_vec.h>
 #include <cpp20/r_attrs.h>
 

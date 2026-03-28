@@ -236,7 +236,6 @@ inline r_vec<r_int> order(const r_vec<T>& x, bool preserve_ties = true) {
         std::vector<uint32_t> group_ids; // Caches the ID for each element
         group_ids.reserve(n);
         
-        uint32_t na_count = 0;
         uint32_t last_id = uint32_t(-1);
         
         for (uint32_t i = 0; i < n; ++i) {
@@ -245,7 +244,6 @@ inline r_vec<r_int> order(const r_vec<T>& x, bool preserve_ties = true) {
             if (str == NA_STRING) {
                 group_ids.push_back(uint32_t(-1));
                 last_id = uint32_t(-1); // Break linear cache
-                na_count++;
             } 
             // Linear Scan Cache - identical strings have identical pointers
             else if (i > 0 && str == px[i - 1]) { 

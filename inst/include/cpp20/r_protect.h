@@ -78,7 +78,7 @@ constexpr protect safe = {};
 inline void check_user_interrupt() { safe[R_CheckUserInterrupt](); }
 
 template <typename... Args>
-inline void abort [[noreturn]] (const char* msg, Args&&... args) {
+[[noreturn]] inline void abort (const char* msg, Args&&... args) {
     unwind_protect([&] { Rf_errorcall(R_NilValue, msg, std::forward<Args>(args)...); });
     throw std::exception(); // satisfy compiler [[noreturn]]
 }
