@@ -210,7 +210,7 @@ inline r_sexp new_scalar_vec<r_str>(r_str const& default_value){
 }
 template <>
 inline r_sexp new_scalar_vec<r_cplx>(r_cplx const& default_value){
-  return r_sexp(Rf_ScalarComplex(Rcomplex{default_value.re(), default_value.im()}));
+  return r_sexp(Rf_ScalarComplex(Rcomplex{{default_value.re(), default_value.im()}}));
 }
 template <>
 inline r_sexp new_scalar_vec<r_raw>(r_raw const& default_value){
