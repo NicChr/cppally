@@ -19,6 +19,7 @@
 
 #include <R_ext/Boolean.h>
 #include <Rinternals.h>
+#include <iosfwd> // Forward declarations for strings
 
 // clang-format off
 #ifdef __clang__
@@ -38,8 +39,6 @@
 #else
   #define CPP20_REGISTER 
 #endif
-
-#include <iosfwd> // Forward declarations for strings
 
 #ifdef _MSC_VER
 #define RESTRICT __restrict

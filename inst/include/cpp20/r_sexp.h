@@ -8,13 +8,17 @@
 namespace cpp20 {
 
 namespace internal {
-// Helper struct to allow for overloading SEXP-based constructors without re-protecting them via cpp11::sexp
+// Helper struct to allow for overloading SEXP-based constructors without re-protecting them
 struct view_tag {};
 }
 
 // General SEXP, reserved for everything except CHARSXP and SYMSXP
 // Wrapper around cpp11::sexp to benefit from automatic protection (cpp11-managed linked list)
-// All credits go to cpp11 authors/maintainers for `cpp11::sexp`
+//
+//
+// ----- All credits go to cpp11 authors/maintainers for `cpp11::sexp` -----
+//
+//
 
 struct r_sexp {
 
