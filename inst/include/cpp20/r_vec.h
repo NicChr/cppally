@@ -126,7 +126,7 @@ struct r_vec {
   }
 
   // Explicit conversion to r_sexp
-  constexpr explicit operator r_sexp() const noexcept {
+  explicit operator r_sexp() const noexcept {
     return sexp;
   }
 
