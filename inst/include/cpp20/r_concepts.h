@@ -2,6 +2,7 @@
 #define CPP20_R_CONCEPTS_H
 
 #include <type_traits> // For concepts
+#include <complex> // For complex<double>
 #include <limits>
 
 

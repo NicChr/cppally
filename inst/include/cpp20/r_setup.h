@@ -39,7 +39,6 @@
   #define CPP20_REGISTER 
 #endif
 
-#include <complex> // For complex<double>
 #include <cstdint> // For uint32_t and similar
 #include <iosfwd> // Forward declarations for strings
 
@@ -63,8 +62,6 @@
 #define OMP_FOR_SIMD OMP_PRAGMA(omp for simd)
 #define OMP_SIMD OMP_PRAGMA(omp simd)
 #define OMP_PARALLEL_FOR_SIMD(n_threads) OMP_PRAGMA(omp parallel for simd if ((n_threads) > 1) num_threads((n_threads)))
-
-#define OMP_DO_NOTHING
 #else
 #define OMP_PRAGMA(x)
 #define OMP_NUM_PROCS 1
@@ -74,33 +71,15 @@
 #define OMP_SIMD
 #define OMP_FOR_SIMD
 #define OMP_PARALLEL_FOR_SIMD(n_threads)
-#define OMP_DO_NOTHING
 #endif
+
+#define OMP_DO_NOTHING // Placeholder for no OMP operations
 
 namespace cpp20 {
 
 using r_size_t = R_xlen_t;
 
 namespace internal {
-
-// using r_sexp_tag_t = uint16_t; // cpp20 version of SEXPTYPE
-
-// Currently unfinished
-// enum : r_sexp_tag_t {
-//     r_lgl_id = 1,
-//     r_int_id = 2,
-//     r_int64_id = 3,
-//     r_dbl_id = 4,
-//     r_cplx_id = 5,
-//     r_raw_id = 6,
-//     r_dates_id = 7,
-//     r_pxt_id = 8,
-//     r_chr = 9,
-//     r_fct = 10,
-//     r_list = 11,
-//     r_df = 12,
-//     r_unk = 13
-// };
 
 // If we find out eager initialisation of R symbols is a problem, we can use the constants below
 // // Generic Lazy Loader for R Constants

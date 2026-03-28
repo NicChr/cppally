@@ -5,6 +5,7 @@
 #include <cpp20/r_concepts.h>
 #include <cpp20/r_sexp.h>
 #include <cpp20/r_sexp_types.h>
+#include <complex> // For complex<double>
 #include <chrono> // For r_date/r_psxt
 #include <limits>
 

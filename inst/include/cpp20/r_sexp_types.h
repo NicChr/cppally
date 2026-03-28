@@ -2,6 +2,7 @@
 #ifndef CPP20_R_SEXP_TYPES_H
 #define CPP20_R_SEXP_TYPES_H
 
+// Runtime IDs for SEXP (via TYPEOF)
 
 #include <cpp20/r_setup.h>
 #include <cpp20/r_concepts.h>
@@ -154,6 +155,25 @@ inline void check_valid_construction(SEXP x){
         abort("Bad construction from R type %s to C++ type %s", Rf_type2char(TYPEOF(x)), type_str<T>());
     }
 }
+
+// using r_sexp_tag_t = uint16_t; // cpp20 version of SEXPTYPE
+
+// Currently unfinished
+// enum : r_sexp_tag_t {
+//     r_lgl_id = 1,
+//     r_int_id = 2,
+//     r_int64_id = 3,
+//     r_dbl_id = 4,
+//     r_cplx_id = 5,
+//     r_raw_id = 6,
+//     r_dates_id = 7,
+//     r_pxt_id = 8,
+//     r_chr = 9,
+//     r_fct = 10,
+//     r_list = 11,
+//     r_df = 12,
+//     r_unk = 13
+// };
 
 }
 
