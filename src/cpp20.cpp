@@ -633,6 +633,14 @@ extern "C" SEXP _cpp20_test_copy(SEXP x) {
   return cpp20::internal::cpp_to_sexp(test_copy(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
   END_CPP20
 }
+// test_attrs.cpp
+r_vec<r_sexp> test_attrs(SEXP x);
+extern "C" SEXP _cpp20_test_attrs(SEXP x) {
+  BEGIN_CPP20
+  cpp20::internal::check_r_cpp_mapping<SEXP>(x);
+  return cpp20::internal::cpp_to_sexp(test_attrs(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
+  END_CPP20
+}
 // test_nas.h
 extern "C" SEXP _cpp20_test_nas(SEXP x) {
   BEGIN_CPP20
@@ -806,6 +814,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_test_as_date",              (DL_FUNC) &_cpp20_test_as_date,              1},
     {"_cpp20_test_as_date2",             (DL_FUNC) &_cpp20_test_as_date2,             1},
     {"_cpp20_test_as_sym",               (DL_FUNC) &_cpp20_test_as_sym,               1},
+    {"_cpp20_test_attrs",                (DL_FUNC) &_cpp20_test_attrs,                1},
     {"_cpp20_test_coerce",               (DL_FUNC) &_cpp20_test_coerce,               2},
     {"_cpp20_test_coerce1",              (DL_FUNC) &_cpp20_test_coerce1,              1},
     {"_cpp20_test_combine2",             (DL_FUNC) &_cpp20_test_combine2,             2},

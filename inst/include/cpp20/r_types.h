@@ -180,6 +180,8 @@ struct r_sym {
     internal::check_valid_construction<r_sym>(value);
   }
   explicit r_sym(const char *x) : value(Rf_installChar(Rf_mkCharCE(x, CE_UTF8))) {}
+  explicit r_sym(const r_str& x) : value(Rf_installChar(x)) {}
+  explicit r_sym(const r_str_view& x) : value(Rf_installChar(x)) {}
   operator SEXP() const noexcept { return value; }
 };
 

@@ -252,6 +252,10 @@ test_copy <- function(x) {
   .Call(`_cpp20_test_copy`, x)
 }
 
+test_attrs <- function(x) {
+  .Call(`_cpp20_test_attrs`, x)
+}
+
 test_nas <- function(x) {
   .Call(`_cpp20_test_nas`, x)
 }

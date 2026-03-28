@@ -3,6 +3,7 @@
 
 #include <cpp20/r_setup.h>
 #include <cpp20/r_symbols.h>
+#include <cpp20/r_env.h>
 #include <cpp20/r_vec.h>
 
 namespace cpp20 {
@@ -10,7 +11,7 @@ namespace cpp20 {
 namespace attr {
 
 template <RObject T>
-inline bool can_have_attributes(const T& x){
+inline bool can_have_attributes(const T& x) noexcept {
   if constexpr (RVector<T> || RMetaVector<T>){
     return true; 
   } else if constexpr (is_sexp<T>){
@@ -43,7 +44,7 @@ inline bool can_have_attributes(const T& x){
 }
 
 template <RObject T>
-inline bool can_have_names(const T& x){
+inline bool can_have_names(const T& x) noexcept {
   if constexpr (RVector<T> || RMetaVector<T>){
     return true; 
   } else if constexpr (is_sexp<T>){
@@ -77,24 +78,17 @@ inline bool inherits1(const T& x, const char *r_cls){
 
 // Attributes of x as a list
 template <RObject T>
-inline r_vec<r_sexp> get_attrs(const T& x){
-  r_sexp attrs = r_sexp(ATTRIB(x)); // Pairlist
-  r_size_t n = attrs.length();
-  if (n == 0){
+inline r_vec<r_sexp> get_attrs(const T& x) {
+  if (can_have_attributes(x)){
+    r_sym attributes_fn("attributes");
+    SEXP expr = Rf_protect(Rf_lang2(attributes_fn, x));
+    SEXP res = Rf_protect(Rf_eval(expr, env::base_env));
+    r_vec<r_sexp> out(res);
+    Rf_unprotect(2);
+    return out;
+  } else {
     return r_vec<r_sexp>(r_null);
   }
-  r_vec<r_sexp> out(n);
-  r_vec<r_str_view> names(n);
-
-  SEXP current = unwrap(attrs);
-
-  for (r_size_t i = 0; i < n; ++i){
-    out.set(i, r_sexp(CAR(current), internal::view_tag{}));
-    names.set(i, internal::as_r<r_str_view>(symbol::tag(current)));
-    current = CDR(current);
-  }
-  out.set_names(names);
-  return out;
 }
 template <RObject T>
 inline bool has_attrs(const T& x){
