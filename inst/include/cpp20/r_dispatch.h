@@ -375,7 +375,7 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
     uint32_t runtime_types[NumTemplateParams > 0 ? NumTemplateParams : 1]{};
     [&]<size_t... Ks>(std::index_sequence<Ks...>) {
         (..., [&]() {
-            constexpr size_t FirstArgIdx = first_arg_for_template<Ks, NumArgs, ArgToTemplateMap>();
+            static constexpr size_t FirstArgIdx = first_arg_for_template<Ks, NumArgs, ArgToTemplateMap>();
             runtime_types[Ks] = static_cast<uint32_t>(CPP20_TYPEOF(args[FirstArgIdx]));
             check_template_homogeneity<Ks, NumArgs, ArgToTemplateMap>(
                 static_cast<uint16_t>(runtime_types[Ks]), args

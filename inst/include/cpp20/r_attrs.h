@@ -92,7 +92,7 @@ inline r_vec<r_sexp> get_attrs(const T& x) {
 }
 template <RObject T>
 inline bool has_attrs(const T& x){
-  return Rf_length(ATTRIB(x)) != 0;
+  return get_attrs(x).length() > 0;
 }
 template <RObject T>
 inline r_sexp get_attr(const T& x, const r_sym& sym){
