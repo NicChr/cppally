@@ -122,14 +122,17 @@ inline constexpr bool is_na_impl(T const& x) {
   }
 }
 
-inline constexpr bool is_na_impl(r_dbl x) {
-  return x.value != x.value;
+template<>
+inline constexpr bool is_na_impl(r_dbl const& x) {
+  return unwrap(x) != unwrap(x);
 }
 
+template<>
 inline bool is_na_impl(r_str_view const& x) {
   return unwrap(x) == unwrap(na_str);
 }
 
+template<>
 inline bool is_na_impl(r_str const& x) {
   return unwrap(x) == unwrap(na_str);
 }
@@ -139,11 +142,13 @@ inline constexpr bool is_na_impl(T const& x){
   return is_na_impl<inherited_type_t<T>>(static_cast<inherited_type_t<T>>(x));
 }
 
-inline constexpr bool is_na_impl(r_cplx const& x){
+template<>
+inline constexpr bool is_na_impl<r_cplx>(r_cplx const& x){
   return is_na_impl<r_dbl>(x.re()) || is_na_impl<r_dbl>(x.im());
 }
 
-inline constexpr bool is_na_impl(r_raw x){
+template<>
+inline constexpr bool is_na_impl<r_raw>(r_raw const& x){
   return false;
 }
 
@@ -159,6 +164,7 @@ inline constexpr bool is_nan(T const& x){
   return false;
 }
 // NaN but not NA_REAL
+template <>
 inline constexpr bool is_nan(r_dbl const& x){
   return is_na(x) && !internal::is_na_real(unwrap(x));
 }
