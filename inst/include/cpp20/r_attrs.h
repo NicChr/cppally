@@ -71,17 +71,21 @@ inline bool can_have_names(const T& x) noexcept {
   }
 }
 
-template <RObject T>
-inline bool inherits1(const T& x, const char *r_cls){
+inline bool inherits1(SEXP x, const char *r_cls){
   return Rf_inherits(x, r_cls);
+}
+
+inline bool has_attrs(SEXP x){
+  return ANY_ATTRIB(x);
 }
 
 // Attributes of x as a list
 template <RObject T>
 inline r_vec<r_sexp> get_attrs(const T& x) {
-  if (can_have_attributes(x)){
+  if (can_have_attributes(x) && has_attrs(x)){
+    SEXP x_ = x;
     r_sym attributes_fn("attributes");
-    SEXP expr = Rf_protect(Rf_lang2(attributes_fn, x));
+    SEXP expr = Rf_protect(Rf_lang2(attributes_fn, x_));
     SEXP res = Rf_protect(Rf_eval(expr, env::base_env));
     r_vec<r_sexp> out(res);
     Rf_unprotect(2);
@@ -90,12 +94,7 @@ inline r_vec<r_sexp> get_attrs(const T& x) {
     return r_vec<r_sexp>(r_null);
   }
 }
-template <RObject T>
-inline bool has_attrs(const T& x){
-  return get_attrs(x).length() > 0;
-}
-template <RObject T>
-inline r_sexp get_attr(const T& x, const r_sym& sym){
+inline r_sexp get_attr(SEXP x, const r_sym& sym){
   return r_sexp(Rf_getAttrib(x, sym));
 }
 template <RObject T, RObject U> 
@@ -104,30 +103,28 @@ inline void set_attr(const T& x, const r_sym& sym, const U& value){
     Rf_setAttrib(x, sym, value); 
   }
 }
-template <RObject T, RStringType U>
-inline void set_old_names(const T& x, const r_vec<U>& names){
-  if (x.is_null()){
+template <RStringType U>
+inline void set_old_names(SEXP x, const r_vec<U>& names){
+  r_sexp x_ = r_sexp(x, internal::view_tag{});
+  if (x_.is_null()){
     return;
   } else if (names.is_null()){
-    attr::set_attr(x, symbol::names_sym, r_null);
-  } else if (names.length() != x.length()){
+    attr::set_attr(x_, symbol::names_sym, r_null);
+  } else if (names.length() != x_.length()){
     abort("`length(names)` must equal `length(x)`");
-  } else if (can_have_names(x)){
-    Rf_namesgets(x, names);
+  } else if (can_have_names(x_)){
+    Rf_namesgets(x_, names);
   } else {
     abort("Cannot add names to unsupported type");
   }
 }
-template <RObject T>
-inline r_vec<r_str_view> get_old_names(const T& x){
+inline r_vec<r_str_view> get_old_names(SEXP x){
   return r_vec<r_str_view>(get_attr(x, symbol::names_sym));
 }
-template <RObject T>
-inline bool has_r_names(const T& x){
+inline bool has_r_names(SEXP x){
   return !get_old_names(x).is_null();
 }
-template <RObject T>
-inline r_vec<r_str_view> get_old_class(const T& x){
+inline r_vec<r_str_view> get_old_class(SEXP x){
   return r_vec<r_str_view>(get_attr(x, symbol::class_sym));
 }
 template <RObject T, RStringType U>
@@ -136,8 +133,8 @@ inline void set_old_class(const T& x, const r_vec<U>& cls){
     Rf_classgets(x, cls);
   }
 }
-template <RObject T, RStringType U>
-inline bool inherits_any(const T& x, const r_vec<U>& classes){
+template <RStringType U>
+inline bool inherits_any(SEXP x, const r_vec<U>& classes){
   r_size_t n = classes.length();
   for (r_size_t i = 0; i < n; ++i) {
     if (inherits1(x, classes.view(i).c_str())){
@@ -146,8 +143,8 @@ inline bool inherits_any(const T& x, const r_vec<U>& classes){
   }
   return false;
 }
-template <RObject T, RStringType U>
-inline bool inherits_all(const T& x, const r_vec<U>& classes){
+template <RStringType U>
+inline bool inherits_all(SEXP x, const r_vec<U>& classes){
   r_size_t n = classes.length();
   for (r_size_t i = 0; i < n; ++i) {
     if (!inherits1(x, classes.view(i).c_str())){
@@ -156,22 +153,8 @@ inline bool inherits_all(const T& x, const r_vec<U>& classes){
   }
   return true;
 }
-template <RObject T>
-inline void clear_attrs(const T& x){
-
-  auto attrs = get_attrs(x);
-
-  if (attrs.is_null()){
-    return;
-  }
-  auto names = attr::get_old_names(attrs);
-
-  int n = attrs.length();
-
-  for (r_size_t i = 0; i < n; ++i){
-    r_sym target_sym = internal::as_r<r_sym>(names.view(i));
-    set_attr(x, target_sym, r_null);
-  }
+inline void clear_attrs(SEXP x){
+  CLEAR_ATTRIB(x);
 }
 
 }
@@ -181,7 +164,9 @@ namespace internal {
 template <RObject T>
 inline void modify_attrs_impl(const T& x, const r_vec<r_sexp>& attrs) {
 
-  if (x.is_null()){
+  r_sexp x_ = r_sexp(x, internal::view_tag{});
+
+  if (x_.is_null()){
     abort("Cannot add attributes to `NULL`");
   }
 
@@ -203,11 +188,11 @@ inline void modify_attrs_impl(const T& x, const r_vec<r_sexp>& attrs) {
     if (names.view(i) != blank_r_string){
       attr_nm = internal::as_r<r_sym>(names.view(i));
       // We can't add an object as its own attribute in-place (as this will crash R)
-      if (x.address() == attrs.view(i).address()){
+      if (x_.address() == attrs.view(i).address()){
         r_sexp dup_attr = r_sexp(Rf_duplicate(attrs.view(i)));
-        attr::set_attr(x, attr_nm, dup_attr);
+        attr::set_attr(x_, attr_nm, dup_attr);
       } else {
-        attr::set_attr(x, attr_nm, attrs.view(i));
+        attr::set_attr(x_, attr_nm, attrs.view(i));
       }
     }
   }
@@ -217,8 +202,7 @@ inline void modify_attrs_impl(const T& x, const r_vec<r_sexp>& attrs) {
 
 namespace attr {
 
-template <RObject T>
-inline void set_attrs(const T& x, const r_vec<r_sexp>& attrs){
+inline void set_attrs(SEXP x, const r_vec<r_sexp>& attrs){
   clear_attrs(x);
   internal::modify_attrs_impl(x, attrs);
 }
