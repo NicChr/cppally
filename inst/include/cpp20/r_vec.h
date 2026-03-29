@@ -481,7 +481,7 @@ struct r_vec {
   void replace(const r_vec<U1>& old_values, const r_vec<U2>& new_values);
 
 
-  r_vec<T> resize(r_size_t n){
+  r_vec<T> resize(r_size_t n) const {
     r_size_t vec_size = length();
     if (n == vec_size){
       return *this;
@@ -500,7 +500,7 @@ struct r_vec {
     }
   }
 
-  r_vec<T> rep_len(r_size_t n){
+  r_vec<T> rep_len(r_size_t n) const {
 
     r_size_t size = length();
 
