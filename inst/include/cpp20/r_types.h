@@ -368,7 +368,7 @@ inline const r_str_view na_str = r_str_view(NA_STRING);
 // inline const r_str_view& r_blank_string() { static const r_str_view s; return s; };
   
 // Coerce to an R type based on the C type (useful for RVal templates)
-template<typename T>
+template <typename T>
 inline constexpr auto as_r_val(T const& x) { 
   if constexpr (RVal<T>){
     return x;

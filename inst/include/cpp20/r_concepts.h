@@ -249,6 +249,14 @@ namespace internal {
 template <typename T>
 concept RPtrWritableType = RVal<T> && !RObject<T>;
 
+// template <typename T>
+// concept RPassByValueType = any<T, r_lgl, r_int, r_int64, r_dbl, r_raw>;
+
+// template <typename T>
+// concept RPassByRefType = !RPassByValueType<T>;
+// concept RPassByRefType = RVal<T> && !RPassByValueType<T>;
+// concept RPassByRefType = (RVal<T> && !RPassByValueType<T>) || RObject<T>;
+
 // Wanted to use this as arg in templates but template type deduction then doesn't work (SAD)
 // template <typename T>
 // using arg_t = std::conditional_t<MathType<T> || is<T, const char*>, T, const T&>;
