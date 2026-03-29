@@ -44,7 +44,13 @@ inline constexpr r_lgl operator&&(r_lgl lhs, r_lgl rhs) {
 // Operators for r_str_view
 
 inline r_lgl operator<(r_str_view lhs, r_str_view rhs) {
-  return is_na(lhs) || is_na(rhs) ? r_na : r_lgl{std::strcmp(lhs.c_str(), rhs.c_str()) < 0};
+  if (is_na(lhs) || is_na(rhs)){
+    return r_na;
+  } else if (unwrap(lhs) == unwrap(rhs)){
+    return r_false;
+  } else {
+    return r_lgl{std::strcmp(lhs.c_str(), rhs.c_str()) < 0};
+  }
 }
 inline r_lgl operator<=(r_str_view lhs, r_str_view rhs) {
   if (is_na(lhs) || is_na(rhs)){
@@ -56,7 +62,13 @@ inline r_lgl operator<=(r_str_view lhs, r_str_view rhs) {
   }
 }
 inline r_lgl operator>(r_str_view lhs, r_str_view rhs) {
-  return is_na(lhs) || is_na(rhs) ? r_na : r_lgl{std::strcmp(lhs.c_str(), rhs.c_str()) > 0};
+  if (is_na(lhs) || is_na(rhs)){
+    return r_na;
+  } else if (unwrap(lhs) == unwrap(rhs)){
+    return r_false;
+  } else {
+    return r_lgl{std::strcmp(lhs.c_str(), rhs.c_str()) > 0};
+  }
 }
 inline r_lgl operator>=(r_str_view lhs, r_str_view rhs) {
   if (is_na(lhs) || is_na(rhs)){

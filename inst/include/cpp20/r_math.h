@@ -3,7 +3,8 @@
 
 #include <cpp20/r_methods.h>
 #include <cpp20/r_limits.h>
-#include <cpp20/r_coerce.h> 
+#include <cpp20/r_coerce.h>
+#include <algorithm>
 
 // R math functions that propagate NA values in the way R expects
 
@@ -11,7 +12,7 @@ namespace cpp20 {
 
 namespace internal {
 
-inline r_dbl round_to_even(r_dbl x){
+inline constexpr r_dbl round_to_even(r_dbl x){
   return x - r_dbl{std::remainder(unwrap(x), 1.0)};
 }
 
@@ -31,7 +32,7 @@ inline constexpr r_lgl between(T x, U lo, U hi){
 
 template <NumericType T, NumericType U>
 requires (RNumericType<T> || RNumericType<U>)
-inline constexpr auto min(T x, U y){
+inline constexpr common_r_t<T, U> min(T x, U y){
   
   using common_t = common_r_t<T, U>;
 
