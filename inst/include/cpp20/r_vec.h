@@ -166,16 +166,14 @@ struct r_vec {
   }
 
   // Get element (no bounds-check)
-  template <CppIntegerType U>
-  T get(U index) const {
+  T get(r_size_t index) const {
     return T(m_ptr[index]);
   }
 
   // View element (like `get()` but copied elements must be short-lived)
   // Element must not live after parent vector has been destroyed
   // It is designed to be a simple view into the vector 
-  template <CppIntegerType U>
-  T view(U index) const {
+  T view(r_size_t index) const {
     if constexpr (std::is_constructible_v<data_type, unwrap_t<data_type>, internal::view_tag>) {
       return T(m_ptr[index], internal::view_tag{});
     } else {
@@ -184,8 +182,8 @@ struct r_vec {
   }
 
   // Set element (no bounds-check) - We use flexible template to be able to coerce it to an RVal
-  template <CppIntegerType U, typename V>
-  void set(U index, const V& val) {
+  template <typename V>
+  void set(r_size_t index, const V& val) {
     // Avoid copies and extra protections (especially of r_sexp/r_str)
     if constexpr (is<T, V>){
       if constexpr (RStringType<T>){
