@@ -13,7 +13,7 @@ Description: A header-only API designed for advanced R data manipulation
 License: MIT + file LICENSE
 BugReports: https://github.com/NicChr/cpp20/issues
 Depends:
-    R (>= 4.1.0)
+    R (>= 4.5.0)
 Imports:
     brio,
     cli,
