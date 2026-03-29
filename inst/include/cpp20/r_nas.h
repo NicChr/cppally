@@ -38,14 +38,8 @@ inline consteval uint64_t nan_bits(){
 
 namespace internal {
 
-template<typename T>
-inline constexpr T na_value_impl() {
-  static_assert(
-    always_false<T>,
-    "Unimplemented `na` specialisation"
-  );
-  return T{};
-}
+template <RVal T>
+inline constexpr T na_value_impl();
 
 template<>
 inline constexpr r_lgl na_value_impl<r_lgl>(){
