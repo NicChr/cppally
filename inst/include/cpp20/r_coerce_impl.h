@@ -2,6 +2,7 @@
 #define CPP20_R_COERCE_IMPL_H
 
 #include <cpp20/r_setup.h>
+#include <cpp20/r_named_arg.h>
 #include <cpp20/r_utils.h>
 #include <cpp20/r_types.h>
 #include <cpp20/r_limits.h>
@@ -349,12 +350,18 @@ struct as_impl<r_sexp, U> {
 
 template <RVal T, typename U>
 inline T as_r(U const& x) {
-  if constexpr (is<U, T> && is<unwrap_t<U>, unwrap_t<T>>){
+  if constexpr (is<U, T>){
     return x;
   } else {
     using r_t = std::remove_cvref_t<T>;
     return internal::as_impl<r_t, U>::cast(x);
   } 
+}
+
+// ── as_r<T> for named_arg ──────────────────────────────────────────
+template <RVal T, NamedArg U>
+inline T as_r(U const& a) {
+  return internal::as_r<T>(a.value);
 }
 
 }

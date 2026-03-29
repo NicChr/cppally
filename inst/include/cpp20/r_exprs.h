@@ -1,7 +1,12 @@
 #ifndef CPP20_R_EXPRS_H
 #define CPP20_R_EXPRS_H
 
-#include <cpp20/r_make_vec.h>
+
+#include <cpp20/r_setup.h>
+#include <cpp20/r_sexp.h>
+#include <cpp20/r_types.h>
+#include <cpp20/r_named_arg.h>
+#include <cpp20/r_coerce_impl.h>
 
 namespace cpp20 {
 

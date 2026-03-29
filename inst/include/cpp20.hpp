@@ -7,6 +7,7 @@
 
 #include <cpp20/r_setup.h>
 #include <cpp20/r_concepts.h> // Concepts and forward declarations
+#include <cpp20/r_named_arg.h>
 #include <cpp20/r_utils.h>
 #include <cpp20/r_sexp.h>
 #include <cpp20/r_sexp_types.h>
