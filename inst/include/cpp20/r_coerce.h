@@ -51,6 +51,12 @@ inline to_t as(const from_t& x) {
     return x.sexp;
   } else if constexpr (RFactor<to_t>){
     return r_factors(x);
+  } else if constexpr (RFactor<from_t> && RVector<to_t>){
+    if constexpr (RStringType<typename to_t::data_type>){
+      return x.as_character();
+    } else {
+      return as<to_t>(x.value);
+    }
   } else if constexpr (RVector<to_t> && is_sexp<from_t>){
     return visit_vector(x, [](const auto& xvec) -> to_t {
       // This will trigger the branch that checks that both are RVector
@@ -119,14 +125,6 @@ inline to_t as(const from_t& x) {
     return static_cast<to_t>(as<as_r_val_t<to_t>>(x));
   } else {
     static_assert(always_false<to_t>, "Unsupported type for `as`");
-  }
-}
-template <RVector T>
-inline T as(const r_factors& x) {
-  if constexpr (RStringType<typename T::data_type>){
-    return x.as_character();
-  } else {
-    return as<T>(x.value);
   }
 }
 
