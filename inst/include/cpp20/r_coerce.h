@@ -97,10 +97,11 @@ inline to_t as(const from_t& x) {
     using to_data_t = typename to_t::data_type;
     using from_data_t = typename from_t::data_type;
 
-    // Special case: If both are (r_str/r_view) no need to do element conversions
-    if constexpr (RStringType<to_data_t> && RStringType<from_data_t>){
-      return to_t(unwrap(x));
-    } 
+    // Special case: If converting to character vector, we can safely bypass overhead of using r_str by using r_str_view
+    // The vector already is protecting the elements
+    if constexpr (is<to_data_t, r_str>){
+      return to_t(as<r_vec<r_str_view>>(x));
+    }
 
     r_size_t n = x.length();
     auto out = to_t(n);
