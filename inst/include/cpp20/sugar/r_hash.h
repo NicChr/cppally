@@ -4,7 +4,7 @@
 #include <cpp20/r_vec.h>
 #include <cpp20/r_visit.h>
 #include <cpp20/r_attrs.h>
-#include <cpp20/r_identical.h>
+#include <cpp20/sugar/r_identical.h>
 #include <bit>
 #include <algorithm>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match

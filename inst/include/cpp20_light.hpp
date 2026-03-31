@@ -1,13 +1,13 @@
-#ifndef CPP20_HPP
-#define CPP20_HPP
+#ifndef CPP20_LIGHT_HPP
+#define CPP20_LIGHT_HPP
 
-// cpp20 API - Includes all necessary header files
+// cpp20 API - Light version (In progress, don't use, recommend including cpp20.hpp)
+// Includes only the absolute essentials
 // License: MIT
 // Author: Nick Christofides
 
 #include <cpp20/r_setup.h>
 #include <cpp20/r_concepts.h> // Concepts and forward declarations
-#include <cpp20/sugar/r_named_arg.h>
 #include <cpp20/r_utils.h>
 #include <cpp20/r_sexp.h>
 #include <cpp20/r_sexp_types.h>
@@ -20,26 +20,11 @@
 #include <cpp20/r_vec_utils.h>
 #include <cpp20/r_coerce_impl.h>
 #include <cpp20/r_vec.h>
-#include <cpp20/sugar/r_stats.h>
-#include <cpp20/sugar/r_factor.h>
 #include <cpp20/r_vec_methods.h>
 #include <cpp20/r_attrs.h>
-#include <cpp20/sugar/r_exprs.h>
-#include <cpp20/sugar/r_fns.h>
 #include <cpp20/r_visit.h>
-#include <cpp20/sugar/r_identical.h>
-#include <cpp20/sugar/r_hash.h>
-#include <cpp20/sugar/r_sort.h>
-#include <cpp20/sugar/r_groups.h>
-#include <cpp20/sugar/r_match.h>
-#include <cpp20/sugar/r_unique.h>
-#include <cpp20/sugar/r_copy.h>
 #include <cpp20/r_coerce.h>
-#include <cpp20/sugar/r_subset.h>
-#include <cpp20/sugar/r_make_vec.h>
-#include <cpp20/sugar/r_recycle.h>
 // #include <cpp20/r_df.h>
 #include <cpp20/r_math.h>
-#include <cpp20/sugar/r_seq.h>
 
 #endif

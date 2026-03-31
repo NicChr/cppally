@@ -2,9 +2,9 @@
 #define CPP20_R_GROUPS_H
 
 #include <cpp20/r_vec.h>
-#include <cpp20/r_stats.h>
-#include <cpp20/r_hash.h>
-#include <cpp20/r_sort.h>
+#include <cpp20/sugar/r_stats.h>
+#include <cpp20/sugar/r_hash.h>
+#include <cpp20/sugar/r_sort.h>
 #include <vector> // For C++ vectors
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 

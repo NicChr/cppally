@@ -3,7 +3,7 @@
 
 #include <cpp20/r_utils.h>
 #include <cpp20/r_vec.h>
-#include <cpp20/r_stats.h>
+#include <cpp20/sugar/r_stats.h>
 #include <cpp20/r_coerce.h>
 
 namespace cpp20 {

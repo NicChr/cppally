@@ -2,7 +2,7 @@
 #define CPP20_R_RECYCLE_H
 
 #include <cpp20/r_visit.h>
-#include <cpp20/r_make_vec.h>
+#include <cpp20/sugar/r_make_vec.h>
 
 namespace cpp20 {
 

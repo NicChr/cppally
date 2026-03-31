@@ -2,10 +2,10 @@
 #define CPP20_R_COERCE_H
 
 #include <cpp20/r_vec.h>
-#include <cpp20/r_factor.h>
+#include <cpp20/sugar/r_factor.h>
 #include <cpp20/r_visit.h>
-#include <cpp20/r_match.h>
-#include <cpp20/r_unique.h>
+#include <cpp20/sugar/r_match.h>
+#include <cpp20/sugar/r_unique.h>
 #include <cpp20/r_sexp_types.h>
 
 

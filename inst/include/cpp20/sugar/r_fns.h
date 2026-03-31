@@ -6,7 +6,7 @@
 #include <cpp20/r_types.h>
 #include <cpp20/r_env.h>
 #include <cpp20/r_symbols.h>
-#include <cpp20/r_exprs.h>
+#include <cpp20/sugar/r_exprs.h>
 
 namespace cpp20 {
 

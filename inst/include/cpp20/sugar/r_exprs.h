@@ -5,7 +5,7 @@
 #include <cpp20/r_setup.h>
 #include <cpp20/r_sexp.h>
 #include <cpp20/r_types.h>
-#include <cpp20/r_named_arg.h>
+#include <cpp20/sugar/r_named_arg.h>
 #include <cpp20/r_coerce_impl.h>
 
 namespace cpp20 {

@@ -2,7 +2,7 @@
 #define CPP20_R_FACTOR_H
 
 #include <cpp20/r_vec.h>
-#include <cpp20/r_stats.h>
+#include <cpp20/sugar/r_stats.h>
 #include <cpp20/r_attrs.h>
 
 namespace cpp20 {
