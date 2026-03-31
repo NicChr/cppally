@@ -310,6 +310,64 @@ if constexpr (RVector<U>){                            \
 }
 
 
+#define CPP20_BINARY_COMPARISON_OP(lhs, rhs, OP)                                                   \
+if constexpr (RVector<T> && RVector<U>){                                                           \
+  r_size_t n1 = lhs.length();                                                                      \
+  r_size_t n2 = rhs.length();                                                                      \
+  r_size_t n = std::max(n1, n2);                                                                   \
+  if (n1 == 0 || n2 == 0) return r_vec<r_lgl>();                                                   \
+  if (n2 == 1){                                                                                    \
+    r_vec<r_lgl> out(n);                                                                           \
+    auto val = rhs.view(0);                                                                        \
+    OMP_SIMD                                                                                       \
+    for (r_size_t i = 0; i < n; ++i){                                                              \
+      out.set(i, lhs.view(i) OP val);                                                              \
+    }                                                                                              \
+    return out;                                                                                    \
+  } else if (n1 == 1){                                                                             \
+    r_vec<r_lgl> out(n);                                                                           \
+    auto val = lhs.view(0);                                                                        \
+    OMP_SIMD                                                                                       \
+    for (r_size_t i = 0; i < n; ++i){                                                              \
+      out.set(i, val OP rhs.view(i));                                                              \
+    }                                                                                              \
+    return out;                                                                                    \
+  } else if (n1 == n2){                                                                            \
+    r_vec<r_lgl> out(n);                                                                           \
+    OMP_SIMD                                                                                       \
+    for (r_size_t i = 0; i < n; ++i){                                                              \
+      out.set(i, lhs.view(i) OP rhs.view(i));                                                      \
+    }                                                                                              \
+    return out;                                                                                    \
+  } else {                                                                                         \
+    r_vec<r_lgl> out(n);                                                                           \
+    for (r_size_t i = 0, lhsi = 0, rhsi = 0; i < n;                                                \
+    recycle_index(lhsi, n1),                                                                       \
+    recycle_index(rhsi, n2),                                                                       \
+    ++i){                                                                                          \
+      out.set(i, lhs.view(lhsi) OP rhs.view(rhsi));                                                \
+    }                                                                                              \
+    return out;                                                                                    \
+  }                                                                                                \
+  /*Cases where one is a scalar*/                                                                  \
+} else if constexpr (RVector<T>) {                                                                 \
+  r_size_t n = lhs.length();                                                                       \
+  r_vec<r_lgl> out(n);                                                                             \
+  OMP_SIMD                                                                                         \
+  for (r_size_t i = 0; i < n; ++i){                                                                \
+    out.set(i, lhs.view(i) OP rhs);                                                                \
+  }                                                                                                \
+  return out;                                                                                      \
+} else {                                                                                           \
+  r_size_t n = rhs.length();                                                                       \
+  r_vec<r_lgl> out(n);                                                                             \
+  OMP_SIMD                                                                                         \
+  for (r_size_t i = 0; i < n; ++i){                                                                \
+    out.set(i, lhs OP rhs.view(i));                                                                \
+  }                                                                                                \
+  return out;                                                                                      \
+}
+
 template<RVector T, typename U>
 inline T& operator+=(T& lhs, const U& rhs) {
     CPP20_BINARY_OP_IN_PLACE(+);
@@ -335,7 +393,37 @@ inline T& operator%=(T& lhs, const U& rhs) {
     CPP20_BINARY_OP_IN_PLACE(%);
 }
 
+template<typename T, typename U>
+requires (RVector<T> || RVector<U>)
+inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) {
+    CPP20_BINARY_COMPARISON_OP(lhs, rhs, ==)
+}
+template<typename T, typename U>
+requires (RVector<T> || RVector<U>)
+inline r_vec<r_lgl> operator!=(const T& lhs, const U& rhs) {
+    CPP20_BINARY_COMPARISON_OP(lhs, rhs, !=)
+}
+template<typename T, typename U>
+requires (RVector<T> || RVector<U>)
+inline r_vec<r_lgl> operator<=(const T& lhs, const U& rhs) {
+    CPP20_BINARY_COMPARISON_OP(lhs, rhs, <=)
+}
+template<typename T, typename U>
+requires (RVector<T> || RVector<U>)
+inline r_vec<r_lgl> operator<(const T& lhs, const U& rhs) {
+    CPP20_BINARY_COMPARISON_OP(lhs, rhs, <)
+}
+template<typename T, typename U>
+requires (RVector<T> || RVector<U>)
+inline r_vec<r_lgl> operator>=(const T& lhs, const U& rhs) {
+    CPP20_BINARY_COMPARISON_OP(lhs, rhs, >=)
+}
+template<typename T, typename U>
+requires (RVector<T> || RVector<U>)
+inline r_vec<r_lgl> operator>(const T& lhs, const U& rhs) {
+    CPP20_BINARY_COMPARISON_OP(lhs, rhs, >)
 }
 
+}
 
 #endif
