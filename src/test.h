@@ -370,13 +370,7 @@ r_vec<r_int> test_group_counts(T x, bool order){
 
 [[cpp20::register]]
 r_vec<r_int> test_lengths(const r_vec<r_sexp>& x){
-  r_vec<r_int> out(x.length());
-
-  internal::view_elements(x, [&]<typename T>(r_size_t i, const T& elem) {
-      out.set(i, r_int(static_cast<int>(elem.length())));
-  });
-
-  return out;
+  return x.lengths();
 }
 
 template <RVal T>

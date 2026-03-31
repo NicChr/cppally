@@ -563,6 +563,22 @@ struct r_vec {
     Rf_setAttrib(sexp, r_sym("tzone"), Rf_ScalarString(Rf_mkCharCE(tz, CE_UTF8)));
   }
 
+  // list-only members
+
+  r_vec<r_int> lengths() const {
+    r_size_t n = length();
+    r_vec<r_int> out(n);
+
+    for (r_size_t i = 0; i < n; ++i){
+      r_size_t len = Rf_xlength(data()[i]);
+      if (len > unwrap(r_limits<r_int>::max())){
+        abort("`lengths()` does not currently support long-vectors");
+      }
+      out.set(i, static_cast<int>(len));
+    }
+    return out;
+  }
+
 };
 
 template <RVal T>
