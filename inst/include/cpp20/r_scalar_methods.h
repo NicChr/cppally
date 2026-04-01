@@ -93,7 +93,7 @@ inline r_lgl operator>=(const r_str& lhs, const r_str& rhs) {
   return static_cast<r_str_view>(lhs) >= static_cast<r_str_view>(rhs);
 }
 
-template<RVal T, RVal U>
+template <RVal T, RVal U>
 inline constexpr r_lgl operator==(const T &lhs, const U &rhs) {
   return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) == unwrap(rhs)};
 }
@@ -108,108 +108,31 @@ inline constexpr r_lgl operator==(const T &lhs, const U &rhs) {
   return is_na(rhs) ? r_na : r_lgl{lhs == unwrap(rhs)};
 }
 
-// Other comparison operators
-template<RVal T, CppScalar U>
+template <Scalar T, Scalar U>
+requires (RVal<T> || RVal<U>)
 inline constexpr r_lgl operator!=(const T &lhs, const U &rhs) {
-  r_lgl eq = (lhs == rhs);
-  return eq.is_na() ? r_na : r_lgl(eq.is_false());
-}
-template<CppScalar T, RVal U>
-inline constexpr r_lgl operator!=(const T &lhs, const U &rhs) {
-  r_lgl eq = (lhs == rhs);
-  return eq.is_na() ? r_na : r_lgl(eq.is_false());
-}
-template<RVal T, RVal U>
-inline constexpr r_lgl operator!=(const T &lhs, const U &rhs) {
-  r_lgl eq = (lhs == rhs);
-  return eq.is_na() ? r_na : r_lgl(eq.is_false());
+  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) != unwrap(rhs)};
 }
 
-template<RNumericType T, RNumericType U>
+template <NumericType T, NumericType U>
+requires (RNumericType<T> || RNumericType<U>)
 inline constexpr r_lgl operator<(T lhs, U rhs) {
-  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{lhs.value < unwrap(rhs)};
+  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) < unwrap(rhs)};
 }
-template<RNumericType T, CppNumericType U>
-inline constexpr r_lgl operator<(T lhs, U rhs) {
-  return is_na(lhs) ? r_na : r_lgl{lhs.value < rhs};
-}
-template<CppNumericType T, RNumericType U>
-inline constexpr r_lgl operator<(T lhs, U rhs) {
-  return is_na(rhs) ? r_na : r_lgl{lhs < unwrap(rhs)};
-}
-
-template<RNumericType T, RNumericType U>
+template <NumericType T, NumericType U>
+requires (RNumericType<T> || RNumericType<U>)
 inline constexpr r_lgl operator<=(T lhs, U rhs) {
-  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{lhs.value <= unwrap(rhs)};
+  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) <= unwrap(rhs)};
 }
-template<RNumericType T, CppNumericType U>
-inline constexpr r_lgl operator<=(T lhs, U rhs) {
-  return is_na(lhs) ? r_na : r_lgl{lhs.value <= rhs};
-}
-template<CppNumericType T, RNumericType U>
-inline constexpr r_lgl operator<=(T lhs, U rhs) {
-  return is_na(rhs) ? r_na : r_lgl{lhs <= unwrap(rhs)};
-}
-
-template<RNumericType T, RNumericType U>
+template <NumericType T, NumericType U>
+requires (RNumericType<T> || RNumericType<U>)
 inline constexpr r_lgl operator>(T lhs, U rhs) {
-  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{lhs.value > unwrap(rhs)};
+  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) > unwrap(rhs)};
 }
-template<RNumericType T, CppNumericType U>
-inline constexpr r_lgl operator>(T lhs, U rhs) {
-  return is_na(lhs) ? r_na : r_lgl{lhs.value > rhs};
-}
-template<CppNumericType T, RNumericType U>
-inline constexpr r_lgl operator>(T lhs, U rhs) {
-  return is_na(rhs) ? r_na : r_lgl{lhs > unwrap(rhs)};
-}
-
-template<RNumericType T, RNumericType U>
+template <NumericType T, NumericType U>
+requires (RNumericType<T> || RNumericType<U>)
 inline constexpr r_lgl operator>=(T lhs, U rhs) {
-  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{lhs.value >= unwrap(rhs)};
-}
-template<RNumericType T, CppNumericType U>
-inline constexpr r_lgl operator>=(T lhs, U rhs) {
-  return is_na(lhs) ? r_na : r_lgl{lhs.value >= rhs};
-}
-template<CppNumericType T, RNumericType U>
-inline constexpr r_lgl operator>=(T lhs, U rhs) {
-  return is_na(rhs) ? r_na : r_lgl{lhs >= unwrap(rhs)};
-}
-
-template<RNumericType T, RNumericType U>
-inline constexpr T& operator+=(T &lhs, U rhs) {
-  if (is_na(lhs) || is_na(rhs)) {
-    lhs = na<T>();
-  } else {
-    lhs.value += unwrap(rhs);
-  }
-  return lhs;
-}
-template<RNumericType T, CppNumericType U>
-inline constexpr T& operator+=(T &lhs, U rhs) {
-  if (is_na(lhs)) {
-    lhs = na<T>();
-  } else {
-    lhs.value += rhs;
-  }
-  return lhs;
-}
-template<CppNumericType T, RNumericType U>
-inline constexpr T& operator+=(T &lhs, U rhs) {
-  if (is_na(rhs)) {
-    lhs = na<T>();
-  } else {
-    lhs += unwrap(rhs);
-  }
-  return lhs;
-}
-
-// Fast specialisation for r_dbl
-template<>
-inline constexpr r_dbl& operator+=(r_dbl &lhs, r_dbl rhs) {
-  lhs.value += unwrap(rhs);
-  return lhs;
+  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) >= unwrap(rhs)};
 }
 
 template<NumericType T, NumericType U>
@@ -298,7 +221,23 @@ inline constexpr auto operator%(T lhs, U rhs) {
   }
 }
 
-template<RNumericType T, RNumericType U>
+template <RNumericType T, NumericType U>
+inline constexpr T& operator+=(T &lhs, U rhs) {
+  if (is_na(lhs) || is_na(rhs)) {
+    lhs = na<T>();
+  } else {
+    lhs.value += unwrap(rhs);
+  }
+  return lhs;
+}
+
+// Fast overload for r_dbl
+inline constexpr r_dbl& operator+=(r_dbl &lhs, r_dbl rhs) {
+  lhs.value += rhs.value;
+  return lhs;
+}
+
+template <RNumericType T, NumericType U>
 inline constexpr T& operator-=(T &lhs, U rhs) {
   if (is_na(lhs) || is_na(rhs)) {
     lhs = na<T>();
@@ -308,32 +247,12 @@ inline constexpr T& operator-=(T &lhs, U rhs) {
   return lhs;
 }
 
-template<RNumericType T, CppNumericType U>
-inline constexpr T& operator-=(T &lhs, U rhs) {
-  if (is_na(lhs)) {
-    lhs = na<T>();
-  } else {
-    lhs.value -= rhs;
-  }
-  return lhs;
-}
-
-template<CppNumericType T, RNumericType U>
-inline constexpr T& operator-=(T &lhs, U rhs) {
-  if (is_na(rhs)) {
-    lhs = na<T>();
-  } else {
-    lhs -= unwrap(rhs);
-  }
-  return lhs;
-}
-template<>
 inline constexpr r_dbl& operator-=(r_dbl &lhs, r_dbl rhs) {
-  lhs.value -= unwrap(rhs);
+  lhs.value -= rhs.value;
   return lhs;
 }
 
-template<RNumericType T, RNumericType U>
+template <RNumericType T, NumericType U>
 inline constexpr T& operator*=(T &lhs, U rhs) {
   if (is_na(lhs) || is_na(rhs)) {
     lhs = na<T>();
@@ -343,33 +262,12 @@ inline constexpr T& operator*=(T &lhs, U rhs) {
   return lhs;
 }
 
-template<RNumericType T, CppNumericType U>
-inline constexpr T& operator*=(T &lhs, U rhs) {
-  if (is_na(lhs)) {
-    lhs = na<T>();
-  } else {
-    lhs.value *= rhs;
-  }
-  return lhs;
-}
-
-template<CppNumericType T, RNumericType U>
-inline constexpr T& operator*=(T &lhs, U rhs) {
-  if (is_na(rhs)){
-    lhs = na<T>();
-  } else {
-    lhs *= unwrap(rhs);
-  }
-  return lhs;
-}
-
-template<>
 inline constexpr r_dbl& operator*=(r_dbl &lhs, r_dbl rhs) { 
-  lhs.value *= unwrap(rhs);
+  lhs.value *= rhs.value;
   return lhs;
 }
 
-template<RNumericType T, RNumericType U>
+template <RNumericType T, NumericType U>
 inline constexpr T& operator/=(T &lhs, U rhs) {
   if (is_na(lhs) || is_na(rhs)) {
     lhs = na<T>();
@@ -379,33 +277,13 @@ inline constexpr T& operator/=(T &lhs, U rhs) {
   return lhs;
 }
 
-template<RNumericType T, CppNumericType U>
-inline constexpr T& operator/=(T &lhs, U rhs) {
-  if (is_na(lhs)) {
-    lhs = na<T>();
-  } else {
-    lhs.value /= rhs;
-  }
-  return lhs;
-}
 
-template<CppNumericType T, RNumericType U>
-inline constexpr T& operator/=(T &lhs, U rhs) {
-  if (is_na(rhs)){
-    lhs = na<T>();
-  } else {
-    lhs /= unwrap(rhs);
-  }
-  return lhs;
-}
-
-template<>
 inline constexpr r_dbl& operator/=(r_dbl &lhs, r_dbl rhs) {
-  lhs.value /= unwrap(rhs);
+  lhs.value /= rhs.value;
   return lhs;
 }
 
-template<MathType T, MathType U>
+template <MathType T, MathType U>
 requires (is<unwrap_t<T>, unwrap_t<U>>)
 inline constexpr T& operator%=(T &lhs, U rhs) {
   auto res = lhs % rhs;
@@ -417,11 +295,10 @@ inline constexpr T& operator%=(T &lhs, U rhs) {
   return lhs;
 }
 
-template<RMathType T>
+template <RMathType T>
 inline constexpr T operator-(T x) {
   return is_na(x) ? x : T{-unwrap(x)};
 }
-template<>
 inline constexpr r_dbl operator-(r_dbl x) {
   return r_dbl{-unwrap(x)};
 }
