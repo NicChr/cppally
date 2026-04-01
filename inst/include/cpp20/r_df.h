@@ -126,11 +126,12 @@ struct r_df {
         if (names.length() != Rf_xlength(x)){
           abort("data frame length of names must match ncol");
         }
-        SEXP row_names = Rf_getAttrib(x, symbol::row_names_sym);
-        if (TYPEOF(row_names) != STRSXP){
-            abort("rownames must be a character vector");
+        SEXP row_names = Rf_protect(Rf_getAttrib(x, symbol::row_names_sym));
+        if (TYPEOF(row_names) != INTSXP && TYPEOF(row_names) != STRSXP){
+            abort("rownames must be an integer or character vector");
         }
         validate_col_sizes(r_vec<r_sexp>(x, internal::view_tag{}));
+        Rf_unprotect(1);
       }
 
     public: 
@@ -159,16 +160,6 @@ struct r_df {
             return value.NAME(std::forward<Args>(args)...);    \
         }
 
-    // For methods that return a df
-    #define FORWARD_DF_METHOD(NAME)                                         \
-        template <typename... Args>                                         \
-        r_df NAME(Args&&... args) const {                              \
-            /* Call the method on the underlying r_vec<r_sexp> */           \
-            auto new_df = value.NAME(std::forward<Args>(args)...);          \
-            /* Direct construction */                                       \
-            return r_df(new_df);                                            \
-        }
-
     public: 
 
     // Inherit standard methods from r_vec<>
@@ -179,29 +170,16 @@ struct r_df {
   
     // Undefine the macros so they don't leak out of the struct
     #undef FORWARD_METHOD
-    #undef FORWARD_DF_METHOD
 
-
-    int nrow() const noexcept {
-        return rownames().length();
-    }
-    int ncol() const noexcept {
-        return value.length();
-    }
-
-    r_vec<r_str_view> rownames() const {
-        return r_vec<r_str_view>(attr::get_attr(value, symbol::row_names_sym));
-    }
     r_vec<r_str_view> colnames() const {
         return value.names();
     }
 
-    template <RStringType U>
-    void set_rownames(const r_vec<U>& rownames) {
-        if (rownames.length() != nrow()){
-            abort("`length(rownames)` must match `nrow()`");
-        }
-        return attr::set_attr(value, symbol::row_names_sym, rownames);
+    int nrow() const noexcept {
+        return Rf_length(Rf_getAttrib(value, symbol::row_names_sym));
+    }
+    int ncol() const noexcept {
+        return value.length();
     }
     template <RStringType U>
     void set_colnames(const r_vec<U>& colnames) {
