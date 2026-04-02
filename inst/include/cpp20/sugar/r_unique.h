@@ -4,6 +4,7 @@
 #include <cpp20/r_vec_methods.h>
 #include <cpp20/sugar/r_sort.h>
 #include <cpp20/sugar/r_groups.h>
+#include <cpp20/sugar/r_subset.h>
 
 namespace cpp20 {
 
