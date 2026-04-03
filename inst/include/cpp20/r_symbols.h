@@ -5,54 +5,12 @@
 
 namespace cpp20 {
 
-namespace internal {
-inline SEXP BASE_ATTRIBUTES = NULL;
-inline SEXP BASE_LENGTH = NULL;
-inline SEXP r_as_lgl = NULL;
-inline SEXP r_as_int = NULL;
-inline SEXP r_as_dbl = NULL;
-inline SEXP r_as_char = NULL;
-inline SEXP r_as_cplx = NULL;
-inline SEXP r_as_raw = NULL;
-inline SEXP r_as_date = NULL;
-inline SEXP r_as_posixct = NULL;
-inline SEXP r_as_list = NULL;
-}
-
 namespace symbol {
 
 inline const r_sym class_sym = r_sym(R_ClassSymbol);
 inline const r_sym names_sym = r_sym(R_NamesSymbol);
-inline const r_sym dim_sym = r_sym(R_DimSymbol);
-inline const r_sym dim_names_sym = r_sym(R_DimNamesSymbol);
 inline const r_sym row_names_sym = r_sym(R_RowNamesSymbol);
 inline const r_sym levels_sym = r_sym(R_LevelsSymbol);
-inline const r_sym double_colon_sym = r_sym(R_DoubleColonSymbol);
-inline const r_sym triple_colon_sym = r_sym(R_TripleColonSymbol);
-inline const r_sym dollar_sym = r_sym(R_DollarSymbol);
-inline const r_sym bracket_sym = r_sym(R_BracketSymbol);
-inline const r_sym double_brackets_sym = r_sym(R_Bracket2Symbol);
-inline const r_sym brace_sym = r_sym(R_BraceSymbol);
-inline const r_sym dots_sym = r_sym(R_DotsSymbol);
-inline const r_sym tsp_sym = r_sym(R_TspSymbol);
-inline const r_sym name_sym = r_sym(R_NameSymbol);
-inline const r_sym base_sym = r_sym(R_BaseSymbol);
-inline const r_sym quote_sym = r_sym(R_QuoteSymbol);
-inline const r_sym function_sym = r_sym(R_FunctionSymbol);
-inline const r_sym namespace_env_sym = r_sym(R_NamespaceEnvSymbol);
-inline const r_sym package_sym = r_sym(R_PackageSymbol);
-inline const r_sym seeds_sym = r_sym(R_SeedsSymbol);
-inline const r_sym na_rm_sym = r_sym(R_NaRmSymbol);
-inline const r_sym source_sym = r_sym(R_SourceSymbol);
-inline const r_sym mode_sym = r_sym(R_ModeSymbol);
-inline const r_sym device_sym = r_sym(R_DeviceSymbol);
-inline const r_sym last_value_sym = r_sym(R_LastvalueSymbol);
-inline const r_sym spec_sym = r_sym(R_SpecSymbol);
-inline const r_sym previous_sym = r_sym(R_PreviousSymbol);
-inline const r_sym sort_list_sym = r_sym(R_SortListSymbol);
-inline const r_sym eval_sym = r_sym(R_EvalSymbol);
-inline const r_sym drop_sym = r_sym(R_DropSymbol);
-
 inline r_sym tag(SEXP x){
   return r_sym(TAG(x));
 }

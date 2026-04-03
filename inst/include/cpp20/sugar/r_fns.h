@@ -17,9 +17,9 @@ inline r_sexp find_pkg_fun(const char *name, const char *pkg, bool all_fns){
   r_sexp expr = r_null;
 
   if (all_fns){
-    expr = internal::make_call(symbol::triple_colon_sym, r_sym(pkg), r_sym(name));
+    expr = internal::make_call(r_sexp(R_TripleColonSymbol, internal::view_tag{}), r_sym(pkg), r_sym(name));
   } else {
-    expr = internal::make_call(symbol::double_colon_sym, r_sym(pkg), r_sym(name));
+    expr = internal::make_call(r_sexp(R_DoubleColonSymbol, internal::view_tag{}), r_sym(pkg), r_sym(name));
   }
   return eval(expr, env::base_env);
 }
