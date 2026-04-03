@@ -561,7 +561,7 @@ struct r_vec {
 
   // list-only members
 
-  r_vec<r_int> lengths() const {
+  r_vec<r_int> lengths() const requires is<T, r_sexp> {
     r_size_t n = length();
     r_vec<r_int> out(n);
 
