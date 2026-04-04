@@ -71,16 +71,7 @@ inline to_t as(const from_t& x) {
       return static_cast<SEXP>(x);
     }
   } else if constexpr (RVal<to_t> && is_sexp<from_t>){
-
-      // Composite scalars are the opposite of atomic scalars which means only lists can hold them
-      // e.g. symbols, NULL, etc
-      
-      if constexpr (RCompositeScalar<to_t>){
-        if (internal::CPP20_TYPEOF(x) == internal::r_typeof<to_t>){
-        return to_t(x);
-      }
-    }
-    
+        
     return visit_vector(x, [](const auto& xvec) -> to_t {
       return as<to_t>(xvec);
     });
@@ -124,6 +115,12 @@ inline to_t as(const from_t& x) {
     return as<to_t>(as_r_val(x));
   } else if constexpr (CastableToRVal<to_t>){
     return static_cast<to_t>(as<as_r_val_t<to_t>>(x));
+  } else if constexpr (RSymbolType<to_t>){
+    if constexpr (is_sexp<from_t>){
+      return r_sym(static_cast<SEXP>(x));
+    } else {
+      return r_sym(as<r_str_view>(x));
+    }
   } else {
     static_assert(always_false<to_t>, "Unsupported type for `as`");
   }

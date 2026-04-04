@@ -4,14 +4,6 @@ cpp20_typeof <- function(x) {
   .Call(`_cpp20_cpp20_typeof`, x)
 }
 
-test_vec_of_syms <- function(x) {
-  .Call(`_cpp20_test_vec_of_syms`, x)
-}
-
-test_vec_of_syms2 <- function(x) {
-  .Call(`_cpp20_test_vec_of_syms2`, x)
-}
-
 test_which <- function(x) {
   .Call(`_cpp20_test_which`, x)
 }

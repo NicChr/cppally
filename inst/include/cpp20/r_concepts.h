@@ -156,12 +156,8 @@ concept RRawType = is<T, r_raw>;
 template <typename T>
 concept RAtomicScalar = RNumericType<T> || RComplexType<T> || RStringType<T> || RRawType<T>;
 
-// Excludes r_sexp because it can represent vectors
 template <typename T>
-concept RCompositeScalar = RSymbolType<T>;
-
-template <typename T>
-concept RScalar = RAtomicScalar<T> || RCompositeScalar<T>;
+concept RScalar = RAtomicScalar<T>;
 
 // RVal is anything that can be stored in `r_vec<>`
 template <typename T>
@@ -214,7 +210,7 @@ template <typename T>
 concept RVector = internal::is_r_vector_v<T>;
 
 template <typename T>
-concept RListVector = RVector<T> && (is<typename T::data_type, r_sexp> || RCompositeScalar<typename T::data_type>);
+concept RListVector = RVector<T> && (is<typename T::data_type, r_sexp>);
 
 template <typename T>
 concept RFactor = is<T, r_factors>;

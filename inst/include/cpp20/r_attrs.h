@@ -175,7 +175,7 @@ inline void modify_attrs_impl(const T& x, const r_vec<r_sexp>& attrs) {
     return;
   }
 
-  auto names = attr::get_old_names(attrs);
+  r_vec<r_str_view> names = attr::get_old_names(attrs);
 
   if (names.is_null()){
     abort("attributes must be a named list");
@@ -187,7 +187,7 @@ inline void modify_attrs_impl(const T& x, const r_vec<r_sexp>& attrs) {
 
   for (int i = 0; i < n; ++i){
     if (names.view(i) != blank_r_string){
-      attr_nm = internal::as_r<r_sym>(names.view(i));
+      attr_nm = r_sym(names.view(i));
       // We can't add an object as its own attribute in-place (as this will crash R)
       if (x_.address() == attrs.view(i).address()){
         r_sexp dup_attr = r_sexp(Rf_duplicate(attrs.view(i)));

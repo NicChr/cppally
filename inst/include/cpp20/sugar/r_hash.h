@@ -107,6 +107,13 @@ struct r_hash_impl<r_str> {
     }
 };
 
+template <>
+struct r_hash_impl<r_sym> {
+    [[nodiscard]] uint64_t operator()(SEXP x) const noexcept {
+        return r_hash_impl<r_str_view>{}(x);
+    }
+};
+
 
 // Vector hashing
 

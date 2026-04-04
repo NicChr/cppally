@@ -196,6 +196,8 @@ inline r_sym as_r_sym(T const& x){
     return r_sym(x);
   } else if constexpr (RStringType<T>){
     return r_sym(x.c_str());
+  } else if constexpr (is_sexp<T>){
+    return r_sym(static_cast<SEXP>(x));
   } else {
     r_str_view str = as_r_string(x);
     return r_sym(str.c_str());

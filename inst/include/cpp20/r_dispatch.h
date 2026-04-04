@@ -119,15 +119,6 @@ template <typename T> constexpr uint16_t r_cpp_boundary_map_v = r_typeof<T>;
 template <RAtomicScalar T>
 inline constexpr uint16_t r_cpp_boundary_map_v<T> = r_cpp_boundary_map_v<r_vec<T>>;
 
-// Map composite scalars and vectors of composite scalars to r_sexp equivalent
-// It's simply not well-defined to map a SEXP list of symbols to r_vec<r_sym> by default unless the user 
-// explicitly requests it
-// One of the reasons is that they may want a regular list but it just coincidentally happens to initially only have symbols
-template <RCompositeScalar T>
-inline constexpr uint16_t r_cpp_boundary_map_v<r_vec<T>> = r_cpp_boundary_map_v<r_vec<r_sexp>>;
-// template <RCompositeScalar T>
-// inline constexpr uint16_t r_cpp_boundary_map_v<T> = r_cpp_boundary_map_v<r_sexp>;
-
 // Pure C/C++ types that are constructible to an RVal
 template <typename T>
 requires (CastableToRVal<T> && CppType<T>)

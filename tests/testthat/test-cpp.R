@@ -82,27 +82,8 @@ test_that("Runtime type ID (via CPP20_TYPEOF) on SEXP", {
 
 })
 
-test_that("Check construction of symbol list from SEXP", {
-  expect_identical(
-    test_vec_of_syms(as.list(as.symbol("."))),
-    as.list(as.symbol("."))
-  )
-
-  expect_identical(
-    test_vec_of_syms(rep(as.list(as.symbol(".")), 3)),
-    rep(as.list(as.symbol(".")), 3)
-  )
-
-})
-
 test_that("Explicit symbol arguments", {
-
   expect_identical(test_sym(as.symbol("1")), as.symbol("1"))
-
-  expect_identical(
-    test_vec_of_syms2(lapply(as.list(1:3), as.symbol)),
-    lapply(as.list(1:3), as.symbol)
-  )
 })
 
 

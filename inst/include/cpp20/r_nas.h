@@ -91,11 +91,6 @@ inline r_sexp na_value_impl<r_sexp>(){
   return r_null;
 }
 
-template<>
-inline r_sym na_value_impl<r_sym>(){
-  return r_sym();
-}
-
 }
 
 template<typename T>
