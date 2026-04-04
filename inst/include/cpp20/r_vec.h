@@ -64,14 +64,14 @@ struct r_vec {
 
   template <RDateType U>
   void validate_attrs(SEXP x){
-    if (!Rf_inherits(x, "Date")){
+    if (!Rf_inherits(x, "Date")) [[unlikely]] {
       abort("SEXP must be of class 'Date'");
     }
   }
 
   template <RPsxctType U>
   void validate_attrs(SEXP x){
-    if (!Rf_inherits(x, "POSIXct")){
+    if (!Rf_inherits(x, "POSIXct")) [[unlikely]] {
       abort("SEXP must inherit class 'POSIXct'");
     }
   }
@@ -221,7 +221,7 @@ struct r_vec {
   void set_names(const r_vec<U>& names){
     if (names.is_null()){
       Rf_setAttrib(sexp, symbol::names_sym, r_null);
-    } else if (names.length() != sexp.length()){
+    } else if (names.length() != sexp.length()) [[unlikely]] {
       abort("`length(names)` must equal `length(x)`");
     } else {
       Rf_namesgets(sexp, names);
@@ -528,7 +528,7 @@ struct r_vec {
 
     for (r_size_t i = 0; i < n; ++i){
       r_size_t len = view(i).length();
-      if (len > unwrap(r_limits<r_int>::max())){
+      if (len > unwrap(r_limits<r_int>::max())) [[unlikely]] {
         abort("`lengths()` does not currently support long-vectors");
       }
       out.set(i, r_int(static_cast<int>(len)));

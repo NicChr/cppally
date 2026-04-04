@@ -34,7 +34,7 @@ r_vec<V> exclude_locs(const r_vec<U>& exclude, r_size_t xn) {
 
   for (r_size_t j = 0; j < m; ++j) {
     if (is_na(exclude.get(j))) continue;
-    if (exclude.get(j) > 0){
+    if (exclude.get(j) > 0) [[unlikely]] {
       abort("Cannot mix positive and negative subscripts");
     }
     idx = -unwrap(exclude.get(j));

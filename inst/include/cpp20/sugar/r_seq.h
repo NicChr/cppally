@@ -64,7 +64,7 @@ r_vec<r_sexp> sequences(const r_vec<r_int>& size, const r_vec<T>& from, const r_
 
                     // Only add if we need the next value
                     if (j < seq_size - 1) {
-                        if (__builtin_add_overflow(current_val, increment, &current_val)) {
+                        if (__builtin_add_overflow(current_val, increment, &current_val)) [[unlikely]] {
                             abort("Integer overflow in sequence %d, please use doubles", i + 1);
                         }
                     }
