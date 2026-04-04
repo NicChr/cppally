@@ -7,8 +7,7 @@
 namespace cpp20 {
 
 // 1-indexed match locations
-template <typename U = r_int, RVal T>
-requires (is<U, r_int> || is<U, r_int64>)
+template <internal::RNumericSubscript U = r_int, RVal T>
 r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
 
   r_size_t n_needles = needles.length();
