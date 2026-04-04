@@ -162,7 +162,7 @@ test_that("Simple registration tests", {
 
   expect_identical(test_coerce(1:10, integer()), 1:10)
   expect_identical(test_coerce(1:10, numeric()), as.double(1:10))
-  expect_identical(test_coerce(letters, integer()), rep(NA_integer_, 26))
+  expect_error(test_coerce(letters, integer()))
   expect_identical(test_coerce(1:10, character()), as.character(1:10))
   expect_identical(test_coerce(list(1), integer()), 1L)
   expect_identical(test_coerce(as.list(1:3), integer()), 1:3)

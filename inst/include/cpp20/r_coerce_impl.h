@@ -360,8 +360,15 @@ inline T as_r(U const& x) {
     return x;
   } else {
     using r_t = std::remove_cvref_t<T>;
-    return internal::as_impl<r_t, U>::cast(x);
-  } 
+    T out = internal::as_impl<r_t, U>::cast(x);
+    if (is_na(out) && !is_na(x)) [[unlikely]] {
+      abort(
+        "Implicit NA coercion detected from %s to %s, please ensure data can be coerced without loss of information", 
+        internal::type_str<U>(), internal::type_str<T>()
+      );
+    }
+    return out;
+  }
 }
 
 }
