@@ -10,10 +10,27 @@
 #include "test_stats.h"
 #include "test_subset.h"
 
-using cpp20::internal::cpp_to_sexp;
-using cpp20::internal::check_r_cpp_mapping;
-using cpp20::internal::dispatch_template_impl;
+using namespace cpp20;
+using internal::cpp_to_sexp;
+using internal::check_r_cpp_mapping;
+using internal::dispatch_template_impl;
 
+// test.cpp
+void cpp_set_threads(int n);
+extern "C" SEXP _cpp20_cpp_set_threads(SEXP n) {
+  BEGIN_CPP20
+  check_r_cpp_mapping<int>(n);
+  cpp_set_threads(cpp20::as<int>(n));
+  return R_NilValue;
+  END_CPP20
+}
+// test.cpp
+r_int cpp_get_threads();
+extern "C" SEXP _cpp20_cpp_get_threads() {
+  BEGIN_CPP20
+    return cpp_to_sexp(cpp_get_threads());
+  END_CPP20
+}
 // test.cpp
 r_str cpp20_typeof(SEXP x);
 extern "C" SEXP _cpp20_cpp20_typeof(SEXP x) {
@@ -23,19 +40,114 @@ extern "C" SEXP _cpp20_cpp20_typeof(SEXP x) {
   END_CPP20
 }
 // test.cpp
-r_vec<r_int> test_which(r_vec<r_lgl> const& x);
-extern "C" SEXP _cpp20_test_which(SEXP x) {
+SEXP test_identity2(SEXP x);
+extern "C" SEXP _cpp20_test_identity2(SEXP x) {
   BEGIN_CPP20
-  check_r_cpp_mapping<r_vec<r_lgl> const&>(x);
-  return cpp_to_sexp(test_which(cpp20::as<r_vec<r_lgl> const&>(x)));
+  check_r_cpp_mapping<SEXP>(x);
+  return cpp_to_sexp(test_identity2(cpp20::as<SEXP>(x)));
   END_CPP20
 }
 // test.cpp
-r_vec<r_int> test_which_inverted(r_vec<r_lgl> const& x);
-extern "C" SEXP _cpp20_test_which_inverted(SEXP x) {
+r_vec<r_str> test_str1(r_str x);
+extern "C" SEXP _cpp20_test_str1(SEXP x) {
   BEGIN_CPP20
-  check_r_cpp_mapping<r_vec<r_lgl> const&>(x);
-  return cpp_to_sexp(test_which_inverted(cpp20::as<r_vec<r_lgl> const&>(x)));
+  check_r_cpp_mapping<r_str>(x);
+  return cpp_to_sexp(test_str1(cpp20::as<r_str>(x)));
+  END_CPP20
+}
+// test.cpp
+r_vec<r_str_view> test_str2(r_str_view x);
+extern "C" SEXP _cpp20_test_str2(SEXP x) {
+  BEGIN_CPP20
+  check_r_cpp_mapping<r_str_view>(x);
+  return cpp_to_sexp(test_str2(cpp20::as<r_str_view>(x)));
+  END_CPP20
+}
+// test.cpp
+r_vec<r_date> test_as_date(SEXP x);
+extern "C" SEXP _cpp20_test_as_date(SEXP x) {
+  BEGIN_CPP20
+  check_r_cpp_mapping<SEXP>(x);
+  return cpp_to_sexp(test_as_date(cpp20::as<SEXP>(x)));
+  END_CPP20
+}
+// test.cpp
+r_vec<r_date> test_construct_date(SEXP x);
+extern "C" SEXP _cpp20_test_construct_date(SEXP x) {
+  BEGIN_CPP20
+  check_r_cpp_mapping<SEXP>(x);
+  return cpp_to_sexp(test_construct_date(cpp20::as<SEXP>(x)));
+  END_CPP20
+}
+// test.cpp
+r_vec<r_date> test_as_date2(r_vec<r_date> x);
+extern "C" SEXP _cpp20_test_as_date2(SEXP x) {
+  BEGIN_CPP20
+  check_r_cpp_mapping<r_vec<r_date>>(x);
+  return cpp_to_sexp(test_as_date2(cpp20::as<r_vec<r_date>>(x)));
+  END_CPP20
+}
+// test.cpp
+r_sexp test_null();
+extern "C" SEXP _cpp20_test_null() {
+  BEGIN_CPP20
+    return cpp_to_sexp(test_null());
+  END_CPP20
+}
+// test.cpp
+r_sym test_sym(r_sym x);
+extern "C" SEXP _cpp20_test_sym(SEXP x) {
+  BEGIN_CPP20
+  check_r_cpp_mapping<r_sym>(x);
+  return cpp_to_sexp(test_sym(cpp20::as<r_sym>(x)));
+  END_CPP20
+}
+// test.cpp
+r_sexp test_sexp2(r_sexp x);
+extern "C" SEXP _cpp20_test_sexp2(SEXP x) {
+  BEGIN_CPP20
+  check_r_cpp_mapping<r_sexp>(x);
+  return cpp_to_sexp(test_sexp2(cpp20::as<r_sexp>(x)));
+  END_CPP20
+}
+// test.cpp
+r_vec<r_sexp> test_sexp3(r_vec<r_sexp> x);
+extern "C" SEXP _cpp20_test_sexp3(SEXP x) {
+  BEGIN_CPP20
+  check_r_cpp_mapping<r_vec<r_sexp>>(x);
+  return cpp_to_sexp(test_sexp3(cpp20::as<r_vec<r_sexp>>(x)));
+  END_CPP20
+}
+// test.cpp
+r_vec<r_int> test_coerce1(const r_vec<r_sexp>& x);
+extern "C" SEXP _cpp20_test_coerce1(SEXP x) {
+  BEGIN_CPP20
+  check_r_cpp_mapping<const r_vec<r_sexp>&>(x);
+  return cpp_to_sexp(test_coerce1(cpp20::as<const r_vec<r_sexp>&>(x)));
+  END_CPP20
+}
+// test.cpp
+r_vec<r_date> test_dates1(r_vec<r_date> x);
+extern "C" SEXP _cpp20_test_dates1(SEXP x) {
+  BEGIN_CPP20
+  check_r_cpp_mapping<r_vec<r_date>>(x);
+  return cpp_to_sexp(test_dates1(cpp20::as<r_vec<r_date>>(x)));
+  END_CPP20
+}
+// test.cpp
+r_str test_tz(r_vec<r_psxct> x);
+extern "C" SEXP _cpp20_test_tz(SEXP x) {
+  BEGIN_CPP20
+  check_r_cpp_mapping<r_vec<r_psxct>>(x);
+  return cpp_to_sexp(test_tz(cpp20::as<r_vec<r_psxct>>(x)));
+  END_CPP20
+}
+// test.cpp
+r_vec<r_int> test_lengths(const r_vec<r_sexp>& x);
+extern "C" SEXP _cpp20_test_lengths(SEXP x) {
+  BEGIN_CPP20
+  check_r_cpp_mapping<const r_vec<r_sexp>&>(x);
+  return cpp_to_sexp(test_lengths(cpp20::as<const r_vec<r_sexp>&>(x)));
   END_CPP20
 }
 // test.h
@@ -102,14 +214,6 @@ extern "C" SEXP _cpp20_test_identity(SEXP x) {
     },
     x
   );
-  END_CPP20
-}
-// test.h
-SEXP test_identity2(SEXP x);
-extern "C" SEXP _cpp20_test_identity2(SEXP x) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<SEXP>(x);
-  return cpp_to_sexp(test_identity2(cpp20::as<SEXP>(x)));
   END_CPP20
 }
 // test.h
@@ -305,22 +409,6 @@ return dispatch_template_impl<2, 7, std::array<int, 7>{0, -1, 0, -1, 0, 0, 1}>(
   END_CPP20
 }
 // test.h
-inline r_vec<r_str> test_str1(r_str x);
-extern "C" SEXP _cpp20_test_str1(SEXP x) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<r_str>(x);
-  return cpp_to_sexp(test_str1(cpp20::as<r_str>(x)));
-  END_CPP20
-}
-// test.h
-inline r_vec<r_str_view> test_str2(r_str_view x);
-extern "C" SEXP _cpp20_test_str2(SEXP x) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<r_str_view>(x);
-  return cpp_to_sexp(test_str2(cpp20::as<r_str_view>(x)));
-  END_CPP20
-}
-// test.h
 extern "C" SEXP _cpp20_test_str3(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
@@ -376,90 +464,11 @@ extern "C" SEXP _cpp20_test_coerce(SEXP x, SEXP ptype) {
   END_CPP20
 }
 // test.h
-r_vec<r_date> test_as_date(SEXP x);
-extern "C" SEXP _cpp20_test_as_date(SEXP x) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<SEXP>(x);
-  return cpp_to_sexp(test_as_date(cpp20::as<SEXP>(x)));
-  END_CPP20
-}
-// test.h
-r_vec<r_date> test_construct_date(SEXP x);
-extern "C" SEXP _cpp20_test_construct_date(SEXP x) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<SEXP>(x);
-  return cpp_to_sexp(test_construct_date(cpp20::as<SEXP>(x)));
-  END_CPP20
-}
-// test.h
-r_vec<r_date> test_as_date2(r_vec<r_date> x);
-extern "C" SEXP _cpp20_test_as_date2(SEXP x) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<r_vec<r_date>>(x);
-  return cpp_to_sexp(test_as_date2(cpp20::as<r_vec<r_date>>(x)));
-  END_CPP20
-}
-// test.h
-void cpp_set_threads(int n);
-extern "C" SEXP _cpp20_cpp_set_threads(SEXP n) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<int>(n);
-  cpp_set_threads(cpp20::as<int>(n));
-  return R_NilValue;
-  END_CPP20
-}
-// test.h
-r_int cpp_get_threads();
-extern "C" SEXP _cpp20_cpp_get_threads() {
-  BEGIN_CPP20
-    return cpp_to_sexp(cpp_get_threads());
-  END_CPP20
-}
-// test.h
-r_sexp test_null();
-extern "C" SEXP _cpp20_test_null() {
-  BEGIN_CPP20
-    return cpp_to_sexp(test_null());
-  END_CPP20
-}
-// test.h
-r_sym test_sym(r_sym x);
-extern "C" SEXP _cpp20_test_sym(SEXP x) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<r_sym>(x);
-  return cpp_to_sexp(test_sym(cpp20::as<r_sym>(x)));
-  END_CPP20
-}
-// test.h
-r_sexp test_sexp2(r_sexp x);
-extern "C" SEXP _cpp20_test_sexp2(SEXP x) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<r_sexp>(x);
-  return cpp_to_sexp(test_sexp2(cpp20::as<r_sexp>(x)));
-  END_CPP20
-}
-// test.h
-r_vec<r_sexp> test_sexp3(r_vec<r_sexp> x);
-extern "C" SEXP _cpp20_test_sexp3(SEXP x) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<r_vec<r_sexp>>(x);
-  return cpp_to_sexp(test_sexp3(cpp20::as<r_vec<r_sexp>>(x)));
-  END_CPP20
-}
-// test.h
 SEXP test_list_to_scalars(r_vec<r_sexp> x);
 extern "C" SEXP _cpp20_test_list_to_scalars(SEXP x) {
   BEGIN_CPP20
   check_r_cpp_mapping<r_vec<r_sexp>>(x);
   return cpp_to_sexp(test_list_to_scalars(cpp20::as<r_vec<r_sexp>>(x)));
-  END_CPP20
-}
-// test.h
-r_vec<r_int> test_coerce1(const r_vec<r_sexp>& x);
-extern "C" SEXP _cpp20_test_coerce1(SEXP x) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<const r_vec<r_sexp>&>(x);
-  return cpp_to_sexp(test_coerce1(cpp20::as<const r_vec<r_sexp>&>(x)));
   END_CPP20
 }
 // test.h
@@ -471,14 +480,6 @@ extern "C" SEXP _cpp20_test_combine2(SEXP x, SEXP y) {
     },
     x, y
   );
-  END_CPP20
-}
-// test.h
-r_vec<r_date> test_dates1(r_vec<r_date> x);
-extern "C" SEXP _cpp20_test_dates1(SEXP x) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<r_vec<r_date>>(x);
-  return cpp_to_sexp(test_dates1(cpp20::as<r_vec<r_date>>(x)));
   END_CPP20
 }
 // test.h
@@ -516,14 +517,6 @@ return dispatch_template_impl<2, 3, std::array<int, 3>{-1, 0, 1}>(
   END_CPP20
 }
 // test.h
-r_str test_tz(r_vec<r_psxct> x);
-extern "C" SEXP _cpp20_test_tz(SEXP x) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<r_vec<r_psxct>>(x);
-  return cpp_to_sexp(test_tz(cpp20::as<r_vec<r_psxct>>(x)));
-  END_CPP20
-}
-// test.h
 extern "C" SEXP _cpp20_test_group_id(SEXP x, SEXP order) {
   BEGIN_CPP20
   check_r_cpp_mapping<bool>(order);
@@ -545,14 +538,6 @@ return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
     },
     x, order
   );
-  END_CPP20
-}
-// test.h
-r_vec<r_int> test_lengths(const r_vec<r_sexp>& x);
-extern "C" SEXP _cpp20_test_lengths(SEXP x) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<const r_vec<r_sexp>&>(x);
-  return cpp_to_sexp(test_lengths(cpp20::as<const r_vec<r_sexp>&>(x)));
   END_CPP20
 }
 // test.h
@@ -597,20 +582,20 @@ extern "C" SEXP _cpp20_test_n_unique(SEXP x) {
   END_CPP20
 }
 // test.h
+SEXP test_copy(SEXP x);
+extern "C" SEXP _cpp20_test_copy(SEXP x) {
+  BEGIN_CPP20
+  check_r_cpp_mapping<SEXP>(x);
+  return cpp_to_sexp(test_copy(cpp20::as<SEXP>(x)));
+  END_CPP20
+}
+// test.h
 bool test_identical(SEXP x, SEXP y);
 extern "C" SEXP _cpp20_test_identical(SEXP x, SEXP y) {
   BEGIN_CPP20
   check_r_cpp_mapping<SEXP>(x);
 	check_r_cpp_mapping<SEXP>(y);
   return cpp_to_sexp(test_identical(cpp20::as<SEXP>(x), cpp20::as<SEXP>(y)));
-  END_CPP20
-}
-// test.h
-SEXP test_copy(SEXP x);
-extern "C" SEXP _cpp20_test_copy(SEXP x) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<SEXP>(x);
-  return cpp_to_sexp(test_copy(cpp20::as<SEXP>(x)));
   END_CPP20
 }
 // test_attrs.cpp
@@ -861,8 +846,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_test_tz",                   (DL_FUNC) &_cpp20_test_tz,                   1},
     {"_cpp20_test_unique",               (DL_FUNC) &_cpp20_test_unique,               1},
     {"_cpp20_test_var",                  (DL_FUNC) &_cpp20_test_var,                  2},
-    {"_cpp20_test_which",                (DL_FUNC) &_cpp20_test_which,                1},
-    {"_cpp20_test_which_inverted",       (DL_FUNC) &_cpp20_test_which_inverted,       1},
     {"_cpp20_vector1",                   (DL_FUNC) &_cpp20_vector1,                   1},
     {"_cpp20_vector2",                   (DL_FUNC) &_cpp20_vector2,                   1},
     {NULL, NULL, 0}

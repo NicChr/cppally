@@ -3,27 +3,6 @@
 #include <cpp20.hpp>
 using namespace cpp20;
 
-
-void static_tests(){
-  static_assert(is<unwrap_t<r_lgl>, int>);
-  static_assert(is<unwrap_t<r_dbl>, double>);
-  static_assert(is<unwrap_t<r_cplx>, std::complex<double>>);
-  static_assert(is<unwrap_t<r_raw>, Rbyte>);
-  static_assert(is<unwrap_t<r_sexp>, SEXP>);
-  static_assert(is<unwrap_t<r_date>, double>);
-  static_assert(is<unwrap_t<r_vec<r_str>>, SEXP>);
-  static_assert(is<unwrap_t<r_factors>, SEXP>);
-
-  static_assert(is<decltype(unwrap(r_lgl())), int>);
-  static_assert(is<decltype(unwrap(r_dbl())), double>);
-  static_assert(is<decltype(unwrap(r_cplx())), std::complex<double>>);
-  static_assert(is<decltype(unwrap(r_raw())), Rbyte>);
-  static_assert(is<decltype(unwrap(r_sexp())), SEXP>);
-  static_assert(is<decltype(unwrap(r_date())), double>);
-  static_assert(is<decltype(unwrap(r_vec<r_int>())), SEXP>);
-  static_assert(is<decltype(unwrap(r_factors())), SEXP>);
-}
-
 // What type is deduced by dispatch?
 template <typename T>
 [[cpp20::register]]
@@ -69,13 +48,6 @@ template <typename T>
 T test_identity(T x){
   return x;
 }
-
-// Basic identity fn
-[[cpp20::register]]
-SEXP test_identity2(SEXP x){
-  return x;
-}
-
 
 template <typename T>
 [[cpp20::register]]
@@ -188,16 +160,6 @@ r_vec<T> test_mix2(r_vec<T> a, double b, T c, int d, T e, T f, V g){
   return as<r_vec<T>>(a + b + c + d + e + f + g);
 }
 
-// R strings
-[[cpp20::register]]
-inline r_vec<r_str> test_str1(r_str x){
-  return as<r_vec<r_str>>(x);
-}
-
-[[cpp20::register]]
-inline r_vec<r_str_view> test_str2(r_str_view x){
-  return as<r_vec<r_str_view>>(x);
-}
 template <RStringType T>
 [[cpp20::register]]
 inline r_vec<r_str> test_str3(T x){
@@ -235,60 +197,9 @@ auto test_coerce(r_vec<T> x, U ptype) {
 } 
 
 [[cpp20::register]]
-r_vec<r_date> test_as_date(SEXP x){
-  return as<r_vec<r_date>>(x);
-} 
-
-[[cpp20::register]]
-r_vec<r_date> test_construct_date(SEXP x){
-  return r_vec<r_date>(x);
-} 
-
-[[cpp20::register]]
-r_vec<r_date> test_as_date2(r_vec<r_date> x){
-  return as<r_vec<r_date>>(x);
-} 
-
-[[cpp20::register]]
-void cpp_set_threads(int n){
-  set_threads(n);
-}
-
-[[cpp20::register]]
-r_int cpp_get_threads(){
-  return r_int(get_threads());
-}
-
-[[cpp20::register]]
-r_sexp test_null(){
-  return r_null;
-}
-
-[[cpp20::register]]
-r_sym test_sym(r_sym x){
-  return x;
-}
-
-[[cpp20::register]]
-r_sexp test_sexp2(r_sexp x){
-  return x;
-}
-
-[[cpp20::register]]
-r_vec<r_sexp> test_sexp3(r_vec<r_sexp> x){
-  return x;
-}
-
-[[cpp20::register]]
 SEXP test_list_to_scalars(r_vec<r_sexp> x){
   return make_vec<r_sexp>(as<r_lgl>(x), as<r_int>(x), as<r_dbl>(x), make_vec<r_str>(as<r_str>(x)), as<r_sexp>(x), as<r_sym>(x));
 }
-
-[[cpp20::register]]
-r_vec<r_int> test_coerce1(const r_vec<r_sexp>& x){
-  return as<r_vec<r_int>>(x);
-}
-
 template <RVal T>
 [[cpp20::register]]
 auto test_combine2(T x, T y){
@@ -296,11 +207,6 @@ auto test_combine2(T x, T y){
     arg("first") = make_vec<T>(x, y),
     arg("second") = make_vec<T>(arg("x") = x, arg("y") = y)
   );
-}
-
-[[cpp20::register]]
-r_vec<r_date> test_dates1(r_vec<r_date> x){
-  return x;
 }
 
 template <RVector T>
@@ -322,11 +228,6 @@ r_vec<r_sexp> test_seqs(r_vec<r_int> size, r_vec<U> from, r_vec<V> by){
   return sequences(size, from, by);
 }
 
-[[cpp20::register]]
-r_str test_tz(r_vec<r_psxct> x){
-  x.set_tzone("America/New_York");
-  return x.tzone();
-} 
 // r_vec<r_sexp> test_time_coerce(){
 //   return make_vec<r_sexp>(
 //     r_date(0),
@@ -364,11 +265,6 @@ r_vec<r_int> test_group_counts(T x, bool order){
   return make_groups(x, order).counts();
 }
 
-[[cpp20::register]]
-r_vec<r_int> test_lengths(const r_vec<r_sexp>& x){
-  return x.lengths();
-}
-
 template <RVal T>
 [[cpp20::register]]
 auto test_match(r_vec<T> x, r_vec<T> y){
@@ -393,11 +289,11 @@ int test_n_unique(T x){
 }
 
 [[cpp20::register]]
-bool test_identical(SEXP x, SEXP y){
-  return identical(x, y);
+SEXP test_copy(SEXP x){ 
+  return deep_copy(r_sexp(x));
 }
 
 [[cpp20::register]]
-SEXP test_copy(SEXP x){ 
-  return deep_copy(r_sexp(x));
+bool test_identical(SEXP x, SEXP y){
+  return identical(x, y);
 }
