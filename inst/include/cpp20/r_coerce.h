@@ -29,6 +29,19 @@ inline std::remove_cvref_t<T> as(const U& x) {
       // If it isn't implicitly convertible to SEXP, then rely on as<r_sexp> conversion
       return static_cast<SEXP>(as<r_sexp>(x));
     }
+  } else if constexpr (is<r_sym, to_t>){
+    if constexpr (is<from_t, const char*>){
+      return r_sym(x);
+    } else if constexpr (RStringType<from_t>){
+      return r_sym(x.c_str());
+    } else if constexpr (is_sexp<from_t>){
+      return r_sym(static_cast<SEXP>(x));
+    } else {
+      r_str_view str = as<r_str_view>(x);
+      return r_sym(str.c_str());
+    }
+  } else if constexpr (is<r_sym, from_t>){
+    return as<to_t>(r_str_view(PRINTNAME(static_cast<SEXP>(x))));
   } else if constexpr (RVector<from_t> && is<to_t, r_sexp>){
     return x.sexp;
   } else if constexpr (RFactor<to_t>){
@@ -39,7 +52,7 @@ inline std::remove_cvref_t<T> as(const U& x) {
     } else {
       return as<to_t>(x.value);
     }
-  } else if constexpr (RVector<to_t> && is_sexp<from_t>){
+  } else if constexpr (is_sexp<from_t> && !is_sexp<to_t>){
     return visit_vector(x, [](const auto& xvec) -> to_t {
       // This will trigger the branch that checks that both are RVector
       return as<to_t>(xvec);
@@ -52,11 +65,6 @@ inline std::remove_cvref_t<T> as(const U& x) {
       // r_sexp -> SEXP
       return static_cast<SEXP>(x);
     }
-  } else if constexpr (RVal<to_t> && is_sexp<from_t>){
-        
-    return visit_vector(x, [](const auto& xvec) -> to_t {
-      return as<to_t>(xvec);
-    });
   } else if constexpr (RVal<to_t> && RVector<from_t>){
     if (x.length() != 1){
       abort("Vector must be length-1 to be coerced to requested scalar type");
@@ -92,17 +100,10 @@ inline std::remove_cvref_t<T> as(const U& x) {
     return out;
   } else if constexpr (RVal<to_t> && !RVector<from_t>) {
     return internal::as_r<to_t>(x);
-    // If input is not an R type or an R vector type
   } else if constexpr (!RVal<from_t> && !RVector<from_t>){
     return as<to_t>(as_r_val(x));
   } else if constexpr (CastableToRVal<to_t>){
     return static_cast<to_t>(as<as_r_val_t<to_t>>(x));
-  } else if constexpr (RSymbolType<to_t>){
-    if constexpr (is_sexp<from_t>){
-      return r_sym(static_cast<SEXP>(x));
-    } else {
-      return r_sym(as<r_str_view>(x));
-    }
   } else {
     static_assert(always_false<to_t>, "Unsupported type for `as`");
   }

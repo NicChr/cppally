@@ -57,7 +57,7 @@ inline r_lgl as_bool(T const& x){
     return r_lgl(unwrap(x));
   } else if constexpr (MathType<T>){
     return is_na(x) ? na<r_lgl>() : r_lgl(static_cast<bool>(unwrap(x)));
-  } else {
+  } else [[unlikely]] {
     return na<r_lgl>();
   }
 }
@@ -67,7 +67,7 @@ inline r_int as_int(T const& x){
     return r_int(unwrap(x));
   } else if constexpr (MathType<T>){
     return is_na(x) || !internal::can_be_int(x) ? na<r_int>() : r_int(static_cast<int>(unwrap(x)));
-  } else {
+  } else [[unlikely]] {
     return na<r_int>();
   }
 }
@@ -77,7 +77,7 @@ inline r_int64 as_int64(T const& x){
     return r_int64(unwrap(x));
   } else if constexpr (MathType<T>){
     return is_na(x) || !internal::can_be_int64(x) ? na<r_int64>() : r_int64(static_cast<int64_t>(unwrap(x)));
-  } else {
+  } else [[unlikely]] {
     return na<r_int64>();
   }
 }
@@ -87,7 +87,7 @@ inline r_dbl as_double(T const& x){
     return r_dbl(unwrap(x));
   } else if constexpr (MathType<T>){
     return is_na(x) ? na<r_dbl>() : r_dbl(static_cast<double>(unwrap(x)));
-  } else {
+  } else [[unlikely]] {
     return na<r_dbl>();
   }
 }
@@ -97,7 +97,7 @@ inline r_cplx as_complex(T const& x){
     return r_cplx(unwrap(x));
   } else if constexpr (MathType<T>){
     return r_cplx{as_double(x), r_dbl(0.0)};
-  } else {
+  } else [[unlikely]] {
     return na<r_cplx>();
   }
 }
@@ -110,7 +110,7 @@ inline r_raw as_raw(T const& x){
   } else if constexpr (MathType<T>){
     using r_t = unwrap_t<T>;
     return is_na(x) || !internal::between_impl(unwrap(x), r_t(0), r_t(255)) ? na<r_raw>() : r_raw(static_cast<unsigned char>(unwrap(x)));
-  } else {
+  } else [[unlikely]] {
     return na<r_raw>();
   }
 }
@@ -184,23 +184,8 @@ inline r_str_view as_r_string(T const& x){
     }
     r_sexp str = r_sexp(safe[Rf_coerceVector](x, STRSXP));
     return r_str_view(STRING_ELT(str, 0));
-  } else {
-    static_assert(always_false<T>, "Unsupported type for `as_r_string`");
-  }
-}
-
-// As SYMSXP
-template<typename T>
-inline r_sym as_r_sym(T const& x){
-  if constexpr (is<T, const char*>){
-    return r_sym(x);
-  } else if constexpr (RStringType<T>){
-    return r_sym(x.c_str());
-  } else if constexpr (is_sexp<T>){
-    return r_sym(static_cast<SEXP>(x));
-  } else {
-    r_str_view str = as_r_string(x);
-    return r_sym(str.c_str());
+  } else [[unlikely]] {
+    return na<r_str_view>();
   }
 }
 
@@ -311,13 +296,6 @@ struct as_impl<r_str, U> {
   static r_str cast(U const& x) {
     r_str_view res = as_r_string(x);
     return r_str(unwrap(res));
-  }
-};
-
-template<typename U>
-struct as_impl<r_sym, U> {
-  static r_sym cast(U const& x) {
-    return as_r_sym(x);
   }
 };
 
