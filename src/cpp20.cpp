@@ -3,7 +3,6 @@
 
 
 #include <cpp20/r_dispatch.h>
-using namespace cpp20;
 #include <R_ext/Visibility.h>
 #include "test.h"
 #include "test_nas.h"
@@ -11,36 +10,40 @@ using namespace cpp20;
 #include "test_stats.h"
 #include "test_subset.h"
 
+using cpp20::internal::cpp_to_sexp;
+using cpp20::internal::check_r_cpp_mapping;
+using cpp20::internal::dispatch_template_impl;
+
 // test.cpp
 r_str cpp20_typeof(SEXP x);
 extern "C" SEXP _cpp20_cpp20_typeof(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<SEXP>(x);
-  return cpp20::internal::cpp_to_sexp(cpp20_typeof(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
+  check_r_cpp_mapping<SEXP>(x);
+  return cpp_to_sexp(cpp20_typeof(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
   END_CPP20
 }
 // test.cpp
 r_vec<r_int> test_which(r_vec<r_lgl> const& x);
 extern "C" SEXP _cpp20_test_which(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_vec<r_lgl> const&>(x);
-  return cpp20::internal::cpp_to_sexp(test_which(cpp20::as<std::remove_cvref_t<r_vec<r_lgl> const&>>(x)));
+  check_r_cpp_mapping<r_vec<r_lgl> const&>(x);
+  return cpp_to_sexp(test_which(cpp20::as<std::remove_cvref_t<r_vec<r_lgl> const&>>(x)));
   END_CPP20
 }
 // test.cpp
 r_vec<r_int> test_which_inverted(r_vec<r_lgl> const& x);
 extern "C" SEXP _cpp20_test_which_inverted(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_vec<r_lgl> const&>(x);
-  return cpp20::internal::cpp_to_sexp(test_which_inverted(cpp20::as<std::remove_cvref_t<r_vec<r_lgl> const&>>(x)));
+  check_r_cpp_mapping<r_vec<r_lgl> const&>(x);
+  return cpp_to_sexp(test_which_inverted(cpp20::as<std::remove_cvref_t<r_vec<r_lgl> const&>>(x)));
   END_CPP20
 }
 // test.h
 extern "C" SEXP _cpp20_test_deduced_type(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_deduced_type(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_deduced_type(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_deduced_type(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_deduced_type(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -49,9 +52,9 @@ extern "C" SEXP _cpp20_test_deduced_type(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_test_multiple_deduction(SEXP x, SEXP y) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_multiple_deduction(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_multiple_deduction(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)));
+  return dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
+    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_multiple_deduction(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)))) {
+        return cpp_to_sexp(test_multiple_deduction(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)));
     },
     x, y
   );
@@ -60,9 +63,9 @@ extern "C" SEXP _cpp20_test_multiple_deduction(SEXP x, SEXP y) {
 // test.h
 extern "C" SEXP _cpp20_test_deduced_vec_type(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_deduced_vec_type(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_deduced_vec_type(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_deduced_vec_type(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_deduced_vec_type(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -71,9 +74,9 @@ extern "C" SEXP _cpp20_test_deduced_vec_type(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_test_deduced_scalar_type(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_deduced_scalar_type(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_deduced_scalar_type(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_deduced_scalar_type(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_deduced_scalar_type(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -82,9 +85,9 @@ extern "C" SEXP _cpp20_test_deduced_scalar_type(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_test_deduced_scalar_type2(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_deduced_scalar_type2(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_deduced_scalar_type2(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_deduced_scalar_type2(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_deduced_scalar_type2(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -93,9 +96,9 @@ extern "C" SEXP _cpp20_test_deduced_scalar_type2(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_test_identity(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_identity(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_identity(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_identity(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_identity(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -105,16 +108,16 @@ extern "C" SEXP _cpp20_test_identity(SEXP x) {
 SEXP test_identity2(SEXP x);
 extern "C" SEXP _cpp20_test_identity2(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<SEXP>(x);
-  return cpp20::internal::cpp_to_sexp(test_identity2(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
+  check_r_cpp_mapping<SEXP>(x);
+  return cpp_to_sexp(test_identity2(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
   END_CPP20
 }
 // test.h
 extern "C" SEXP _cpp20_test_template_null(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_template_null(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_template_null(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_template_null(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_template_null(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -123,10 +126,10 @@ extern "C" SEXP _cpp20_test_template_null(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_test_scalar(SEXP x, SEXP y) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<int>(x);
-return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{-1, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_scalar(cpp20::as<std::remove_cvref_t<int>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_scalar(cpp20::as<std::remove_cvref_t<int>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)));
+  check_r_cpp_mapping<int>(x);
+return dispatch_template_impl<1, 2, std::array<int, 2>{-1, 0}>(
+    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_scalar(cpp20::as<std::remove_cvref_t<int>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)))) {
+        return cpp_to_sexp(test_scalar(cpp20::as<std::remove_cvref_t<int>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)));
     },
     x, y
   );
@@ -135,10 +138,10 @@ return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{-1, 0}>(
 // test.h
 extern "C" SEXP _cpp20_test_scalar2(SEXP x, SEXP y) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_int>(x);
-return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{-1, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_scalar2(cpp20::as<std::remove_cvref_t<r_int>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_scalar2(cpp20::as<std::remove_cvref_t<r_int>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)));
+  check_r_cpp_mapping<r_int>(x);
+return dispatch_template_impl<1, 2, std::array<int, 2>{-1, 0}>(
+    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_scalar2(cpp20::as<std::remove_cvref_t<r_int>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)))) {
+        return cpp_to_sexp(test_scalar2(cpp20::as<std::remove_cvref_t<r_int>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)));
     },
     x, y
   );
@@ -147,10 +150,10 @@ return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{-1, 0}>(
 // test.h
 extern "C" SEXP _cpp20_test_scalar3(SEXP x, SEXP y) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_int>(x);
-return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{-1, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_scalar3(cpp20::as<std::remove_cvref_t<r_int>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_scalar3(cpp20::as<std::remove_cvref_t<r_int>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)));
+  check_r_cpp_mapping<r_int>(x);
+return dispatch_template_impl<1, 2, std::array<int, 2>{-1, 0}>(
+    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_scalar3(cpp20::as<std::remove_cvref_t<r_int>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)))) {
+        return cpp_to_sexp(test_scalar3(cpp20::as<std::remove_cvref_t<r_int>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)));
     },
     x, y
   );
@@ -159,9 +162,9 @@ return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{-1, 0}>(
 // test.h
 extern "C" SEXP _cpp20_test_rval_identity(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_rval_identity(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_rval_identity(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_rval_identity(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_rval_identity(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -170,9 +173,9 @@ extern "C" SEXP _cpp20_test_rval_identity(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_scalar1(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(scalar1(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(scalar1(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(scalar1(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(scalar1(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -181,9 +184,9 @@ extern "C" SEXP _cpp20_scalar1(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_scalar2(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(scalar2(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(scalar2(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(scalar2(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(scalar2(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -192,9 +195,9 @@ extern "C" SEXP _cpp20_scalar2(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_vector1(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(vector1(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(vector1(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(vector1(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal)))) {
+        return cpp_to_sexp(vector1(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal)));
     },
     x
   );
@@ -203,9 +206,9 @@ extern "C" SEXP _cpp20_vector1(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_vector2(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(vector2(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(vector2(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(vector2(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(vector2(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -214,9 +217,9 @@ extern "C" SEXP _cpp20_vector2(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_scalar3(SEXP x, SEXP y) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp20::internal::cpp_to_sexp(scalar3(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)))) {
-        return cpp20::internal::cpp_to_sexp(scalar3(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)));
+  return dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
+    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(scalar3(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)))) {
+        return cpp_to_sexp(scalar3(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)));
     },
     x, y
   );
@@ -225,9 +228,9 @@ extern "C" SEXP _cpp20_scalar3(SEXP x, SEXP y) {
 // test.h
 extern "C" SEXP _cpp20_scalar4(SEXP x, SEXP y) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp20::internal::cpp_to_sexp(scalar4(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<U>>(y_internal)))) {
-        return cpp20::internal::cpp_to_sexp(scalar4(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<U>>(y_internal)));
+  return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
+    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(scalar4(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<U>>(y_internal)))) {
+        return cpp_to_sexp(scalar4(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<U>>(y_internal)));
     },
     x, y
   );
@@ -236,9 +239,9 @@ extern "C" SEXP _cpp20_scalar4(SEXP x, SEXP y) {
 // test.h
 extern "C" SEXP _cpp20_test_sexp(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_sexp(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_sexp(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_sexp(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_sexp(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -247,9 +250,9 @@ extern "C" SEXP _cpp20_test_sexp(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_test_sexp4(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_sexp4(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_sexp4(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_sexp4(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_sexp4(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -258,9 +261,9 @@ extern "C" SEXP _cpp20_test_sexp4(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_scalar_vec1(SEXP a, SEXP b) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
-    []<typename T>(SEXP a_internal, SEXP b_internal) -> decltype(cpp20::internal::cpp_to_sexp(scalar_vec1(cpp20::as<std::remove_cvref_t<r_vec<T>>>(a_internal), cpp20::as<std::remove_cvref_t<T>>(b_internal)))) {
-        return cpp20::internal::cpp_to_sexp(scalar_vec1(cpp20::as<std::remove_cvref_t<r_vec<T>>>(a_internal), cpp20::as<std::remove_cvref_t<T>>(b_internal)));
+  return dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
+    []<typename T>(SEXP a_internal, SEXP b_internal) -> decltype(cpp_to_sexp(scalar_vec1(cpp20::as<std::remove_cvref_t<r_vec<T>>>(a_internal), cpp20::as<std::remove_cvref_t<T>>(b_internal)))) {
+        return cpp_to_sexp(scalar_vec1(cpp20::as<std::remove_cvref_t<r_vec<T>>>(a_internal), cpp20::as<std::remove_cvref_t<T>>(b_internal)));
     },
     a, b
   );
@@ -269,9 +272,9 @@ extern "C" SEXP _cpp20_scalar_vec1(SEXP a, SEXP b) {
 // test.h
 extern "C" SEXP _cpp20_scalar_vec2(SEXP a, SEXP b) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP a_internal, SEXP b_internal) -> decltype(cpp20::internal::cpp_to_sexp(scalar_vec2(cpp20::as<std::remove_cvref_t<r_vec<T>>>(a_internal), cpp20::as<std::remove_cvref_t<U>>(b_internal)))) {
-        return cpp20::internal::cpp_to_sexp(scalar_vec2(cpp20::as<std::remove_cvref_t<r_vec<T>>>(a_internal), cpp20::as<std::remove_cvref_t<U>>(b_internal)));
+  return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
+    []<typename T, typename U>(SEXP a_internal, SEXP b_internal) -> decltype(cpp_to_sexp(scalar_vec2(cpp20::as<std::remove_cvref_t<r_vec<T>>>(a_internal), cpp20::as<std::remove_cvref_t<U>>(b_internal)))) {
+        return cpp_to_sexp(scalar_vec2(cpp20::as<std::remove_cvref_t<r_vec<T>>>(a_internal), cpp20::as<std::remove_cvref_t<U>>(b_internal)));
     },
     a, b
   );
@@ -280,9 +283,9 @@ extern "C" SEXP _cpp20_scalar_vec2(SEXP a, SEXP b) {
 // test.h
 extern "C" SEXP _cpp20_scalar_vec3(SEXP z, SEXP x, SEXP y, SEXP a) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<2, 4, std::array<int, 4>{0, 0, 1, 1}>(
-    []<typename T, typename U>(SEXP z_internal, SEXP x_internal, SEXP y_internal, SEXP a_internal) -> decltype(cpp20::internal::cpp_to_sexp(scalar_vec3(cpp20::as<std::remove_cvref_t<r_vec<T>>>(z_internal), cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<U>>(y_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(a_internal)))) {
-        return cpp20::internal::cpp_to_sexp(scalar_vec3(cpp20::as<std::remove_cvref_t<r_vec<T>>>(z_internal), cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<U>>(y_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(a_internal)));
+  return dispatch_template_impl<2, 4, std::array<int, 4>{0, 0, 1, 1}>(
+    []<typename T, typename U>(SEXP z_internal, SEXP x_internal, SEXP y_internal, SEXP a_internal) -> decltype(cpp_to_sexp(scalar_vec3(cpp20::as<std::remove_cvref_t<r_vec<T>>>(z_internal), cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<U>>(y_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(a_internal)))) {
+        return cpp_to_sexp(scalar_vec3(cpp20::as<std::remove_cvref_t<r_vec<T>>>(z_internal), cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<U>>(y_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(a_internal)));
     },
     z, x, y, a
   );
@@ -291,11 +294,11 @@ extern "C" SEXP _cpp20_scalar_vec3(SEXP z, SEXP x, SEXP y, SEXP a) {
 // test.h
 extern "C" SEXP _cpp20_test_mix2(SEXP a, SEXP b, SEXP c, SEXP d, SEXP e, SEXP f, SEXP g) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<double>(b);
-	cpp20::internal::check_r_cpp_mapping<int>(d);
-return cpp20::internal::dispatch_template_impl<2, 7, std::array<int, 7>{0, -1, 0, -1, 0, 0, 1}>(
-    []<typename T, typename V>(SEXP a_internal, SEXP b_internal, SEXP c_internal, SEXP d_internal, SEXP e_internal, SEXP f_internal, SEXP g_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_mix2(cpp20::as<std::remove_cvref_t<r_vec<T>>>(a_internal), cpp20::as<std::remove_cvref_t<double>>(b_internal), cpp20::as<std::remove_cvref_t<T>>(c_internal), cpp20::as<std::remove_cvref_t<int>>(d_internal), cpp20::as<std::remove_cvref_t<T>>(e_internal), cpp20::as<std::remove_cvref_t<T>>(f_internal), cpp20::as<std::remove_cvref_t<V>>(g_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_mix2(cpp20::as<std::remove_cvref_t<r_vec<T>>>(a_internal), cpp20::as<std::remove_cvref_t<double>>(b_internal), cpp20::as<std::remove_cvref_t<T>>(c_internal), cpp20::as<std::remove_cvref_t<int>>(d_internal), cpp20::as<std::remove_cvref_t<T>>(e_internal), cpp20::as<std::remove_cvref_t<T>>(f_internal), cpp20::as<std::remove_cvref_t<V>>(g_internal)));
+  check_r_cpp_mapping<double>(b);
+	check_r_cpp_mapping<int>(d);
+return dispatch_template_impl<2, 7, std::array<int, 7>{0, -1, 0, -1, 0, 0, 1}>(
+    []<typename T, typename V>(SEXP a_internal, SEXP b_internal, SEXP c_internal, SEXP d_internal, SEXP e_internal, SEXP f_internal, SEXP g_internal) -> decltype(cpp_to_sexp(test_mix2(cpp20::as<std::remove_cvref_t<r_vec<T>>>(a_internal), cpp20::as<std::remove_cvref_t<double>>(b_internal), cpp20::as<std::remove_cvref_t<T>>(c_internal), cpp20::as<std::remove_cvref_t<int>>(d_internal), cpp20::as<std::remove_cvref_t<T>>(e_internal), cpp20::as<std::remove_cvref_t<T>>(f_internal), cpp20::as<std::remove_cvref_t<V>>(g_internal)))) {
+        return cpp_to_sexp(test_mix2(cpp20::as<std::remove_cvref_t<r_vec<T>>>(a_internal), cpp20::as<std::remove_cvref_t<double>>(b_internal), cpp20::as<std::remove_cvref_t<T>>(c_internal), cpp20::as<std::remove_cvref_t<int>>(d_internal), cpp20::as<std::remove_cvref_t<T>>(e_internal), cpp20::as<std::remove_cvref_t<T>>(f_internal), cpp20::as<std::remove_cvref_t<V>>(g_internal)));
     },
     a, b, c, d, e, f, g
   );
@@ -305,24 +308,24 @@ return cpp20::internal::dispatch_template_impl<2, 7, std::array<int, 7>{0, -1, 0
 inline r_vec<r_str> test_str1(r_str x);
 extern "C" SEXP _cpp20_test_str1(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_str>(x);
-  return cpp20::internal::cpp_to_sexp(test_str1(cpp20::as<std::remove_cvref_t<r_str>>(x)));
+  check_r_cpp_mapping<r_str>(x);
+  return cpp_to_sexp(test_str1(cpp20::as<std::remove_cvref_t<r_str>>(x)));
   END_CPP20
 }
 // test.h
 inline r_vec<r_str_view> test_str2(r_str_view x);
 extern "C" SEXP _cpp20_test_str2(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_str_view>(x);
-  return cpp20::internal::cpp_to_sexp(test_str2(cpp20::as<std::remove_cvref_t<r_str_view>>(x)));
+  check_r_cpp_mapping<r_str_view>(x);
+  return cpp_to_sexp(test_str2(cpp20::as<std::remove_cvref_t<r_str_view>>(x)));
   END_CPP20
 }
 // test.h
 extern "C" SEXP _cpp20_test_str3(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_str3(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_str3(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_str3(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_str3(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -331,9 +334,9 @@ extern "C" SEXP _cpp20_test_str3(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_test_str4(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_str4(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_str4(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_str4(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_str4(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -342,9 +345,9 @@ extern "C" SEXP _cpp20_test_str4(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_test_as_sym(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_as_sym(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_as_sym(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_as_sym(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_as_sym(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -353,9 +356,9 @@ extern "C" SEXP _cpp20_test_as_sym(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_test_specialisation(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_specialisation(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_specialisation(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_specialisation(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal)))) {
+        return cpp_to_sexp(test_specialisation(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal)));
     },
     x
   );
@@ -364,9 +367,9 @@ extern "C" SEXP _cpp20_test_specialisation(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_test_coerce(SEXP x, SEXP ptype) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP ptype_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_coerce(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<U>>(ptype_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_coerce(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<U>>(ptype_internal)));
+  return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
+    []<typename T, typename U>(SEXP x_internal, SEXP ptype_internal) -> decltype(cpp_to_sexp(test_coerce(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<U>>(ptype_internal)))) {
+        return cpp_to_sexp(test_coerce(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<U>>(ptype_internal)));
     },
     x, ptype
   );
@@ -376,31 +379,31 @@ extern "C" SEXP _cpp20_test_coerce(SEXP x, SEXP ptype) {
 r_vec<r_date> test_as_date(SEXP x);
 extern "C" SEXP _cpp20_test_as_date(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<SEXP>(x);
-  return cpp20::internal::cpp_to_sexp(test_as_date(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
+  check_r_cpp_mapping<SEXP>(x);
+  return cpp_to_sexp(test_as_date(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
   END_CPP20
 }
 // test.h
 r_vec<r_date> test_construct_date(SEXP x);
 extern "C" SEXP _cpp20_test_construct_date(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<SEXP>(x);
-  return cpp20::internal::cpp_to_sexp(test_construct_date(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
+  check_r_cpp_mapping<SEXP>(x);
+  return cpp_to_sexp(test_construct_date(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
   END_CPP20
 }
 // test.h
 r_vec<r_date> test_as_date2(r_vec<r_date> x);
 extern "C" SEXP _cpp20_test_as_date2(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_vec<r_date>>(x);
-  return cpp20::internal::cpp_to_sexp(test_as_date2(cpp20::as<std::remove_cvref_t<r_vec<r_date>>>(x)));
+  check_r_cpp_mapping<r_vec<r_date>>(x);
+  return cpp_to_sexp(test_as_date2(cpp20::as<std::remove_cvref_t<r_vec<r_date>>>(x)));
   END_CPP20
 }
 // test.h
 void cpp_set_threads(int n);
 extern "C" SEXP _cpp20_cpp_set_threads(SEXP n) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<int>(n);
+  check_r_cpp_mapping<int>(n);
   cpp_set_threads(cpp20::as<std::remove_cvref_t<int>>(n));
   return R_NilValue;
   END_CPP20
@@ -409,62 +412,62 @@ extern "C" SEXP _cpp20_cpp_set_threads(SEXP n) {
 r_int cpp_get_threads();
 extern "C" SEXP _cpp20_cpp_get_threads() {
   BEGIN_CPP20
-    return cpp20::internal::cpp_to_sexp(cpp_get_threads());
+    return cpp_to_sexp(cpp_get_threads());
   END_CPP20
 }
 // test.h
 r_sexp test_null();
 extern "C" SEXP _cpp20_test_null() {
   BEGIN_CPP20
-    return cpp20::internal::cpp_to_sexp(test_null());
+    return cpp_to_sexp(test_null());
   END_CPP20
 }
 // test.h
 r_sym test_sym(r_sym x);
 extern "C" SEXP _cpp20_test_sym(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_sym>(x);
-  return cpp20::internal::cpp_to_sexp(test_sym(cpp20::as<std::remove_cvref_t<r_sym>>(x)));
+  check_r_cpp_mapping<r_sym>(x);
+  return cpp_to_sexp(test_sym(cpp20::as<std::remove_cvref_t<r_sym>>(x)));
   END_CPP20
 }
 // test.h
 r_sexp test_sexp2(r_sexp x);
 extern "C" SEXP _cpp20_test_sexp2(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_sexp>(x);
-  return cpp20::internal::cpp_to_sexp(test_sexp2(cpp20::as<std::remove_cvref_t<r_sexp>>(x)));
+  check_r_cpp_mapping<r_sexp>(x);
+  return cpp_to_sexp(test_sexp2(cpp20::as<std::remove_cvref_t<r_sexp>>(x)));
   END_CPP20
 }
 // test.h
 r_vec<r_sexp> test_sexp3(r_vec<r_sexp> x);
 extern "C" SEXP _cpp20_test_sexp3(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_vec<r_sexp>>(x);
-  return cpp20::internal::cpp_to_sexp(test_sexp3(cpp20::as<std::remove_cvref_t<r_vec<r_sexp>>>(x)));
+  check_r_cpp_mapping<r_vec<r_sexp>>(x);
+  return cpp_to_sexp(test_sexp3(cpp20::as<std::remove_cvref_t<r_vec<r_sexp>>>(x)));
   END_CPP20
 }
 // test.h
 SEXP test_list_to_scalars(r_vec<r_sexp> x);
 extern "C" SEXP _cpp20_test_list_to_scalars(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_vec<r_sexp>>(x);
-  return cpp20::internal::cpp_to_sexp(test_list_to_scalars(cpp20::as<std::remove_cvref_t<r_vec<r_sexp>>>(x)));
+  check_r_cpp_mapping<r_vec<r_sexp>>(x);
+  return cpp_to_sexp(test_list_to_scalars(cpp20::as<std::remove_cvref_t<r_vec<r_sexp>>>(x)));
   END_CPP20
 }
 // test.h
 r_vec<r_int> test_coerce1(const r_vec<r_sexp>& x);
 extern "C" SEXP _cpp20_test_coerce1(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<const r_vec<r_sexp>&>(x);
-  return cpp20::internal::cpp_to_sexp(test_coerce1(cpp20::as<std::remove_cvref_t<const r_vec<r_sexp>&>>(x)));
+  check_r_cpp_mapping<const r_vec<r_sexp>&>(x);
+  return cpp_to_sexp(test_coerce1(cpp20::as<std::remove_cvref_t<const r_vec<r_sexp>&>>(x)));
   END_CPP20
 }
 // test.h
 extern "C" SEXP _cpp20_test_combine2(SEXP x, SEXP y) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_combine2(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_combine2(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)));
+  return dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
+    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_combine2(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)))) {
+        return cpp_to_sexp(test_combine2(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<T>>(y_internal)));
     },
     x, y
   );
@@ -474,16 +477,16 @@ extern "C" SEXP _cpp20_test_combine2(SEXP x, SEXP y) {
 r_vec<r_date> test_dates1(r_vec<r_date> x);
 extern "C" SEXP _cpp20_test_dates1(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_vec<r_date>>(x);
-  return cpp20::internal::cpp_to_sexp(test_dates1(cpp20::as<std::remove_cvref_t<r_vec<r_date>>>(x)));
+  check_r_cpp_mapping<r_vec<r_date>>(x);
+  return cpp_to_sexp(test_dates1(cpp20::as<std::remove_cvref_t<r_vec<r_date>>>(x)));
   END_CPP20
 }
 // test.h
 extern "C" SEXP _cpp20_test_dates2(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_dates2(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_dates2(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_dates2(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_dates2(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -492,9 +495,9 @@ extern "C" SEXP _cpp20_test_dates2(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_test_unique(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_unique(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_unique(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_unique(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_unique(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -503,10 +506,10 @@ extern "C" SEXP _cpp20_test_unique(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_test_seqs(SEXP size, SEXP from, SEXP by) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_vec<r_int>>(size);
-return cpp20::internal::dispatch_template_impl<2, 3, std::array<int, 3>{-1, 0, 1}>(
-    []<typename U, typename V>(SEXP size_internal, SEXP from_internal, SEXP by_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_seqs(cpp20::as<std::remove_cvref_t<r_vec<r_int>>>(size_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(from_internal), cpp20::as<std::remove_cvref_t<r_vec<V>>>(by_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_seqs(cpp20::as<std::remove_cvref_t<r_vec<r_int>>>(size_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(from_internal), cpp20::as<std::remove_cvref_t<r_vec<V>>>(by_internal)));
+  check_r_cpp_mapping<r_vec<r_int>>(size);
+return dispatch_template_impl<2, 3, std::array<int, 3>{-1, 0, 1}>(
+    []<typename U, typename V>(SEXP size_internal, SEXP from_internal, SEXP by_internal) -> decltype(cpp_to_sexp(test_seqs(cpp20::as<std::remove_cvref_t<r_vec<r_int>>>(size_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(from_internal), cpp20::as<std::remove_cvref_t<r_vec<V>>>(by_internal)))) {
+        return cpp_to_sexp(test_seqs(cpp20::as<std::remove_cvref_t<r_vec<r_int>>>(size_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(from_internal), cpp20::as<std::remove_cvref_t<r_vec<V>>>(by_internal)));
     },
     size, from, by
   );
@@ -516,24 +519,24 @@ return cpp20::internal::dispatch_template_impl<2, 3, std::array<int, 3>{-1, 0, 1
 r_str test_tz(r_vec<r_psxct> x);
 extern "C" SEXP _cpp20_test_tz(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_vec<r_psxct>>(x);
-  return cpp20::internal::cpp_to_sexp(test_tz(cpp20::as<std::remove_cvref_t<r_vec<r_psxct>>>(x)));
+  check_r_cpp_mapping<r_vec<r_psxct>>(x);
+  return cpp_to_sexp(test_tz(cpp20::as<std::remove_cvref_t<r_vec<r_psxct>>>(x)));
   END_CPP20
 }
 // test.h
 r_vec<r_sexp> test_time_coerce();
 extern "C" SEXP _cpp20_test_time_coerce() {
   BEGIN_CPP20
-    return cpp20::internal::cpp_to_sexp(test_time_coerce());
+    return cpp_to_sexp(test_time_coerce());
   END_CPP20
 }
 // test.h
 extern "C" SEXP _cpp20_test_group_id(SEXP x, SEXP order) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<bool>(order);
-return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP order_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_group_id(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(order_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_group_id(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(order_internal)));
+  check_r_cpp_mapping<bool>(order);
+return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP order_internal) -> decltype(cpp_to_sexp(test_group_id(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(order_internal)))) {
+        return cpp_to_sexp(test_group_id(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(order_internal)));
     },
     x, order
   );
@@ -542,10 +545,10 @@ return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
 // test.h
 extern "C" SEXP _cpp20_test_group_counts(SEXP x, SEXP order) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<bool>(order);
-return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP order_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_group_counts(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(order_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_group_counts(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(order_internal)));
+  check_r_cpp_mapping<bool>(order);
+return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP order_internal) -> decltype(cpp_to_sexp(test_group_counts(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(order_internal)))) {
+        return cpp_to_sexp(test_group_counts(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(order_internal)));
     },
     x, order
   );
@@ -555,16 +558,16 @@ return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
 r_vec<r_int> test_lengths(const r_vec<r_sexp>& x);
 extern "C" SEXP _cpp20_test_lengths(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<const r_vec<r_sexp>&>(x);
-  return cpp20::internal::cpp_to_sexp(test_lengths(cpp20::as<std::remove_cvref_t<const r_vec<r_sexp>&>>(x)));
+  check_r_cpp_mapping<const r_vec<r_sexp>&>(x);
+  return cpp_to_sexp(test_lengths(cpp20::as<std::remove_cvref_t<const r_vec<r_sexp>&>>(x)));
   END_CPP20
 }
 // test.h
 extern "C" SEXP _cpp20_test_match(SEXP x, SEXP y) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_match(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<T>>>(y_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_match(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<T>>>(y_internal)));
+  return dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
+    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_match(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<T>>>(y_internal)))) {
+        return cpp_to_sexp(test_match(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<T>>>(y_internal)));
     },
     x, y
   );
@@ -574,16 +577,16 @@ extern "C" SEXP _cpp20_test_match(SEXP x, SEXP y) {
 r_vec<r_sexp> test_factor1(r_factors x);
 extern "C" SEXP _cpp20_test_factor1(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_factors>(x);
-  return cpp20::internal::cpp_to_sexp(test_factor1(cpp20::as<std::remove_cvref_t<r_factors>>(x)));
+  check_r_cpp_mapping<r_factors>(x);
+  return cpp_to_sexp(test_factor1(cpp20::as<std::remove_cvref_t<r_factors>>(x)));
   END_CPP20
 }
 // test.h
 extern "C" SEXP _cpp20_test_factor2(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_factor2(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_factor2(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_factor2(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_factor2(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -592,9 +595,9 @@ extern "C" SEXP _cpp20_test_factor2(SEXP x) {
 // test.h
 extern "C" SEXP _cpp20_test_n_unique(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_n_unique(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_n_unique(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_n_unique(cpp20::as<std::remove_cvref_t<T>>(x_internal)))) {
+        return cpp_to_sexp(test_n_unique(cpp20::as<std::remove_cvref_t<T>>(x_internal)));
     },
     x
   );
@@ -604,41 +607,41 @@ extern "C" SEXP _cpp20_test_n_unique(SEXP x) {
 bool test_identical(SEXP x, SEXP y);
 extern "C" SEXP _cpp20_test_identical(SEXP x, SEXP y) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<SEXP>(x);
-	cpp20::internal::check_r_cpp_mapping<SEXP>(y);
-  return cpp20::internal::cpp_to_sexp(test_identical(cpp20::as<std::remove_cvref_t<SEXP>>(x), cpp20::as<std::remove_cvref_t<SEXP>>(y)));
+  check_r_cpp_mapping<SEXP>(x);
+	check_r_cpp_mapping<SEXP>(y);
+  return cpp_to_sexp(test_identical(cpp20::as<std::remove_cvref_t<SEXP>>(x), cpp20::as<std::remove_cvref_t<SEXP>>(y)));
   END_CPP20
 }
 // test.h
 SEXP test_copy(SEXP x);
 extern "C" SEXP _cpp20_test_copy(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<SEXP>(x);
-  return cpp20::internal::cpp_to_sexp(test_copy(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
+  check_r_cpp_mapping<SEXP>(x);
+  return cpp_to_sexp(test_copy(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
   END_CPP20
 }
 // test_attrs.cpp
 r_vec<r_sexp> test_attrs(SEXP x);
 extern "C" SEXP _cpp20_test_attrs(SEXP x) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<SEXP>(x);
-  return cpp20::internal::cpp_to_sexp(test_attrs(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
+  check_r_cpp_mapping<SEXP>(x);
+  return cpp_to_sexp(test_attrs(cpp20::as<std::remove_cvref_t<SEXP>>(x)));
   END_CPP20
 }
 // test_attrs.cpp
 r_vec<r_sexp> test_df(r_vec<r_sexp> cols);
 extern "C" SEXP _cpp20_test_df(SEXP cols) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_vec<r_sexp>>(cols);
-  return cpp20::internal::cpp_to_sexp(test_df(cpp20::as<std::remove_cvref_t<r_vec<r_sexp>>>(cols)));
+  check_r_cpp_mapping<r_vec<r_sexp>>(cols);
+  return cpp_to_sexp(test_df(cpp20::as<std::remove_cvref_t<r_vec<r_sexp>>>(cols)));
   END_CPP20
 }
 // test_nas.h
 extern "C" SEXP _cpp20_test_nas(SEXP x) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_nas(cpp20::as<std::remove_cvref_t<T const&>>(x_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_nas(cpp20::as<std::remove_cvref_t<T const&>>(x_internal)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_nas(cpp20::as<std::remove_cvref_t<T const&>>(x_internal)))) {
+        return cpp_to_sexp(test_nas(cpp20::as<std::remove_cvref_t<T const&>>(x_internal)));
     },
     x
   );
@@ -648,16 +651,16 @@ extern "C" SEXP _cpp20_test_nas(SEXP x) {
 inline r_vec<r_sexp> test_na_types();
 extern "C" SEXP _cpp20_test_na_types() {
   BEGIN_CPP20
-    return cpp20::internal::cpp_to_sexp(test_na_types());
+    return cpp_to_sexp(test_na_types());
   END_CPP20
 }
 // test_sort.h
 extern "C" SEXP _cpp20_test_order(SEXP x, SEXP preserve_ties) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<bool>(preserve_ties);
-return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP preserve_ties_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_order(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(preserve_ties_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_order(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(preserve_ties_internal)));
+  check_r_cpp_mapping<bool>(preserve_ties);
+return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP preserve_ties_internal) -> decltype(cpp_to_sexp(test_order(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(preserve_ties_internal)))) {
+        return cpp_to_sexp(test_order(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(preserve_ties_internal)));
     },
     x, preserve_ties
   );
@@ -666,10 +669,10 @@ return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
 // test_sort.h
 extern "C" SEXP _cpp20_test_sort(SEXP x, SEXP preserve_ties) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<bool>(preserve_ties);
-return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP preserve_ties_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_sort(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(preserve_ties_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_sort(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(preserve_ties_internal)));
+  check_r_cpp_mapping<bool>(preserve_ties);
+return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP preserve_ties_internal) -> decltype(cpp_to_sexp(test_sort(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(preserve_ties_internal)))) {
+        return cpp_to_sexp(test_sort(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(preserve_ties_internal)));
     },
     x, preserve_ties
   );
@@ -678,10 +681,10 @@ return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
 // test_stats.h
 extern "C" SEXP _cpp20_test_range(SEXP x, SEXP na_rm) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<bool>(na_rm);
-return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_range(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_range(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)));
+  check_r_cpp_mapping<bool>(na_rm);
+return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp_to_sexp(test_range(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)))) {
+        return cpp_to_sexp(test_range(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)));
     },
     x, na_rm
   );
@@ -690,10 +693,10 @@ return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
 // test_stats.h
 extern "C" SEXP _cpp20_test_sum(SEXP x, SEXP na_rm) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<bool>(na_rm);
-return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_sum(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_sum(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)));
+  check_r_cpp_mapping<bool>(na_rm);
+return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp_to_sexp(test_sum(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)))) {
+        return cpp_to_sexp(test_sum(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)));
     },
     x, na_rm
   );
@@ -702,10 +705,10 @@ return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
 // test_stats.h
 extern "C" SEXP _cpp20_test_mean(SEXP x, SEXP na_rm) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<bool>(na_rm);
-return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_mean(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_mean(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)));
+  check_r_cpp_mapping<bool>(na_rm);
+return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp_to_sexp(test_mean(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)))) {
+        return cpp_to_sexp(test_mean(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)));
     },
     x, na_rm
   );
@@ -714,10 +717,10 @@ return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
 // test_stats.h
 extern "C" SEXP _cpp20_test_var(SEXP x, SEXP na_rm) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<bool>(na_rm);
-return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_var(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_var(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)));
+  check_r_cpp_mapping<bool>(na_rm);
+return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp_to_sexp(test_var(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)))) {
+        return cpp_to_sexp(test_var(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<bool>>(na_rm_internal)));
     },
     x, na_rm
   );
@@ -726,9 +729,9 @@ return cpp20::internal::dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
 // test_subset.h
 extern "C" SEXP _cpp20_test_subset(SEXP x, SEXP i) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP i_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_subset(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(i_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_subset(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(i_internal)));
+  return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
+    []<typename T, typename U>(SEXP x_internal, SEXP i_internal) -> decltype(cpp_to_sexp(test_subset(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(i_internal)))) {
+        return cpp_to_sexp(test_subset(cpp20::as<std::remove_cvref_t<T>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(i_internal)));
     },
     x, i
   );
@@ -737,10 +740,10 @@ extern "C" SEXP _cpp20_test_subset(SEXP x, SEXP i) {
 // test_subset.h
 extern "C" SEXP _cpp20_test_fill(SEXP x, SEXP where, SEXP with) {
   BEGIN_CPP20
-  cpp20::internal::check_r_cpp_mapping<r_vec<r_int>>(where);
-return cpp20::internal::dispatch_template_impl<2, 3, std::array<int, 3>{0, -1, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP where_internal, SEXP with_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_fill(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<r_int>>>(where_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(with_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_fill(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<r_int>>>(where_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(with_internal)));
+  check_r_cpp_mapping<r_vec<r_int>>(where);
+return dispatch_template_impl<2, 3, std::array<int, 3>{0, -1, 1}>(
+    []<typename T, typename U>(SEXP x_internal, SEXP where_internal, SEXP with_internal) -> decltype(cpp_to_sexp(test_fill(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<r_int>>>(where_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(with_internal)))) {
+        return cpp_to_sexp(test_fill(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<r_int>>>(where_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(with_internal)));
     },
     x, where, with
   );
@@ -749,9 +752,9 @@ return cpp20::internal::dispatch_template_impl<2, 3, std::array<int, 3>{0, -1, 1
 // test_subset.h
 extern "C" SEXP _cpp20_test_counts(SEXP x, SEXP y) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_counts(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_counts(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal)));
+  return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
+    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_counts(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal)))) {
+        return cpp_to_sexp(test_counts(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal)));
     },
     x, y
   );
@@ -760,9 +763,9 @@ extern "C" SEXP _cpp20_test_counts(SEXP x, SEXP y) {
 // test_subset.h
 extern "C" SEXP _cpp20_test_remove(SEXP x, SEXP y) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_remove(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_remove(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal)));
+  return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
+    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_remove(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal)))) {
+        return cpp_to_sexp(test_remove(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal)));
     },
     x, y
   );
@@ -771,9 +774,9 @@ extern "C" SEXP _cpp20_test_remove(SEXP x, SEXP y) {
 // test_subset.h
 extern "C" SEXP _cpp20_test_find(SEXP x, SEXP y) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_find(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_find(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal)));
+  return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
+    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_find(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal)))) {
+        return cpp_to_sexp(test_find(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal)));
     },
     x, y
   );
@@ -782,9 +785,9 @@ extern "C" SEXP _cpp20_test_find(SEXP x, SEXP y) {
 // test_subset.h
 extern "C" SEXP _cpp20_test_replace(SEXP x, SEXP y, SEXP z) {
   BEGIN_CPP20
-  return cpp20::internal::dispatch_template_impl<2, 3, std::array<int, 3>{0, 1, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP y_internal, SEXP z_internal) -> decltype(cpp20::internal::cpp_to_sexp(test_replace(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(z_internal)))) {
-        return cpp20::internal::cpp_to_sexp(test_replace(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(z_internal)));
+  return dispatch_template_impl<2, 3, std::array<int, 3>{0, 1, 1}>(
+    []<typename T, typename U>(SEXP x_internal, SEXP y_internal, SEXP z_internal) -> decltype(cpp_to_sexp(test_replace(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(z_internal)))) {
+        return cpp_to_sexp(test_replace(cpp20::as<std::remove_cvref_t<r_vec<T>>>(x_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(y_internal), cpp20::as<std::remove_cvref_t<r_vec<U>>>(z_internal)));
     },
     x, y, z
   );
