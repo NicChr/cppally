@@ -487,9 +487,10 @@ cpp_register <- function(path = ".", quiet = !is_interactive(), extension = c(".
       #include <R_ext/Visibility.h>
       {user_includes}
 
-      using cpp20::internal::cpp_to_sexp;
-      using cpp20::internal::check_r_cpp_mapping;
-      using cpp20::internal::dispatch_template_impl;
+      using namespace cpp20;
+      using internal::cpp_to_sexp;
+      using internal::check_r_cpp_mapping;
+      using internal::dispatch_template_impl;
 
       {cpp_functions_definitions}
 
