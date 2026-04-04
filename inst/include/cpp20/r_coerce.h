@@ -2,34 +2,13 @@
 #define CPP20_R_COERCE_H
 
 #include <cpp20/r_vec.h>
-#include <cpp20/sugar/r_factor.h>
 #include <cpp20/r_visit.h>
-#include <cpp20/sugar/r_match.h>
-#include <cpp20/sugar/r_unique.h>
 #include <cpp20/r_sexp_types.h>
 
 
 // TO-DO: simplify the if statements below
 
 namespace cpp20 {
-
-template <RVal T>
-r_factors::r_factors(const r_vec<T>& x, const r_vec<T>& levels) : value(match(x, levels)){
-  r_vec<r_str_view> str_levels;
-  if constexpr (RStringType<T>) {
-      str_levels = r_vec<r_str_view>(levels);
-  } else {
-      r_size_t n = levels.length();
-      str_levels = r_vec<r_str_view>(n);
-      for (r_size_t i = 0; i < n; ++i) {
-          str_levels.set(i, internal::as_r<r_str_view>(levels.view(i)));
-      }
-  }
-  init_factor(str_levels, false);
-}
-
-template <RVal T>
-r_factors::r_factors(const r_vec<T>& x) : r_factors(x, unique(x)) {}
 
 // Powerful and flexible coercion function that can handle many types and convert to R-specific C++ types and R vectors
 template <typename T, typename U>

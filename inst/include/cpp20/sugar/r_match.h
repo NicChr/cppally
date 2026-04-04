@@ -116,6 +116,21 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
   return out;
 }
 
+template <RVal T>
+r_factors::r_factors(const r_vec<T>& x, const r_vec<T>& levels) : value(match(x, levels)){
+  r_vec<r_str_view> str_levels;
+  if constexpr (RStringType<T>) {
+      str_levels = r_vec<r_str_view>(levels);
+  } else {
+      r_size_t n = levels.length();
+      str_levels = r_vec<r_str_view>(n);
+      for (r_size_t i = 0; i < n; ++i) {
+          str_levels.set(i, internal::as_r<r_str_view>(levels.view(i)));
+      }
+  }
+  init_factor(str_levels, false);
+}
+
 }
 
 #endif

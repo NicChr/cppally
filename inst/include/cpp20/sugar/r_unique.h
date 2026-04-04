@@ -39,6 +39,9 @@ T unique(const T& x, bool sort = false) {
     }
 }
 
+template <RVal T>
+r_factors::r_factors(const r_vec<T>& x) : r_factors(x, unique(x)) {}
+
 }
 
 #endif
