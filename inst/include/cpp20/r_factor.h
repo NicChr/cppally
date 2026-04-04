@@ -1,8 +1,8 @@
 #ifndef CPP20_R_FACTOR_H
 #define CPP20_R_FACTOR_H
 
+#include <cpp20/r_limits.h>
 #include <cpp20/r_vec.h>
-#include <cpp20/sugar/r_stats.h>
 #include <cpp20/r_attrs.h>
 
 namespace cpp20 {
@@ -21,9 +21,26 @@ struct r_factors {
 
   template <RStringType T>
   void validate_levels(const r_vec<r_int>& codes, const r_vec<T>& levels){
-    r_int max_code = max(codes, true);
 
-    if ((levels.length() < max_code).is_true()){
+    r_size_t n = codes.length();
+    // Max code
+    int max_code = unwrap(r_limits<r_int>::min());
+
+    const int *p_codes = codes.data();
+
+    #pragma omp simd reduction(max:max_code)
+    for (r_size_t i = 0; i < n; ++i){
+        // No need to ignore NA for max() because NA is defined as lowest representable value
+        max_code = std::max(max_code, p_codes[i]);
+    }
+
+    // If max is still the same value as when initialised, this either means the vector was full of NAs, or the max really is max int
+    // Either way, we check in this rare case
+    if (max_code == unwrap(r_limits<r_int>::min()) && codes.all_na()){
+        max_code = unwrap(na<r_int>());
+    }
+
+    if (levels.length() < max_code){
       abort("Invalid factor levels");
     }
   }

@@ -21,7 +21,7 @@
 #include <cpp20/r_coerce_impl.h>
 #include <cpp20/r_vec.h>
 #include <cpp20/sugar/r_stats.h>
-#include <cpp20/sugar/r_factor.h>
+#include <cpp20/r_factor.h>
 #include <cpp20/sugar/r_vec_methods.h>
 #include <cpp20/r_attrs.h>
 #include <cpp20/sugar/r_exprs.h>
