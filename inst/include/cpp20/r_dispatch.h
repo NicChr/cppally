@@ -91,8 +91,8 @@ using r_types = std::tuple<
     r_str, 
     r_cplx, 
     r_raw, 
-    r_date_t<r_int>, r_date_t<r_dbl>,
-    r_psxct_t<r_int64>, r_psxct_t<r_dbl>,
+    r_date, 
+    r_psxct,
     r_sexp // Catch-all
 >;
 

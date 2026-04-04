@@ -204,10 +204,6 @@ test_tz <- function(x) {
   .Call(`_cpp20_test_tz`, x)
 }
 
-test_time_coerce <- function() {
-  .Call(`_cpp20_test_time_coerce`)
-}
-
 test_group_id <- function(x, order) {
   .Call(`_cpp20_test_group_id`, x, order)
 }

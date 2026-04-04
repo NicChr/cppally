@@ -21,10 +21,8 @@ switch (internal::CPP20_TYPEOF(x)) {
     case VECSXP:                        return f(r_vec<r_sexp>(x));
     case CPLXSXP:                       return f(r_vec<r_cplx>(x));
     case RAWSXP:                        return f(r_vec<r_raw>(x));
-    case internal::CPP20_INTDATESXP:    return f(r_vec<r_date_t<r_int>>(x));
-    case internal::CPP20_REALDATESXP:   return f(r_vec<r_date_t<r_dbl>>(x));
-    case internal::CPP20_INT64PSXTSXP:  return f(r_vec<r_psxct_t<r_int64>>(x));
-    case internal::CPP20_REALPSXTSXP:   return f(r_vec<r_psxct_t<r_dbl>>(x));
+    case internal::CPP20_REALDATESXP:   return f(r_vec<r_date>(x));
+    case internal::CPP20_REALPSXTSXP:   return f(r_vec<r_psxct>(x));
     case internal::CPP20_FCTSXP:        return f(r_factors(x));
     case SYMSXP:                        return f(r_sym(x));
     // case CPP20_DFSXP:                return f(r_df(x));
@@ -43,10 +41,8 @@ switch (internal::CPP20_TYPEOF(x)) {
     case VECSXP:                        return f(r_vec<r_sexp>(x));
     case CPLXSXP:                       return f(r_vec<r_cplx>(x));
     case RAWSXP:                        return f(r_vec<r_raw>(x));
-    case internal::CPP20_INTDATESXP:    return f(r_vec<r_date_t<r_int>>(x));
-    case internal::CPP20_REALDATESXP:   return f(r_vec<r_date_t<r_dbl>>(x));
-    case internal::CPP20_INT64PSXTSXP:  return f(r_vec<r_psxct_t<r_int64>>(x));
-    case internal::CPP20_REALPSXTSXP:   return f(r_vec<r_psxct_t<r_dbl>>(x));
+    case internal::CPP20_REALDATESXP:   return f(r_vec<r_date>(x));
+    case internal::CPP20_REALPSXTSXP:   return f(r_vec<r_psxct>(x));
     case internal::CPP20_FCTSXP:        return f(r_factors(x));
     case SYMSXP:                        return f(r_sym(x));
     // case CPP20_DFSXP:                return f(r_df(x));
@@ -65,10 +61,8 @@ switch (internal::CPP20_TYPEOF(x)) {
     case VECSXP:                        return f(r_vec<r_sexp>(x));
     case CPLXSXP:                       return f(r_vec<r_cplx>(x));
     case RAWSXP:                        return f(r_vec<r_raw>(x));
-    case internal::CPP20_INTDATESXP:    return f(r_vec<r_date_t<r_int>>(x));
-    case internal::CPP20_REALDATESXP:   return f(r_vec<r_date_t<r_dbl>>(x));
-    case internal::CPP20_INT64PSXTSXP:  return f(r_vec<r_psxct_t<r_int64>>(x));
-    case internal::CPP20_REALPSXTSXP:   return f(r_vec<r_psxct_t<r_dbl>>(x));
+    case internal::CPP20_REALDATESXP:   return f(r_vec<r_date>(x));
+    case internal::CPP20_REALPSXTSXP:   return f(r_vec<r_psxct>(x));
     default:                            abort("`x` must be a vector to be instantiated from an `r_sexp`");
 }
 }
@@ -84,10 +78,8 @@ switch (internal::CPP20_TYPEOF(x)) {
     case VECSXP:                        return f(r_vec<r_sexp>(x));
     case CPLXSXP:                       return f(r_vec<r_cplx>(x));
     case RAWSXP:                        return f(r_vec<r_raw>(x));
-    case internal::CPP20_INTDATESXP:    return f(r_vec<r_date_t<r_int>>(x));
-    case internal::CPP20_REALDATESXP:   return f(r_vec<r_date_t<r_dbl>>(x));
-    case internal::CPP20_INT64PSXTSXP:  return f(r_vec<r_psxct_t<r_int64>>(x));
-    case internal::CPP20_REALPSXTSXP:   return f(r_vec<r_psxct_t<r_dbl>>(x));
+    case internal::CPP20_REALDATESXP:   return f(r_vec<r_date>(x));
+    case internal::CPP20_REALPSXTSXP:   return f(r_vec<r_psxct>(x));
     default:                            abort("`x` must be a vector to be instantiated from an `r_sexp`");
 }
 }
@@ -103,10 +95,8 @@ switch (internal::CPP20_TYPEOF(x)) {
     case VECSXP:                        return f(r_vec<r_sexp>(x, internal::view_tag{}));
     case CPLXSXP:                       return f(r_vec<r_cplx>(x, internal::view_tag{}));
     case RAWSXP:                        return f(r_vec<r_raw>(x, internal::view_tag{}));
-    case internal::CPP20_INTDATESXP:    return f(r_vec<r_date_t<r_int>>(x, internal::view_tag{}));
-    case internal::CPP20_REALDATESXP:   return f(r_vec<r_date_t<r_dbl>>(x, internal::view_tag{}));
-    case internal::CPP20_INT64PSXTSXP:  return f(r_vec<r_psxct_t<r_int64>>(x, internal::view_tag{}));
-    case internal::CPP20_REALPSXTSXP:   return f(r_vec<r_psxct_t<r_dbl>>(x, internal::view_tag{}));
+    case internal::CPP20_REALDATESXP:   return f(r_vec<r_date>(x, internal::view_tag{}));
+    case internal::CPP20_REALPSXTSXP:   return f(r_vec<r_psxct>(x, internal::view_tag{}));
     case internal::CPP20_FCTSXP:        return f(r_factors(x, internal::view_tag{}));
     case SYMSXP:                        return f(r_sym(x, internal::view_tag{}));
     // case CPP20_DFSXP:                return f(r_df(x));

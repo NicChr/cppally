@@ -21,12 +21,10 @@ namespace internal {
 
 // Custom SEXP tags, differentiating integer64, dates (int/double), date-times (int64/double) and factors
 inline constexpr SEXPTYPE CPP20_INT64SXP = 64;
-inline constexpr SEXPTYPE CPP20_INTDATESXP = 200;
-inline constexpr SEXPTYPE CPP20_REALDATESXP = 201;
-inline constexpr SEXPTYPE CPP20_INT64PSXTSXP = 202;
-inline constexpr SEXPTYPE CPP20_REALPSXTSXP = 203;
-inline constexpr SEXPTYPE CPP20_FCTSXP = 204;
-inline constexpr SEXPTYPE CPP20_DFSXP = 205;
+inline constexpr SEXPTYPE CPP20_REALDATESXP = 200;
+inline constexpr SEXPTYPE CPP20_REALPSXTSXP = 201;
+inline constexpr SEXPTYPE CPP20_FCTSXP = 202;
+inline constexpr SEXPTYPE CPP20_DFSXP = 203;
 
 inline SEXPTYPE CPP20_TYPEOF(SEXP x) noexcept {
 
@@ -35,14 +33,12 @@ inline SEXPTYPE CPP20_TYPEOF(SEXP x) noexcept {
     switch (xtype){
     case INTSXP: {
         if (!Rf_isObject(x)) return xtype;
-        if (Rf_inherits(x, "Date")) return CPP20_INTDATESXP;
         if (Rf_inherits(x, "factor")) return CPP20_FCTSXP;
         return xtype;
     }
     case REALSXP: {
         if (!Rf_isObject(x)) return xtype;
         if (Rf_inherits(x, "Date")) return CPP20_REALDATESXP;
-        if (Rf_inherits(x, "POSIXct") && Rf_inherits(x, "integer64")) return CPP20_INT64PSXTSXP;
         if (Rf_inherits(x, "POSIXct")) return CPP20_REALPSXTSXP;
         if (Rf_inherits(x, "integer64")) return CPP20_INT64SXP; 
         return xtype;
@@ -57,9 +53,7 @@ inline const char* r_type_to_str(SEXPTYPE x){
 
     switch (x){
     case CPP20_INT64SXP: return "CPP20_INT64SXP";
-    case CPP20_INTDATESXP: return "CPP20_INTDATESXP";
     case CPP20_REALDATESXP: return "CPP20_REALDATESXP";
-    case CPP20_INT64PSXTSXP: return "CPP20_INT64PSXTSXP";
     case CPP20_REALPSXTSXP: return "CPP20_REALPSXTSXP";
     case CPP20_FCTSXP: return "CPP20_FCTSXP";
     case CPP20_DFSXP: return "CPP20_DFSXP";
@@ -82,10 +76,8 @@ template <> inline const char* type_str<r_cplx>(){return "r_cplx";}
 template <> inline const char* type_str<r_raw>(){return "r_raw";}
 template <> inline const char* type_str<r_sym>(){return "r_sym";}
 template <> inline const char* type_str<r_sexp>(){return "r_sexp";}
-template <> inline const char* type_str<r_date_t<r_int>>(){return "r_date_t<r_int>";}
-template <> inline const char* type_str<r_date_t<r_dbl>>(){return "r_date_t<r_dbl>";}
-template <> inline const char* type_str<r_psxct_t<r_int64>>(){return "r_psxct_t<r_int64>";}
-template <> inline const char* type_str<r_psxct_t<r_dbl>>(){return "r_psxct_t<r_dbl>";}
+template <> inline const char* type_str<r_date>(){return "r_date";}
+template <> inline const char* type_str<r_psxct>(){return "r_psxct";}
 template <> inline const char* type_str<r_factors>(){return "r_factors";}
 
 template<RVector T>
@@ -131,10 +123,8 @@ template<> inline constexpr uint16_t r_typeof_impl<r_str_view> =            CHAR
 template<> inline constexpr uint16_t r_typeof_impl<r_str> =                 CHARSXP;
 template<> inline constexpr uint16_t r_typeof_impl<r_sym> =                 SYMSXP;
 template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_int64>> =             REALSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_date_t<r_int>>> =            INTSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_date_t<r_dbl>>> =            REALSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_psxct_t<r_int64>>> =         REALSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_psxct_t<r_dbl>>> =           REALSXP;
+template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_date>> =            REALSXP;
+template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_psxct>> =           REALSXP;
 
 
 // The above mappings represent the plain TYPEOF values of cpp20 objects, this enables r_vec<T> to check the primitive type id during construction
@@ -142,10 +132,8 @@ template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_psxct_t<r_dbl>>> =   
 // The below represents the actual cpp20 type id mapping
 template <typename T> constexpr uint16_t r_typeof =              r_typeof_impl<T>;
 template<> inline constexpr uint16_t r_typeof<r_vec<r_int64>> =        CPP20_INT64SXP;
-template<> inline constexpr uint16_t r_typeof<r_vec<r_date_t<r_int>>> =            CPP20_INTDATESXP;
-template<> inline constexpr uint16_t r_typeof<r_vec<r_date_t<r_dbl>>> =            CPP20_REALDATESXP;
-template<> inline constexpr uint16_t r_typeof<r_vec<r_psxct_t<r_int64>>> =         CPP20_INT64PSXTSXP;
-template<> inline constexpr uint16_t r_typeof<r_vec<r_psxct_t<r_dbl>>> =           CPP20_REALPSXTSXP;
+template<> inline constexpr uint16_t r_typeof<r_vec<r_date>> =            CPP20_REALDATESXP;
+template<> inline constexpr uint16_t r_typeof<r_vec<r_psxct>> =           CPP20_REALPSXTSXP;
 template<> inline constexpr uint16_t r_typeof<r_factors> =             CPP20_FCTSXP;
 
 // Low-level type ID check, primarily used in constructing classed cpp20 objects from SEXP

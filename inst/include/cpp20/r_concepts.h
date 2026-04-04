@@ -43,19 +43,8 @@ struct r_cplx;
 struct r_raw;
 struct r_sym;
 struct r_sexp; 
-
-template <typename T>
-requires (any<T, r_int, r_dbl>)
-struct r_date_t;
-
-template <typename T>
-requires (any<T, r_int64, r_dbl>)
-struct r_psxct_t;
-
-// By default, r_date uses doubles to match R conventions
-using r_date = r_date_t<r_dbl>;
-// By default, r_psxct uses doubles to match R conventions
-using r_psxct = r_psxct_t<r_dbl>;
+struct r_date;
+struct r_psxct;
 
 // Concepts to enable R type templates
 
@@ -97,10 +86,10 @@ struct is_cpp_complex<std::complex<U>> : std::true_type {};
 }
 
 template <typename T>
-concept RDateType = any<T, r_date_t<r_int>, r_date_t<r_dbl>>;
+concept RDateType = is<T, r_date>;
 
 template <typename T>
-concept RPsxctType = any<T, r_psxct_t<r_int64>, r_psxct_t<r_dbl>>;
+concept RPsxctType = is<T, r_psxct>;
 
 template <typename T>
 concept RTimeType = RDateType<T> || RPsxctType<T>;
@@ -400,13 +389,11 @@ consteval uint8_t r_type_rank() {
     if constexpr (is<T, r_dbl>)                     return 3;
     if constexpr (is<T, r_cplx>)                    return 4;
     if constexpr (is<T, r_raw>)                     return 5;
-    if constexpr (is<T, r_date_t<r_int>>)           return 6;
-    if constexpr (is<T, r_date_t<r_dbl>>)           return 7;
-    if constexpr (is<T, r_psxct_t<r_int64>>)        return 8;
-    if constexpr (is<T, r_psxct_t<r_dbl>>)          return 9;
-    if constexpr (is<T, r_str>)                     return 10;
-    if constexpr (is<T, r_str_view>)                return 11;
-    if constexpr (is<T, r_sexp>)                    return 12;
+    if constexpr (is<T, r_date>)                    return 6;
+    if constexpr (is<T, r_psxct>)                   return 7;
+    if constexpr (is<T, r_str>)                     return 8;
+    if constexpr (is<T, r_str_view>)                return 9;
+    if constexpr (is<T, r_sexp>)                    return 10;
     return std::numeric_limits<uint8_t>::max();
 }
 

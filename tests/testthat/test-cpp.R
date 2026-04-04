@@ -21,8 +21,8 @@ test_that("Type deduction on template disptch", {
   expect_identical(test_deduced_type(0), "r_vec<r_dbl>")
   expect_identical(test_deduced_type(letters), "r_vec<r_str>")
   expect_identical(test_deduced_type(list(1)), "r_vec<r_sexp>")
-  expect_identical(test_deduced_type(Sys.Date()), "r_vec<r_date_t<r_dbl>>")
-  expect_identical(test_deduced_type(Sys.time()), "r_vec<r_psxct_t<r_dbl>>")
+  expect_identical(test_deduced_type(Sys.Date()), "r_vec<r_date>")
+  expect_identical(test_deduced_type(Sys.time()), "r_vec<r_psxct>")
   expect_identical(test_deduced_type(iris$Species), "r_factors")
   expect_identical(test_deduced_type(as.symbol("a")), "r_sexp")
   expect_identical(test_deduced_type(mean), "r_sexp")
@@ -35,8 +35,8 @@ test_that("Type deduction on template disptch", {
   expect_identical(test_deduced_vec_type(0), "r_vec<r_dbl>")
   expect_identical(test_deduced_vec_type(letters), "r_vec<r_str>")
   expect_identical(test_deduced_vec_type(list(1)), "r_vec<r_sexp>")
-  expect_identical(test_deduced_vec_type(Sys.Date()), "r_vec<r_date_t<r_dbl>>")
-  expect_identical(test_deduced_vec_type(Sys.time()), "r_vec<r_psxct_t<r_dbl>>")
+  expect_identical(test_deduced_vec_type(Sys.Date()), "r_vec<r_date>")
+  expect_identical(test_deduced_vec_type(Sys.time()), "r_vec<r_psxct>")
   expect_error(test_deduced_vec_type(as.symbol("a"))) # Not a vector
   expect_error(test_deduced_vec_type(mean)) # Also not a vector
 
@@ -45,8 +45,8 @@ test_that("Type deduction on template disptch", {
   expect_identical(test_deduced_scalar_type(1L), "r_int")
   expect_identical(test_deduced_scalar_type(2), "r_dbl")
   expect_identical(test_deduced_scalar_type("yes"), "r_str")
-  expect_identical(test_deduced_scalar_type(Sys.Date()), "r_date_t<r_dbl>")
-  expect_identical(test_deduced_scalar_type(Sys.time()), "r_psxct_t<r_dbl>")
+  expect_identical(test_deduced_scalar_type(Sys.Date()), "r_date")
+  expect_identical(test_deduced_scalar_type(Sys.time()), "r_psxct")
 
   expect_error(test_deduced_scalar_type(Sys.Date() + 0:2))
   expect_error(test_deduced_scalar_type(Sys.time() + 0:2))
@@ -77,7 +77,7 @@ test_that("Runtime type ID (via CPP20_TYPEOF) on SEXP", {
   expect_identical(cpp20_typeof(list(1)), "list")
   expect_identical(cpp20_typeof(Sys.Date()), "CPP20_REALDATESXP")
   expect_identical(cpp20_typeof(Sys.time()), "CPP20_REALPSXTSXP")
-  expect_identical(cpp20_typeof(`storage.mode<-`(Sys.Date(), "integer")), "CPP20_INTDATESXP")
+  # expect_identical(cpp20_typeof(`storage.mode<-`(Sys.Date(), "integer")), "CPP20_INTDATESXP")
   expect_identical(cpp20_typeof(as.factor(0)), "CPP20_FCTSXP")
 
 })

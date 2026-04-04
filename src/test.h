@@ -10,8 +10,7 @@ void static_tests(){
   static_assert(is<unwrap_t<r_cplx>, std::complex<double>>);
   static_assert(is<unwrap_t<r_raw>, Rbyte>);
   static_assert(is<unwrap_t<r_sexp>, SEXP>);
-  static_assert(is<unwrap_t<r_date_t<r_int>>, int>);
-  static_assert(is<unwrap_t<r_date_t<r_dbl>>, double>);
+  static_assert(is<unwrap_t<r_date>, double>);
   static_assert(is<unwrap_t<r_vec<r_str>>, SEXP>);
   static_assert(is<unwrap_t<r_factors>, SEXP>);
 
@@ -20,8 +19,7 @@ void static_tests(){
   static_assert(is<decltype(unwrap(r_cplx())), std::complex<double>>);
   static_assert(is<decltype(unwrap(r_raw())), Rbyte>);
   static_assert(is<decltype(unwrap(r_sexp())), SEXP>);
-  static_assert(is<decltype(unwrap(r_date_t<r_int>())), int>);
-  static_assert(is<decltype(unwrap(r_date_t<r_dbl>())), double>);
+  static_assert(is<decltype(unwrap(r_date())), double>);
   static_assert(is<decltype(unwrap(r_vec<r_int>())), SEXP>);
   static_assert(is<decltype(unwrap(r_factors())), SEXP>);
 }
@@ -329,29 +327,27 @@ r_str test_tz(r_vec<r_psxct> x){
   x.set_tzone("America/New_York");
   return x.tzone();
 } 
+// r_vec<r_sexp> test_time_coerce(){
+//   return make_vec<r_sexp>(
+//     r_date(0),
+//     r_psxct(0),
 
-[[cpp20::register]]
-r_vec<r_sexp> test_time_coerce(){
-  return make_vec<r_sexp>(
-    r_date(0),
-    r_psxct(0),
+//     as<r_date_t<r_int>>(r_psxct_t<r_dbl>(0)),
+//     as<r_date_t<r_int>>(r_psxct_t<r_int64>(0)),
+//     as<r_date_t<r_int>>(r_dbl(0)),
+//     as<r_date_t<r_dbl>>(r_psxct_t<r_dbl>(0)),
+//     as<r_date_t<r_dbl>>(r_psxct_t<r_int64>(0)),
+//     as<r_date_t<r_dbl>>(r_int(0)),
 
-    as<r_date_t<r_int>>(r_psxct_t<r_dbl>(0)),
-    as<r_date_t<r_int>>(r_psxct_t<r_int64>(0)),
-    as<r_date_t<r_int>>(r_dbl(0)),
-    as<r_date_t<r_dbl>>(r_psxct_t<r_dbl>(0)),
-    as<r_date_t<r_dbl>>(r_psxct_t<r_int64>(0)),
-    as<r_date_t<r_dbl>>(r_int(0)),
+//     as<r_psxct_t<r_dbl>>(as<r_psxct_t<r_int64>>(r_date_t<r_dbl>(0))),
+//     as<r_psxct_t<r_dbl>>(as<r_psxct_t<r_int64>>(r_date_t<r_int>(0))),
+//     as<r_psxct_t<r_dbl>>(as<r_psxct_t<r_int64>>(r_dbl(0))),
+//     as<r_psxct_t<r_dbl>>(r_date_t<r_dbl>(0)),
+//     as<r_psxct_t<r_dbl>>(r_date_t<r_int>(0)),
+//     as<r_psxct_t<r_dbl>>(r_int(0))
+//   );
 
-    as<r_psxct_t<r_dbl>>(as<r_psxct_t<r_int64>>(r_date_t<r_dbl>(0))),
-    as<r_psxct_t<r_dbl>>(as<r_psxct_t<r_int64>>(r_date_t<r_int>(0))),
-    as<r_psxct_t<r_dbl>>(as<r_psxct_t<r_int64>>(r_dbl(0))),
-    as<r_psxct_t<r_dbl>>(r_date_t<r_dbl>(0)),
-    as<r_psxct_t<r_dbl>>(r_date_t<r_int>(0)),
-    as<r_psxct_t<r_dbl>>(r_int(0))
-  );
-
-}
+// }
 
 
 template <RVector T>

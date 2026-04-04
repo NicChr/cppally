@@ -524,13 +524,6 @@ extern "C" SEXP _cpp20_test_tz(SEXP x) {
   END_CPP20
 }
 // test.h
-r_vec<r_sexp> test_time_coerce();
-extern "C" SEXP _cpp20_test_time_coerce() {
-  BEGIN_CPP20
-    return cpp_to_sexp(test_time_coerce());
-  END_CPP20
-}
-// test.h
 extern "C" SEXP _cpp20_test_group_id(SEXP x, SEXP order) {
   BEGIN_CPP20
   check_r_cpp_mapping<bool>(order);
@@ -865,7 +858,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_test_sum",                  (DL_FUNC) &_cpp20_test_sum,                  2},
     {"_cpp20_test_sym",                  (DL_FUNC) &_cpp20_test_sym,                  1},
     {"_cpp20_test_template_null",        (DL_FUNC) &_cpp20_test_template_null,        1},
-    {"_cpp20_test_time_coerce",          (DL_FUNC) &_cpp20_test_time_coerce,          0},
     {"_cpp20_test_tz",                   (DL_FUNC) &_cpp20_test_tz,                   1},
     {"_cpp20_test_unique",               (DL_FUNC) &_cpp20_test_unique,               1},
     {"_cpp20_test_var",                  (DL_FUNC) &_cpp20_test_var,                  2},
