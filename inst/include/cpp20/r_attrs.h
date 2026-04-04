@@ -4,7 +4,6 @@
 #include <cpp20/r_setup.h>
 #include <cpp20/r_symbols.h>
 #include <cpp20/r_vec.h>
-// #include <cpp20/sugar/r_fns.h>
 
 namespace cpp20 {
 

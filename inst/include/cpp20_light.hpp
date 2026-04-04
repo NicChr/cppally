@@ -26,6 +26,5 @@
 #include <cpp20/r_list_helpers.h>
 #include <cpp20/r_coerce.h>
 // #include <cpp20/r_df.h>
-#include <cpp20/r_math.h>
 
 #endif

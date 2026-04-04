@@ -40,7 +40,7 @@
 #include <cpp20/sugar/r_make_vec.h>
 #include <cpp20/sugar/r_recycle.h>
 #include <cpp20/r_df.h>
-#include <cpp20/r_math.h>
+#include <cpp20/sugar/r_math.h>
 #include <cpp20/sugar/r_seq.h>
 
 #endif
