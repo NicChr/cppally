@@ -51,8 +51,7 @@ inline bool is_implicit_na_coercion(const T& before, const U& after){
   return !is_na(before) && is_na(after);
 }
 
-template <typename T>
-bool parse(std::string_view s, T& out) {
+inline bool parse(std::string_view s, double& out) {
     auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), out);
     bool parsed = ec == std::errc{} && ptr == s.data() + s.size();
     return parsed;
@@ -85,11 +84,14 @@ inline r_int as_int(T const& x){
   } else if constexpr (MathType<T>){
     return is_na(x) || !internal::can_be_int(x) ? na<r_int>() : r_int(static_cast<int>(unwrap(x)));
   } else if constexpr (RStringType<T>){
-    int res;
+    double res;
     if (!parse(x.cpp_str(), res)){
       return na<r_int>();
+    } else if (can_be_int(res)){
+      return r_int(static_cast<int>(res));
+    } else {
+      return na<r_int>();
     }
-    return r_int(res);
   } else {
     return na<r_int>();
   }
@@ -101,11 +103,14 @@ inline r_int64 as_int64(T const& x){
   } else if constexpr (MathType<T>){
     return is_na(x) || !internal::can_be_int64(x) ? na<r_int64>() : r_int64(static_cast<int64_t>(unwrap(x)));
   } else if constexpr (RStringType<T>){
-    int64_t res;
+    double res;
     if (!parse(x.cpp_str(), res)){
       return na<r_int64>();
+    } else if (can_be_int64(res)){
+      return r_int64(static_cast<int64_t>(res));
+    } else {
+      return na<r_int64>();
     }
-    return r_int64(res);
   } else {
     return na<r_int64>();
   }
