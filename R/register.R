@@ -232,7 +232,7 @@ wrap_call <- function(name, return_type, args, is_template, template_params) {
     checks <- paste0(checks, "\n")
   }
 
-  call <- glue::glue('{name}({list_params})', list_params = glue_collapse_data(args, "cpp20::as<std::remove_cvref_t<{type}>>({name})"))
+  call <- glue::glue('{name}({list_params})', list_params = glue_collapse_data(args, "cpp20::as<{type}>({name})"))
 
   if (type_is_void(return_type)){
     unclass(glue::glue("{checks}  {call};\n  return R_NilValue;", .trim = FALSE))
@@ -269,7 +269,7 @@ wrap_call_template <- function(name, return_type, args, template_params) {
   lambda_params <- glue::glue_collapse(glue::glue("SEXP {args$name}_internal"), ", ")
 
   # Conversion logic
-  conversions <- glue::glue("cpp20::as<std::remove_cvref_t<{args$type}>>({args$name}_internal)")
+  conversions <- glue::glue("cpp20::as<{args$type}>({args$name}_internal)")
   call_args_str <- paste(conversions, collapse = ", ")
 
   call_str <- paste0(name, "(", call_args_str, ")")

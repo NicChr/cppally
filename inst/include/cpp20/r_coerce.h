@@ -32,8 +32,10 @@ template <RVal T>
 r_factors::r_factors(const r_vec<T>& x) : r_factors(x, unique(x)) {}
 
 // Powerful and flexible coercion function that can handle many types and convert to R-specific C++ types and R vectors
-template <typename to_t, typename from_t>
-inline to_t as(const from_t& x) {
+template <typename T, typename U>
+inline std::remove_cvref_t<T> as(const U& x) {
+  using to_t = std::remove_cvref_t<T>;
+  using from_t = std::remove_cvref_t<U>;
   if constexpr (is<from_t, to_t>){
     return x;
   } else if constexpr (is<to_t, SEXP>){
