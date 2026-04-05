@@ -331,22 +331,19 @@ struct r_val_mapping_impl<T> {
 
 };
 
+}
+
+// Type -> RVal type
 template <typename T>
-struct unwrapped_type {
-    using type = T;
+using as_r_val_t = typename internal::r_val_mapping_impl<std::remove_cvref_t<T>>::type;
+
+// Can type be constructed/static_cast to RVal type?
+template <typename T>
+concept CastableToRVal = requires {
+    typename as_r_val_t<T>;
 };
 
-template <RVal T>
-struct unwrapped_type<T> {
-    // Recursively call unwrapped_type on the inner type
-    using type = typename unwrapped_type<typename T::value_type>::type;
-};
-template <typename T>
-requires (RVector<T> || RMetaVector<T>)
-struct unwrapped_type<T> {
-    // All R vectors + other R objects contain SEXP
-    using type = SEXP;
-};
+namespace internal {
 
 template <typename T>
 struct inherited_type_impl { 
@@ -361,18 +358,24 @@ struct inherited_type_impl<T> {
 template <RVal T>
 using inherited_type_t = typename internal::inherited_type_impl<std::remove_cvref_t<T>>::type;
 
-}
-
-// Type -> RVal type
 template <typename T>
-using as_r_val_t = typename internal::r_val_mapping_impl<std::remove_cvref_t<T>>::type;
-
-// Can type be constructed/static_cast to RVal type?
-template <typename T>
-concept CastableToRVal = requires {
-    typename as_r_val_t<T>;
+struct unwrapped_type {
+    using type = T;
 };
 
+template <RVal T>
+struct unwrapped_type<T> {
+    // Recursively call unwrapped_type on the inner type
+    using type = typename unwrapped_type<typename T::value_type>::type;
+};
+template <typename T>
+requires (RObject<T> && !RVal<T>)
+struct unwrapped_type<T> {
+    // All R vectors + other R objects contain SEXP
+    using type = SEXP;
+};
+
+}
 // Recursively unwrap to inner C/C++ type
 template <typename T>
 using unwrap_t = typename internal::unwrapped_type<T>::type;
