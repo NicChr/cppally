@@ -3,9 +3,9 @@
 
 #include <cpp20/r_setup.h>
 #include <cpp20/sugar/r_named_arg.h>
-#include <cpp20/r_coerce_impl.h>
 #include <cpp20/r_vec.h>
 #include <cpp20/r_attrs.h>
+#include <cpp20/r_coerce.h>
 
 namespace cpp20 {
 
@@ -28,10 +28,10 @@ inline r_vec<T> make_vec(Args... args) {
     int i = 0;
     (([&]() {
       if constexpr (NamedArg<Args>) {
-        out.set(i, internal::as_r<T>(args.value));
-        nms.set(i, internal::as_r<r_str_view>(args.name));
+        out.set(i, as<T>(args.value));
+        nms.set(i, as<r_str_view>(args.name));
       } else {
-        out.set(i, internal::as_r<T>(args));
+        out.set(i, as<T>(args));
       }
       ++i;
     }()), ...);

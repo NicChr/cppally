@@ -14,11 +14,14 @@ namespace cpp20 {
 // Powerful and flexible coercion function that can handle many types and convert to R-specific C++ types and R vectors
 template <typename T, typename U>
 inline std::remove_cvref_t<T> as(const U& x) {
+
   using to_t = std::remove_cvref_t<T>;
   using from_t = std::remove_cvref_t<U>;
-  if constexpr (is<from_t, to_t>){
+
+  if constexpr (is<from_t, to_t>){ // If same type return early
     return x;
-  } else if constexpr (is<to_t, SEXP>){
+
+  } else if constexpr (is<to_t, SEXP>){ // To C-level plain SEXP
     // Special case for SEXP
     // While it's not an RVal or a type that is generally explicitly supported in cpp20, it's needed for
     // registering C++ functions in R
@@ -29,7 +32,19 @@ inline std::remove_cvref_t<T> as(const U& x) {
       // If it isn't implicitly convertible to SEXP, then rely on as<r_sexp> conversion
       return static_cast<SEXP>(as<r_sexp>(x));
     }
-  } else if constexpr (is<r_sym, to_t>){
+  } else if constexpr (is<to_t, r_sexp>){ // To r_sexp (to SEXP is handled above)
+    return internal::as_r<r_sexp>(x);
+
+  } else if constexpr (is_sexp<from_t> && !is_sexp<to_t>){ // From SEXP to non-SEXP, use visit_sexp to disambiguate the type
+    return visit_sexp(x, [](const auto& xvec) -> to_t {
+      if constexpr (is<decltype(xvec), r_sexp>){ // Couldn't disambiguate if r_sexp is the return type
+        abort("Don't know how to visit this r_sexp");
+      } else {
+        return as<to_t>(xvec);
+      }
+    });
+
+  } else if constexpr (is<r_sym, to_t>){ // To symbol
     if constexpr (is<from_t, const char*>){
       return r_sym(x);
     } else if constexpr (RStringType<from_t>){
@@ -40,41 +55,31 @@ inline std::remove_cvref_t<T> as(const U& x) {
       r_str_view str = as<r_str_view>(x);
       return r_sym(str.c_str());
     }
-  } else if constexpr (is<r_sym, from_t>){
+    
+  } else if constexpr (is<r_sym, from_t>){ // From symbol - just convert to r_str_view first and then coerce
     return as<to_t>(r_str_view(PRINTNAME(static_cast<SEXP>(x))));
-  } else if constexpr (RVector<from_t> && is<to_t, r_sexp>){
-    return x.sexp;
-  } else if constexpr (RFactor<to_t>){
+
+  } else if constexpr (RFactor<to_t>){ // To factor
     return r_factors(x);
-  } else if constexpr (RFactor<from_t> && RVector<to_t>){
+
+  } else if constexpr (RFactor<from_t> && RVector<to_t>){ // From factor to vector
     if constexpr (RStringType<typename to_t::data_type>){
-      return x.as_character();
+      return to_t(x.as_character());
     } else {
       return as<to_t>(x.value);
     }
-  } else if constexpr (is_sexp<from_t> && !is_sexp<to_t>){
-    return visit_vector(x, [](const auto& xvec) -> to_t {
-      // This will trigger the branch that checks that both are RVector
-      return as<to_t>(xvec);
-    });
-  } else if constexpr (is_sexp<to_t> && is_sexp<from_t>){
-    if constexpr (is<to_t, r_sexp>){
-      // SEXP -> r_sexp
-      return r_sexp(x);
-    } else {
-      // r_sexp -> SEXP
-      return static_cast<SEXP>(x);
-    }
-  } else if constexpr (RVal<to_t> && RVector<from_t>){
+
+  } else if constexpr (RVal<to_t> && RVector<from_t>){ // From vector to scalar
     if (x.length() != 1){
       abort("Vector must be length-1 to be coerced to requested scalar type");
     }
     return as<to_t>(x.get(0));
-  } else if constexpr (RVector<to_t> && RVal<from_t>){
+
+  } else if constexpr (RVector<to_t> && RVal<from_t>){ // From scalar to vector
     using data_t = typename to_t::data_type;
     return r_vec<data_t>(1, internal::as_r<data_t>(x));
-  } else if constexpr (RVector<to_t> && RVector<from_t>){
 
+  } else if constexpr (RVector<to_t> && RVector<from_t>){ // From one vector to another
     using to_data_t = typename to_t::data_type;
     using from_data_t = typename from_t::data_type;
 
@@ -98,10 +103,12 @@ inline std::remove_cvref_t<T> as(const U& x) {
       }
     }
     return out;
-  } else if constexpr (RVal<to_t> && !RVector<from_t>) {
+  } else if constexpr (RVal<to_t> && !RVector<from_t> && !any<from_t, r_factors, r_df>) {
     return internal::as_r<to_t>(x);
-  } else if constexpr (!RVal<from_t> && !RVector<from_t>){
+    // From C++ scalar that is RVal constructible
+  } else if constexpr (CastableToRVal<from_t> && RVal<to_t>){
     return as<to_t>(as_r_val(x));
+    // To C++ scalar that is RVal constructible
   } else if constexpr (CastableToRVal<to_t>){
     return static_cast<to_t>(as<as_r_val_t<to_t>>(x));
   } else {

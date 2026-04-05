@@ -161,7 +161,9 @@ inline r_raw as_raw(T const& x){
 // As CHARSXP
 template<typename T>
 inline r_str_view as_r_string(T const& x){
-  if constexpr (is<T, r_str>){
+  if constexpr (is<T, r_str_view>){
+    return x;
+  } else if constexpr (is<T, r_str>){
     return r_str_view(x);
   } else if constexpr (std::is_convertible_v<T, const char*>){
     return r_str_view(Rf_mkCharCE(static_cast<const char*>(x), CE_UTF8));
