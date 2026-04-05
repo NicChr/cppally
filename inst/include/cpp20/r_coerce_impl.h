@@ -71,7 +71,11 @@ inline r_lgl as_bool(T const& x){
     } else if ( (str == "FALSE")){
       return r_false;
     } else {
-      return na<r_lgl>();
+      double res;
+      if (!parse(x.cpp_str(), res)){
+        return na<r_lgl>();
+      }
+      return r_lgl(static_cast<bool>(res));
     }
   } else {
     return na<r_lgl>();
