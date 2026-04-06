@@ -103,9 +103,9 @@ inline r_lgl operator==(const r_sexp& lhs, const r_sexp& rhs) {
 inline r_lgl operator==(r_sym lhs, r_sym rhs) {
   return r_lgl{unwrap(lhs) == unwrap(rhs)};
 }
-// inline r_lgl operator!=(r_sym lhs, r_sym rhs) {
-//   return r_lgl{unwrap(lhs) != unwrap(rhs)};
-// }
+inline r_lgl operator!=(r_sym lhs, r_sym rhs) {
+  return r_lgl{unwrap(lhs) != unwrap(rhs)};
+}
 
 template <RScalar T, RScalar U>
 inline constexpr r_lgl operator==(const T &lhs, const U &rhs) {
@@ -122,10 +122,21 @@ inline constexpr r_lgl operator==(const T &lhs, const U &rhs) {
   return is_na(rhs) ? r_na : r_lgl{lhs == unwrap(rhs)};
 }
 
-template <Scalar T, Scalar U>
-requires (RScalar<T> || RScalar<U>)
+// Need to have 3 overloads otherwise compiler complains about lhs != rhs
+
+template <RScalar T, RScalar U>
 inline constexpr r_lgl operator!=(const T &lhs, const U &rhs) {
   return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) != unwrap(rhs)};
+}
+
+template <RScalar T, CppScalar U>
+inline constexpr r_lgl operator!=(const T &lhs, const U &rhs) {
+  return is_na(lhs) ? r_na : r_lgl{unwrap(lhs) != rhs};
+}
+
+template <CppScalar T, RScalar U>
+inline constexpr r_lgl operator!=(const T &lhs, const U &rhs) {
+  return is_na(rhs) ? r_na : r_lgl{lhs != unwrap(rhs)};
 }
 
 template <MathType T, MathType U>

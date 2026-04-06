@@ -111,3 +111,10 @@ r_str test_tz(r_vec<r_psxct> x){
 r_vec<r_int> test_lengths(const r_vec<r_sexp>& x){
   return x.lengths();
 }
+
+[[cpp20::register]]
+r_lgl test_lgl(){
+  r_int x(5);
+  r_int y(5);
+  return (x == y || x != y || r_true != r_false);
+}

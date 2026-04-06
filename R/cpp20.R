@@ -68,6 +68,10 @@ test_lengths <- function(x) {
   .Call(`_cpp20_test_lengths`, x)
 }
 
+test_lgl <- function() {
+  .Call(`_cpp20_test_lgl`)
+}
+
 test_deduced_type <- function(x) {
   .Call(`_cpp20_test_deduced_type`, x)
 }

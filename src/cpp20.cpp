@@ -150,6 +150,13 @@ extern "C" SEXP _cpp20_test_lengths(SEXP x) {
   return cpp_to_sexp(test_lengths(cpp20::as<const r_vec<r_sexp>&>(x)));
   END_CPP20
 }
+// test.cpp
+r_lgl test_lgl();
+extern "C" SEXP _cpp20_test_lgl() {
+  BEGIN_CPP20
+    return cpp_to_sexp(test_lgl());
+  END_CPP20
+}
 // test.h
 extern "C" SEXP _cpp20_test_deduced_type(SEXP x) {
   BEGIN_CPP20
@@ -864,6 +871,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_test_identity",             (DL_FUNC) &_cpp20_test_identity,             1},
     {"_cpp20_test_identity2",            (DL_FUNC) &_cpp20_test_identity2,            1},
     {"_cpp20_test_lengths",              (DL_FUNC) &_cpp20_test_lengths,              1},
+    {"_cpp20_test_lgl",                  (DL_FUNC) &_cpp20_test_lgl,                  0},
     {"_cpp20_test_list_to_scalars",      (DL_FUNC) &_cpp20_test_list_to_scalars,      1},
     {"_cpp20_test_match",                (DL_FUNC) &_cpp20_test_match,                2},
     {"_cpp20_test_mean",                 (DL_FUNC) &_cpp20_test_mean,                 2},
