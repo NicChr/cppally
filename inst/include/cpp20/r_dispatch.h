@@ -338,6 +338,19 @@ struct shared_type_table {
 };
 
 
+// Recursive helper to collect runtime types — avoids lambda/fold ICE in Clang 22
+template <size_t K, size_t NumTemplateParams, size_t NumArgs, auto ArgToTemplateMap>
+void collect_runtime_types(uint32_t* runtime_types, SEXP* args) {
+    if constexpr (K < NumTemplateParams) {
+        constexpr size_t FirstArgIdx = first_arg_for_template<K, NumArgs, ArgToTemplateMap>();
+        runtime_types[K] = static_cast<uint32_t>(CPP20_TYPEOF(args[FirstArgIdx]));
+        check_template_homogeneity<K, NumArgs, ArgToTemplateMap>(
+            static_cast<uint16_t>(runtime_types[K]), args
+        );
+        collect_runtime_types<K + 1, NumTemplateParams, NumArgs, ArgToTemplateMap>(runtime_types, args);
+    }
+}
+
 // ── DISPATCH ENTRY POINT ─────────────────────────────────────────────────────
 
 
@@ -363,14 +376,7 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
 
     // Compile-time unroll to collect runtime types into a plain array
     uint32_t runtime_types[NumTemplateParams > 0 ? NumTemplateParams : 1]{};
-    [&]<size_t... Ks>(std::index_sequence<Ks...>) {
-        (..., (
-            runtime_types[Ks] = static_cast<uint32_t>(CPP20_TYPEOF(args[first_arg_for_template<Ks, NumArgs, ArgToTemplateMap>()])),
-            check_template_homogeneity<Ks, NumArgs, ArgToTemplateMap>(
-                static_cast<uint16_t>(runtime_types[Ks]), args
-            )
-        ));
-    }(std::make_index_sequence<NumTemplateParams>{});
+    collect_runtime_types<0, NumTemplateParams, NumArgs, ArgToTemplateMap>(runtime_types, args);
 
 
     // Linear scan — one indirect call through void*, no inlining possible
