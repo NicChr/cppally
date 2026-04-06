@@ -141,33 +141,6 @@ struct r_factors {
 
   operator SEXP() const noexcept { return static_cast<SEXP>(value); }
 
-  r_vec<r_str_view> as_character() const {
-    
-    r_vec<r_str_view> lv = levels();
-    r_size_t n_levels = lv.length();
-    r_size_t n = value.length();
-    r_vec<r_str_view> out(n);
-
-    unsigned int na_val = unwrap(na<r_int>());
-    unsigned int j;
-
-    for (r_size_t i = 0; i < n; ++i){
-      j = unwrap(value.get(i));
-      if (j == na_val){
-        out.set(i, na<r_str_view>());  
-      } else if (j > na_val) [[unlikely]] {
-        abort("Negative factor code detected in `r_factors.as_character()`");
-      } else if (j == 0U) [[unlikely]] {
-        abort("Invalid factor code of value 0 detected in `r_factors.as_character()`");
-      } else if (static_cast<r_size_t>(j) > n_levels) [[unlikely]] {
-        abort("Invalid factor code of value %lld detected", static_cast<long long int>(j));
-      } else {
-        out.set(i, lv.view(static_cast<r_size_t>(j) - r_size_t(1)));
-      }
-    }
-    return out;
-  }
-
   // Inherit standard methods from r_vec<>
 
   FORWARD_METHOD(length)

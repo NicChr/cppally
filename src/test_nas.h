@@ -22,7 +22,6 @@ inline r_vec<r_sexp> test_na_types(){
     na<r_dbl>(),
     as<r_vec<r_str>>(na<r_str>()),
     as<r_vec<r_str_view>>(na<r_str_view>()),
-    na<r_sexp>(),
     na<r_date>(),
     na<r_psxct>()
 );

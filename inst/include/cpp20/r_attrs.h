@@ -186,7 +186,7 @@ inline void modify_attrs_impl(const T& x, const r_vec<r_sexp>& attrs) {
   int n = names.length();
 
   for (int i = 0; i < n; ++i){
-    if (names.view(i) != blank_r_string){
+    if ( !(names.view(i) == blank_r_string).is_true() ){
       attr_nm = r_sym(names.view(i));
       // We can't add an object as its own attribute in-place (as this will crash R)
       if (x_.address() == attrs.view(i).address()){

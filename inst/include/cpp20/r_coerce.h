@@ -62,11 +62,38 @@ inline std::remove_cvref_t<T> as(const U& x) {
   } else if constexpr (RFactor<to_t>){ // To factor
     return r_factors(x);
 
-  } else if constexpr (RFactor<from_t> && RVector<to_t>){ // From factor to vector
-    if constexpr (RStringType<typename to_t::data_type>){
-      return to_t(x.as_character());
+  } else if constexpr (RFactor<from_t>){ // From factor to vector
+
+    using levels_t = std::conditional_t<RVector<to_t>, to_t, r_vec<r_str_view>>;
+    levels_t coerced_levels = as<levels_t>(x.levels());
+    r_size_t n_levels = coerced_levels.length();
+    r_size_t n = x.length();
+    levels_t out(n);
+  
+    unsigned int na_val = unwrap(na<r_int>());
+    unsigned int j;
+
+    using data_t = typename levels_t::data_type;
+  
+    for (r_size_t i = 0; i < n; ++i){
+      j = unwrap(x.value.get(i));
+      if (j == na_val){
+        out.set(i, na<data_t>());  
+      } else if (j > na_val) [[unlikely]] {
+        abort("Negative factor code detected in `r_factors.as_character()`");
+      } else if (j == 0U) [[unlikely]] {
+        abort("Invalid factor code of value 0 detected in `r_factors.as_character()`");
+      } else if (static_cast<r_size_t>(j) > n_levels) [[unlikely]] {
+        abort("Invalid factor code of value %lld detected", static_cast<long long int>(j));
+      } else {
+        out.set(i, coerced_levels.view(static_cast<r_size_t>(j) - r_size_t(1)));
+      }
+    }
+
+    if constexpr (RVector<to_t>){
+      return out;
     } else {
-      return as<to_t>(x.value);
+      return as<to_t>(out);
     }
 
   } else if constexpr (RVal<to_t> && RVector<from_t>){ // From vector to scalar
