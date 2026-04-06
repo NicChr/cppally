@@ -364,12 +364,12 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
     // Compile-time unroll to collect runtime types into a plain array
     uint32_t runtime_types[NumTemplateParams > 0 ? NumTemplateParams : 1]{};
     [&]<size_t... Ks>(std::index_sequence<Ks...>) {
-        (..., [&, FirstArgIdx = first_arg_for_template<Ks, NumArgs, ArgToTemplateMap>()]() {
-            runtime_types[Ks] = static_cast<uint32_t>(CPP20_TYPEOF(args[FirstArgIdx]));
+        (..., (
+            runtime_types[Ks] = static_cast<uint32_t>(CPP20_TYPEOF(args[first_arg_for_template<Ks, NumArgs, ArgToTemplateMap>()])),
             check_template_homogeneity<Ks, NumArgs, ArgToTemplateMap>(
                 static_cast<uint16_t>(runtime_types[Ks]), args
-            );
-        }());
+            )
+        ));
     }(std::make_index_sequence<NumTemplateParams>{});
 
 
