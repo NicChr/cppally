@@ -137,6 +137,30 @@ inline void check_r_cpp_mapping(SEXP x){
 // ArgToTemplateMap maps argument positions to template parameter indices
 // e.g., {0, 0, 1} means args 0 and 1 share template param T, arg 2 uses U.
 // -1 means the argument is not templated (fixed type, already checked via check_r_cpp_mapping)
+// This function finds the first argument that "drives" template param TemplateParamIdx
+template <size_t TemplateParamIdx, size_t NumArgs, auto ArgToTemplateMap>
+constexpr size_t first_arg_for_template() {
+    for (size_t i = 0; i < NumArgs; ++i)
+        if (ArgToTemplateMap[i] == static_cast<int>(TemplateParamIdx)) return i;
+    return NumArgs;
+}
+
+
+// When multiple arguments share the same template parameter (e.g., f(T x, T y)),
+// they must all have the same R TYPEOF at runtime
+template <size_t TemplateParamIdx, size_t NumArgs, auto ArgToTemplateMap>
+void check_template_homogeneity(uint16_t expected_type, SEXP* args) {
+    for (size_t i = 0; i < NumArgs; ++i) {
+        if (ArgToTemplateMap[i] == static_cast<int>(TemplateParamIdx)) {
+            if (CPP20_TYPEOF(args[i]) != expected_type) {
+                abort(
+                    "R type: %s for arg %zu does not match the first instance: %s for this template arg",
+                    r_type_to_str(CPP20_TYPEOF(args[i])), i + 1, r_type_to_str(expected_type)
+                );
+            }
+        }
+    }
+}
 
 
 // ── FLAT FUNCTION POINTER TABLE ───────────────────────────────────────────────
@@ -337,11 +361,10 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
     constexpr const auto& type_table = shared_type_table<NumTemplateParams>::value;
 
 
-    // Collect runtime types — uses plain loops instead of template forwarding
-    // of ArgToTemplateMap to avoid Clang 22 ICE with NTTP std::array in nested templates
+    // Collect runtime types — plain loops to avoid Clang 22 ICE
+    // with NTTP std::array forwarded through nested templates
     uint32_t runtime_types[NumTemplateParams > 0 ? NumTemplateParams : 1]{};
     for (size_t k = 0; k < NumTemplateParams; ++k) {
-        // Find first argument that drives template param k
         size_t first_arg = NumArgs;
         for (size_t i = 0; i < NumArgs; ++i) {
             if (ArgToTemplateMap[i] == static_cast<int>(k)) {
@@ -350,7 +373,6 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
             }
         }
         runtime_types[k] = static_cast<uint32_t>(CPP20_TYPEOF(args[first_arg]));
-        // Check that all args sharing this template param have the same TYPEOF
         for (size_t i = 0; i < NumArgs; ++i) {
             if (ArgToTemplateMap[i] == static_cast<int>(k)) {
                 if (CPP20_TYPEOF(args[i]) != static_cast<uint16_t>(runtime_types[k])) {
