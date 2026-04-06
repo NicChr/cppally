@@ -17,6 +17,10 @@
 #define STRICT_R_HEADERS
 #endif
 
+#ifndef ANKERL_UNORDERED_DENSE_DISABLE_PMR
+#define ANKERL_UNORDERED_DENSE_DISABLE_PMR
+#endif
+
 #include <R_ext/Boolean.h>
 #include <Rinternals.h>
 #include <iosfwd> // Forward declarations for strings
