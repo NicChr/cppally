@@ -208,10 +208,6 @@ test_match <- function(x, y) {
   .Call(`_cpp20_test_match`, x, y)
 }
 
-test_factor1 <- function(x) {
-  .Call(`_cpp20_test_factor1`, x)
-}
-
 test_factor2 <- function(x) {
   .Call(`_cpp20_test_factor2`, x)
 }
@@ -250,6 +246,14 @@ test_as_dbl <- function(a, b, c, d, e, f) {
 
 test_as_str <- function(a, b, c, d, e, f) {
   .Call(`_cpp20_test_as_str`, a, b, c, d, e, f)
+}
+
+test_factor1 <- function(x) {
+  .Call(`_cpp20_test_factor1`, x)
+}
+
+test_factor3 <- function(x) {
+  .Call(`_cpp20_test_factor3`, x)
 }
 
 test_nas <- function(x) {

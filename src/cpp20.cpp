@@ -541,14 +541,6 @@ extern "C" SEXP _cpp20_test_match(SEXP x, SEXP y) {
   END_CPP20
 }
 // test.h
-r_vec<r_sexp> test_factor1(r_factors x);
-extern "C" SEXP _cpp20_test_factor1(SEXP x) {
-  BEGIN_CPP20
-  check_r_cpp_mapping<r_factors>(x);
-  return cpp_to_sexp(test_factor1(cpp20::as<r_factors>(x)));
-  END_CPP20
-}
-// test.h
 extern "C" SEXP _cpp20_test_factor2(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
@@ -653,6 +645,22 @@ extern "C" SEXP _cpp20_test_as_str(SEXP a, SEXP b, SEXP c, SEXP d, SEXP e, SEXP 
 	check_r_cpp_mapping<r_vec<r_int>>(e);
 	check_r_cpp_mapping<r_vec<r_dbl>>(f);
   return cpp_to_sexp(test_as_str(cpp20::as<SEXP>(a), cpp20::as<r_int>(b), cpp20::as<r_dbl>(c), cpp20::as<r_sym>(d), cpp20::as<r_vec<r_int>>(e), cpp20::as<r_vec<r_dbl>>(f)));
+  END_CPP20
+}
+// test_factor.cpp
+r_vec<r_sexp> test_factor1(r_factors x);
+extern "C" SEXP _cpp20_test_factor1(SEXP x) {
+  BEGIN_CPP20
+  check_r_cpp_mapping<r_factors>(x);
+  return cpp_to_sexp(test_factor1(cpp20::as<r_factors>(x)));
+  END_CPP20
+}
+// test_factor.cpp
+r_dbl test_factor3(r_factors x);
+extern "C" SEXP _cpp20_test_factor3(SEXP x) {
+  BEGIN_CPP20
+  check_r_cpp_mapping<r_factors>(x);
+  return cpp_to_sexp(test_factor3(cpp20::as<r_factors>(x)));
   END_CPP20
 }
 // test_nas.h
@@ -847,6 +855,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_test_df",                   (DL_FUNC) &_cpp20_test_df,                   1},
     {"_cpp20_test_factor1",              (DL_FUNC) &_cpp20_test_factor1,              1},
     {"_cpp20_test_factor2",              (DL_FUNC) &_cpp20_test_factor2,              1},
+    {"_cpp20_test_factor3",              (DL_FUNC) &_cpp20_test_factor3,              1},
     {"_cpp20_test_fill",                 (DL_FUNC) &_cpp20_test_fill,                 3},
     {"_cpp20_test_find",                 (DL_FUNC) &_cpp20_test_find,                 2},
     {"_cpp20_test_group_counts",         (DL_FUNC) &_cpp20_test_group_counts,         2},
