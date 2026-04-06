@@ -210,16 +210,16 @@ concept RMetaVector = RFactor<T>;
 template <typename T>
 concept RSortableVector = RVector<T> && RSortableType<typename T::data_type>;
 
-// RObject is any object that can be represented in R - it excludes internal R types like CHARSXP
-// Also, these are all implicitly convertible to `SEXP`
+// RObject is any object that can be represented in R
+// All cpp20 classes that contain SEXP will be implicitly convertible to SEXP
 template <typename T> 
 concept RObject = std::is_convertible_v<T, SEXP>;
 
 template <typename T>
-concept CppType = !(RVal<T> || RObject<T>);
+concept CppType = !(RScalar<T> || RObject<T>);
 
 template <typename T>
-concept CppScalar = std::is_scalar_v<T>;
+concept CppScalar = std::is_scalar_v<T> && !is<T, SEXP>;
 
 template <typename T>
 concept Scalar = CppScalar<T> || RScalar<T>;
@@ -337,9 +337,9 @@ struct r_val_mapping_impl<T> {
 template <typename T>
 using as_r_val_t = typename internal::r_val_mapping_impl<std::remove_cvref_t<T>>::type;
 
-// Can type be constructed/static_cast to RVal type?
+// Can C++ type be constructed/static_cast to RVal type?
 template <typename T>
-concept CastableToRVal = requires {
+concept CastableToRVal = CppScalar<T> && requires {
     typename as_r_val_t<T>;
 };
 

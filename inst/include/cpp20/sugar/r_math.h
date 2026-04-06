@@ -285,7 +285,7 @@ inline r_lgl is_whole_number(r_dbl x, r_dbl tolerance){
 
 
 // Greatest common divisor
-template<RMathType T>
+template <RMathType T>
 inline T gcd(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
   if (is_na(x) || is_na(y)){
     if (na_rm){ 
@@ -355,7 +355,7 @@ inline T gcd(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
 
 
 // Lowest common multiple
-template<RMathType T>
+template <RMathType T>
 inline T lcm(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
   if (is_na(x) || is_na(y)){
     if (na_rm){

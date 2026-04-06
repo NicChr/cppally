@@ -99,7 +99,7 @@ inline constexpr auto na(){
 
 template<typename T>
 inline constexpr bool is_na(T const& x) {
-  if constexpr (RVal<T>){
+  if constexpr (RAtomicScalar<T>){
     return unwrap(x) == unwrap(na<T>());
   } else if constexpr (CastableToRVal<T>){
     return is_na(as_r_val(x));

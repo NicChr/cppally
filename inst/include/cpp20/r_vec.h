@@ -490,7 +490,9 @@ struct r_vec {
     }
       // If length > 0 but length(x) == 0 then fill with NA
     } else if (size == 0 && n > 0){
-      out.fill(na<T>());
+      if constexpr (RAtomicScalar<T>){
+        out.fill(na<T>());
+      }
     }
     return out;
   }
