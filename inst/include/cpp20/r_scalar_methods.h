@@ -93,44 +93,58 @@ inline r_lgl operator>=(const r_str& lhs, const r_str& rhs) {
   return static_cast<r_str_view>(lhs) >= static_cast<r_str_view>(rhs);
 }
 
-template <RVal T, RVal U>
+inline r_lgl operator==(const r_sexp& lhs, const r_sexp& rhs) {
+  return r_lgl{unwrap(lhs) == unwrap(rhs)};
+}
+// inline r_lgl operator!=(const r_sexp& lhs, const r_sexp& rhs) {
+//   return r_lgl{unwrap(lhs) != unwrap(rhs)};
+// }
+
+inline r_lgl operator==(r_sym lhs, r_sym rhs) {
+  return r_lgl{unwrap(lhs) == unwrap(rhs)};
+}
+// inline r_lgl operator!=(r_sym lhs, r_sym rhs) {
+//   return r_lgl{unwrap(lhs) != unwrap(rhs)};
+// }
+
+template <RScalar T, RScalar U>
 inline constexpr r_lgl operator==(const T &lhs, const U &rhs) {
   return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) == unwrap(rhs)};
 }
 
-template<RVal T, CppScalar U>
+template <RScalar T, CppScalar U>
 inline constexpr r_lgl operator==(const T &lhs, const U &rhs) {
   return is_na(lhs) ? r_na : r_lgl{unwrap(lhs) == rhs};
 }
 
-template<CppScalar T, RVal U>
+template <CppScalar T, RScalar U>
 inline constexpr r_lgl operator==(const T &lhs, const U &rhs) {
   return is_na(rhs) ? r_na : r_lgl{lhs == unwrap(rhs)};
 }
 
 template <Scalar T, Scalar U>
-requires (RVal<T> || RVal<U>)
+requires (RScalar<T> || RScalar<U>)
 inline constexpr r_lgl operator!=(const T &lhs, const U &rhs) {
   return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) != unwrap(rhs)};
 }
 
-template <NumericType T, NumericType U>
-requires (RNumericType<T> || RNumericType<U>)
+template <MathType T, MathType U>
+requires (RMathType<T> || RMathType<U>)
 inline constexpr r_lgl operator<(T lhs, U rhs) {
   return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) < unwrap(rhs)};
 }
-template <NumericType T, NumericType U>
-requires (RNumericType<T> || RNumericType<U>)
+template <MathType T, MathType U>
+requires (RMathType<T> || RMathType<U>)
 inline constexpr r_lgl operator<=(T lhs, U rhs) {
   return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) <= unwrap(rhs)};
 }
-template <NumericType T, NumericType U>
-requires (RNumericType<T> || RNumericType<U>)
+template <MathType T, MathType U>
+requires (RMathType<T> || RMathType<U>)
 inline constexpr r_lgl operator>(T lhs, U rhs) {
   return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) > unwrap(rhs)};
 }
-template <NumericType T, NumericType U>
-requires (RNumericType<T> || RNumericType<U>)
+template <MathType T, MathType U>
+requires (RMathType<T> || RMathType<U>)
 inline constexpr r_lgl operator>=(T lhs, U rhs) {
   return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) >= unwrap(rhs)};
 }
