@@ -29,6 +29,7 @@
 #include <cpp20/r_list_helpers.h>
 #include <cpp20/sugar/r_identical.h>
 #include <cpp20/sugar/r_hash.h>
+#include <cpp20/sugar/r_n_unique.h>
 #include <cpp20/sugar/r_sort.h>
 #include <cpp20/sugar/r_groups.h>
 #include <cpp20/sugar/r_match.h>
