@@ -114,6 +114,13 @@ inline std::remove_cvref_t<T> as(const U& x) {
     using to_data_t = typename to_t::data_type;
     using from_data_t = typename from_t::data_type;
 
+    // Special case: from r_vec<r_str> to r_vec<r_str_view> (or vice versa)
+    // No need to actually loop here as they both are exactly the same character vector
+    // Only thing that changes is the ownership semantics associated with the element type
+    if constexpr (RStringType<to_data_t> && RStringType<from_data_t>){
+      return to_t(static_cast<SEXP>(x));
+    }
+
     // Special case: If converting to character vector, we can safely bypass overhead of using r_str by using r_str_view
     // The vector already is protecting the elements
     if constexpr (is<to_data_t, r_str>){
@@ -146,6 +153,55 @@ inline std::remove_cvref_t<T> as(const U& x) {
     static_assert(always_false<to_t>, "Unsupported type for `as`");
   }
 }
+
+// template <RScalar T, RScalar U>
+// requires (!is<T, U>)
+// inline std::remove_cvref_t<T> as(const U& x) {
+//   return internal::as_r<T>(x);
+// }
+
+
+// // as_r<> can handle -> r_sexp 
+// template <typename T, typename U>
+// requires (is<T, r_sexp> && !is<U, r_sexp>)
+// inline r_sexp as(const U& x) {
+//   return internal::as_r<r_sexp>(x);
+// }
+
+// template <RVector T, RVector U>
+// requires (!is<T, U>)
+// inline std::remove_cvref_t<T> as(const U& x) {
+//   using to_data_t = typename T::data_type;
+//   using from_data_t = typename U::data_type;
+  
+//   // Special case: from r_vec<r_str> to r_vec<r_str_view> (or vice versa)
+//   // No need to actually loop here as they both are exactly the same character vector
+//   // Only thing that changes is the ownership semantics associated with the element type
+//   if constexpr (RStringType<to_data_t> && RStringType<from_data_t>){
+//     return T(static_cast<SEXP>(x));
+//   }
+
+//   // Special case: If converting to character vector, we can safely bypass overhead of using r_str by using r_str_view
+//   // The vector already is protecting the elements
+//   if constexpr (is<to_data_t, r_str>){
+//     return T(as<r_vec<r_str_view>>(x));
+//   }
+  
+//   r_size_t n = x.length();
+//   T out(n);
+//   // Lists sometimes can't be converted to atomic vectors so we can't run the coercion under an SIMD clause
+//   if constexpr (internal::RPtrWritableType<to_data_t> && internal::RPtrWritableType<from_data_t>){
+//     OMP_SIMD
+//     for (r_size_t i = 0; i < n; ++i){
+//       out.set(i, as<to_data_t>(x.view(i)));
+//     }
+//   } else {
+//     for (r_size_t i = 0; i < n; ++i){
+//       out.set(i, as<to_data_t>(x.view(i)));
+//     }
+//   }
+//   return out;
+// }
 
 // Convert any obj to an r_vec<>
 template <typename T>
