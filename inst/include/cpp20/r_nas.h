@@ -101,7 +101,7 @@ template<typename T>
 inline constexpr bool is_na(T const& x) {
   if constexpr (RAtomicScalar<T>){
     return unwrap(x) == unwrap(na<T>());
-  } else if constexpr (CastableToRVal<T>){
+  } else if constexpr (CppScalarCastableToRVal<T>){
     return is_na(as_r_val(x));
   } else {
     return false;

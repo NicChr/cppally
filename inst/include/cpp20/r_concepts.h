@@ -205,6 +205,9 @@ template <typename T>
 concept RFactor = is<T, r_factors>;
 
 template <typename T>
+concept RDataFrame = is<T, r_df>;
+
+template <typename T>
 concept RMetaVector = RFactor<T>;
 
 template <typename T>
@@ -316,6 +319,8 @@ template <RVector T>
 struct r_val_mapping_impl<T> { using type = r_sexp; };
 template <RFactor T>
 struct r_val_mapping_impl<T> { using type = r_sexp; };
+template <RDataFrame T>
+struct r_val_mapping_impl<T> { using type = r_sexp; };
 
 template<CppMathType T>
 struct r_val_mapping_impl<T> {
@@ -337,11 +342,15 @@ struct r_val_mapping_impl<T> {
 template <typename T>
 using as_r_val_t = typename internal::r_val_mapping_impl<std::remove_cvref_t<T>>::type;
 
-// Can C++ type be constructed/static_cast to RVal type?
+// Can type be constructed/static_cast to RVal type?
 template <typename T>
-concept CastableToRVal = CppScalar<T> && requires {
+concept CastableToRVal = requires {
     typename as_r_val_t<T>;
 };
+
+// C/C++ scalar castable to RVal?
+template <typename T>
+concept CppScalarCastableToRVal = CppScalar<T> && CastableToRVal<T>;
 
 namespace internal {
 

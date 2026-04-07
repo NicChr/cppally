@@ -120,7 +120,7 @@ template <RAtomicScalar T>
 inline constexpr uint16_t r_cpp_boundary_map_v<T> = r_cpp_boundary_map_v<r_vec<T>>;
 
 // Pure C/C++ types that are constructible to an RVal
-template <CastableToRVal T>
+template <CppScalarCastableToRVal T>
 inline constexpr uint16_t r_cpp_boundary_map_v<T> = r_cpp_boundary_map_v<as_r_val_t<T>>;
 
 
