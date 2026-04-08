@@ -86,15 +86,6 @@ struct is_cpp_complex<std::complex<U>> : std::true_type {};
 }
 
 template <typename T>
-concept RDateType = is<T, r_date>;
-
-template <typename T>
-concept RPsxctType = is<T, r_psxct>;
-
-template <typename T>
-concept RTimeType = RDateType<T> || RPsxctType<T>;
-
-template <typename T>
 concept RComplexType = is<T, r_cplx>;
 
 template <typename T>
@@ -102,6 +93,15 @@ concept CppComplexType = internal::is_cpp_complex<std::remove_cvref_t<T>>::value
 
 template <typename T>
 concept ComplexType = RComplexType<T> || CppComplexType<T>;
+
+template <typename T>
+concept RDateType = is<T, r_date>;
+
+template <typename T>
+concept RPsxctType = is<T, r_psxct>;
+
+template <typename T>
+concept RTimeType = RDateType<T> || RPsxctType<T>;
 
 template <typename T>
 concept RMathType = RIntegerType<T> || RFloatType<T>;
@@ -119,7 +119,6 @@ concept RNumericType = RMathType<T> || RTimeType<T>;
 
 template <typename T>
 concept CppNumericType = CppMathType<T>;
-
 
 template <typename T>
 concept NumericType = RNumericType<T> || CppNumericType<T>;
@@ -239,7 +238,7 @@ namespace internal {
 
 // A `SEXP` which we can write data to directly via a pointer
 template <typename T>
-concept RPtrWritableType = RVal<T> && !RObject<T>;
+concept RPtrWritableType = RScalar<T> && !RObject<T>;
 
 // template <typename T>
 // concept RPassByValueType = any<T, r_lgl, r_int, r_int64, r_dbl, r_raw>;
@@ -393,7 +392,7 @@ using unwrap_t = typename internal::unwrapped_type<T>::type;
 
 namespace internal {
 
-template <RCpp20Type T>
+template <RVal T>
 consteval uint8_t r_type_rank() {
 
     // Scalars
@@ -407,21 +406,6 @@ consteval uint8_t r_type_rank() {
     if constexpr (is<T, r_psxct>)                   return 7;
     if constexpr (is<T, r_str>)                     return 8;
     if constexpr (is<T, r_str_view>)                return 9;
-
-    // Vectors
-    // if constexpr (is<T, r_vec<r_lgl>>)              return 10;
-    // if constexpr (is<T, r_vec<r_int>>)              return 11;
-    // if constexpr (is<T, r_vec<r_int64>>)            return 12;
-    // if constexpr (is<T, r_vec<r_dbl>>)              return 13;
-    // if constexpr (is<T, r_vec<r_cplx>>)             return 14;
-    // if constexpr (is<T, r_vec<r_raw>>)              return 15;
-    // if constexpr (is<T, r_vec<r_date>>)             return 16;
-    // if constexpr (is<T, r_vec<r_psxct>>)            return 17;
-    // if constexpr (is<T, r_vec<r_str_view>>)         return 18;
-    // if constexpr (is<T, r_vec<r_str>>)              return 19;
-    // if constexpr (is<T, r_vec<r_str>>)              return 20;
-    // if constexpr (is<T, r_factors>)                 return 21;
-    // if constexpr (is<T, r_df>)                      return 22;
 
     if constexpr (is<T, r_sexp>)                     return std::numeric_limits<uint8_t>::max()  - 1;
     return std::numeric_limits<uint8_t>::max();
