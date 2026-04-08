@@ -12,12 +12,9 @@ namespace internal {
 struct view_tag {};
 }
 
-// General SEXP, reserved for everything except CHARSXP and SYMSXP
-// Wrapper around cpp11::sexp to benefit from automatic protection (cpp11-managed linked list)
+// General SEXP, automatic protection handled via cpp20-managed vector list
 //
-//
-// ----- All credits go to cpp11 authors/maintainers for `cpp11::sexp` -----
-//
+// ----- All credits go to cpp11 authors/maintainers for inspiration from `cpp11::sexp` -----
 //
 
 struct r_sexp {
@@ -29,46 +26,49 @@ struct r_sexp {
 
   private:
 
-  SEXP preserve_token_ = R_NilValue;
+  // Refcounted protection token. nullptr means "view mode" (no protection).
+  // Copy construction bumps `ctl_->refs` instead of allocating a new cons cell,
+  // so passing r_sexp around by value is essentially free
+  detail::refcount::protect_cell* ctl_ = nullptr;
 
-  public: 
+  public:
 
   r_sexp() = default;
-  explicit r_sexp(SEXP data) : value(data), preserve_token_(detail::store::insert(value)) {}
+  explicit r_sexp(SEXP data) : value(data), ctl_(detail::refcount::insert(data)) {}
 
-  // We maintain our own new `preserve_token_`
-  r_sexp(const r_sexp& rhs) : value(rhs.value), preserve_token_(detail::store::insert(rhs.value)) {}
-
-  // We take ownership over the `rhs.preserve_token_`.
-  // Importantly we clear it in the `rhs` so it can't release the object upon destruction.
-  r_sexp(r_sexp&& rhs) noexcept : value(rhs.value), preserve_token_(rhs.preserve_token_) {
-    rhs.value = R_NilValue;
-    rhs.preserve_token_ = R_NilValue;
+  // Copy = refcount bump (no R API involvement)
+  r_sexp(const r_sexp& rhs) noexcept : value(rhs.value), ctl_(rhs.ctl_) {
+    detail::refcount::incref(ctl_);
   }
 
-  r_sexp& operator=(const r_sexp& rhs) {
+  // Move = steal the token, leaving rhs empty
+  r_sexp(r_sexp&& rhs) noexcept : value(rhs.value), ctl_(rhs.ctl_) {
+    rhs.value = R_NilValue;
+    rhs.ctl_ = nullptr;
+  }
+
+  r_sexp& operator=(const r_sexp& rhs) noexcept {
     if (this != &rhs) {
-        SEXP new_token = detail::store::insert(rhs.value); // insert first
-        detail::store::release(preserve_token_);           // then release old
+        detail::refcount::incref(rhs.ctl_); // bump new first, release old after
+        detail::refcount::decref(ctl_);
         value = rhs.value;
-        preserve_token_ = new_token;
+        ctl_ = rhs.ctl_;
     }
     return *this;
-}
+  }
 
   r_sexp& operator=(r_sexp&& rhs) noexcept {
-    detail::store::release(preserve_token_);
-    value = rhs.value;
-    
-    // Steal the token, do not create a new one
-    preserve_token_ = rhs.preserve_token_;
-    
-    rhs.value = R_NilValue;
-    rhs.preserve_token_ = R_NilValue;
+    if (this != &rhs) {
+      detail::refcount::decref(ctl_);
+      value = rhs.value;
+      ctl_ = rhs.ctl_;
+      rhs.value = R_NilValue;
+      rhs.ctl_ = nullptr;
+    }
     return *this;
   }
 
-  ~r_sexp() { detail::store::release(preserve_token_); }
+  ~r_sexp() { detail::refcount::decref(ctl_); }
 
   // Implicit conversion to SEXP
   operator SEXP() const noexcept { return value; }
@@ -76,7 +76,7 @@ struct r_sexp {
 
   // Optimized constructor
   // convert SEXP -> r_sexp directly without extra protection
-  explicit r_sexp(SEXP s, internal::view_tag) : value(s), preserve_token_(R_NilValue) {}
+  explicit r_sexp(SEXP s, internal::view_tag) noexcept : value(s), ctl_(nullptr) {}
 
   r_size_t length() const noexcept {
     return Rf_xlength(value);
