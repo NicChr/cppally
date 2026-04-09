@@ -323,7 +323,7 @@ T gcd(const r_vec<T> &x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
 template<RMathType T>
 T lcm(const r_vec<T> &x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
     if (tol < 0 || tol >= 1){
-      Rf_error("tol must be >= 0 and < 1");
+      abort("tol must be >= 0 and < 1");
     }
     r_size_t n = x.length();
     if (n == 0){
