@@ -519,7 +519,7 @@ struct r_vec {
   }
 
   void set_tzone(const char* tz) requires RPsxctType<T> {
-    Rf_setAttrib(sexp, r_sym("tzone"), Rf_ScalarString(Rf_mkCharCE(tz, CE_UTF8)));
+    Rf_setAttrib(sexp, r_sym("tzone"), r_vec<r_str>(1, r_str(tz)));
   }
 
   // list-only members
