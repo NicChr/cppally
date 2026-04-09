@@ -1,10 +1,13 @@
 #ifndef CPP20_R_PROTECT_H
 #define CPP20_R_PROTECT_H
 
+#include <cpp20/r_setup.h>
+#include <type_traits>
+#include <utility>
 #include <csetjmp>
 #include <cstdint> // For fixed-width int types
 #include <exception>
-#include <cpp20/r_setup.h>
+
 
 namespace cpp20 {
 
@@ -84,8 +87,19 @@ constexpr protect safe = {};
 
 inline void check_user_interrupt() { safe[R_CheckUserInterrupt](); }
 
+// Forwarding non-trivially-copyable C++ objects through a C vararg function
+// (e.g. Rf_errorcall / Rf_warningcall) is undefined behaviour. These helpers
+// are printf-style; only POD types and `const char*` are valid. The static
+// assert catches accidental `std::string` etc at compile time -- use .c_str().
+template <typename... Args>
+inline constexpr bool all_vararg_safe_v =
+    (std::is_trivially_copyable_v<std::decay_t<Args>> && ...);
+
 template <typename... Args>
 [[noreturn]] inline void abort (const char* msg, Args&&... args) {
+    static_assert(all_vararg_safe_v<Args...>,
+        "abort() forwards args into a C vararg function; all args must be "
+        "trivially copyable (use .c_str() for std::string)");
     unwind_protect([&] { Rf_errorcall(R_NilValue, msg, std::forward<Args>(args)...); });
     throw std::exception(); // satisfy compiler [[noreturn]]
 }
@@ -97,6 +111,9 @@ template <typename... Args>
 
 template <typename... Args>
 inline void warn(const char* msg, Args&&... args) {
+    static_assert(all_vararg_safe_v<Args...>,
+        "warn() forwards args into a C vararg function; all args must be "
+        "trivially copyable (use .c_str() for std::string)");
     safe[Rf_warningcall](R_NilValue, msg, std::forward<Args>(args)...);
 }
 
@@ -130,15 +147,18 @@ namespace vec_store {
 // writes the protected SEXP via SET_VECTOR_ELT (write-barrier safe). Release
 // clears the slot back to R_NilValue and pushes the index onto free_stack.
 //
-// Two intrusive lists are threaded through `chunk`:
-//   * `next`      -- the master allocation chain (every chunk ever created).
-//                    Used only for diagnostics (count/print).
-//   * `free_next` -- the "has free slots" list. A chunk is on this list iff
-//                    its free_count > 0. This makes both insert and release
-//                    O(1) on every path, hot or cold -- there is no
-//                    chain walk anywhere. When a chunk fills, it is unlinked
-//                    from the free list; when a previously-full chunk has a
-//                    slot released, it is pushed back onto the free list.
+// Two intrusive lists are threaded through `chunk`, both doubly linked so
+// every link/unlink is O(1):
+//   * `next`/`prev`           -- master allocation chain (every chunk ever
+//                                created). Used for diagnostics (count/print)
+//                                and for O(1) unlink in destroy_chunk.
+//   * `free_next`/`free_prev` -- the "has free slots" list. A chunk is on
+//                                this list iff its free_count > 0. Insert
+//                                and release are O(1) on every path, hot or
+//                                cold -- there is no chain walk anywhere.
+//                                When a chunk fills, it is unlinked from the
+//                                free list; when a previously-full chunk has
+//                                a slot released, it is pushed back on.
 //
 // New chunks double in capacity (256, 512, 1024, ...) up to `max_chunk_size`.
 // Crucially, growing the pool means *appending* a new chunk -- existing
@@ -191,7 +211,8 @@ struct chunk {
     int*   free_stack;  // [capacity] indices of free slots (LIFO)
     chunk* next;        // master allocation chain (forward link)
     chunk* prev;        // master allocation chain (back link, for O(1) unlink)
-    chunk* free_next;   // intrusive "has free slots" list; nullptr if full
+    chunk* free_next;   // "has free slots" list, forward; nullptr if full
+    chunk* free_prev;   // "has free slots" list, back; nullptr if full or head
 };
 
 // Token returned by insert; opaque to callers other than `release`.
@@ -241,7 +262,11 @@ inline chunk* add_chunk() {
     head_chunk() = c;
 
     // Link into "has free slots" list (it's empty, so it definitely has free).
+    c->free_prev = nullptr;
     c->free_next = free_list_head();
+    if (c->free_next != nullptr) {
+        c->free_next->free_prev = c;
+    }
     free_list_head() = c;
 
     if (next_size < max_chunk_size) {
@@ -252,7 +277,8 @@ inline chunk* add_chunk() {
 
 // Permanently free a chunk: unlink from both lists, release the VECSXP back
 // to R, and delete the C++ control block. Caller must guarantee `c` has no
-// live slots and is not the only chunk in existence.
+// live slots, that it is on the free list (free_count > 0), and that it is
+// not the only chunk in existence.
 inline void destroy_chunk(chunk* c) noexcept {
     // Unlink from master chain (doubly linked).
     if (c->prev != nullptr) {
@@ -264,19 +290,32 @@ inline void destroy_chunk(chunk* c) noexcept {
         c->next->prev = c->prev;
     }
 
-    // Unlink from free list (singly linked -- walk to find predecessor).
-    chunk** link = &free_list_head();
-    while (*link != nullptr && *link != c) {
-        link = &(*link)->free_next;
+    // Unlink from free list (also doubly linked -- O(1)).
+    if (c->free_prev != nullptr) {
+        c->free_prev->free_next = c->free_next;
+    } else {
+        free_list_head() = c->free_next;
     }
-    if (*link == c) {
-        *link = c->free_next;
+    if (c->free_next != nullptr) {
+        c->free_next->free_prev = c->free_prev;
     }
 
     R_ReleaseObject(c->vec);
     delete[] c->free_stack;
     delete c;
 }
+
+// RAII protect guard. Needed because add_chunk() can throw unwind_exception
+// from a failed Rf_allocVector. R_UnwindProtect restores R's protect stack
+// to its state at entry -- which still includes our Rf_protect(x) -- so the
+// C++ exception must run a destructor to balance it. A bare Rf_unprotect(1)
+// after the call would be skipped by stack unwinding and leak a protect.
+struct protect_guard {
+    explicit protect_guard(SEXP x) noexcept { Rf_protect(x); }
+    ~protect_guard()                        { Rf_unprotect(1); }
+    protect_guard(const protect_guard&)            = delete;
+    protect_guard& operator=(const protect_guard&) = delete;
+};
 
 inline slot_ref insert(SEXP x) {
     if (x == R_NilValue) {
@@ -286,10 +325,9 @@ inline slot_ref insert(SEXP x) {
     chunk* c = free_list_head();
     if (c == nullptr) {
         // Every chunk is full (or none exist). Allocate a new one.
-        // Allocation may GC, so protect `x` for the duration.
-        Rf_protect(x);
+        // Allocation may GC and may throw, so protect `x` via RAII.
+        protect_guard guard(x);
         c = add_chunk();
-        Rf_unprotect(1);
         // add_chunk pushed c onto free_list_head, so it's the new head.
     }
 
@@ -299,7 +337,11 @@ inline slot_ref insert(SEXP x) {
     // If this chunk just became full, unlink it from the free list.
     if (c->free_count == 0) {
         free_list_head() = c->free_next;
+        if (c->free_next != nullptr) {
+            c->free_next->free_prev = nullptr;
+        }
         c->free_next = nullptr;
+        c->free_prev = nullptr;
     }
 
     return {c, slot};
@@ -317,7 +359,11 @@ inline void release(slot_ref ref) noexcept {
 
     // If the chunk was full, it wasn't on the free list -- put it back.
     if (was_full) {
+        c->free_prev = nullptr;
         c->free_next = free_list_head();
+        if (c->free_next != nullptr) {
+            c->free_next->free_prev = c;
+        }
         free_list_head() = c;
     }
 
@@ -397,12 +443,18 @@ inline void free_cell(protect_cell* p) {
 }
 
 // Create a new protection token for `x`. Returns nullptr for R_NilValue.
+//
+// Order matters: do the R-side work *first*. vec_store::insert may throw an
+// unwind_exception from a failed Rf_allocVector inside add_chunk. If we
+// allocated the C++ control block first, that throw would leak it -- the
+// cell is neither attached to anything nor returned to the freelist.
 inline protect_cell* insert(SEXP x) {
     if (x == R_NilValue) {
         return nullptr;
     }
+    auto token = vec_store::insert(x); // may throw -- nothing to clean up yet
     protect_cell* p = alloc_cell();
-    p->token = vec_store::insert(x);
+    p->token = token;
     p->refs  = 1;
     p->next  = nullptr;
     return p;
