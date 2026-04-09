@@ -57,7 +57,7 @@ inline r_sexp deep_copy(const r_sexp& x){
         if constexpr (!is<decltype(vec), r_sexp>){
             return r_sexp(static_cast<SEXP>(deep_copy(vec)));
         } else {
-            return r_sexp(Rf_duplicate(vec));
+            return r_sexp(safe[Rf_duplicate](vec));
         }
     });
 }

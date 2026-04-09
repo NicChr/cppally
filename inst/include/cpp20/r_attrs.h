@@ -101,7 +101,7 @@ inline r_sexp get_attr(SEXP x, const r_sym& sym){
 template <RObject T, RObject U> 
 inline void set_attr(const T& x, const r_sym& sym, const U& value){
   if (can_have_attributes(x)){
-    Rf_setAttrib(x, sym, value); 
+    safe[Rf_setAttrib](x, sym, value); 
   }
 }
 template <RStringType U>
@@ -121,9 +121,6 @@ inline void set_old_names(SEXP x, const r_vec<U>& names){
 }
 inline r_vec<r_str_view> get_old_names(SEXP x){
   return r_vec<r_str_view>(get_attr(x, symbol::names_sym));
-}
-inline bool has_r_names(SEXP x){
-  return !get_old_names(x).is_null();
 }
 inline r_vec<r_str_view> get_old_class(SEXP x){
   return r_vec<r_str_view>(get_attr(x, symbol::class_sym));
@@ -190,7 +187,7 @@ inline void modify_attrs_impl(const T& x, const r_vec<r_sexp>& attrs) {
       attr_nm = r_sym(names.view(i));
       // We can't add an object as its own attribute in-place (as this will crash R)
       if (x_.address() == attrs.view(i).address()){
-        r_sexp dup_attr = r_sexp(Rf_duplicate(attrs.view(i)));
+        r_sexp dup_attr = r_sexp(safe[Rf_duplicate](attrs.view(i)));
         attr::set_attr(x_, attr_nm, dup_attr);
       } else {
         attr::set_attr(x_, attr_nm, attrs.view(i));
