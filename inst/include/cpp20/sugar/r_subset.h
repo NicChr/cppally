@@ -172,7 +172,7 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check) const {
           }
         } 
         else if (j != 0U){
-          if constexpr (RAtomicScalar<T>){
+          if constexpr (RScalar<T>){
             out.set(k++, na<T>());
           }
         }

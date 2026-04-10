@@ -142,10 +142,7 @@ template <typename T>
 concept RRawType = is<T, r_raw>;
 
 template <typename T>
-concept RAtomicScalar = RNumericType<T> || RComplexType<T> || RStringType<T> || RRawType<T>;
-
-template <typename T>
-concept RScalar = RAtomicScalar<T>;
+concept RScalar = RNumericType<T> || RComplexType<T> || RStringType<T> || RRawType<T>;
 
 // RVal is anything that can be stored in `r_vec<>`
 template <typename T>
@@ -175,7 +172,7 @@ inline constexpr bool is_r_vector_v = is_r_vector<std::remove_cvref_t<T>>::value
 template <typename T>
 struct is_atomic_r_vector : std::false_type {};
 
-template <RAtomicScalar T>
+template <RScalar T>
 struct is_atomic_r_vector<r_vec<T>> : std::true_type {};
 
 template <typename T>
@@ -218,9 +215,6 @@ template <typename T>
 concept RObject = std::is_convertible_v<T, SEXP>;
 
 template <typename T>
-concept CppType = !(RScalar<T> || RObject<T>);
-
-template <typename T>
 concept CppScalar = std::is_scalar_v<T>;
 
 template <typename T>
@@ -232,6 +226,9 @@ inline constexpr bool is_sexp = any<T, SEXP, r_sexp>;
 // All R types defined by cpp20
 template <typename T>
 concept RCpp20Type = RVal<T> || RVector<T> || RMetaVector<T> || RDataFrame<T> || RSymbolType<T>;
+
+template <typename T>
+concept CppType = !RCpp20Type<T>;
 
 // Internal helpers
 namespace internal {
