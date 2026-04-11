@@ -7,7 +7,7 @@ Single-Instruction-Multiple-Data (SIMD) vectorisation, cpp20 enables
 type-safety, performance, flexible templates and readable code.
 
 For info on using cpp20 see [Getting started with
-cpp20](https://nicchr.github.io/cpp20/vignettes/using_cpp20.Rmd)
+cpp20](https://nicchr.github.io/cpp20/vignettes/cpp20.Rmd)
 
 ### Design choices
 
