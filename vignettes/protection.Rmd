@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-### Motivation and design
+## Motivation and design
 
 Heavily inspired by cpp11's double-linked protection pool, this vignette explores cpp20's automatic protection design and benchmarks its overhead against cpp11. Like cpp11, cpp20 offers automatic protection for all cpp20 types enabling users of the API to not need to think about protection of every R object. 
 
@@ -23,7 +23,7 @@ cpp20 uses a double-linked protection pool design like cpp11, but instead of a s
 
 The vector list chunks initialise at size 2^10 and double in size every time a chunk is filled, to a maximum size of 2^14. While these sizes seem to strike a nice balance, they are somewhat arbitrary and likely not optimal, so there is likely room for improvement.
 
-### Protection benchmark: cpp11 vs cpp20
+## Protection benchmark: cpp11 vs cpp20
 
 All functions have been compiled with C++20, GCC 14.2.0 with -02 optimisations.
 
@@ -214,11 +214,11 @@ mark(cpp20_na_count(x))
 
 Counting values is a simple operation and because of its simplicity, the overhead associated with protection will dominate the benchmark. We can see that when removing the protection overhead and using the R C API directly, we get a baseline result of 30 microseconds. Think of that as the best possible result for this operation. The same operation with cpp11 results in a function execution time of 5 milliseconds, 180x slower than the R C API. Considerably better (but still relatively slower), `cpp20_na_count()` results in a function execution time of 730 microseconds, 27x slower than the R C API. This is much better though it still goes to show that for certain operations, one may want to consider other approaches where performance is critical.
 
-### cpp20 views: A solution to the protection overhead problem
+## cpp20 views: A solution to the protection overhead problem
 
 As we saw in the previous section, certain performance-heavy functions can be slowed down by cpp20 protection overhead. Luckily cpp20 offers some tools to avoid this if it becomes a real issue.
 
-**r_str_view**
+### r_str_view
 
 In the previous section, we extracted a temporary `r_str`, checked if it is `NA`, and then incremented the `NA` count if so. We didn't end up using the `r_str` element beyond just reading its value which means we could have improved performance by using `r_str_view`, a non-owning version of `r_str`.
 
@@ -245,7 +245,7 @@ mark(cpp20_fast_na_count(x))
 
 Looking at the benchmark results, we have effectively eliminated the protection overhead and the median execution time is much closer to that of the R C API.
 
-**view()**
+### view()
 
 We could have also used `view()`, a non-owning version of `get()` that extracts elements but in a non-owning context.
 
@@ -273,7 +273,7 @@ mark(cpp20_fast_na_count_v2(x))
 
 The results are similar to that of `cpp20_fast_na_count()`. 
 
-**Using views safely**
+### Using views safely
 
 views can be used to eliminate the small overhead associated with automatic protection of objects wrapping SEXP, but they must be used carefully. As demonstrated above, `r_str_view` is one such class which is a lightweight wrapper around a `SEXP` and never protects the underlying `SEXP`. Its lifetime must be shorter than the object it is pointing to.
 
