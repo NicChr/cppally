@@ -1,5 +1,7 @@
 
-# cpp20
+I first want to thank cpp11, its authors and contributors for the
+inspiration and for producing the excellent cpp11 package, without which
+I would not have written this package. \# cpp20
 
 cpp20 is a high-performance header-only library providing a rich C++20
 API for advanced R data manipulation. Leveraging C++20 Concepts, custom
