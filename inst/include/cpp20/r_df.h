@@ -185,9 +185,6 @@ struct r_df {
     void set_colnames(const r_vec<U>& colnames) {
         value.set_names(colnames);
     }
-
-    // IMPORTANT - indices are 1-indexed
-    // This has the benefit of allowing empty locations (0) and negative indexing
     template <internal::RSubscript U>
     r_df subset(const r_vec<U>& indices) const {
         if (ncol() == 0){

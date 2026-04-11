@@ -7,7 +7,7 @@
 
 namespace cpp20 {
 
-// 1-indexed match locations
+// match locations
 template <internal::RNumericSubscript U = r_int, RVal T>
 r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
 
@@ -33,7 +33,7 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
     auto val = needles.view(0);
     for (r_size_t i = 0; i < n_haystack; ++i){
       if (identical(val, haystack.view(i))){
-        out.set(0, U(static_cast<unwrap_t<U>>(i + 1)));
+        out.set(0, U(static_cast<unwrap_t<U>>(i)));
         return out;
       }
     }
@@ -68,7 +68,7 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
         if (!is_na(val)){
           size_t idx = static_cast<size_t>(static_cast<int64_t>(val) - min_val);
           if (is_na(p_table[idx])){
-            p_table[idx] = static_cast<int>(i) + 1;
+            p_table[idx] = static_cast<int>(i);
           }
         }
       }
@@ -77,7 +77,7 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
       int na_pos = na<r_int>();
       for (r_size_t i = 0; i < n_haystack; ++i) {
         if (is_na(p_haystack[i])){
-          na_pos = static_cast<int>(i) + 1;
+          na_pos = static_cast<int>(i);
           break;
         }
       }
@@ -104,7 +104,7 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
   lookup.reserve(internal::get_hash_map_reserve_size<T>(n_haystack));
 
   for (r_size_t i = 0; i < n_haystack; ++i) {
-    lookup.try_emplace(p_haystack[i], int_t(i) + int_t(1));
+    lookup.try_emplace(p_haystack[i], int_t(i));
   }
 
   // Match needles
