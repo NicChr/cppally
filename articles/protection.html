@@ -65,24 +65,20 @@
 
     
     
-<p>I first want to thank cpp11, its authors and contributors for the
-inspiration and for producing the excellent cpp11 package, without which
-I would not have written this package. This vignette explains cpp20’s
-automatic protection design and benchmarks its overhead against
-cpp11.</p>
 <div class="section level3">
-<h3 id="design">Design<a class="anchor" aria-label="anchor" href="#design"></a>
+<h3 id="motivation-and-design">Motivation and design<a class="anchor" aria-label="anchor" href="#motivation-and-design"></a>
 </h3>
-<p>Like cpp11, cpp20 offers automatic protection for all cpp20 types
-enabling users of the API to not need to think about protection of every
-R object.</p>
-<p>Inspired heavily by cpp11’s brilliant double-linked protection pool,
-cpp20 has a similar double-linked design, but instead of a single pair
-list, cpp20 implements a double-linked chain of VECSXP (vector list)
-chunks with a reference counting system.</p>
-<p>This offers much less overhead in inserting and releasing and
-practically free copying due to the reference counting design. Because
-we utilise VECSXP chunks, adding nodes is cheap (via
+<p>Heavily inspired by cpp11’s double-linked protection pool, this
+vignette explores cpp20’s automatic protection design and benchmarks its
+overhead against cpp11. Like cpp11, cpp20 offers automatic protection
+for all cpp20 types enabling users of the API to not need to think about
+protection of every R object.</p>
+<p>cpp20 uses a double-linked protection pool design like cpp11, but
+instead of a single pair list, we implement a double-linked chain of
+VECSXP (vector list) chunks with a reference counting system. This
+offers much less overhead in inserting and releasing and practically
+free copying due to the reference counting design. Because we utilise
+vector list chunks, adding nodes is cheap (via
 <code>SET_VECTOR_ELT()</code>). When an <code>r_sexp</code> is copied,
 we increment the reference count associated with that node and only
 release the node once the reference count is 0, which means all
