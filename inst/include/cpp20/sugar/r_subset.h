@@ -154,25 +154,24 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check) const {
     r_vec<T> out(n);
 
     if (check){
-      r_size_t xn = length(), k = 0;
+      r_size_t xn = length();
       unsigned_int_t na_val = unwrap(na<U>());
       unsigned_int_t j;
   
       for (r_size_t i = 0; i < n; ++i){
         j = unwrap(indices.get(i));
         if (static_cast<r_size_t>(j) < xn){
-          out.set(k++, view(static_cast<r_size_t>(j)));
+          out.set(i, view(static_cast<r_size_t>(j)));
         } else if (j > na_val){
           // If j > n_val then it is a negative signed integer
           abort("Negative indices are unsupported, use `invert = true`");
         } else {
           if constexpr (RScalar<T>){
-            out.set(k++, na<T>());
+            out.set(i, na<T>());
           }
         }
       }
-  
-      return out.resize(k);
+      return out;
     } else {
       for (r_size_t i = 0; i < n; ++i){
         out.set(i, view(unwrap(indices.get(i))));
