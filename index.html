@@ -56,29 +56,52 @@
 <div class="page-header"><h1 id="cpp20">cpp20<a class="anchor" aria-label="anchor" href="#cpp20"></a>
 </h1></div>
 <p>cpp20 is a high-performance header-only library providing a rich C++20 API for advanced R data manipulation. Leveraging C++20 Concepts, custom R-based classes, templated functions and Single-Instruction-Multiple-Data (SIMD) vectorisation, cpp20 enables type-safety, performance, flexible templates and readable code.</p>
-<p>For info on using cpp20 see <a href="vignettes/cpp20.Rmd">Getting started with cpp20</a></p>
+<p>For info on using cpp20 see <a href="https://nicchr.github.io/cpp20/articles/cpp20.html">Getting started with cpp20</a></p>
+<div class="section level2">
+<h2 id="design-choices">Design choices<a class="anchor" aria-label="anchor" href="#design-choices"></a>
+</h2>
 <div class="section level3">
-<h3 id="design-choices">Design choices<a class="anchor" aria-label="anchor" href="#design-choices"></a>
+<h3 id="templates">Templates<a class="anchor" aria-label="anchor" href="#templates"></a>
 </h3>
-<p><strong>Templates</strong></p>
 <p>cpp20 makes heavy use of templates for powerful object-oriented programming. While this offers a flexible framework for writing generic functions, it comes at the cost of slower compile times and larger binary sizes.</p>
-<p>Users can write and optionally register their own templates (to R). There are two main limitations to be aware of - a C++ specific one and an R specific one. The C++ limitation is that templates generally must be written in header files if they are to be used across multiple compilation units. The R limitation has to do with automatic template argument deduction. There is a workaround that I will discuss in a later section but it is not ideal.</p>
-<p><strong>Scalar R types and custom methods</strong></p>
+<p>Users can write and optionally register their own templates (to R). There are two main limitations to be aware of - a C++ specific one and an R specific one. The C++ limitation is that templates generally must be written in header files if they are to be used across multiple compilation units. The R limitation has to do with automatic template argument deduction. There is a workaround discussed in the main vignette <a href="https://nicchr.github.io/cpp20/articles/cpp20.html">Getting started with cpp20</a></p>
+</div>
+<div class="section level3">
+<h3 id="scalar-r-types-and-custom-methods">Scalar R types and custom methods<a class="anchor" aria-label="anchor" href="#scalar-r-types-and-custom-methods"></a>
+</h3>
 <p>cpp20 offers R-based C++ scalar types that are <code>NA</code> aware. To achieve this multiple methods such as binary arithmetic operators have been written to ensure <code>NA</code> is propagated correctly. While every attempt has been made to make this as fast as possible, it adds some overhead and in some cases can prevent effective vectorisation (via e.g. SIMD instructions). If you find that this is slowing things down too much you can work with the underlying C/C++ types using <code>unwrap_t&lt;&gt;</code> and <code>unwrap()</code>.</p>
-<p><strong>Automatic protection</strong></p>
-<p>Like the excellent cpp11 package, cpp20 also handles automatic protection for R objects.</p>
-<p>Heavily inspired by cpp11’s double-linked protection list, we also use a double-linked list system. Instead of a single pairlist, we use double-linked chain of vector list chunks. We find that this generally offers lower protection overhead. Furthermore, reference counting is utilised to make copying <code>r_sexp</code> cheaper by avoiding re-inserting copies into the protection list where possible.</p>
-<p>The same caveats surrounding R longjmp errors that apply to cpp11 protection also applies to cpp20.</p>
-<p><strong>R String views</strong></p>
-<p>To avoid the overhead associated with automatic protection entirely, one can use <code>r_str_view</code>, a non-owning class for R strings. <code>r_str_view</code> is designed for read-only and short-lived contexts such as accessing and manipulating the elements of a character vector. Using <code>r_str_view</code> guarantees that no extra re-protections occur when the string object is copied or moved due to the fact that it is simply a light wrapper around <code>SEXP</code>. Similar to <code>std::string_view</code>, the major caveat is that you must ensure the <code>r_str_view</code> object’s lifetime does not extend beyond the lifetime of the R string (CHARSXP) it is pointing to. See the Annex of the vignette.</p>
-<p><strong>No copy-on-write or copy-on-modify</strong></p>
+</div>
+<div class="section level3">
+<h3 id="automatic-protection">Automatic protection<a class="anchor" aria-label="anchor" href="#automatic-protection"></a>
+</h3>
+<p>Like the excellent cpp11 package, cpp20 also handles automatic protection for R objects. For more info see <a href="https://nicchr.github.io/cpp20/articles/protection.html">Automatic Protection</a></p>
+</div>
+<div class="section level3">
+<h3 id="interopability-with-the-r-c-api">Interopability with the R C API<a class="anchor" aria-label="anchor" href="#interopability-with-the-r-c-api"></a>
+</h3>
+<p>Using cpp20 and the R C API is generally discouraged.</p>
+<p>If R throws an error via <code>Rf_error()</code> a ‘longjmp’ will occur, meaning C++ destructors won’t run and memory that should have been released will not be released. If you really want to use the R C API and cpp20, you must make sure that either the code is exception safe (unlikely), or that R C API functions are called via cpp20’s <code>safe[]</code>. ### views</p>
+<p>To avoid the overhead associated with automatic protection entirely, one can use view types like e.g. <code>r_str_view</code>, a non-owning class for R strings. Vector member function <code>view()</code> also returns non-owning view-only vector elements. For more info on views see <a href="https://nicchr.github.io/cpp20/articles/protection.html">Automatic Protection</a></p>
+</div>
+<div class="section level3">
+<h3 id="no-copy-on-write-or-copy-on-modify">No copy-on-write or copy-on-modify<a class="anchor" aria-label="anchor" href="#no-copy-on-write-or-copy-on-modify"></a>
+</h3>
 <p>Deep copies are almost never triggered when modifying vectors, a design choice that contrasts cpp11’s copy-on-write approach. cpp20’s <code>r_vec&lt;T&gt;</code> member <code>set()</code> always modifies in-place. It is up to the user to ensure that a fresh vector is created before further manipulation or that it’s safe to modify the existing vector.</p>
-<p><strong>Differences between R and cpp20</strong></p>
+</div>
+<div class="section level3">
+<h3 id="lossy-coercion">Lossy coercion<a class="anchor" aria-label="anchor" href="#lossy-coercion"></a>
+</h3>
 <p>Any coercion that results in complete information loss is an error (partial is allowed, e.g. double -&gt; int). This means that for example <code>as&lt;r_int&gt;(r_str("a"))</code> will throw an error instead of returning an NA like R does with <code>as.integer("a")</code></p>
 <p>The benefit of this is that when registering C++ functions to R, inputs can be supplied flexibly without unexpected behaviour. Let’s say you have a function foo that expects an <code>r_int</code> but you give it an <code>r_dbl</code> without realising - this will implicitly coerce to <code>r_int</code> without throwing an error. If it can’t be coerced to integer without complete information loss (i.e non-parse-able string to integer), then an informative error is thrown. If we allowed implicit coercion to NA then we would need to be strict with inputs to balance things out.</p>
-<p><strong>Vector indexing</strong></p>
+</div>
+<div class="section level3">
+<h3 id="vector-indexing">Vector indexing<a class="anchor" aria-label="anchor" href="#vector-indexing"></a>
+</h3>
 <p>Most indexing is 0-based except when dealing with vectors of indices, which are 1-indexed. 1-indexed indices are used in <code><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset()</a></code>, <code><a href="https://rdrr.io/r/utils/apropos.html" class="external-link">find()</a></code>, and other functions which accept or return a vector of indices.</p>
-<p><strong>64-bit integers</strong></p>
+</div>
+<div class="section level3">
+<h3 id="id_64-bit-integers">64-bit integers<a class="anchor" aria-label="anchor" href="#id_64-bit-integers"></a>
+</h3>
 <p>On the C++ side, 64-bit integers are fully supported, including vectors. To return 64-bit integers to R we need the bit64 package to be loaded. cpp20 delegates the handling of 64-bit integer vectors to bit64 by marking them with the “integer64” class.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="op">[[</span><span class="at">cpp20</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>r_int64 as_int64<span class="op">(</span>r_int x<span class="op">){</span></span>
@@ -96,8 +119,13 @@
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">as_r_size_t</span>(<span class="dv">10</span><span class="dt">L</span>)</span>
 <span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>integer64</span>
 <span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">10</span></span></code></pre></div>
-<p><strong>Using R’s <code>NULL</code></strong></p>
+</div>
+<div class="section level3">
+<h3 id="using-rs-null">Using R’s <code>NULL</code>
+<a class="anchor" aria-label="anchor" href="#using-rs-null"></a>
+</h3>
 <p>The cpp20 version of R’s <code>R_NilValue</code> is <code>r_null</code> which is of type <code>r_sexp</code>. In an attempt to avoid the use of additional meta-programming tactics to deal with <code>r_null</code>, we allow vectors to be able to contain <code>r_null</code> which makes programming with R attributes easier. This means <code>r_vec&lt;T&gt;</code> objects can be <code>r_null</code>. To detect this, use the <code>is_null()</code> member function.</p>
+</div>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
