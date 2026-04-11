@@ -134,7 +134,7 @@ r_vec<V> clean_locs(const r_vec<U>& locs, const r_vec<T>& x){
 
 template <RVal T>
 template <internal::RSubscript U>
-inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check) const {
+inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check, bool invert) const {
 
   if (indices.is_null()){
     return *this;
@@ -142,11 +142,19 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check) const {
 
   if constexpr (RLogicalType<U> || RStringType<U>){
     if (is_long()){
-      return subset(internal::clean_locs<r_int64>(indices, *this), /*check=*/ false);
+      return subset(internal::clean_locs<r_int64>(indices, *this), /*check=*/ false, /*invert=*/ invert);
     } else {
-      return subset(internal::clean_locs<r_int>(indices, *this), /*check=*/ false);
+      return subset(internal::clean_locs<r_int>(indices, *this), /*check=*/ false, /*invert=*/ invert);
     }
   } else {
+
+    if (invert){
+      if (is_long()){
+        return subset(internal::exclude_locs<r_int64>(indices, length()), false, false);
+      } else {
+        return subset(internal::exclude_locs<r_int>(indices, length()), false, false);
+      }
+    }
 
     using unsigned_int_t = std::make_unsigned_t<unwrap_t<U>>;
     r_size_t n = indices.length();

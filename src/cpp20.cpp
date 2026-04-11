@@ -841,13 +841,13 @@ extern "C" SEXP _cpp20_test_var(SEXP x, SEXP na_rm) {
   END_CPP20
 }
 // test_subset.h
-extern "C" SEXP _cpp20_test_subset(SEXP x, SEXP i) {
+extern "C" SEXP _cpp20_test_subset(SEXP x, SEXP i, SEXP invert) {
   BEGIN_CPP20
-  return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP i_internal) -> decltype(cpp_to_sexp(test_subset(as<T>(x_internal), as<r_vec<U>>(i_internal)))) {
-        return cpp_to_sexp(test_subset(as<T>(x_internal), as<r_vec<U>>(i_internal)));
+  return dispatch_template_impl<2, 3, std::array<int, 3>{0, 1, -1}>(
+    []<typename T, typename U>(SEXP x_internal, SEXP i_internal, SEXP invert_internal) -> decltype(cpp_to_sexp(test_subset(as<T>(x_internal), as<r_vec<U>>(i_internal), as<bool>(invert_internal)))) {
+        return cpp_to_sexp(test_subset(as<T>(x_internal), as<r_vec<U>>(i_internal), as<bool>(invert_internal)));
     },
-    x, i
+    x, i, invert
   );
   END_CPP20
 }
@@ -997,7 +997,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20_test_str2",                          (DL_FUNC) &_cpp20_test_str2,                          1},
     {"_cpp20_test_str3",                          (DL_FUNC) &_cpp20_test_str3,                          1},
     {"_cpp20_test_str4",                          (DL_FUNC) &_cpp20_test_str4,                          1},
-    {"_cpp20_test_subset",                        (DL_FUNC) &_cpp20_test_subset,                        2},
+    {"_cpp20_test_subset",                        (DL_FUNC) &_cpp20_test_subset,                        3},
     {"_cpp20_test_sum",                           (DL_FUNC) &_cpp20_test_sum,                           2},
     {"_cpp20_test_sym",                           (DL_FUNC) &_cpp20_test_sym,                           1},
     {"_cpp20_test_template_null",                 (DL_FUNC) &_cpp20_test_template_null,                 1},

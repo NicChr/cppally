@@ -190,10 +190,10 @@ struct r_vec {
   }
 
   template <internal::RSubscript U> 
-  r_vec<T> subset(const r_vec<U>& indices, bool check = true) const;
+  r_vec<T> subset(const r_vec<U>& indices, bool check = true, bool invert = false) const;
 
-  r_vec<T> subset(r_size_t index, bool check = true) const {
-    return subset(r_vec<r_int64>(1, r_int64(static_cast<int64_t>(index))), check);
+  r_vec<T> subset(r_size_t index, bool check = true, bool invert = false) const {
+    return subset(r_vec<r_int64>(1, r_int64(static_cast<int64_t>(index))), check, invert);
   }
 
   r_vec<r_str_view> names() const {
