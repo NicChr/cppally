@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 cpp20 is a high-performance header-only library providing a rich C++20 API for advanced R data manipulation. Leveraging C++20 Concepts, custom R-based classes, templated functions and Single-Instruction-Multiple-Data (SIMD) vectorisation, cpp20 enables type-safety, performance, flexible templates and readable code.
 
 
-For info on using cpp20 see [Getting started with cpp20](vignettes/using_cpp20.Rmd)
+For info on using cpp20 see [Getting started with cpp20](vignettes/cpp20.Rmd)
 
 
 ### Design choices
