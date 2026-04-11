@@ -52,7 +52,10 @@
   </div>
 </nav><div class="container template-home">
 <div class="row">
-  <main id="main" class="col-md-9"><p>I first want to thank cpp11, its authors and contributors for the inspiration and for producing the excellent cpp11 package, without which I would not have written this package. # cpp20</p>
+  <main id="main" class="col-md-9"><p>I first want to thank cpp11, its authors and contributors for the inspiration and for producing the excellent cpp11 package, without which I would not have written this package.</p>
+<div class="section level1">
+<div class="page-header"><h1 id="cpp20">cpp20<a class="anchor" aria-label="anchor" href="#cpp20"></a>
+</h1></div>
 <p>cpp20 is a high-performance header-only library providing a rich C++20 API for advanced R data manipulation. Leveraging C++20 Concepts, custom R-based classes, templated functions and Single-Instruction-Multiple-Data (SIMD) vectorisation, cpp20 enables type-safety, performance, flexible templates and readable code.</p>
 <p>For info on using cpp20 see <a href="https://nicchr.github.io/cpp20/articles/cpp20.html">Getting started with cpp20</a></p>
 <div class="section level2">
@@ -123,6 +126,7 @@
 <a class="anchor" aria-label="anchor" href="#using-rs-null"></a>
 </h3>
 <p>The cpp20 version of R’s <code>R_NilValue</code> is <code>r_null</code> which is of type <code>r_sexp</code>. In an attempt to avoid the use of additional meta-programming tactics to deal with <code>r_null</code>, we allow vectors to be able to contain <code>r_null</code> which makes programming with R attributes easier. This means <code>r_vec&lt;T&gt;</code> objects can be <code>r_null</code>. To detect this, use the <code>is_null()</code> member function.</p>
+</div>
 </div>
 </div>
 

@@ -1,6 +1,6 @@
 # Automatic Protection
 
-### Motivation and design
+## Motivation and design
 
 Heavily inspired by cpp11’s double-linked protection pool, this vignette
 explores cpp20’s automatic protection design and benchmarks its overhead
@@ -23,7 +23,7 @@ time a chunk is filled, to a maximum size of 2^14. While these sizes
 seem to strike a nice balance, they are somewhat arbitrary and likely
 not optimal, so there is likely room for improvement.
 
-### Protection benchmark: cpp11 vs cpp20
+## Protection benchmark: cpp11 vs cpp20
 
 All functions have been compiled with C++20, GCC 14.2.0 with -02
 optimisations.
@@ -225,13 +225,13 @@ microseconds, 27x slower than the R C API. This is much better though it
 still goes to show that for certain operations, one may want to consider
 other approaches where performance is critical.
 
-### cpp20 views: A solution to the protection overhead problem
+## cpp20 views: A solution to the protection overhead problem
 
 As we saw in the previous section, certain performance-heavy functions
 can be slowed down by cpp20 protection overhead. Luckily cpp20 offers
 some tools to avoid this if it becomes a real issue.
 
-**r_str_view**
+### r_str_view
 
 In the previous section, we extracted a temporary `r_str`, checked if it
 is `NA`, and then incremented the `NA` count if so. We didn’t end up
@@ -264,7 +264,7 @@ Looking at the benchmark results, we have effectively eliminated the
 protection overhead and the median execution time is much closer to that
 of the R C API.
 
-**view()**
+### view()
 
 We could have also used `view()`, a non-owning version of
 [`get()`](https://rdrr.io/r/base/get.html) that extracts elements but in
@@ -294,7 +294,7 @@ mark(cpp20_fast_na_count_v2(x))
 
 The results are similar to that of `cpp20_fast_na_count()`.
 
-**Using views safely**
+### Using views safely
 
 views can be used to eliminate the small overhead associated with
 automatic protection of objects wrapping SEXP, but they must be used

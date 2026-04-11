@@ -65,9 +65,9 @@
 
     
     
-<div class="section level3">
-<h3 id="motivation-and-design">Motivation and design<a class="anchor" aria-label="anchor" href="#motivation-and-design"></a>
-</h3>
+<div class="section level2">
+<h2 id="motivation-and-design">Motivation and design<a class="anchor" aria-label="anchor" href="#motivation-and-design"></a>
+</h2>
 <p>Heavily inspired by cpp11’s double-linked protection pool, this
 vignette explores cpp20’s automatic protection design and benchmarks its
 overhead against cpp11. Like cpp11, cpp20 offers automatic protection
@@ -89,9 +89,9 @@ every time a chunk is filled, to a maximum size of 2^14. While these
 sizes seem to strike a nice balance, they are somewhat arbitrary and
 likely not optimal, so there is likely room for improvement.</p>
 </div>
-<div class="section level3">
-<h3 id="protection-benchmark-cpp11-vs-cpp20">Protection benchmark: cpp11 vs cpp20<a class="anchor" aria-label="anchor" href="#protection-benchmark-cpp11-vs-cpp20"></a>
-</h3>
+<div class="section level2">
+<h2 id="protection-benchmark-cpp11-vs-cpp20">Protection benchmark: cpp11 vs cpp20<a class="anchor" aria-label="anchor" href="#protection-benchmark-cpp11-vs-cpp20"></a>
+</h2>
 <p>All functions have been compiled with C++20, GCC 14.2.0 with -02
 optimisations.</p>
 <p><strong>Insert/release benchmark</strong></p>
@@ -253,13 +253,15 @@ time of 730 microseconds, 27x slower than the R C API. This is much
 better though it still goes to show that for certain operations, one may
 want to consider other approaches where performance is critical.</p>
 </div>
-<div class="section level3">
-<h3 id="cpp20-views-a-solution-to-the-protection-overhead-problem">cpp20 views: A solution to the protection overhead problem<a class="anchor" aria-label="anchor" href="#cpp20-views-a-solution-to-the-protection-overhead-problem"></a>
-</h3>
+<div class="section level2">
+<h2 id="cpp20-views-a-solution-to-the-protection-overhead-problem">cpp20 views: A solution to the protection overhead problem<a class="anchor" aria-label="anchor" href="#cpp20-views-a-solution-to-the-protection-overhead-problem"></a>
+</h2>
 <p>As we saw in the previous section, certain performance-heavy
 functions can be slowed down by cpp20 protection overhead. Luckily cpp20
 offers some tools to avoid this if it becomes a real issue.</p>
-<p><strong>r_str_view</strong></p>
+<div class="section level3">
+<h3 id="r_str_view">r_str_view<a class="anchor" aria-label="anchor" href="#r_str_view"></a>
+</h3>
 <p>In the previous section, we extracted a temporary <code>r_str</code>,
 checked if it is <code>NA</code>, and then incremented the
 <code>NA</code> count if so. We didn’t end up using the
@@ -284,7 +286,10 @@ non-owning version of <code>r_str</code>.</p>
 <p>Looking at the benchmark results, we have effectively eliminated the
 protection overhead and the median execution time is much closer to that
 of the R C API.</p>
-<p><strong>view()</strong></p>
+</div>
+<div class="section level3">
+<h3 id="view">view()<a class="anchor" aria-label="anchor" href="#view"></a>
+</h3>
 <p>We could have also used <code>view()</code>, a non-owning version of
 <code><a href="https://rdrr.io/r/base/get.html" class="external-link">get()</a></code> that extracts elements but in a non-owning
 context.</p>
@@ -306,7 +311,10 @@ context.</p>
 <span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="dv">1</span> cpp20_fast_na_c… <span class="fl">67.2</span>µs <span class="fl">70.6</span>µs    <span class="fl">13221.</span>    <span class="fl">8.05</span>KB        <span class="dv">0</span>  <span class="dv">6602</span>     <span class="dv">0</span>      <span class="dv">499</span>ms <span class="sc">&lt;</span>int<span class="sc">&gt;</span>  <span class="er">&lt;</span>Rprofmem<span class="sc">&gt;</span> <span class="er">&lt;</span>bench_tm<span class="sc">&gt;</span> <span class="er">&lt;</span>tibble<span class="sc">&gt;</span></span></code></pre></div>
 <p>The results are similar to that of
 <code>cpp20_fast_na_count()</code>.</p>
-<p><strong>Using views safely</strong></p>
+</div>
+<div class="section level3">
+<h3 id="using-views-safely">Using views safely<a class="anchor" aria-label="anchor" href="#using-views-safely"></a>
+</h3>
 <p>views can be used to eliminate the small overhead associated with
 automatic protection of objects wrapping SEXP, but they must be used
 carefully. As demonstrated above, <code>r_str_view</code> is one such
@@ -344,6 +352,7 @@ etc).</p>
 performance-critical functions with the downside being that one must pay
 more attention to view object lifetimes to ensure they do not outlive
 the SEXP they are pointing to.</p>
+</div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

@@ -3,7 +3,7 @@
 To get started we will briefly show how to register a C++ function to R
 and go through the main scalar types that cpp20 offers.
 
-### Registering R functions
+## Registering R functions
 
 To make a C++ function available to R we use the `[[cpp20::register]]`
 tag.
@@ -25,13 +25,13 @@ Now the function is available in R
 Hello World!
 ```
 
-### C++ types
+## C++ types
 
 cpp20 offers a rich set of R types in C++ that are NA-aware. This means
 that common arithmetic and logical operations will account for `NA` in a
 similar fashion to R.
 
-#### r_lgl
+### r_lgl
 
 cpp20’s scalar version of `logical`, `r_lgl` can represent true, false
 or NA.
@@ -135,11 +135,11 @@ underlying C/C++ types as well as other member functions.
 
 `NA` values can be accessed via the template function `na<T>`
 
-#### C++ NA values and their R C API equivalents
+### C++ NA values and their R C API equivalents
 
 [TABLE]
 
-#### Accessing the underlying types and values
+### Accessing the underlying types and values
 
 While it is generally recommended not to access the underlying objects,
 you can do so with `unwrap()` which returns the underlying C/C++ value.
@@ -164,7 +164,7 @@ primitive_t y = unwrap(x);
 return x + y; // answer = 20
 ```
 
-### Vectors
+## Vectors
 
 cpp20 vectors are templated and can be thought of as containers of the
 scalar elements we talked about previously like `r_int`, `r_dbl`, etc.
@@ -195,7 +195,7 @@ r_vec<r_int> new_filled_integer_vector2(int n, r_int fill_value){
 }
 ```
 
-### inline vectors
+## inline vectors
 
 To create inline vectors, use `make_vec<>`
 
@@ -258,7 +258,7 @@ r_vec<r_sexp> all_vectors(){
 }
 ```
 
-### Concepts
+## Concepts
 
 One of the most powerful features of C++20 are concepts. These allow
 users to write human-readable templates and constraints. For example
@@ -288,7 +288,7 @@ For info, the `RMathType` concept contains the following types: `r_lgl`,
 
 For a list of all cpp20 concepts, please see the **Annex**
 
-### Coercion
+## Coercion
 
 To coerce from one scalar to another we can use `as<T>`
 
@@ -362,7 +362,7 @@ r_vec<r_sexp> coercions(){
 [1] 2.5
 ```
 
-### Strings
+## Strings
 
 cpp20 provides the useful string type `r_str`
 
@@ -380,7 +380,7 @@ hello_str.c_str() // C-style string
 hello_str.cpp_str() // C++ style string
 ```
 
-### Symbols
+## Symbols
 
 Symbols are assumed to always be protected and so don’t have the same
 overhead issues that `r_str` has. We can easily create symbols using the
@@ -448,7 +448,7 @@ r_vec<r_int> cpp_lengths2(const r_vec<r_sexp>& x){
 }
 ```
 
-### Factors
+## Factors
 
 We can create a factor via `r_factors()`
 
@@ -492,7 +492,7 @@ letter_fct |>
 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
 ```
 
-### Attributes
+## Attributes
 
 Attributes can be manipulated via functions defined in the attr
 namespace.
@@ -511,7 +511,7 @@ namespace.
 - `modify_attrs()` - Modifies current attributes but doesn’t remove any
   existing ones
 
-### Sugar functions
+## Sugar functions
 
 cpp20 also offers many useful and high-performance common functions in
 cpp20/sugar
@@ -584,11 +584,32 @@ deviation - `gcd()` - Greatest common divisor -
 [`lcm()`](https://rdrr.io/r/graphics/layout.html) - Lowest common
 multiple
 
-### templates
+## templates
 
-Templates must be defined in header files instead of cpp files. While
-most templates can be registered to R, explicit instantiation (from R)
-is impossible.
+### Registering templates
+
+To register a C++ template to R, one must declare the
+`[[cpp20::register]]` target after the template declaration. Also worth
+noting that templates must be defined in header files instead of cpp
+files.
+
+``` cpp
+#pragma once
+
+#include <cpp20.hpp>
+using namespace cpp20;
+
+template <RStringType T>
+[[cpp20::register]]
+void my_print(T x){
+  print(x.c_str());
+}
+```
+
+### Explicit instantiation from R
+
+While most templates can be registered to R, explicit instantiation
+(from R) is impossible.
 
 ``` cpp
 template <RScalar T>
@@ -713,7 +734,7 @@ Error: Implicit NA coercion detected from r_str to r_dbl, please ensure data can
 Thankfully due to the way cpp20 is strict about completely lossy
 coercions, an informative error is thrown.
 
-**Symbols**
+### Symbols in R-registered templates
 
 `r_sym` is unsupported in templates when it’s part of a template
 argument but is supported when the argument is explicitly an `r_sym`.
@@ -733,65 +754,9 @@ symbol_to_string(hello_world_symbol)
 [1] "hello world!"
 ```
 
-### Registering templates
-
-To register a C++ template to R, one must declare the
-`[[cpp20::register]]` target after the template declaration.
-
-``` cpp
-#include <cpp20.hpp>
-using namespace cpp20;
-
-template <RStringType T>
-[[cpp20::register]]
-void my_print(T x){
-  print(x.c_str());
-}
-```
-
 ### Annex
 
-#### views
-
-As briefly mentioned earlier, views can be used to eliminate the small
-overhead associated with automatic protection of objects wrapping SEXP.
-`r_str_view` is one such class which is a lightweight around a `SEXP`
-and never protects the underlying `SEXP`. Its lifetime must be shorter
-than the object it is pointing to.
-
-**DO**:
-
-``` cpp
-void good(r_str x){
-    r_str_view str = x;
-    if (str.cpp_str() == "true"){
-    print("true");
-    } else {
-    print("false");
-    }
-}
-```
-
-**DON’T**:
-
-``` cpp
-r_str_view bar(){
-    r_str new_str("I will be destroyed at the end of `bar()`");
-    
-    r_str_view bad_str = new_str; // A view of new_str
-    return bad_str; // Points to underlying CHARSXP but nothing protecting it
-}
-```
-
-The above is a classic example of what **not** to do with string views,
-and that is have the view outlive the owner. In this case `bad_str` is
-returned at the end of `bar()` at which point `new_str` goes out of
-scope and gets destroyed. This means nothing is protecting the
-underlying `CHARSXP` that `new_str` was protecting and once that
-`CHARSXP` is garbage-collected by R, `bad_str` will become a
-dangling-pointer and you will get a memory leak.
-
-#### All core cpp20 concepts
+### All core cpp20 concepts
 
 - RIntegerType - Includes `r_lgl`, `r_int`, `r_int64`
 

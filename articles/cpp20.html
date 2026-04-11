@@ -67,9 +67,9 @@
     
 <p>To get started we will briefly show how to register a C++ function to
 R and go through the main scalar types that cpp20 offers.</p>
-<div class="section level3">
-<h3 id="registering-r-functions">Registering R functions<a class="anchor" aria-label="anchor" href="#registering-r-functions"></a>
-</h3>
+<div class="section level2">
+<h2 id="registering-r-functions">Registering R functions<a class="anchor" aria-label="anchor" href="#registering-r-functions"></a>
+</h2>
 <p>To make a C++ function available to R we use the
 <code>[[cpp20::register]]</code> tag.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;cpp20.hpp&gt;</span></span>
@@ -83,15 +83,15 @@ R and go through the main scalar types that cpp20 offers.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="sc">&gt;</span> <span class="fu">hello_world</span>()</span>
 <span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>Hello World<span class="sc">!</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="c-types">C++ types<a class="anchor" aria-label="anchor" href="#c-types"></a>
-</h3>
+<div class="section level2">
+<h2 id="c-types">C++ types<a class="anchor" aria-label="anchor" href="#c-types"></a>
+</h2>
 <p>cpp20 offers a rich set of R types in C++ that are NA-aware. This
 means that common arithmetic and logical operations will account for
 <code>NA</code> in a similar fashion to R.</p>
-<div class="section level4">
-<h4 id="r_lgl">r_lgl<a class="anchor" aria-label="anchor" href="#r_lgl"></a>
-</h4>
+<div class="section level3">
+<h3 id="r_lgl">r_lgl<a class="anchor" aria-label="anchor" href="#r_lgl"></a>
+</h3>
 <p>cpp20’s scalar version of <code>logical</code>, <code>r_lgl</code>
 can represent true, false or NA.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>r_lgl r_true</span>
@@ -248,9 +248,9 @@ and data frames&lt;/p&gt;"><sup>2</sup></a>
 <p><code>NA</code> values can be accessed via the template function
 <code>na&lt;T&gt;</code></p>
 </div>
-<div class="section level4">
-<h4 id="c-na-values-and-their-r-c-api-equivalents">C++ NA values and their R C API equivalents<a class="anchor" aria-label="anchor" href="#c-na-values-and-their-r-c-api-equivalents"></a>
-</h4>
+<div class="section level3">
+<h3 id="c-na-values-and-their-r-c-api-equivalents">C++ NA values and their R C API equivalents<a class="anchor" aria-label="anchor" href="#c-na-values-and-their-r-c-api-equivalents"></a>
+</h3>
 <table class="table">
 <colgroup>
 <col width="32%">
@@ -336,9 +336,9 @@ true.&lt;/p&gt;"><sup>4</sup></a><br><br><br>
 </tbody>
 </table>
 </div>
-<div class="section level4">
-<h4 id="accessing-the-underlying-types-and-values">Accessing the underlying types and values<a class="anchor" aria-label="anchor" href="#accessing-the-underlying-types-and-values"></a>
-</h4>
+<div class="section level3">
+<h3 id="accessing-the-underlying-types-and-values">Accessing the underlying types and values<a class="anchor" aria-label="anchor" href="#accessing-the-underlying-types-and-values"></a>
+</h3>
 <p>While it is generally recommended not to access the underlying
 objects, you can do so with <code>unwrap()</code> which returns the
 underlying C/C++ value. For example, <code>unwrap(r_int(5))</code> will
@@ -358,9 +358,9 @@ allow this to be done consistently.</p>
 <span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="cf">return</span> x <span class="op">+</span> y<span class="op">;</span> <span class="co">// answer = 20</span></span></code></pre></div>
 </div>
 </div>
-<div class="section level3">
-<h3 id="vectors">Vectors<a class="anchor" aria-label="anchor" href="#vectors"></a>
-</h3>
+<div class="section level2">
+<h2 id="vectors">Vectors<a class="anchor" aria-label="anchor" href="#vectors"></a>
+</h2>
 <p>cpp20 vectors are templated and can be thought of as containers of
 the scalar elements we talked about previously like <code>r_int</code>,
 <code>r_dbl</code>, etc.</p>
@@ -387,9 +387,9 @@ the scalar elements we talked about previously like <code>r_int</code>,
 <span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a>  <span class="cf">return</span> out<span class="op">;</span></span>
 <span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="inline-vectors">inline vectors<a class="anchor" aria-label="anchor" href="#inline-vectors"></a>
-</h3>
+<div class="section level2">
+<h2 id="inline-vectors">inline vectors<a class="anchor" aria-label="anchor" href="#inline-vectors"></a>
+</h2>
 <p>To create inline vectors, use <code>make_vec&lt;&gt;</code></p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;cpp20.hpp&gt;</span></span>
 <span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="kw">using</span> <span class="kw">namespace</span> cpp20<span class="op">;</span></span>
@@ -437,9 +437,9 @@ the scalar elements we talked about previously like <code>r_int</code>,
 <span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a>  <span class="op">);</span></span>
 <span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="concepts">Concepts<a class="anchor" aria-label="anchor" href="#concepts"></a>
-</h3>
+<div class="section level2">
+<h2 id="concepts">Concepts<a class="anchor" aria-label="anchor" href="#concepts"></a>
+</h2>
 <p>One of the most powerful features of C++20 are concepts. These allow
 users to write human-readable templates and constraints. For example
 r_math.h uses the <code>RMathType</code> concept for custom math
@@ -463,9 +463,9 @@ types: <code>r_lgl</code>, <code>r_int</code>, <code>r_int64</code> and
 <p>For a list of all cpp20 concepts, please see the
 <strong>Annex</strong></p>
 </div>
-<div class="section level3">
-<h3 id="coercion">Coercion<a class="anchor" aria-label="anchor" href="#coercion"></a>
-</h3>
+<div class="section level2">
+<h2 id="coercion">Coercion<a class="anchor" aria-label="anchor" href="#coercion"></a>
+</h2>
 <p>To coerce from one scalar to another we can use
 <code>as&lt;T&gt;</code></p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;cpp20.hpp&gt;</span></span>
@@ -519,9 +519,9 @@ coerce from a scalar to a vector or vice versa</p>
 <span id="cb18-11"><a href="#cb18-11" tabindex="-1"></a>[[<span class="dv">4</span>]]</span>
 <span id="cb18-12"><a href="#cb18-12" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">2.5</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="strings">Strings<a class="anchor" aria-label="anchor" href="#strings"></a>
-</h3>
+<div class="section level2">
+<h2 id="strings">Strings<a class="anchor" aria-label="anchor" href="#strings"></a>
+</h2>
 <p>cpp20 provides the useful string type <code>r_str</code></p>
 <p>We can create R strings easily</p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a>r_str hello_str<span class="op">(</span><span class="st">"hello"</span><span class="op">);</span></span></code></pre></div>
@@ -530,14 +530,13 @@ coerce from a scalar to a vector or vice versa</p>
 <div class="sourceCode" id="cb20"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>hello_str<span class="op">.</span>c_str<span class="op">()</span> <span class="co">// C-style string</span></span>
 <span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>hello_str<span class="op">.</span>cpp_str<span class="op">()</span> <span class="co">// C++ style string</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="symbols">Symbols<a class="anchor" aria-label="anchor" href="#symbols"></a>
-</h3>
+<div class="section level2">
+<h2 id="symbols">Symbols<a class="anchor" aria-label="anchor" href="#symbols"></a>
+</h2>
 <p>Symbols are assumed to always be protected and so don’t have the same
 overhead issues that <code>r_str</code> has. We can easily create
 symbols using the <code>const char*</code> constructor</p>
 <div class="sourceCode" id="cb21"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a>r_sym hello_sym<span class="op">(</span><span class="st">"hello"</span><span class="op">);</span></span></code></pre></div>
-</div>
 <div class="section level3">
 <h3 id="lists">Lists<a class="anchor" aria-label="anchor" href="#lists"></a>
 </h3>
@@ -592,9 +591,10 @@ calculate list lengths</p>
 <span id="cb23-18"><a href="#cb23-18" tabindex="-1"></a>    <span class="cf">return</span> out<span class="op">;</span></span>
 <span id="cb23-19"><a href="#cb23-19" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="factors">Factors<a class="anchor" aria-label="anchor" href="#factors"></a>
-</h3>
+</div>
+<div class="section level2">
+<h2 id="factors">Factors<a class="anchor" aria-label="anchor" href="#factors"></a>
+</h2>
 <p>We can create a factor via <code>r_factors()</code></p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;cpp20.hpp&gt;</span></span>
 <span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="kw">using</span> <span class="kw">namespace</span> cpp20<span class="op">;</span></span>
@@ -624,9 +624,9 @@ vector, use the public <code>codes()</code> member function</p>
 <span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a>    <span class="fu">factor_codes</span>()</span>
 <span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a><span class="dv">1</span>  <span class="dv">2</span>  <span class="dv">3</span>  <span class="dv">4</span>  <span class="dv">5</span>  <span class="dv">6</span>  <span class="dv">7</span>  <span class="dv">8</span>  <span class="dv">9</span> <span class="dv">10</span> <span class="dv">11</span> <span class="dv">12</span> <span class="dv">13</span> <span class="dv">14</span> <span class="dv">15</span> <span class="dv">16</span> <span class="dv">17</span> <span class="dv">18</span> <span class="dv">19</span> <span class="dv">20</span> <span class="dv">21</span> <span class="dv">22</span> <span class="dv">23</span> <span class="dv">24</span> <span class="dv">25</span> <span class="dv">26</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="attributes">Attributes<a class="anchor" aria-label="anchor" href="#attributes"></a>
-</h3>
+<div class="section level2">
+<h2 id="attributes">Attributes<a class="anchor" aria-label="anchor" href="#attributes"></a>
+</h2>
 <p>Attributes can be manipulated via functions defined in the attr
 namespace.</p>
 <ul>
@@ -655,9 +655,9 @@ specified classes?</li>
 doesn’t remove any existing ones</li>
 </ul>
 </div>
-<div class="section level3">
-<h3 id="sugar-functions">Sugar functions<a class="anchor" aria-label="anchor" href="#sugar-functions"></a>
-</h3>
+<div class="section level2">
+<h2 id="sugar-functions">Sugar functions<a class="anchor" aria-label="anchor" href="#sugar-functions"></a>
+</h2>
 <p>cpp20 also offers many useful and high-performance common functions
 in cpp20/sugar</p>
 <ul>
@@ -719,161 +719,135 @@ values (there is also a scalar version) - <code><a href="https://rdrr.io/r/stats
 - Greatest common divisor - <code><a href="https://rdrr.io/r/graphics/layout.html" class="external-link">lcm()</a></code> - Lowest common
 multiple</p>
 </div>
+<div class="section level2">
+<h2 id="templates">templates<a class="anchor" aria-label="anchor" href="#templates"></a>
+</h2>
 <div class="section level3">
-<h3 id="templates">templates<a class="anchor" aria-label="anchor" href="#templates"></a>
+<h3 id="registering-templates">Registering templates<a class="anchor" aria-label="anchor" href="#registering-templates"></a>
 </h3>
-<p>Templates must be defined in header files instead of cpp files. While
-most templates can be registered to R, explicit instantiation (from R)
-is impossible.</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RScalar T<span class="op">&gt;</span></span>
-<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cpp20</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a>T scalar_init<span class="op">(){</span></span>
-<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a>    <span class="cf">return</span> T<span class="op">();</span></span>
-<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>To register a C++ template to R, one must declare the
+<code>[[cpp20::register]]</code> target after the template declaration.
+Also worth noting that templates must be defined in header files instead
+of cpp files.</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="pp">#pragma once</span></span>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a></span>
+<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;cpp20.hpp&gt;</span></span>
+<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a><span class="kw">using</span> <span class="kw">namespace</span> cpp20<span class="op">;</span></span>
+<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a></span>
+<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RStringType T<span class="op">&gt;</span></span>
+<span id="cb28-7"><a href="#cb28-7" tabindex="-1"></a><span class="op">[[</span><span class="at">cpp20</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb28-8"><a href="#cb28-8" tabindex="-1"></a><span class="dt">void</span> my_print<span class="op">(</span>T x<span class="op">){</span></span>
+<span id="cb28-9"><a href="#cb28-9" tabindex="-1"></a>  print<span class="op">(</span>x<span class="op">.</span>c_str<span class="op">());</span></span>
+<span id="cb28-10"><a href="#cb28-10" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="explicit-instantiation-from-r">Explicit instantiation from R<a class="anchor" aria-label="anchor" href="#explicit-instantiation-from-r"></a>
+</h3>
+<p>While most templates can be registered to R, explicit instantiation
+(from R) is impossible.</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RScalar T<span class="op">&gt;</span></span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cpp20</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a>T scalar_init<span class="op">(){</span></span>
+<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a>    <span class="cf">return</span> T<span class="op">();</span></span>
+<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>In C++ you would call this template like so</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a>scalar_init<span class="op">&lt;</span>r_int<span class="op">&gt;();</span></span></code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a>scalar_init<span class="op">&lt;</span>r_int<span class="op">&gt;();</span></span></code></pre></div>
 <p>In R we naturally can’t do this so one alternative is to define a
 prototype argument to allow argument deduction from that</p>
-<div class="sourceCode" id="cb30"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> T<span class="op">&gt;</span></span>
-<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cpp20</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb30-3"><a href="#cb30-3" tabindex="-1"></a>T scalar_init<span class="op">(</span>T ptype<span class="op">){</span></span>
-<span id="cb30-4"><a href="#cb30-4" tabindex="-1"></a>    <span class="cf">return</span> T<span class="op">();</span></span>
-<span id="cb30-5"><a href="#cb30-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> T<span class="op">&gt;</span></span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cpp20</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a>T scalar_init<span class="op">(</span>T ptype<span class="op">){</span></span>
+<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a>    <span class="cf">return</span> T<span class="op">();</span></span>
+<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>And then in R</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="fu">lapply</span>(iris, scalar_init)</span>
-<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a></span>
-<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a><span class="sc">$</span>Sepal.Length</span>
-<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a><span class="fu">numeric</span>(<span class="dv">0</span>)</span>
-<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a></span>
-<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a><span class="sc">$</span>Sepal.Width</span>
-<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a><span class="fu">numeric</span>(<span class="dv">0</span>)</span>
-<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a></span>
-<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a><span class="sc">$</span>Petal.Length</span>
-<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a><span class="fu">numeric</span>(<span class="dv">0</span>)</span>
-<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a></span>
-<span id="cb31-12"><a href="#cb31-12" tabindex="-1"></a><span class="sc">$</span>Petal.Width</span>
-<span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a><span class="fu">numeric</span>(<span class="dv">0</span>)</span>
-<span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a></span>
-<span id="cb31-15"><a href="#cb31-15" tabindex="-1"></a><span class="sc">$</span>Species</span>
-<span id="cb31-16"><a href="#cb31-16" tabindex="-1"></a><span class="fu">factor</span>()</span>
-<span id="cb31-17"><a href="#cb31-17" tabindex="-1"></a>Levels<span class="sc">:</span></span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="fu">lapply</span>(iris, scalar_init)</span>
+<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a></span>
+<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a><span class="sc">$</span>Sepal.Length</span>
+<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a><span class="fu">numeric</span>(<span class="dv">0</span>)</span>
+<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a></span>
+<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a><span class="sc">$</span>Sepal.Width</span>
+<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a><span class="fu">numeric</span>(<span class="dv">0</span>)</span>
+<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a></span>
+<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a><span class="sc">$</span>Petal.Length</span>
+<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a><span class="fu">numeric</span>(<span class="dv">0</span>)</span>
+<span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a></span>
+<span id="cb32-12"><a href="#cb32-12" tabindex="-1"></a><span class="sc">$</span>Petal.Width</span>
+<span id="cb32-13"><a href="#cb32-13" tabindex="-1"></a><span class="fu">numeric</span>(<span class="dv">0</span>)</span>
+<span id="cb32-14"><a href="#cb32-14" tabindex="-1"></a></span>
+<span id="cb32-15"><a href="#cb32-15" tabindex="-1"></a><span class="sc">$</span>Species</span>
+<span id="cb32-16"><a href="#cb32-16" tabindex="-1"></a><span class="fu">factor</span>()</span>
+<span id="cb32-17"><a href="#cb32-17" tabindex="-1"></a>Levels<span class="sc">:</span></span></code></pre></div>
 <p>Generally speaking most templates won’t need explicit instantiation
 and we can rely on automatic deduction</p>
-<div class="sourceCode" id="cb32"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RVector T<span class="op">&gt;</span></span>
-<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cpp20</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a><span class="dt">int</span> cpp_length<span class="op">(</span>T vec<span class="op">){</span></span>
-<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a>    <span class="cf">return</span> vec<span class="op">.</span>length<span class="op">();</span></span>
-<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="fu">cpp_length</span>(letters)</span>
-<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">26</span></span></code></pre></div>
+<div class="sourceCode" id="cb33"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RVector T<span class="op">&gt;</span></span>
+<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cpp20</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a><span class="dt">int</span> cpp_length<span class="op">(</span>T vec<span class="op">){</span></span>
+<span id="cb33-4"><a href="#cb33-4" tabindex="-1"></a>    <span class="cf">return</span> vec<span class="op">.</span>length<span class="op">();</span></span>
+<span id="cb33-5"><a href="#cb33-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="fu">cpp_length</span>(letters)</span>
+<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">26</span></span></code></pre></div>
 <p><code>RVector</code> is a concept that includes all R atomic vectors
 (including 64-bit integer) and lists. As it was specified as the
 template argument type, if we supply an argument that doesn’t satisfy
 RVector (i.e isn’t a vector), then cpp20’s R dispatch code will catch
 this and return an error.</p>
-<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="fu">cpp_length</span>(iris<span class="sc">$</span>Species)</span>
-<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a></span>
-<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a>Error<span class="sc">:</span> No matching template instantiation found <span class="cf">for</span> input types</span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="fu">cpp_length</span>(iris<span class="sc">$</span>Species)</span>
+<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a></span>
+<span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a>Error<span class="sc">:</span> No matching template instantiation found <span class="cf">for</span> input types</span></code></pre></div>
 <p>For non-template functions the input type must be specified</p>
-<div class="sourceCode" id="cb35"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="op">[[</span><span class="at">cpp20</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a>r_dbl add_half<span class="op">(</span>r_dbl x<span class="op">){</span></span>
-<span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a>  <span class="cf">return</span> x <span class="op">+</span> <span class="fl">0.5</span><span class="op">;</span></span>
-<span id="cb35-4"><a href="#cb35-4" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="fu">add_half</span>(<span class="fl">1.5</span>) <span class="co"># Double</span></span>
-<span id="cb36-2"><a href="#cb36-2" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">2</span></span></code></pre></div>
+<div class="sourceCode" id="cb36"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="op">[[</span><span class="at">cpp20</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb36-2"><a href="#cb36-2" tabindex="-1"></a>r_dbl add_half<span class="op">(</span>r_dbl x<span class="op">){</span></span>
+<span id="cb36-3"><a href="#cb36-3" tabindex="-1"></a>  <span class="cf">return</span> x <span class="op">+</span> <span class="fl">0.5</span><span class="op">;</span></span>
+<span id="cb36-4"><a href="#cb36-4" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a><span class="fu">add_half</span>(<span class="fl">1.5</span>) <span class="co"># Double</span></span>
+<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">2</span></span></code></pre></div>
 <p>We can even supply an integer (<code>r_int</code>) because the
 integer is coerced to a double (<code>r_dbl</code>) internally via
 <code>as&lt;r_dbl&gt;</code></p>
-<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a><span class="fu">add_half</span>(<span class="dv">1</span><span class="dt">L</span>) <span class="co"># Integer works too</span></span>
-<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">1.5</span></span></code></pre></div>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a><span class="fu">add_half</span>(<span class="dv">1</span><span class="dt">L</span>) <span class="co"># Integer works too</span></span>
+<span id="cb38-2"><a href="#cb38-2" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">1.5</span></span></code></pre></div>
 <p>The internal generated code looks like this in src/cpp20.cpp</p>
-<div class="sourceCode" id="cb38"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a></span>
-<span id="cb38-2"><a href="#cb38-2" tabindex="-1"></a><span class="co">// readme.h</span></span>
-<span id="cb38-3"><a href="#cb38-3" tabindex="-1"></a>r_dbl add_half<span class="op">(</span>r_dbl x<span class="op">);</span></span>
-<span id="cb38-4"><a href="#cb38-4" tabindex="-1"></a><span class="at">extern</span> <span class="st">"C"</span> SEXP _cpp20_add_half<span class="op">(</span>SEXP x<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb38-5"><a href="#cb38-5" tabindex="-1"></a>  BEGIN_CPP20</span>
-<span id="cb38-6"><a href="#cb38-6" tabindex="-1"></a>  <span class="cf">return</span> cpp_to_sexp<span class="op">(</span>add_half<span class="op">(</span>as<span class="op">&lt;</span>r_dbl<span class="op">&gt;(</span>x<span class="op">)));</span></span>
-<span id="cb38-7"><a href="#cb38-7" tabindex="-1"></a>  END_CPP20</span>
-<span id="cb38-8"><a href="#cb38-8" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb39"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a></span>
+<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="co">// readme.h</span></span>
+<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a>r_dbl add_half<span class="op">(</span>r_dbl x<span class="op">);</span></span>
+<span id="cb39-4"><a href="#cb39-4" tabindex="-1"></a><span class="at">extern</span> <span class="st">"C"</span> SEXP _cpp20_add_half<span class="op">(</span>SEXP x<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb39-5"><a href="#cb39-5" tabindex="-1"></a>  BEGIN_CPP20</span>
+<span id="cb39-6"><a href="#cb39-6" tabindex="-1"></a>  <span class="cf">return</span> cpp_to_sexp<span class="op">(</span>add_half<span class="op">(</span>as<span class="op">&lt;</span>r_dbl<span class="op">&gt;(</span>x<span class="op">)));</span></span>
+<span id="cb39-7"><a href="#cb39-7" tabindex="-1"></a>  END_CPP20</span>
+<span id="cb39-8"><a href="#cb39-8" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>Notice the <code>as&lt;r_dbl&gt;(x)</code>, this is the line that
 coerces our integer to a double correctly</p>
 <p>What happens if we supply an input that can’t be coerced to an
 <code>r_dbl</code>?</p>
-<div class="sourceCode" id="cb39"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a>add_half<span class="op">(</span><span class="st">"A"</span><span class="op">)</span></span>
-<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a></span>
-<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a>Error<span class="op">:</span> Implicit NA coercion detected from r_str to r_dbl<span class="op">,</span> please ensure data can be coerced without complete loss of information</span></code></pre></div>
+<div class="sourceCode" id="cb40"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a>add_half<span class="op">(</span><span class="st">"A"</span><span class="op">)</span></span>
+<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a></span>
+<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a>Error<span class="op">:</span> Implicit NA coercion detected from r_str to r_dbl<span class="op">,</span> please ensure data can be coerced without complete loss of information</span></code></pre></div>
 <p>Thankfully due to the way cpp20 is strict about completely lossy
 coercions, an informative error is thrown.</p>
-<p><strong>Symbols</strong></p>
+</div>
+<div class="section level3">
+<h3 id="symbols-in-r-registered-templates">Symbols in R-registered templates<a class="anchor" aria-label="anchor" href="#symbols-in-r-registered-templates"></a>
+</h3>
 <p><code>r_sym</code> is unsupported in templates when it’s part of a
 template argument but is supported when the argument is explicitly an
 <code>r_sym</code>.</p>
-<div class="sourceCode" id="cb40"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a><span class="op">[[</span><span class="at">cpp20</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a>r_str symbol_to_string<span class="op">(</span>r_sym x<span class="op">){</span></span>
-<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a>    <span class="cf">return</span> as<span class="op">&lt;</span>r_str<span class="op">&gt;(</span>x<span class="op">);</span></span>
-<span id="cb40-4"><a href="#cb40-4" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a>hello_world_symbol <span class="ot">&lt;-</span> <span class="fu">as.symbol</span>(<span class="st">"hello world!"</span>)</span>
-<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a>hello_world_symbol</span>
-<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a><span class="st">`</span><span class="at">hello world!</span><span class="st">`</span></span>
-<span id="cb41-4"><a href="#cb41-4" tabindex="-1"></a><span class="fu">symbol_to_string</span>(hello_world_symbol)</span>
-<span id="cb41-5"><a href="#cb41-5" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"hello world!"</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="registering-templates">Registering templates<a class="anchor" aria-label="anchor" href="#registering-templates"></a>
-</h3>
-<p>To register a C++ template to R, one must declare the
-<code>[[cpp20::register]]</code> target after the template
-declaration.</p>
-<div class="sourceCode" id="cb42"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;cpp20.hpp&gt;</span></span>
-<span id="cb42-2"><a href="#cb42-2" tabindex="-1"></a><span class="kw">using</span> <span class="kw">namespace</span> cpp20<span class="op">;</span></span>
-<span id="cb42-3"><a href="#cb42-3" tabindex="-1"></a></span>
-<span id="cb42-4"><a href="#cb42-4" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RStringType T<span class="op">&gt;</span></span>
-<span id="cb42-5"><a href="#cb42-5" tabindex="-1"></a><span class="op">[[</span><span class="at">cpp20</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb42-6"><a href="#cb42-6" tabindex="-1"></a><span class="dt">void</span> my_print<span class="op">(</span>T x<span class="op">){</span></span>
-<span id="cb42-7"><a href="#cb42-7" tabindex="-1"></a>  print<span class="op">(</span>x<span class="op">.</span>c_str<span class="op">());</span></span>
-<span id="cb42-8"><a href="#cb42-8" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb41"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a><span class="op">[[</span><span class="at">cpp20</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a>r_str symbol_to_string<span class="op">(</span>r_sym x<span class="op">){</span></span>
+<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a>    <span class="cf">return</span> as<span class="op">&lt;</span>r_str<span class="op">&gt;(</span>x<span class="op">);</span></span>
+<span id="cb41-4"><a href="#cb41-4" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a>hello_world_symbol <span class="ot">&lt;-</span> <span class="fu">as.symbol</span>(<span class="st">"hello world!"</span>)</span>
+<span id="cb42-2"><a href="#cb42-2" tabindex="-1"></a>hello_world_symbol</span>
+<span id="cb42-3"><a href="#cb42-3" tabindex="-1"></a><span class="st">`</span><span class="at">hello world!</span><span class="st">`</span></span>
+<span id="cb42-4"><a href="#cb42-4" tabindex="-1"></a><span class="fu">symbol_to_string</span>(hello_world_symbol)</span>
+<span id="cb42-5"><a href="#cb42-5" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"hello world!"</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="annex">Annex<a class="anchor" aria-label="anchor" href="#annex"></a>
 </h3>
-<div class="section level4">
-<h4 id="views">views<a class="anchor" aria-label="anchor" href="#views"></a>
-</h4>
-<p>As briefly mentioned earlier, views can be used to eliminate the
-small overhead associated with automatic protection of objects wrapping
-SEXP. <code>r_str_view</code> is one such class which is a lightweight
-around a <code>SEXP</code> and never protects the underlying
-<code>SEXP</code>. Its lifetime must be shorter than the object it is
-pointing to.</p>
-<p><strong>DO</strong>:</p>
-<div class="sourceCode" id="cb43"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb43-1"><a href="#cb43-1" tabindex="-1"></a><span class="dt">void</span> good<span class="op">(</span>r_str x<span class="op">){</span></span>
-<span id="cb43-2"><a href="#cb43-2" tabindex="-1"></a>    r_str_view str <span class="op">=</span> x<span class="op">;</span></span>
-<span id="cb43-3"><a href="#cb43-3" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">(</span>str<span class="op">.</span>cpp_str<span class="op">()</span> <span class="op">==</span> <span class="st">"true"</span><span class="op">){</span></span>
-<span id="cb43-4"><a href="#cb43-4" tabindex="-1"></a>    print<span class="op">(</span><span class="st">"true"</span><span class="op">);</span></span>
-<span id="cb43-5"><a href="#cb43-5" tabindex="-1"></a>    <span class="op">}</span> <span class="cf">else</span> <span class="op">{</span></span>
-<span id="cb43-6"><a href="#cb43-6" tabindex="-1"></a>    print<span class="op">(</span><span class="st">"false"</span><span class="op">);</span></span>
-<span id="cb43-7"><a href="#cb43-7" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb43-8"><a href="#cb43-8" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p><strong>DON’T</strong>:</p>
-<div class="sourceCode" id="cb44"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb44-1"><a href="#cb44-1" tabindex="-1"></a>r_str_view bar<span class="op">(){</span></span>
-<span id="cb44-2"><a href="#cb44-2" tabindex="-1"></a>    r_str new_str<span class="op">(</span><span class="st">"I will be destroyed at the end of `bar()`"</span><span class="op">);</span></span>
-<span id="cb44-3"><a href="#cb44-3" tabindex="-1"></a>    </span>
-<span id="cb44-4"><a href="#cb44-4" tabindex="-1"></a>    r_str_view bad_str <span class="op">=</span> new_str<span class="op">;</span> <span class="co">// A view of new_str</span></span>
-<span id="cb44-5"><a href="#cb44-5" tabindex="-1"></a>    <span class="cf">return</span> bad_str<span class="op">;</span> <span class="co">// Points to underlying CHARSXP but nothing protecting it</span></span>
-<span id="cb44-6"><a href="#cb44-6" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>The above is a classic example of what <strong>not</strong> to do
-with string views, and that is have the view outlive the owner. In this
-case <code>bad_str</code> is returned at the end of <code>bar()</code>
-at which point <code>new_str</code> goes out of scope and gets
-destroyed. This means nothing is protecting the underlying
-<code>CHARSXP</code> that <code>new_str</code> was protecting and once
-that <code>CHARSXP</code> is garbage-collected by R,
-<code>bad_str</code> will become a dangling-pointer and you will get a
-memory leak.</p>
 </div>
-<div class="section level4">
-<h4 id="all-core-cpp20-concepts">All core cpp20 concepts<a class="anchor" aria-label="anchor" href="#all-core-cpp20-concepts"></a>
-</h4>
+<div class="section level3">
+<h3 id="all-core-cpp20-concepts">All core cpp20 concepts<a class="anchor" aria-label="anchor" href="#all-core-cpp20-concepts"></a>
+</h3>
 <ul>
 <li><p>RIntegerType - Includes <code>r_lgl</code>, <code>r_int</code>,
 <code>r_int64</code></p></li>
