@@ -91,9 +91,7 @@ we would need to be strict with inputs to balance things out.
 
 ### Vector indexing
 
-Most indexing is 0-based except when dealing with vectors of indices,
-which are 1-indexed. 1-indexed indices are used in `subset()`, `find()`,
-and other functions which accept or return a vector of indices.
+All indexing is 0-based including subsetting vectors.
 
 ### 64-bit integers
 

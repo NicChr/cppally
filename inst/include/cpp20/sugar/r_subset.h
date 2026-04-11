@@ -30,32 +30,33 @@ r_vec<V> exclude_locs(const r_vec<U>& exclude, r_size_t xn) {
   r_size_t i = 0, k = 0;
 
   // Which elements do we keep?
-  std::vector<uint8_t> keep(xn, uint8_t(1));
+  std::vector<uint8_t> keep(xn, 1U);
 
   for (r_size_t j = 0; j < m; ++j) {
     if (is_na(exclude.get(j))) continue;
-    if (exclude.get(j) > 0) [[unlikely]] {
-      abort("Cannot mix positive and negative subscripts");
+    if (exclude.get(j) < 0) [[unlikely]] {
+      abort("Please supply positive indices to %s", __func__);
     }
-    idx = -unwrap(exclude.get(j));
+    idx = unwrap(exclude.get(j));
     // Check keep array for already assigned FALSE to avoid double counting
-    if (idx > 0 && idx <= n && keep[idx - 1] == 1U){
-      keep[idx - 1] = 0U;
+    if (idx < n && keep[idx] == 1U){
+      keep[idx] = 0U;
       ++exclude_count;
     }
   }
   out_size = n - exclude_count;
   r_vec<V> out(out_size);
 
-  while(k != out_size){
-    if (keep[i++] == 1U){
+  while (k != out_size){
+    if (keep[i] == 1U){
       out.set(k++, V(static_cast<unwrap_t<V>>(i)));
     }
+    ++i;
   }
   return out;
 }
 
-// Returns valid 1-indexed indices
+// Returns valid indices
 // It ignores NA and out-of-bounds (OOB) indices, which differs to subset() which returns NA when given NA or OOB
 template <internal::RNumericSubscript V = r_int, typename T, internal::RSubscript U>
 r_vec<V> clean_locs(const r_vec<U>& locs, const r_vec<T>& x){
@@ -90,38 +91,37 @@ r_vec<V> clean_locs(const r_vec<U>& locs, const r_vec<T>& x){
     }
     return locs.template find<V>(r_true, false);
   } else {
-    r_size_t zero_count = 0,
-    pos_count = 0,
+    r_size_t pos_count = 0,
     oob_count = 0,
     na_count = 0,
     neg_count = 0;
 
   for (r_size_t i = 0; i < n; ++i){
     auto loc = unwrap(locs.get(i));
-    zero_count += (loc == 0);
-    pos_count += (loc > 0);
-    na_count += is_na(loc);
-    oob_count += !is_na(loc) && std::abs(loc) > xn;
-  }
-
-  neg_count = n - pos_count - zero_count - na_count;
-
-  if ( (pos_count > 0 && neg_count > 0) ||
-       (neg_count > 0 && na_count > 0)){
-    abort("Cannot mix positive and negative indices");
+    if (is_na(loc)){
+      ++na_count;
+    } else if (loc < 0){
+      ++neg_count;
+    } else {
+      ++pos_count;
+      if (static_cast<r_size_t>(loc) >= xn){
+        ++oob_count;
+      }
+    }
   }
 
   if (neg_count > 0){
-    return internal::exclude_locs<V>(locs, xn);
+    abort("Negative indices are not allowed, use `invert = true`");
   }
-  if (zero_count > 0 || oob_count > 0 || na_count > 0){
+  if (oob_count > 0 || na_count > 0){
     r_size_t out_size = pos_count - oob_count;
     r_vec<V> out(out_size);
 
     r_size_t k = 0;
     for (r_size_t i = 0; i < n; ++i){
-      if (internal::between_impl<r_size_t>(unwrap(locs.get(i)), r_size_t(1), xn)){
-        out.set(k++, V(static_cast<unwrap_t<V>>(unwrap(locs.get(i)))));
+      auto loc = unwrap(locs.get(i));
+      if (!is_na(loc) && loc >= 0 && static_cast<r_size_t>(loc) < xn){
+        out.set(k++, V(static_cast<unwrap_t<V>>(loc)));
       }
     }
     return out;
@@ -134,7 +134,7 @@ r_vec<V> clean_locs(const r_vec<U>& locs, const r_vec<T>& x){
 
 template <RVal T>
 template <internal::RSubscript U>
-inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check) const {
+inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check, bool invert) const {
 
   if (indices.is_null()){
     return *this;
@@ -142,11 +142,19 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check) const {
 
   if constexpr (RLogicalType<U> || RStringType<U>){
     if (is_long()){
-      return subset(internal::clean_locs<r_int64>(indices, *this), /*check=*/ false);
+      return subset(internal::clean_locs<r_int64>(indices, *this), /*check=*/ false, /*invert=*/ invert);
     } else {
-      return subset(internal::clean_locs<r_int>(indices, *this), /*check=*/ false);
+      return subset(internal::clean_locs<r_int>(indices, *this), /*check=*/ false, /*invert=*/ invert);
     }
   } else {
+
+    if (invert){
+      if (is_long()){
+        return subset(internal::exclude_locs<r_int64>(indices, length()), false, false);
+      } else {
+        return subset(internal::exclude_locs<r_int>(indices, length()), false, false);
+      }
+    }
 
     using unsigned_int_t = std::make_unsigned_t<unwrap_t<U>>;
     r_size_t n = indices.length();
@@ -154,34 +162,27 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check) const {
     r_vec<T> out(n);
 
     if (check){
-      r_size_t xn = length(), k = 0;
+      r_size_t xn = length();
       unsigned_int_t na_val = unwrap(na<U>());
       unsigned_int_t j;
   
       for (r_size_t i = 0; i < n; ++i){
         j = unwrap(indices.get(i));
-        if (j >= 1U && static_cast<r_size_t>(j) <= xn){
-          out.set(k++, view(static_cast<r_size_t>(j) - r_size_t(1)));
-        } 
-        // If j > n_val then it is a negative signed integer
-        else if (j > na_val){
-          if (is_long()){
-            return subset(internal::exclude_locs<r_int64>(indices, xn));
-          } else {
-            return subset(internal::exclude_locs<r_int>(indices, xn));
-          }
-        } 
-        else if (j != 0U){
+        if (static_cast<r_size_t>(j) < xn){
+          out.set(i, view(static_cast<r_size_t>(j)));
+        } else if (j > na_val){
+          // If j > n_val then it is a negative signed integer
+          abort("Negative indices are unsupported, use `invert = true`");
+        } else {
           if constexpr (RScalar<T>){
-            out.set(k++, na<T>());
+            out.set(i, na<T>());
           }
         }
       }
-  
-      return out.resize(k);
+      return out;
     } else {
       for (r_size_t i = 0; i < n; ++i){
-        out.set(i, view(unwrap(indices.get(i)) - 1));
+        out.set(i, view(unwrap(indices.get(i))));
     }
     return out;
   }
@@ -236,7 +237,7 @@ r_vec<V> r_vec<T>::find(const r_vec<T>& values, bool invert) const {
       r_size_t n = length();
       r_vec<V> out(n);
       OMP_SIMD
-      for (r_size_t i = 0; i < n; ++i) out.set(i, V(static_cast<unwrap_t<V>>(i + 1)));
+      for (r_size_t i = 0; i < n; ++i) out.set(i, V(static_cast<unwrap_t<V>>(i)));
       return out;
     } else {
       return r_vec<V>();
@@ -281,7 +282,7 @@ void r_vec<T>::fill(const r_vec<U>& where, const r_vec<T>& with) {
     r_size_t where_size = where_clean.length();
   
     for (r_size_t i = 0; i < where_size; recycle_index(withi, with_size), ++i){
-      set(unwrap(where_clean.get(i)) - 1, with_clean.get(withi));
+      set(unwrap(where_clean.get(i)), with_clean.get(withi));
     }
   } else {
     // Clean where vector
@@ -289,7 +290,7 @@ void r_vec<T>::fill(const r_vec<U>& where, const r_vec<T>& with) {
     r_size_t where_size = where_clean.length();
   
     for (r_size_t i = 0; i < where_size; recycle_index(withi, with_size), ++i){
-      set(unwrap(where_clean.get(i)) - 1, with_clean.get(withi));
+      set(unwrap(where_clean.get(i)), with_clean.get(withi));
     }
   }
 }
@@ -323,79 +324,6 @@ void r_vec<T>::replace(const r_vec<T>& old_values, const r_vec<T>& new_values){
       }
   }
 }
-
-// 0-indexed negative locations (can't do "everything but first location" with this approach)
-// template <typename U>
-// requires (any<U, r_int, r_int64>)
-// r_vec<U> exclude_locs(const r_vec<U>& exclude, unwrap_t<U> xn) {
-
-//   using int_t = unwrap_t<U>;
-
-//   int_t n = xn;
-//   int_t m = exclude.length();
-//   int_t out_size, idx;
-//   int_t exclude_count = 0;
-//   int_t i = 0, k = 0;
-
-//   // Which elements do we keep?
-//   std::vector<bool> keep(n, true);
-
-//   for (int_t j = 0; j < m; ++j) {
-//     if (is_na(exclude.get(j))) continue;
-//     if (exclude.get(j) > 0){
-//       abort("Cannot mix positive and negative subscripts");
-//     }
-//     idx = -exclude.get(j);
-//     // Check keep array for already assigned FALSE to avoid double counting
-//     if (idx < n && keep[idx]){
-//       keep[idx] = false;
-//       ++exclude_count;
-//     }
-//   }
-//   out_size = n - exclude_count;
-//   auto out = r_vec<r_int>(out_size);
-
-//   while(k != out_size){
-//     if (keep[i++]){
-//       out.set(k++, i - 1);
-//     }
-//   }
-//   return out;
-// }
-
-// // 0-indexed indices
-// template <RVal T>
-// template <typename U>
-// requires (any<U, r_int, r_int64>)
-// inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices) const {
-
-//   using unsigned_int_t = std::make_unsigned_t<unwrap_t<U>>;
-
-//   unsigned_int_t
-//   xn = length(),
-//     n = indices.length(),
-//     k = 0,
-//     na_val = unwrap(na<U>()),
-//     j;
-
-//   auto out = r_vec<T>(n);
-
-//   for (unsigned_int_t i = 0; i < n; ++i){
-//     j = unwrap(indices.get(i));
-//     if (j < xn){
-//       out.set(k++, get(j));
-//     } 
-//     // If j > n_val then it is a negative signed integer
-//     else if (j > na_val){
-//       return subset(exclude_locs(indices, xn));
-//     } 
-//     else {
-//       out.set(k++, na<T>());
-//     }
-//   }
-//   return out.resize(k);
-// }
-
 
 }
 

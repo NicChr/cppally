@@ -189,13 +189,11 @@ struct r_vec {
       }
   }
 
-  // IMPORTANT - indices are 1-indexed
-  // This has the benefit of allowing empty locations (0) and negative indexing
   template <internal::RSubscript U> 
-  r_vec<T> subset(const r_vec<U>& indices, bool check = true) const;
+  r_vec<T> subset(const r_vec<U>& indices, bool check = true, bool invert = false) const;
 
-  r_vec<T> subset(r_size_t index, bool check = true) const {
-    return subset(r_vec<r_int64>(1, r_int64(static_cast<int64_t>(index))), check);
+  r_vec<T> subset(r_size_t index, bool check = true, bool invert = false) const {
+    return subset(r_vec<r_int64>(1, r_int64(static_cast<int64_t>(index))), check, invert);
   }
 
   r_vec<r_str_view> names() const {
@@ -348,7 +346,7 @@ struct r_vec {
     }
   }
 
-  // 1-indexed locations of value in vector
+  // locations of value in vector
   template <internal::RNumericSubscript V = r_int>
   r_vec<V> find(T const& value, bool invert = false) const {
 
@@ -370,7 +368,7 @@ struct r_vec {
       int_t out_size = n - n_vals;
       r_vec<V> out(out_size);
       while (whichi < out_size){
-          out.set(whichi, V(i + 1));
+          out.set(whichi, V(i));
           whichi += static_cast<int_t>(!identical(view(i++), value));
       }
       return out;
@@ -378,7 +376,7 @@ struct r_vec {
       int_t out_size = n_vals;
       r_vec<V> out(out_size);
       while (whichi < out_size){
-        out.set(whichi, V(i + 1));
+        out.set(whichi, V(i));
         whichi += static_cast<int_t>(identical(view(i++), value));
     }
     return out;

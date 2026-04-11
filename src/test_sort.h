@@ -20,7 +20,6 @@ requires ((RVector<T> && RSortableType<typename T::data_type>) || RFactor<T>)
 [[cpp20::register]]
 T test_sort(T x, bool preserve_ties){
   auto o = test_order(x, preserve_ties);
-  o += 1;
   return x.subset(o);
 }
 
