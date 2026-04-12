@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   cpp20: cpp20.html
   protection: protection.html
-last_built: 2026-04-12T15:51Z
+last_built: 2026-04-12T16:53Z
 urls:
   reference: https://nicchr.github.io/cpp20/reference
   article: https://nicchr.github.io/cpp20/articles
