@@ -36,7 +36,7 @@ struct r_sexp {
   r_sexp() = default;
   explicit r_sexp(SEXP data) : value(data), ctl_(nullptr) {
     if (data != R_NilValue) {
-      Rf_protect(data);
+      Rf_protect(data); // UNNECESSARY BUT RCHK DEMANDS IT
       ctl_ = detail::refcount::insert(data);
       Rf_unprotect(1);
     }
