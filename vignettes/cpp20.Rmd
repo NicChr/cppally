@@ -18,6 +18,8 @@ knitr::opts_chunk$set(
 
 To get started we will briefly show how to register a C++ function to R and go through the main scalar types that cpp20 offers.
 
+## Setup 
+
 ## Registering R functions
 
 To make a C++ function available to R we use the `[[cpp20::register]]` tag.
@@ -32,12 +34,51 @@ void hello_world(){
 }
 ```
 
+After tagging our functions we want to make them available to R. To do that we have a few routes.
+
+### Registering C++ functions outside of a package context
+
+After writing our hello world program in foo.cpp we can use `cpp_source()` to compile and register the function to R.
+
+```r
+cpp_source(file = "src/foo.cpp")
+```
+
 Now the function is available in R
 
 ``` r
 > hello_world()
 Hello World!
 ```
+
+### Registering C++ functions inside a cpp20-linked package
+
+Since cpp20 is header-only, we can include the headers directly into our own package. Simply add cpp20 to the **LinkingTo** section of your DESCRIPTION file.
+
+Once we have done that and written our foo.cpp program as before, use `cpp20::load_all()` to compile and register the tagged functions.
+
+```r
+ℹ 1 functions decorated with [[cpp20::register]]
+✔ generated file cpp20.R
+✔ generated file cpp20.cppℹ Loading cpp20
+ℹ Re-compiling cpp20── R CMD INSTALL ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+─  installing *source* package 'cpp20' ... (342ms)
+   ** this is package 'cpp20' version '0.0.0.9000'
+   ** using staged installation
+   ** libs
+   using C++ compiler: 'G__~1.EXE (GCC) 14.2.0'
+   using C++20
+   g++  -std=gnu++20 -I"C:/PROGRA~1/R/R-45~1.2/include" -DNDEBUG -I../inst/include    -I"C:/rtools45/x86_64-w64-mingw32.static.posix/include"   -fopenmp -Wa,-mbig-obj   -O2 -Wall  -mfpmath=sse -msse2 -mstackrealign   -Wall -pedantic -fdiagnostics-color=always -Wall -pedantic -fdiagnostics-color=always  -c cpp20.cpp -o cpp20.o
+   g++  -std=gnu++20 -I"C:/PROGRA~1/R/R-45~1.2/include" -DNDEBUG -I../inst/include    -I"C:/rtools45/x86_64-w64-mingw32.static.posix/include"   -fopenmp -Wa,-mbig-obj   -O2 -Wall  -mfpmath=sse -msse2 -mstackrealign   -Wall -pedantic -fdiagnostics-color=always -Wall -pedantic -fdiagnostics-color=always  -c foo.cpp -o foo.o
+   g++ -shared -s -static-libgcc -o cpp20.dll tmp.def cpp20.o foo.o -fopenmp -LC:/rtools45/x86_64-w64-mingw32.static.posix/lib/x64 -LC:/rtools45/x86_64-w64-mingw32.static.posix/lib -LC:/PROGRA~1/R/R-45~1.2/bin/x64 -lR
+   installing to C:/Users/me/AppData/Local/Temp/RtmpSIhqt7/devtools_install_8854593534de/00LOCK-cpp20/00new/cpp20/libs/x64
+─  DONE (cpp20)
+
+hello_world()
+Hello World!
+```
+
+**Note:** We aim to integrate cpp20 registration into the `devtools` framework for ease-of-use.
 
 ## C++ types
 
