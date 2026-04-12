@@ -18,10 +18,13 @@ use_cpp20 <- function (){
   utils::getFromNamespace("use_src", "usethis")()
   utils::getFromNamespace("use_dependency", "usethis")("cpp20", "LinkingTo")
   generate_code_template()
-  desc <- desc::desc(package = utils::getFromNamespace("project_name", "usethis")())
+  desc <- desc::desc()
   desc$set(SystemRequirements = "C++20")
   desc$write()
-  cpp_register_deps <- desc::desc(package = "cpp20")$get_list("Config/Needs/cpp20/cpp_register")[[1]]
-  installed <- purrr::map_lgl(cpp_register_deps, rlang::is_installed)
+  cat(
+    paste0("useDynLib(", utils::getFromNamespace("project_name", "usethis")(), ", .registration = TRUE)\n"),
+    file = utils::getFromNamespace("proj_path", "usethis")("NAMESPACE"),
+    append = TRUE
+  )
   invisible()
 }
