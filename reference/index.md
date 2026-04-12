@@ -12,3 +12,6 @@
 - [`load_all()`](https://nicchr.github.io/cpp20/reference/load_all.md) :
 
   A wrapper around `devtools::load_all()` specifically for cpp20
+
+- [`use_cpp20()`](https://nicchr.github.io/cpp20/reference/use_cpp20.md)
+  : Helper for developing packages with cpp20
