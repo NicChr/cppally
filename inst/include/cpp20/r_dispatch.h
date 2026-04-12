@@ -64,13 +64,6 @@ struct fn_traits<Ret(*)(Args...)> {
     static constexpr size_t arity = sizeof...(Args);
 };
 
-
-template <typename T>
-T sexp_to_cpp(SEXP x) {
-    return as<std::remove_cvref_t<T>>(x);
-}
-
-
 // The reverse of above
 // Special case - never return CHARSXP
 template <typename T>
@@ -416,10 +409,10 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
 template <auto Fn, typename Ret, typename... Args, size_t... Is>
 SEXP invoke_impl(SEXP* sexp_args, std::index_sequence<Is...>) {
     if constexpr (std::is_void_v<Ret>) {
-        Fn(sexp_to_cpp<Args>(sexp_args[Is])...);
+        Fn(as<Args>(sexp_args[Is])...);
         return R_NilValue;
     } else {
-        return cpp_to_sexp(Fn(sexp_to_cpp<Args>(sexp_args[Is])...));
+        return cpp_to_sexp(Fn(as<Args>(sexp_args[Is])...));
     }
 }
 
