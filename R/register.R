@@ -156,18 +156,40 @@ generate_cpp_functions <- function(funs, package = "cpp20") {
   unclass(out)
 }
 
+check_init_signatures <- function(funs) {
+  if (nrow(funs) == 0) return(invisible())
+
+  bad_return <- !type_is_void(funs$return_type)
+  bad_args <- vapply(funs$args, function(a) {
+    nrow(a) != 1 || a$name != "dll" || !grepl("DllInfo\\s*\\*", a$type)
+  }, logical(1))
+
+  bad <- bad_return | bad_args
+  if (any(bad)) {
+    msgs <- glue::glue_data(vctrs::vec_slice(funs, bad),
+      "- `{name}` on line {line} in '{basename(file)}'."
+    )
+    cli::cli_abort(
+      c(
+        "[[cpp20::init]] functions must return void and take a single DllInfo* arg named 'dll'",
+        {msgs}
+      )
+    )
+  }
+}
+
 generate_init_functions <- function(funs) {
   if (nrow(funs) == 0) {
     return(list(declarations = "", calls = ""))
   }
 
+  check_init_signatures(funs)
+
   funs <- funs[c("name", "return_type", "args", "file", "line", "decoration")]
-  funs$declaration_params <- vcapply(funs$args, glue_collapse_data, "{type} {name}")
-  funs$call_params <- vcapply(funs$args, `[[`, "name")
 
   declarations <- glue::glue_data(funs,
                                   '
-    {return_type} {name}({declaration_params});
+    void {name}(DllInfo* dll);
     '
   )
 
@@ -175,7 +197,7 @@ generate_init_functions <- function(funs) {
 
   calls <- glue::glue_data(funs,
                            '
-      {name}({call_params});
+      {name}(dll);
     '
   )
   calls <- paste0("\n", glue::glue_collapse(calls, "\n"));

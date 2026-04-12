@@ -21,6 +21,19 @@ void static_tests(){
   static_assert(is<decltype(unwrap(r_factors())), SEXP>);
 }
 
+// Testing cpp20::init
+static int foo_int = 1;
+
+[[cpp20::init]]
+void foo(DllInfo* dll){
+  foo_int = 2;
+}
+
+[[cpp20::init]]
+void bar(DllInfo* dll){
+  foo_int = 3;
+}
+
 [[cpp20::register]]
 void cpp_set_threads(int n){
   set_threads(n);

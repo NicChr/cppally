@@ -1011,8 +1011,13 @@ static const R_CallMethodDef CallEntries[] = {
 };
 }
 
+void foo(DllInfo* dll);
+void bar(DllInfo* dll);
+
 extern "C" attribute_visible void R_init_cpp20(DllInfo* dll){
   R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
   R_useDynamicSymbols(dll, FALSE);
+  foo(dll);
+  bar(dll);
   R_forceSymbols(dll, TRUE);
 }
