@@ -28,6 +28,38 @@ cpp_eval(
 )
 ```
 
+## Arguments
+
+- file:
+
+  C++ file.
+
+- code:
+
+  If `file` is `NULL` then a string of C++ code to compile.
+
+- env:
+
+  Environment where R functions should be defined.
+
+- clean:
+
+  Should files be cleaned up after sourcing? Default is `TRUE`.
+
+- quiet:
+
+  Should compiler output be suppressed? Default is `TRUE`.
+
+- cxx_std:
+
+  C++ standard to use. Should be \>= C++20.
+
+- dir:
+
+  Directory to store the source files. The default is a temporary
+  directory via [`tempfile()`](https://rdrr.io/r/base/tempfile.html)
+  which is removed when `clean = TRUE`.
+
 ## Value
 
 `cpp_source()` invisibly registers the `[[cpp20::register]]` tagged
@@ -41,7 +73,7 @@ library(cpp20)
 
 # Expression returning the integer 0
 cpp_eval("r_int(0)")
-#> Error in f(): could not find function "f"
+#> [1] 0
 
 cpp_source(code = '
   #include <cpp20.hpp>
