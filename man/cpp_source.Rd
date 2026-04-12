@@ -23,6 +23,23 @@ cpp_eval(
   cxx_std = Sys.getenv("CXX_STD", "CXX20")
 )
 }
+\arguments{
+\item{file}{C++ file.}
+
+\item{code}{If \code{file} is \code{NULL} then a string of C++ code to compile.}
+
+\item{env}{Environment where R functions should be defined.}
+
+\item{clean}{Should files be cleaned up after sourcing? Default is \code{TRUE}.}
+
+\item{quiet}{Should compiler output be suppressed? Default is \code{TRUE}.}
+
+\item{cxx_std}{C++ standard to use. Should be >= C++20.}
+
+\item{dir}{Directory to store the source files.
+The default is a temporary directory via \code{tempfile()} which is removed when
+\code{clean = TRUE}.}
+}
 \value{
 \code{cpp_source()} invisibly registers
 the \verb{[[cpp20::register]]} tagged functions to R. \cr

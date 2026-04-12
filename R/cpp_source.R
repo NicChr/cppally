@@ -53,6 +53,16 @@ generate_include_paths <- function(packages){
 #' either from an expression or a cpp file. `cpp_eval()` evaluates a single C++
 #' expressions and returns the result. `void` return is not supported in `cpp_eval()`.
 #'
+#' @param file C++ file.
+#' @param code If `file` is `NULL` then a string of C++ code to compile.
+#' @param env Environment where R functions should be defined.
+#' @param clean Should files be cleaned up after sourcing? Default is `TRUE`.
+#' @param quiet Should compiler output be suppressed? Default is `TRUE`.
+#' @param cxx_std C++ standard to use. Should be >= C++20.
+#' @param dir Directory to store the source files.
+#' The default is a temporary directory via `tempfile()` which is removed when
+#' `clean = TRUE`.
+#'
 #' @returns
 #' `cpp_source()` invisibly registers
 #' the `[[cpp20::register]]` tagged functions to R. \cr
