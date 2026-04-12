@@ -34,13 +34,7 @@ struct r_sexp {
   public:
 
   r_sexp() = default;
-  explicit r_sexp(SEXP data) : value(data), ctl_(nullptr) {
-    if (data != R_NilValue) {
-      Rf_protect(data); // UNNECESSARY BUT RCHK DEMANDS IT
-      ctl_ = detail::refcount::insert(data);
-      Rf_unprotect(1);
-    }
-  }
+  explicit r_sexp(SEXP data) : value(data), ctl_(detail::refcount::insert(data)) {}
 
   // Copy = refcount bump (no R API involvement)
   r_sexp(const r_sexp& rhs) noexcept : value(rhs.value), ctl_(rhs.ctl_) {
