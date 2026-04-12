@@ -38,7 +38,7 @@ struct r_factors {
 
     const int *p_codes = codes.data();
 
-    #pragma omp simd reduction(max:max_code)
+    OMP_SIMD_REDUCTION1(max:max_code)
     for (r_size_t i = 0; i < n; ++i){
         // No need to ignore NA for max() because NA is defined as lowest representable value
         max_code = std::max(max_code, p_codes[i]);

@@ -250,12 +250,12 @@ struct r_vec {
       int n_threads = internal::calc_threads(n);
 
       if (n_threads > 1){
-        #pragma omp parallel for simd num_threads(n_threads) reduction(+:out)
+        OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:out)
         for (r_size_t i = 0; i < n; ++i){
           out += cpp20::is_na(view(i));
         }
       } else {
-        #pragma omp simd reduction(+:out)
+        OMP_SIMD_REDUCTION1(+:out)
         for (r_size_t i = 0; i < n; ++i){
           out += cpp20::is_na(view(i));
         }
@@ -312,7 +312,7 @@ struct r_vec {
       // SIMD vectorisation isn't working with identical function (sad)
       // Even though the code is simply: unwrap(x) == unwrap(y)
       // At least we know this is equivalent to identical for the specified types above
-      #pragma omp simd reduction(+:out)
+      OMP_SIMD_REDUCTION1(+:out)
       for (r_size_t i = 0; i < n; ++i){
         out += (p_x[i] == val_);
       }

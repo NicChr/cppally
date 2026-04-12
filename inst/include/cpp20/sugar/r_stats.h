@@ -12,7 +12,7 @@ r_dbl sum(const r_vec<T> &x, bool na_rm = false){
     const auto* RESTRICT p_x = x.data();
 
     if (na_rm){
-        #pragma omp simd reduction(+:out_)
+        OMP_SIMD_REDUCTION1(+:out_)
         for (r_size_t i = 0; i < n; ++i){
             out_ += (is_na(T(p_x[i]))) ? 0 : p_x[i];
         }
@@ -35,12 +35,12 @@ inline r_dbl sum(const r_vec<r_dbl> &x, bool na_rm){
     const auto* RESTRICT p_x = x.data();
 
     if (na_rm){
-        #pragma omp simd reduction(+:out_)
+        OMP_SIMD_REDUCTION1(+:out_)
         for (r_size_t i = 0; i < n; ++i){
             out_ += is_na(r_dbl(p_x[i])) ? 0 : p_x[i];
         }
     } else {
-        #pragma omp simd reduction(+:out_)
+        OMP_SIMD_REDUCTION1(+:out_)
         for (r_size_t i = 0; i < n; ++i){
             out_ += p_x[i];
         }
@@ -57,7 +57,7 @@ r_int64 sum_int(const r_vec<T> &x, bool na_rm = false){
     const auto* RESTRICT p_x = x.data();
 
     if (na_rm){
-        #pragma omp simd reduction(+:out_)
+        OMP_SIMD_REDUCTION1(+:out_)
         for (r_size_t i = 0; i < n; ++i){
             out_ += (is_na(as_r_val(p_x[i]))) ? int64_t(0) : p_x[i];
         }
@@ -150,7 +150,7 @@ r_vec<T> range(const r_vec<T> &x, bool na_rm = false){
     const auto* RESTRICT p_x = x.data();
 
     if (na_rm){ 
-        #pragma omp simd reduction(min:lo_) reduction(max:hi_)
+        OMP_SIMD_REDUCTION2(min:lo_, max:hi_)
         for (r_size_t i = 0; i < n; ++i){
             // Ignore NA for min()
             lo_ = is_na(T(p_x[i])) ? lo_ : std::min(lo_, p_x[i]);
@@ -168,7 +168,7 @@ r_vec<T> range(const r_vec<T> &x, bool na_rm = false){
         }
 
     } else {
-        #pragma omp simd reduction(min:lo_) reduction(max:hi_)
+        OMP_SIMD_REDUCTION2(min:lo_, max:hi_)
         for (r_size_t i = 0; i < n; ++i){
             lo_ = std::min(lo_, p_x[i]); 
             hi_ = std::max(hi_, p_x[i]);
