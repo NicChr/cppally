@@ -88,7 +88,18 @@ package_dll <- function(path = "."){
 }
 
 get_registered_functions <- function(decorations, tag, quiet = !is_interactive()) {
-  empty <- vctrs::data_frame(file = character(), line = integer(), decoration = character(), params = list(), context = list(), name = character(), return_type = character(), args = list())
+  empty <- vctrs::data_frame(
+    file = character(),
+    line = integer(),
+    decoration = character(),
+    params = list(),
+    context = list(),
+    name = character(),
+    return_type = character(),
+    args = list(),
+    is_template = logical(),
+    template_params = list()
+  )
   if (NROW(decorations) == 0) {
     return(empty)
   }
@@ -120,6 +131,10 @@ get_registered_functions <- function(decorations, tag, quiet = !is_interactive()
 }
 
 generate_cpp_functions <- function(funs, package = "cpp20") {
+
+  if (NROW(funs) == 0){
+    return(character())
+  }
   funs <- funs[c("name", "return_type", "args", "file", "line", "decoration", "is_template", "template_params")]
   funs$real_params <- vcapply(funs$args, glue_collapse_data, "{type} {name}")
   funs$sexp_params <- vcapply(funs$args, glue_collapse_data, "SEXP {name}")
@@ -213,6 +228,11 @@ generate_init_functions <- function(funs) {
 }
 
 generate_r_functions <- function(funs, package = "cpp20", use_package = FALSE) {
+
+  if (NROW(funs) == 0){
+    return(character())
+  }
+
   funs <- funs[c("name", "return_type", "args")]
 
   if (use_package) {
