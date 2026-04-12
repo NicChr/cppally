@@ -1,8 +1,9 @@
 
 generate_code_template <- function(){
-  dir <- getwd()
-  src_dir <- normalizePath(file.path(dir, "src"), winslash = "/")
-  cpp_path <- file.path(src_dir, "code.cpp")
+  stop_unless_installed("usethis")
+  proj_path <- usethis::proj_get()
+  getFromNamespace("use_src", "usethis")()
+  cpp_path <- file.path(proj_path, "code.cpp")
   brio::write_lines(c(
     "#include <cpp20.hpp>",
     "using namespace cpp20;",
@@ -14,7 +15,7 @@ generate_code_template <- function(){
     ",
     '
 [[cpp20::register]]
-r_dbl sum(r_vec<r_dbl> x){
+r_dbl cpp_sum(r_vec<r_dbl> x){
   r_size_t n = x.length();
   r_dbl out(0);
 
