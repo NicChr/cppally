@@ -88,11 +88,15 @@ package_dll <- function(path = "."){
 }
 
 get_registered_functions <- function(decorations, tag, quiet = !is_interactive()) {
+  empty <- vctrs::data_frame(file = character(), line = integer(), decoration = character(), params = list(), context = list(), name = character(), return_type = character(), args = list())
   if (NROW(decorations) == 0) {
-    return(vctrs::data_frame(file = character(), line = integer(), decoration = character(), params = list(), context = list(), name = character(), return_type = character(), args = list()))
+    return(empty)
   }
 
   out <- decorations[decorations$decoration == tag, ]
+  if (NROW(out) == 0) {
+    return(empty)
+  }
   out$functions <- lapply(out$context, parse_cpp_function, is_attribute = TRUE)
   is_template <- vapply(out$functions, \(x) attr(x, "cpp_template"), TRUE)
   out <- vctrs::vec_cbind(out, vctrs::vec_rbind(!!!out$functions))
