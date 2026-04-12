@@ -43,12 +43,22 @@ Hello World!
 ### Registering C++ functions inside a cpp20-linked package
 
 Since cpp20 is header-only, we can include the headers directly into our
-own package. Simply add cpp20 to the **LinkingTo** section of your
-DESCRIPTION file.
+own package.
 
-Once we have done that and written our foo.cpp program as before, use
+### General steps to using cpp20 in a package
+
+1.  Create package (if you haven’t already done so) using
+    [`usethis::create_tidy_package()`](https://usethis.r-lib.org/reference/tidyverse.html)
+2.  Run
+    [`cpp20::use_cpp20()`](https://nicchr.github.io/cpp20/reference/use_cpp20.md)
+3.  Run
+    [`cpp20::load_all()`](https://nicchr.github.io/cpp20/reference/load_all.md)
+
+This will automatically add the necessary package content needed to
+start working with cpp20. For continuous development, use
 [`cpp20::load_all()`](https://nicchr.github.io/cpp20/reference/load_all.md)
-to compile and register the tagged functions.
+to compile and register cpp20 tagged functions, including our hello
+world function.
 
 ``` r
 ℹ 1 functions decorated with [[cpp20::register]]
@@ -66,7 +76,9 @@ to compile and register the tagged functions.
    g++ -shared -s -static-libgcc -o cpp20.dll tmp.def cpp20.o foo.o -fopenmp -LC:/rtools45/x86_64-w64-mingw32.static.posix/lib/x64 -LC:/rtools45/x86_64-w64-mingw32.static.posix/lib -LC:/PROGRA~1/R/R-45~1.2/bin/x64 -lR
    installing to C:/Users/me/AppData/Local/Temp/RtmpSIhqt7/devtools_install_8854593534de/00LOCK-cpp20/00new/cpp20/libs/x64
 ─  DONE (cpp20)
+```
 
+``` r
 hello_world()
 Hello World!
 ```
