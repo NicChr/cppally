@@ -4,9 +4,11 @@
 [![R-CMD-check](https://github.com/NicChr/cpp20/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/NicChr/cpp20/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-I first want to thank cpp11, its authors and contributors for the
-inspiration and for producing the excellent cpp11 package, without which
-I would not have written this package.
+## Acknowledgements
+
+I first want to thank the authors and contributors of the fantastic
+[cpp11](https://cpp11.r-lib.org/) R package, without which I would not
+have been inspired to write this package.
 
 # cpp20
 
