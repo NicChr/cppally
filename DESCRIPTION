@@ -1,6 +1,6 @@
 Package: cpp20
 Title: A C++20 API For Interacting With R
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
     person("Nick", "Christofides", , "nick.christofides.r@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9743-7342"))
