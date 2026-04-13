@@ -30,12 +30,6 @@ use_cpp20 <- function (){
   utils::getFromNamespace("check_uses_roxygen", "usethis")("use_cpp20()")
   utils::getFromNamespace("check_has_package_doc", "usethis")("use_cpp20()")
   suppressMessages(utils::getFromNamespace("use_src", "usethis")())
-  # Re-open package doc so editor shows the @useDynLib tag added by use_src()
-  pkg_name <- utils::getFromNamespace("project_name", "usethis")()
-  pkg_doc <- proj_path("R", paste0(pkg_name, "-package.R"))
-  if (file.exists(pkg_doc) && rstudioapi::hasFun("navigateToFile")) {
-    rstudioapi::navigateToFile(pkg_doc)
-  }
   suppressMessages(utils::getFromNamespace("use_dependency", "usethis")("cpp20", "LinkingTo"))
   cli::cli_bullets(c("v" = "Added cpp20 to LinkingTo field in DESCRIPTION."))
   desc <- desc::desc()
@@ -79,6 +73,13 @@ use_cpp20 <- function (){
     "Please run {.run cpp20::document()} to finish setup",
     "For continuous development please use {.run cpp20::load_all()} and {.run cpp20::document()}"
   ))
+
+  # Re-open package doc so editor shows the @useDynLib tag added by use_src()
+  pkg_name <- utils::getFromNamespace("project_name", "usethis")()
+  pkg_doc <- proj_path("R", paste0(pkg_name, "-package.R"))
+  if (file.exists(pkg_doc) && rstudioapi::hasFun("navigateToFile")) {
+    rstudioapi::navigateToFile(pkg_doc)
+  }
 
   invisible()
 }
