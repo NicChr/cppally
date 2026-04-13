@@ -3,5 +3,6 @@
 export(cpp_eval)
 export(cpp_register)
 export(cpp_source)
+export(document)
 export(load_all)
 export(use_cpp20)
