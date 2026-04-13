@@ -1,4 +1,9 @@
 
+<!-- badges: start -->
+
+[![R-CMD-check](https://github.com/NicChr/cpp20/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/NicChr/cpp20/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
 I first want to thank cpp11, its authors and contributors for the
 inspiration and for producing the excellent cpp11 package, without which
 I would not have written this package.
