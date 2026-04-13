@@ -135,3 +135,29 @@ tactics to deal with `r_null`, we allow vectors to be able to contain
 `r_null` which makes programming with R attributes easier. This means
 `r_vec<T>` objects can be `r_null`. To detect this, use the `is_null()`
 member function.
+
+## Useful Makevars flags
+
+Because cpp20 is a template-heavy library, binary sizes can sometimes
+get large. This is primarily an issue on windows which will throw a
+compiler error if a single .o file gets too big. In this case you may
+want to consider adding the following flag to Makevars.win
+
+``` R
+PKG_CXXFLAGS = -Wa,-mbig-obj
+```
+
+To benefit from OMP SIMD vectorisation and parallelisation, it is
+advised to add these flags to Makevars and Makevars.win
+
+``` R
+PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
+PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS)
+```
+
+All together they would be
+
+``` R
+PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS) -Wa,-mbig-obj
+PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS)
+```

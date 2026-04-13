@@ -128,6 +128,18 @@
 <p>The cpp20 version of R’s <code>R_NilValue</code> is <code>r_null</code> which is of type <code>r_sexp</code>. In an attempt to avoid the use of additional meta-programming tactics to deal with <code>r_null</code>, we allow vectors to be able to contain <code>r_null</code> which makes programming with R attributes easier. This means <code>r_vec&lt;T&gt;</code> objects can be <code>r_null</code>. To detect this, use the <code>is_null()</code> member function.</p>
 </div>
 </div>
+<div class="section level2">
+<h2 id="useful-makevars-flags">Useful Makevars flags<a class="anchor" aria-label="anchor" href="#useful-makevars-flags"></a>
+</h2>
+<p>Because cpp20 is a template-heavy library, binary sizes can sometimes get large. This is primarily an issue on windows which will throw a compiler error if a single .o file gets too big. In this case you may want to consider adding the following flag to Makevars.win</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>PKG_CXXFLAGS <span class="ot">=</span> <span class="sc">-</span>Wa,<span class="sc">-</span>mbig<span class="sc">-</span>obj</span></code></pre></div>
+<p>To benefit from OMP SIMD vectorisation and parallelisation, it is advised to add these flags to Makevars and Makevars.win</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>PKG_CXXFLAGS <span class="ot">=</span> <span class="er">$</span>(SHLIB_OPENMP_CXXFLAGS)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>PKG_LIBS <span class="ot">=</span> <span class="er">$</span>(SHLIB_OPENMP_CXXFLAGS)</span></code></pre></div>
+<p>All together they would be</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>PKG_CXXFLAGS <span class="ot">=</span> <span class="er">$</span>(SHLIB_OPENMP_CXXFLAGS) <span class="sc">-</span>Wa,<span class="sc">-</span>mbig<span class="sc">-</span>obj</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>PKG_LIBS <span class="ot">=</span> <span class="er">$</span>(SHLIB_OPENMP_CXXFLAGS)</span></code></pre></div>
+</div>
 </div>
 
   </main><aside class="col-md-3"><div class="links">
