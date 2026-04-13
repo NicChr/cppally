@@ -150,16 +150,83 @@ PKG_CXXFLAGS = -Wa,-mbig-obj
 ```
 
 To benefit from OMP SIMD vectorisation and parallelisation, it is
-advised to add these flags to Makevars and Makevars.win
+recommended to add these flags to Makevars
 
 ``` R
 PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
 PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS)
 ```
 
-All together they would be
+And these flags to Makevars.win (including the windows specific binary
+size flags)
 
 ``` R
 PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS) -Wa,-mbig-obj
 PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS)
+```
+
+## C++20 and RStudio
+
+At the moment C++20 is not fully supported via RStudio, so I would
+recommend using vscode with the C/C++ for Visual Studio Code extension.
+Positron may also be an option but since I haven’t used it, I can’t
+speak to its capabilities.
+
+While I personally use vscode for C++ code and RStudio for R code and
+package development, you can also use vscode (or Positron) for both
+these things, but again, I haven’t personally used vscode for writing R
+code so I can’t say much about it.
+
+To get vscode’s intellisense to work correctly, you will likely need to
+set some parameters in c_cpp_properties.json.
+
+My json file looks like this:
+
+``` json
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/inst/include",
+                "C:/Program Files/R/R-4.*/include",
+                "${env:LOCALAPPDATA}/R/win-library/4.*/cpp11/include",
+                "${env:LOCALAPPDATA}/R/win-library/4.*/Rcpp/include",
+                "${env:LOCALAPPDATA}/R/win-library/4.*/cpp20/include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                 "STRICT_R_HEADERS"
+            ],
+            "compilerPath": "C:\\rtools45\\x86_64-w64-mingw32.static.posix\\bin\\g++.exe",
+            "cppStandard": "gnu++20",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}
+```
+
+As your R installation path may differ, you can find the exact path with
+
+``` r
+normalizePath(Sys.getenv("R_HOME"), winslash = "/")
+```
+
+Your R libraries can be found with
+
+``` r
+.libPaths()
+```
+
+The compiler bundled with RTools is likely found here
+
+``` r
+cxx <- system2(file.path(R.home("bin"), "R"), c("CMD", "config", "CXX20"), stdout = TRUE)
+cxx_bin <- trimws(strsplit(cxx, " ")[[1]][1])
+normalizePath(Sys.which(cxx_bin))
 ```

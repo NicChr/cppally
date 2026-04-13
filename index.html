@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">cpp20</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,6 +39,7 @@
 <li><a class="dropdown-item" href="articles/protection.html">Automatic Protection</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -138,12 +139,57 @@
 </h2>
 <p>Because cpp20 is a template-heavy library, binary sizes can sometimes get large. This is primarily an issue on windows which will throw a compiler error if a single .o file gets too big. In this case you may want to consider adding the following flag to Makevars.win</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>PKG_CXXFLAGS <span class="ot">=</span> <span class="sc">-</span>Wa,<span class="sc">-</span>mbig<span class="sc">-</span>obj</span></code></pre></div>
-<p>To benefit from OMP SIMD vectorisation and parallelisation, it is advised to add these flags to Makevars and Makevars.win</p>
+<p>To benefit from OMP SIMD vectorisation and parallelisation, it is recommended to add these flags to Makevars</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>PKG_CXXFLAGS <span class="ot">=</span> <span class="er">$</span>(SHLIB_OPENMP_CXXFLAGS)</span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>PKG_LIBS <span class="ot">=</span> <span class="er">$</span>(SHLIB_OPENMP_CXXFLAGS)</span></code></pre></div>
-<p>All together they would be</p>
+<p>And these flags to Makevars.win (including the windows specific binary size flags)</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>PKG_CXXFLAGS <span class="ot">=</span> <span class="er">$</span>(SHLIB_OPENMP_CXXFLAGS) <span class="sc">-</span>Wa,<span class="sc">-</span>mbig<span class="sc">-</span>obj</span>
 <span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>PKG_LIBS <span class="ot">=</span> <span class="er">$</span>(SHLIB_OPENMP_CXXFLAGS)</span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="c20-and-rstudio">C++20 and RStudio<a class="anchor" aria-label="anchor" href="#c20-and-rstudio"></a>
+</h2>
+<p>At the moment C++20 is not fully supported via RStudio, so I would recommend using vscode with the C/C++ for Visual Studio Code extension. Positron may also be an option but since I haven’t used it, I can’t speak to its capabilities.</p>
+<p>While I personally use vscode for C++ code and RStudio for R code and package development, you can also use vscode (or Positron) for both these things, but again, I haven’t personally used vscode for writing R code so I can’t say much about it.</p>
+<p>To get vscode’s intellisense to work correctly, you will likely need to set some parameters in c_cpp_properties.json.</p>
+<p>My json file looks like this:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="dt">"configurations"</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="fu">{</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="dt">"name"</span><span class="fu">:</span> <span class="st">"Win32"</span><span class="fu">,</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="dt">"includePath"</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="st">"${workspaceFolder}/**"</span><span class="ot">,</span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="st">"${workspaceFolder}/src"</span><span class="ot">,</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="st">"${workspaceFolder}/inst/include"</span><span class="ot">,</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="st">"C:/Program Files/R/R-4.*/include"</span><span class="ot">,</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="st">"${env:LOCALAPPDATA}/R/win-library/4.*/cpp11/include"</span><span class="ot">,</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="st">"${env:LOCALAPPDATA}/R/win-library/4.*/Rcpp/include"</span><span class="ot">,</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="st">"${env:LOCALAPPDATA}/R/win-library/4.*/cpp20/include"</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="dt">"defines"</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="st">"_DEBUG"</span><span class="ot">,</span></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="st">"UNICODE"</span><span class="ot">,</span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="st">"_UNICODE"</span><span class="ot">,</span></span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span><span class="st">"STRICT_R_HEADERS"</span></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="dt">"compilerPath"</span><span class="fu">:</span> <span class="st">"C:</span><span class="ch">\\</span><span class="st">rtools45</span><span class="ch">\\</span><span class="st">x86_64-w64-mingw32.static.posix</span><span class="ch">\\</span><span class="st">bin</span><span class="ch">\\</span><span class="st">g++.exe"</span><span class="fu">,</span></span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="dt">"cppStandard"</span><span class="fu">:</span> <span class="st">"gnu++20"</span><span class="fu">,</span></span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="dt">"intelliSenseMode"</span><span class="fu">:</span> <span class="st">"gcc-x64"</span></span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="er"> </span> <span class="fu">}</span></span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a><span class="er"> </span> <span class="er"> </span> <span class="dt">"version"</span><span class="fu">:</span> <span class="dv">4</span></span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>As your R installation path may differ, you can find the exact path with</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/normalizePath.html" class="external-link">normalizePath</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"R_HOME"</span><span class="op">)</span>, winslash <span class="op">=</span> <span class="st">"/"</span><span class="op">)</span></span></code></pre></div>
+<p>Your R libraries can be found with</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/libPaths.html" class="external-link">.libPaths</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>The compiler bundled with RTools is likely found here</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cxx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system2.html" class="external-link">system2</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Rhome.html" class="external-link">R.home</a></span><span class="op">(</span><span class="st">"bin"</span><span class="op">)</span>, <span class="st">"R"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CMD"</span>, <span class="st">"config"</span>, <span class="st">"CXX20"</span><span class="op">)</span>, stdout <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">cxx_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">cxx</span>, <span class="st">" "</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/normalizePath.html" class="external-link">normalizePath</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.which.html" class="external-link">Sys.which</a></span><span class="op">(</span><span class="va">cxx_bin</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 
