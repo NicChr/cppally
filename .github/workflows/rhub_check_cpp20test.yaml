@@ -52,6 +52,12 @@ jobs:
         run: |
           R CMD build cpp20test
           R CMD check cpp20test_*.tar.gz --no-manual --as-cran
+      - name: Upload check results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-results-${{ matrix.config.label }}
+          path: cpp20test.Rcheck/
 
   other-platforms:
     needs: setup
@@ -78,10 +84,19 @@ jobs:
           job-config: ${{ matrix.config.job-config }}
           token: ${{ secrets.RHUB_TOKEN }}
       - name: Install cpp20
+        shell: bash
         run: R CMD INSTALL .
       - name: Install testthat
+        shell: bash
         run: Rscript -e 'if (!requireNamespace("testthat", quietly = TRUE)) install.packages("testthat")'
       - name: Build and check cpp20test
+        shell: bash
         run: |
           R CMD build cpp20test
           R CMD check cpp20test_*.tar.gz --no-manual --as-cran
+      - name: Upload check results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-results-${{ matrix.config.label }}
+          path: cpp20test.Rcheck/
