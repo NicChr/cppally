@@ -64,12 +64,13 @@ If R throws an error via `Rf_error()` a ‘longjmp’ will occur, meaning
 C++ destructors won’t run and memory that should have been released will
 not be released. If you really want to use the R C API and cpp20, you
 must make sure that either the code is exception safe (unlikely), or
-that R C API functions are called via cpp20’s `safe[]`. \### views
+that R C API functions are called via cpp20’s `safe[]`.
+
+### views
 
 To avoid the overhead associated with automatic protection entirely, one
 can use view types like e.g. `r_str_view`, a non-owning class for R
-strings. Vector member function `view()` also returns non-owning
-view-only vector elements. For more info on views see [Automatic
+strings. For more info on views see [Automatic
 Protection](https://nicchr.github.io/cpp20/articles/protection.html)
 
 ### No copy-on-write or copy-on-modify
