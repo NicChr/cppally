@@ -37,36 +37,36 @@ using namespace cpp11;
 
 [[cpp11::register]]
 double bench_protect_insert_release_cpp11(int n) {
-    SEXP dummy = Rf_ScalarInteger(42);
-    R_PreserveObject(dummy);
-    auto start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < n; ++i) {
-        sexp x(dummy);  // insert into pool
-    }                      // destructor → release from pool
-    auto end = std::chrono::high_resolution_clock::now();
-    R_ReleaseObject(dummy);
-    double ns = std::chrono::duration<double, std::nano>(end - start).count();
-    return ns / n;  // nanoseconds per insert+release cycle
+  SEXP dummy = Rf_ScalarInteger(42);
+  R_PreserveObject(dummy);
+  auto start = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < n; ++i) {
+    sexp x(dummy); // insert into pool
+  }           // destructor → release from pool
+  auto end = std::chrono::high_resolution_clock::now();
+  R_ReleaseObject(dummy);
+  double ns = std::chrono::duration<double, std::nano>(end - start).count();
+  return ns / n; // nanoseconds per insert+release cycle
 }
 ```
 
 ``` cpp
-#include <cpp11.hpp>
-using namespace cpp11;
+#include <cpp20.hpp>
+using namespace cpp20;
 #include <chrono>
 
 [[cpp20::register]]
 double bench_protect_insert_release_cpp20(int n) {
-    SEXP dummy = Rf_ScalarInteger(42);
-    R_PreserveObject(dummy);
-    auto start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < n; ++i) {
-        r_sexp x(dummy);  // insert into pool
-    }                      // destructor → release from pool
-    auto end = std::chrono::high_resolution_clock::now();
-    R_ReleaseObject(dummy);
-    double ns = std::chrono::duration<double, std::nano>(end - start).count();
-    return ns / n;  // nanoseconds per insert+release cycle
+  SEXP dummy = Rf_ScalarInteger(42);
+  R_PreserveObject(dummy);
+  auto start = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < n; ++i) {
+    r_sexp x(dummy); // insert into pool
+  }           // destructor → release from pool
+  auto end = std::chrono::high_resolution_clock::now();
+  R_ReleaseObject(dummy);
+  double ns = std::chrono::duration<double, std::nano>(end - start).count();
+  return ns / n; // nanoseconds per insert+release cycle
 }
 ```
 
@@ -106,15 +106,15 @@ double bench_protect_copy_cpp11(int n) {
 
 [[cpp20::register]]
 double bench_protect_copy_cpp20(int n) {
-    SEXP dummy = Rf_ScalarInteger(42);
-    r_sexp dummy2 = r_sexp(dummy);
-    auto start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < n; ++i) {
-        r_sexp x = dummy2; // Copy
-    }
-    auto end = std::chrono::high_resolution_clock::now();
-    double ns = std::chrono::duration<double, std::nano>(end - start).count();
-    return ns / n;  // nanoseconds per copy
+  SEXP dummy = Rf_ScalarInteger(42);
+  r_sexp dummy2 = r_sexp(dummy);
+  auto start = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < n; ++i) {
+    r_sexp x = dummy2; // Copy
+  }
+  auto end = std::chrono::high_resolution_clock::now();
+  double ns = std::chrono::duration<double, std::nano>(end - start).count();
+  return ns / n; // nanoseconds per copy
 }
 ```
 
@@ -141,14 +141,14 @@ impact on performance.
 // Pure R C API NA count - As fast as it can reasonably get
 [[cpp20::register]] // Registered via cpp20 for convenience
 int C_na_count(SEXP x){
-  r_size_t n = Rf_xlength(x);
-  int na_count = 0;
-  const SEXP *p_x = STRING_PTR_RO(x);
-  for (r_size_t i = 0; i < n; ++i){
-    SEXP str = p_x[i]; // No protection so no extra overhead
-    na_count += str == NA_STRING;
-  }
-  return na_count;
+ r_size_t n = Rf_xlength(x);
+ int na_count = 0;
+ const SEXP *p_x = STRING_PTR_RO(x);
+ for (r_size_t i = 0; i < n; ++i){
+  SEXP str = p_x[i]; // No protection so no extra overhead
+  na_count += str == NA_STRING;
+ }
+ return na_count;
 }
 
 // cpp11 NA count
@@ -168,13 +168,13 @@ int cpp11_na_count(strings x){
 // cpp20 NA count
 [[cpp20::register]]
 int cpp20_na_count(r_vec<r_str> x){
-  r_size_t n = x.length();
-  int na_count = 0;
-  for (r_size_t i = 0; i < n; ++i){
-    r_str str = x.get(i); // r_str protects the underlying CHARSXP
-    na_count += is_na(str);
-  }
-  return na_count;
+ r_size_t n = x.length();
+ int na_count = 0;
+ for (r_size_t i = 0; i < n; ++i){
+  r_str str = x.get(i); // r_str protects the underlying CHARSXP
+  na_count += is_na(str);
+ }
+ return na_count;
 }
 ```
 
@@ -242,13 +242,13 @@ version of `r_str`.
 ``` cpp
 [[cpp20::register]]
 int cpp20_fast_na_count(r_vec<r_str_view> x){
-  r_size_t n = x.length();
-  int na_count = 0;
-  for (r_size_t i = 0; i < n; ++i){
-    r_str_view str = x.get(i); // `r_str_view` does NOT re-protect the underlying CHARSXP
-    na_count += is_na(str);
-  }
-  return na_count;
+ r_size_t n = x.length();
+ int na_count = 0;
+ for (r_size_t i = 0; i < n; ++i){
+  r_str_view str = x.get(i); // `r_str_view` does NOT re-protect the underlying CHARSXP
+  na_count += is_na(str);
+ }
+ return na_count;
 }
 ```
 
@@ -273,14 +273,14 @@ a non-owning context.
 ``` cpp
 [[cpp20::register]]
 int cpp20_fast_na_count_v2(r_vec<r_str> x){
-  r_size_t n = x.length();
-  int na_count = 0;
-  for (r_size_t i = 0; i < n; ++i){
+ r_size_t n = x.length();
+ int na_count = 0;
+ for (r_size_t i = 0; i < n; ++i){
   // view() is safe as long as you neither assign the result
   // to a variable nor return it from the function
-    na_count += is_na(x.view(i)); 
-  }
-  return na_count;
+  na_count += is_na(x.view(i)); 
+ }
+ return na_count;
 }
 ```
 

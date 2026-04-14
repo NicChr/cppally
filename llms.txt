@@ -188,30 +188,30 @@ My json file looks like this:
 
 ``` json
 {
-    "configurations": [
-        {
-            "name": "Win32",
-            "includePath": [
-                "${workspaceFolder}/**",
-                "${workspaceFolder}/src",
-                "${workspaceFolder}/inst/include",
-                "C:/Program Files/R/R-4.*/include",
-                "${env:LOCALAPPDATA}/R/win-library/4.*/cpp11/include",
-                "${env:LOCALAPPDATA}/R/win-library/4.*/Rcpp/include",
-                "${env:LOCALAPPDATA}/R/win-library/4.*/cpp20/include"
-            ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE",
-                 "STRICT_R_HEADERS"
-            ],
-            "compilerPath": "C:\\rtools45\\x86_64-w64-mingw32.static.posix\\bin\\g++.exe",
-            "cppStandard": "gnu++20",
-            "intelliSenseMode": "gcc-x64"
-        }
-    ],
-    "version": 4
+  "configurations": [
+    {
+      "name": "Win32",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/inst/include",
+        "C:/Program Files/R/R-4.*/include",
+        "${env:LOCALAPPDATA}/R/win-library/4.*/cpp11/include",
+        "${env:LOCALAPPDATA}/R/win-library/4.*/Rcpp/include",
+        "${env:LOCALAPPDATA}/R/win-library/4.*/cpp20/include"
+      ],
+      "defines": [
+        "_DEBUG",
+        "UNICODE",
+        "_UNICODE",
+        "STRICT_R_HEADERS"
+      ],
+      "compilerPath": "C:\\rtools45\\x86_64-w64-mingw32.static.posix\\bin\\g++.exe",
+      "cppStandard": "gnu++20",
+      "intelliSenseMode": "gcc-x64"
+    }
+  ],
+  "version": 4
 }
 ```
 
