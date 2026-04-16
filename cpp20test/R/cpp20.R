@@ -296,6 +296,14 @@ test_identical <- function(x, y) {
   .Call(`_cpp20test_test_identical`, x, y)
 }
 
+test_multiline_template_add <- function(x, y) {
+  .Call(`_cpp20test_test_multiline_template_add`, x, y)
+}
+
+test_multiline_template_add2 <- function(x, y) {
+  .Call(`_cpp20test_test_multiline_template_add2`, x, y)
+}
+
 test_attrs <- function(x) {
   .Call(`_cpp20test_test_attrs`, x)
 }

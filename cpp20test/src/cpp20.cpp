@@ -686,6 +686,28 @@ extern "C" SEXP _cpp20test_test_identical(SEXP x, SEXP y) {
   return cpp_to_sexp(::test_identical(as<SEXP>(x), as<SEXP>(y)));
   END_CPP20
 }
+// test.h
+extern "C" SEXP _cpp20test_test_multiline_template_add(SEXP x, SEXP y) {
+  BEGIN_CPP20
+  return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
+    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(::test_multiline_template_add(as<T>(x_internal), as<U>(y_internal)))) {
+        return cpp_to_sexp(::test_multiline_template_add(as<T>(x_internal), as<U>(y_internal)));
+    },
+    x, y
+  );
+  END_CPP20
+}
+// test.h
+extern "C" SEXP _cpp20test_test_multiline_template_add2(SEXP x, SEXP y) {
+  BEGIN_CPP20
+  return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
+    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(::test_multiline_template_add2(as<T>(x_internal), as<U>(y_internal)))) {
+        return cpp_to_sexp(::test_multiline_template_add2(as<T>(x_internal), as<U>(y_internal)));
+    },
+    x, y
+  );
+  END_CPP20
+}
 // test_attrs.cpp
 r_vec<r_sexp> test_attrs(SEXP x);
 extern "C" SEXP _cpp20test_test_attrs(SEXP x) {
@@ -973,6 +995,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cpp20test_test_match",                         (DL_FUNC) &_cpp20test_test_match,                         2},
     {"_cpp20test_test_mean",                          (DL_FUNC) &_cpp20test_test_mean,                          2},
     {"_cpp20test_test_mix2",                          (DL_FUNC) &_cpp20test_test_mix2,                          7},
+    {"_cpp20test_test_multiline_template_add",        (DL_FUNC) &_cpp20test_test_multiline_template_add,        2},
+    {"_cpp20test_test_multiline_template_add2",       (DL_FUNC) &_cpp20test_test_multiline_template_add2,       2},
     {"_cpp20test_test_multiple_deduction",            (DL_FUNC) &_cpp20test_test_multiple_deduction,            2},
     {"_cpp20test_test_n_unique",                      (DL_FUNC) &_cpp20test_test_n_unique,                      1},
     {"_cpp20test_test_na_types",                      (DL_FUNC) &_cpp20test_test_na_types,                      0},

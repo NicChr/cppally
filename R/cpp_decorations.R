@@ -20,7 +20,7 @@ cpp_decorations <- function(pkg = ".", files = decor::cpp_files(pkg = pkg), is_a
     start <- grep(cpp_attribute_pattern(is_attribute), lines)
     if (!length(start)) {
       return(vctrs::data_frame(file = character(), line = integer(),
-                    decoration = character(), params = list(), context = list()))
+                               decoration = character(), params = list(), context = list()))
     }
 
     end <- c(utils::tail(start, -1L) - 1L, length(lines))
@@ -33,40 +33,48 @@ cpp_decorations <- function(pkg = ".", files = decor::cpp_files(pkg = pkg), is_a
     real_end <- end
     for (i in seq_along(start)) {
       idx <- start[i]
-      # Walk back to find template
       curr <- idx - 1L
-      while(curr > 0) {
-        line <- lines[curr]
-        if (grepl("^\\s*//", line)) { # Skip comments
-          curr <- curr - 1
+      found <- NA_integer_
+      # Scan backwards for a `template <` opener. Unknown lines are tolerated
+      # so multi-line template parameter lists (e.g. `T,` / `U>` on their own
+      # lines) are traversed; we only give up on blank lines or real code.
+      while (curr > 0L) {
+        line <- trimws(lines[curr])
+        if (stringr::str_detect(line, "^//")){
+          curr <- curr - 1L
           next
         }
-        if (is_template_signature(line)) {
-          real_start[i] <- curr
-          n_steps_back <- idx - curr
-          # Adjust previous end point
-          if (i > 1){
-            real_end[i - 1] <- real_end[i - 1] - n_steps_back
-          }
-          break
-        }
-
         if (is_requires_signature(line)){
           curr <- curr - 1L
           next
         }
-
-        if (nzchar(trimws(line))) {
+        if (!nzchar(line)){
           break
         }
+        if (is_template_signature(line)){
+          found <- curr
+          break
+        }
+        # A `;`, `{`, or `}` at end of line means we've hit real code — stop
+        if (stringr::str_detect(line, "[;{}]\\s*$")){
+          break
+        }
+        # Otherwise assume we're still inside a multi-line template parameter list
         curr <- curr - 1L
+      }
+      if (!is.na(found)) {
+        real_start[i] <- found
+        # Extending this decoration's start upward steals lines from the
+        # previous decoration's end, so shrink it by the same amount.
+        n_steps_back <- idx - found
+        if (i > 1L) real_end[i - 1L] <- real_end[i - 1L] - n_steps_back
       }
     }
 
     text <- lines[start]
     content <- sub(paste0(cpp_attribute_pattern(is_attribute), ".*"), "\\1", text)
-    decoration <- sub("\\(.*$", "", content)
-    has_args <- grepl("\\(", content)
+    decoration <- stringr::str_remove(content, "\\(.*$")
+    has_args <- stringr::str_detect(content, "\\(")
     params <- purrr::map_if(content, has_args, function(.x) {
       purrr::set_names(as.list(parse(text = .x)[[1]][-1]))
     })
@@ -91,7 +99,7 @@ cpp_decorations <- function(pkg = ".", files = decor::cpp_files(pkg = pkg), is_a
     vctrs::data_frame(
       file = file, line = start, decoration = decoration,
       params = params, context = context
-      )
+    )
   })
 
   vctrs::vec_rbind(!!!res)

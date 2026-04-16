@@ -286,3 +286,42 @@ SEXP test_copy(SEXP x){
 bool test_identical(SEXP x, SEXP y){
   return identical(x, y);
 }
+
+template <
+RMathType T,
+RMathType U
+>
+[[cpp20::register]]
+T test_multiline_template_add(T x, U y){
+  return as<T>(x + y);
+}
+
+template
+<
+RMathType T,
+RMathType U
+>
+[[cpp20::register]]
+T test_multiline_template_add2(T x, U y){
+  return as<T>(x + y);
+}
+
+template <
+RMathType T,
+RMathType U
+>
+// [[cpp20::register]]
+T test_multiline_template_add3(T x, U y){
+  return as<T>(x + y);
+}
+
+
+
+// template <
+// RMathType T,
+// RMathType U
+// >
+// // [[cpp20::register]]
+// T test_multiline_template_add2(T x, U y){
+//   return as<T>(x + y);
+// }
