@@ -19,8 +19,8 @@ using internal::dispatch_template_impl;
 extern "C" SEXP _cpp20test_scalar_init(SEXP ptype) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP ptype_internal) -> decltype(cpp_to_sexp(scalar_init(as<T>(ptype_internal)))) {
-        return cpp_to_sexp(scalar_init(as<T>(ptype_internal)));
+    []<typename T>(SEXP ptype_internal) -> decltype(cpp_to_sexp(::scalar_init(as<T>(ptype_internal)))) {
+        return cpp_to_sexp(::scalar_init(as<T>(ptype_internal)));
     },
     ptype
   );
@@ -30,22 +30,22 @@ extern "C" SEXP _cpp20test_scalar_init(SEXP ptype) {
 r_int64 as_int64(r_int x);
 extern "C" SEXP _cpp20test_as_int64(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(as_int64(as<r_int>(x)));
+  return cpp_to_sexp(::as_int64(as<r_int>(x)));
   END_CPP20
 }
 // readme.h
 r_size_t as_r_size_t(r_int x);
 extern "C" SEXP _cpp20test_as_r_size_t(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(as_r_size_t(as<r_int>(x)));
+  return cpp_to_sexp(::as_r_size_t(as<r_int>(x)));
   END_CPP20
 }
 // readme.h
 extern "C" SEXP _cpp20test_cpp_length(SEXP vec) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP vec_internal) -> decltype(cpp_to_sexp(cpp_length(as<T>(vec_internal)))) {
-        return cpp_to_sexp(cpp_length(as<T>(vec_internal)));
+    []<typename T>(SEXP vec_internal) -> decltype(cpp_to_sexp(::cpp_length(as<T>(vec_internal)))) {
+        return cpp_to_sexp(::cpp_length(as<T>(vec_internal)));
     },
     vec
   );
@@ -55,98 +55,98 @@ extern "C" SEXP _cpp20test_cpp_length(SEXP vec) {
 r_dbl add_half(r_dbl x);
 extern "C" SEXP _cpp20test_add_half(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(add_half(as<r_dbl>(x)));
+  return cpp_to_sexp(::add_half(as<r_dbl>(x)));
   END_CPP20
 }
 // readme.h
 r_str symbol_to_string(r_sym x);
 extern "C" SEXP _cpp20test_symbol_to_string(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(symbol_to_string(as<r_sym>(x)));
+  return cpp_to_sexp(::symbol_to_string(as<r_sym>(x)));
   END_CPP20
 }
 // readme.h
 r_factors new_factor(r_vec<r_str> x);
 extern "C" SEXP _cpp20test_new_factor(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(new_factor(as<r_vec<r_str>>(x)));
+  return cpp_to_sexp(::new_factor(as<r_vec<r_str>>(x)));
   END_CPP20
 }
 // readme.h
 r_vec<r_int> factor_codes(r_factors x);
 extern "C" SEXP _cpp20test_factor_codes(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(factor_codes(as<r_factors>(x)));
+  return cpp_to_sexp(::factor_codes(as<r_factors>(x)));
   END_CPP20
 }
 // readme.h
 r_vec<r_int> cpp_lengths(const r_vec<r_sexp>& x);
 extern "C" SEXP _cpp20test_cpp_lengths(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(cpp_lengths(as<const r_vec<r_sexp>&>(x)));
+  return cpp_to_sexp(::cpp_lengths(as<const r_vec<r_sexp>&>(x)));
   END_CPP20
 }
 // readme.h
 r_vec<r_int> cpp_lengths2(const r_vec<r_sexp>& x);
 extern "C" SEXP _cpp20test_cpp_lengths2(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(cpp_lengths2(as<const r_vec<r_sexp>&>(x)));
+  return cpp_to_sexp(::cpp_lengths2(as<const r_vec<r_sexp>&>(x)));
   END_CPP20
 }
 // readme.h
 r_int double_to_int(r_dbl x);
 extern "C" SEXP _cpp20test_double_to_int(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(double_to_int(as<r_dbl>(x)));
+  return cpp_to_sexp(::double_to_int(as<r_dbl>(x)));
   END_CPP20
 }
 // readme.h
 r_vec<r_int> to_int_vec(r_vec<r_dbl> x);
 extern "C" SEXP _cpp20test_to_int_vec(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(to_int_vec(as<r_vec<r_dbl>>(x)));
+  return cpp_to_sexp(::to_int_vec(as<r_vec<r_dbl>>(x)));
   END_CPP20
 }
 // readme.h
 r_vec<r_sexp> coercions();
 extern "C" SEXP _cpp20test_coercions() {
   BEGIN_CPP20
-  return cpp_to_sexp(coercions());
+  return cpp_to_sexp(::coercions());
   END_CPP20
 }
 // readme.h
 int cpp20_na_count(r_vec<r_str> x);
 extern "C" SEXP _cpp20test_cpp20_na_count(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(cpp20_na_count(as<r_vec<r_str>>(x)));
+  return cpp_to_sexp(::cpp20_na_count(as<r_vec<r_str>>(x)));
   END_CPP20
 }
 // readme.h
 int C_na_count(SEXP x);
 extern "C" SEXP _cpp20test_C_na_count(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(C_na_count(as<SEXP>(x)));
+  return cpp_to_sexp(::C_na_count(as<SEXP>(x)));
   END_CPP20
 }
 // readme.h
 int cpp20_fast_na_count(r_vec<r_str_view> x);
 extern "C" SEXP _cpp20test_cpp20_fast_na_count(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(cpp20_fast_na_count(as<r_vec<r_str_view>>(x)));
+  return cpp_to_sexp(::cpp20_fast_na_count(as<r_vec<r_str_view>>(x)));
   END_CPP20
 }
 // readme.h
 int cpp20_fast_na_count_v2(r_vec<r_str> x);
 extern "C" SEXP _cpp20test_cpp20_fast_na_count_v2(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(cpp20_fast_na_count_v2(as<r_vec<r_str>>(x)));
+  return cpp_to_sexp(::cpp20_fast_na_count_v2(as<r_vec<r_str>>(x)));
   END_CPP20
 }
 // test.cpp
 void cpp_set_threads(int n);
 extern "C" SEXP _cpp20test_cpp_set_threads(SEXP n) {
   BEGIN_CPP20
-  cpp_set_threads(as<int>(n));
+  ::cpp_set_threads(as<int>(n));
   return R_NilValue;
   END_CPP20
 }
@@ -154,127 +154,127 @@ extern "C" SEXP _cpp20test_cpp_set_threads(SEXP n) {
 r_int cpp_get_threads();
 extern "C" SEXP _cpp20test_cpp_get_threads() {
   BEGIN_CPP20
-  return cpp_to_sexp(cpp_get_threads());
+  return cpp_to_sexp(::cpp_get_threads());
   END_CPP20
 }
 // test.cpp
 r_str cpp20_typeof(SEXP x);
 extern "C" SEXP _cpp20test_cpp20_typeof(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(cpp20_typeof(as<SEXP>(x)));
+  return cpp_to_sexp(::cpp20_typeof(as<SEXP>(x)));
   END_CPP20
 }
 // test.cpp
 SEXP test_identity2(SEXP x);
 extern "C" SEXP _cpp20test_test_identity2(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_identity2(as<SEXP>(x)));
+  return cpp_to_sexp(::test_identity2(as<SEXP>(x)));
   END_CPP20
 }
 // test.cpp
 r_vec<r_str> test_str1(r_str x);
 extern "C" SEXP _cpp20test_test_str1(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_str1(as<r_str>(x)));
+  return cpp_to_sexp(::test_str1(as<r_str>(x)));
   END_CPP20
 }
 // test.cpp
 r_vec<r_str_view> test_str2(r_str_view x);
 extern "C" SEXP _cpp20test_test_str2(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_str2(as<r_str_view>(x)));
+  return cpp_to_sexp(::test_str2(as<r_str_view>(x)));
   END_CPP20
 }
 // test.cpp
 r_vec<r_date> test_as_date(SEXP x);
 extern "C" SEXP _cpp20test_test_as_date(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_as_date(as<SEXP>(x)));
+  return cpp_to_sexp(::test_as_date(as<SEXP>(x)));
   END_CPP20
 }
 // test.cpp
 r_vec<r_date> test_construct_date(SEXP x);
 extern "C" SEXP _cpp20test_test_construct_date(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_construct_date(as<SEXP>(x)));
+  return cpp_to_sexp(::test_construct_date(as<SEXP>(x)));
   END_CPP20
 }
 // test.cpp
 r_vec<r_date> test_as_date2(r_vec<r_date> x);
 extern "C" SEXP _cpp20test_test_as_date2(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_as_date2(as<r_vec<r_date>>(x)));
+  return cpp_to_sexp(::test_as_date2(as<r_vec<r_date>>(x)));
   END_CPP20
 }
 // test.cpp
 r_sexp test_null();
 extern "C" SEXP _cpp20test_test_null() {
   BEGIN_CPP20
-  return cpp_to_sexp(test_null());
+  return cpp_to_sexp(::test_null());
   END_CPP20
 }
 // test.cpp
 r_sym test_sym(r_sym x);
 extern "C" SEXP _cpp20test_test_sym(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_sym(as<r_sym>(x)));
+  return cpp_to_sexp(::test_sym(as<r_sym>(x)));
   END_CPP20
 }
 // test.cpp
 r_sexp test_sexp2(r_sexp x);
 extern "C" SEXP _cpp20test_test_sexp2(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_sexp2(as<r_sexp>(x)));
+  return cpp_to_sexp(::test_sexp2(as<r_sexp>(x)));
   END_CPP20
 }
 // test.cpp
 r_vec<r_sexp> test_sexp3(r_vec<r_sexp> x);
 extern "C" SEXP _cpp20test_test_sexp3(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_sexp3(as<r_vec<r_sexp>>(x)));
+  return cpp_to_sexp(::test_sexp3(as<r_vec<r_sexp>>(x)));
   END_CPP20
 }
 // test.cpp
 r_vec<r_int> test_coerce1(const r_vec<r_sexp>& x);
 extern "C" SEXP _cpp20test_test_coerce1(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_coerce1(as<const r_vec<r_sexp>&>(x)));
+  return cpp_to_sexp(::test_coerce1(as<const r_vec<r_sexp>&>(x)));
   END_CPP20
 }
 // test.cpp
 r_vec<r_date> test_dates1(r_vec<r_date> x);
 extern "C" SEXP _cpp20test_test_dates1(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_dates1(as<r_vec<r_date>>(x)));
+  return cpp_to_sexp(::test_dates1(as<r_vec<r_date>>(x)));
   END_CPP20
 }
 // test.cpp
 r_str test_tz(r_vec<r_psxct> x);
 extern "C" SEXP _cpp20test_test_tz(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_tz(as<r_vec<r_psxct>>(x)));
+  return cpp_to_sexp(::test_tz(as<r_vec<r_psxct>>(x)));
   END_CPP20
 }
 // test.cpp
 r_vec<r_int> test_lengths(const r_vec<r_sexp>& x);
 extern "C" SEXP _cpp20test_test_lengths(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_lengths(as<const r_vec<r_sexp>&>(x)));
+  return cpp_to_sexp(::test_lengths(as<const r_vec<r_sexp>&>(x)));
   END_CPP20
 }
 // test.cpp
 r_lgl test_lgl();
 extern "C" SEXP _cpp20test_test_lgl() {
   BEGIN_CPP20
-  return cpp_to_sexp(test_lgl());
+  return cpp_to_sexp(::test_lgl());
   END_CPP20
 }
 // test.h
 extern "C" SEXP _cpp20test_test_deduced_type(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_deduced_type(as<T>(x_internal)))) {
-        return cpp_to_sexp(test_deduced_type(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_deduced_type(as<T>(x_internal)))) {
+        return cpp_to_sexp(::test_deduced_type(as<T>(x_internal)));
     },
     x
   );
@@ -284,8 +284,8 @@ extern "C" SEXP _cpp20test_test_deduced_type(SEXP x) {
 extern "C" SEXP _cpp20test_test_multiple_deduction(SEXP x, SEXP y) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_multiple_deduction(as<T>(x_internal), as<T>(y_internal)))) {
-        return cpp_to_sexp(test_multiple_deduction(as<T>(x_internal), as<T>(y_internal)));
+    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(::test_multiple_deduction(as<T>(x_internal), as<T>(y_internal)))) {
+        return cpp_to_sexp(::test_multiple_deduction(as<T>(x_internal), as<T>(y_internal)));
     },
     x, y
   );
@@ -295,8 +295,8 @@ extern "C" SEXP _cpp20test_test_multiple_deduction(SEXP x, SEXP y) {
 extern "C" SEXP _cpp20test_test_deduced_vec_type(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_deduced_vec_type(as<T>(x_internal)))) {
-        return cpp_to_sexp(test_deduced_vec_type(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_deduced_vec_type(as<T>(x_internal)))) {
+        return cpp_to_sexp(::test_deduced_vec_type(as<T>(x_internal)));
     },
     x
   );
@@ -306,8 +306,8 @@ extern "C" SEXP _cpp20test_test_deduced_vec_type(SEXP x) {
 extern "C" SEXP _cpp20test_test_deduced_scalar_type(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_deduced_scalar_type(as<T>(x_internal)))) {
-        return cpp_to_sexp(test_deduced_scalar_type(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_deduced_scalar_type(as<T>(x_internal)))) {
+        return cpp_to_sexp(::test_deduced_scalar_type(as<T>(x_internal)));
     },
     x
   );
@@ -317,8 +317,8 @@ extern "C" SEXP _cpp20test_test_deduced_scalar_type(SEXP x) {
 extern "C" SEXP _cpp20test_test_deduced_scalar_type2(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_deduced_scalar_type2(as<T>(x_internal)))) {
-        return cpp_to_sexp(test_deduced_scalar_type2(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_deduced_scalar_type2(as<T>(x_internal)))) {
+        return cpp_to_sexp(::test_deduced_scalar_type2(as<T>(x_internal)));
     },
     x
   );
@@ -328,8 +328,8 @@ extern "C" SEXP _cpp20test_test_deduced_scalar_type2(SEXP x) {
 extern "C" SEXP _cpp20test_test_identity(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_identity(as<T>(x_internal)))) {
-        return cpp_to_sexp(test_identity(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_identity(as<T>(x_internal)))) {
+        return cpp_to_sexp(::test_identity(as<T>(x_internal)));
     },
     x
   );
@@ -339,8 +339,8 @@ extern "C" SEXP _cpp20test_test_identity(SEXP x) {
 extern "C" SEXP _cpp20test_test_template_null(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_template_null(as<T>(x_internal)))) {
-        return cpp_to_sexp(test_template_null(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_template_null(as<T>(x_internal)))) {
+        return cpp_to_sexp(::test_template_null(as<T>(x_internal)));
     },
     x
   );
@@ -350,8 +350,8 @@ extern "C" SEXP _cpp20test_test_template_null(SEXP x) {
 extern "C" SEXP _cpp20test_test_scalar(SEXP x, SEXP y) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{-1, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_scalar(as<int>(x_internal), as<T>(y_internal)))) {
-        return cpp_to_sexp(test_scalar(as<int>(x_internal), as<T>(y_internal)));
+    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(::test_scalar(as<int>(x_internal), as<T>(y_internal)))) {
+        return cpp_to_sexp(::test_scalar(as<int>(x_internal), as<T>(y_internal)));
     },
     x, y
   );
@@ -361,8 +361,8 @@ extern "C" SEXP _cpp20test_test_scalar(SEXP x, SEXP y) {
 extern "C" SEXP _cpp20test_test_scalar2(SEXP x, SEXP y) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{-1, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_scalar2(as<r_int>(x_internal), as<T>(y_internal)))) {
-        return cpp_to_sexp(test_scalar2(as<r_int>(x_internal), as<T>(y_internal)));
+    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(::test_scalar2(as<r_int>(x_internal), as<T>(y_internal)))) {
+        return cpp_to_sexp(::test_scalar2(as<r_int>(x_internal), as<T>(y_internal)));
     },
     x, y
   );
@@ -372,8 +372,8 @@ extern "C" SEXP _cpp20test_test_scalar2(SEXP x, SEXP y) {
 extern "C" SEXP _cpp20test_test_scalar3(SEXP x, SEXP y) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{-1, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_scalar3(as<r_int>(x_internal), as<T>(y_internal)))) {
-        return cpp_to_sexp(test_scalar3(as<r_int>(x_internal), as<T>(y_internal)));
+    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(::test_scalar3(as<r_int>(x_internal), as<T>(y_internal)))) {
+        return cpp_to_sexp(::test_scalar3(as<r_int>(x_internal), as<T>(y_internal)));
     },
     x, y
   );
@@ -383,8 +383,8 @@ extern "C" SEXP _cpp20test_test_scalar3(SEXP x, SEXP y) {
 extern "C" SEXP _cpp20test_test_rval_identity(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_rval_identity(as<T>(x_internal)))) {
-        return cpp_to_sexp(test_rval_identity(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_rval_identity(as<T>(x_internal)))) {
+        return cpp_to_sexp(::test_rval_identity(as<T>(x_internal)));
     },
     x
   );
@@ -394,8 +394,8 @@ extern "C" SEXP _cpp20test_test_rval_identity(SEXP x) {
 extern "C" SEXP _cpp20test_scalar1(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(scalar1(as<T>(x_internal)))) {
-        return cpp_to_sexp(scalar1(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::scalar1(as<T>(x_internal)))) {
+        return cpp_to_sexp(::scalar1(as<T>(x_internal)));
     },
     x
   );
@@ -405,8 +405,8 @@ extern "C" SEXP _cpp20test_scalar1(SEXP x) {
 extern "C" SEXP _cpp20test_scalar2(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(scalar2(as<T>(x_internal)))) {
-        return cpp_to_sexp(scalar2(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::scalar2(as<T>(x_internal)))) {
+        return cpp_to_sexp(::scalar2(as<T>(x_internal)));
     },
     x
   );
@@ -416,8 +416,8 @@ extern "C" SEXP _cpp20test_scalar2(SEXP x) {
 extern "C" SEXP _cpp20test_vector1(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(vector1(as<r_vec<T>>(x_internal)))) {
-        return cpp_to_sexp(vector1(as<r_vec<T>>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::vector1(as<r_vec<T>>(x_internal)))) {
+        return cpp_to_sexp(::vector1(as<r_vec<T>>(x_internal)));
     },
     x
   );
@@ -427,8 +427,8 @@ extern "C" SEXP _cpp20test_vector1(SEXP x) {
 extern "C" SEXP _cpp20test_vector2(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(vector2(as<T>(x_internal)))) {
-        return cpp_to_sexp(vector2(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::vector2(as<T>(x_internal)))) {
+        return cpp_to_sexp(::vector2(as<T>(x_internal)));
     },
     x
   );
@@ -438,8 +438,8 @@ extern "C" SEXP _cpp20test_vector2(SEXP x) {
 extern "C" SEXP _cpp20test_scalar3(SEXP x, SEXP y) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(scalar3(as<T>(x_internal), as<T>(y_internal)))) {
-        return cpp_to_sexp(scalar3(as<T>(x_internal), as<T>(y_internal)));
+    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(::scalar3(as<T>(x_internal), as<T>(y_internal)))) {
+        return cpp_to_sexp(::scalar3(as<T>(x_internal), as<T>(y_internal)));
     },
     x, y
   );
@@ -449,8 +449,8 @@ extern "C" SEXP _cpp20test_scalar3(SEXP x, SEXP y) {
 extern "C" SEXP _cpp20test_scalar4(SEXP x, SEXP y) {
   BEGIN_CPP20
   return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(scalar4(as<T>(x_internal), as<U>(y_internal)))) {
-        return cpp_to_sexp(scalar4(as<T>(x_internal), as<U>(y_internal)));
+    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(::scalar4(as<T>(x_internal), as<U>(y_internal)))) {
+        return cpp_to_sexp(::scalar4(as<T>(x_internal), as<U>(y_internal)));
     },
     x, y
   );
@@ -460,8 +460,8 @@ extern "C" SEXP _cpp20test_scalar4(SEXP x, SEXP y) {
 extern "C" SEXP _cpp20test_test_sexp(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_sexp(as<T>(x_internal)))) {
-        return cpp_to_sexp(test_sexp(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_sexp(as<T>(x_internal)))) {
+        return cpp_to_sexp(::test_sexp(as<T>(x_internal)));
     },
     x
   );
@@ -471,8 +471,8 @@ extern "C" SEXP _cpp20test_test_sexp(SEXP x) {
 extern "C" SEXP _cpp20test_test_sexp4(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_sexp4(as<T>(x_internal)))) {
-        return cpp_to_sexp(test_sexp4(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_sexp4(as<T>(x_internal)))) {
+        return cpp_to_sexp(::test_sexp4(as<T>(x_internal)));
     },
     x
   );
@@ -482,8 +482,8 @@ extern "C" SEXP _cpp20test_test_sexp4(SEXP x) {
 extern "C" SEXP _cpp20test_scalar_vec1(SEXP a, SEXP b) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
-    []<typename T>(SEXP a_internal, SEXP b_internal) -> decltype(cpp_to_sexp(scalar_vec1(as<r_vec<T>>(a_internal), as<T>(b_internal)))) {
-        return cpp_to_sexp(scalar_vec1(as<r_vec<T>>(a_internal), as<T>(b_internal)));
+    []<typename T>(SEXP a_internal, SEXP b_internal) -> decltype(cpp_to_sexp(::scalar_vec1(as<r_vec<T>>(a_internal), as<T>(b_internal)))) {
+        return cpp_to_sexp(::scalar_vec1(as<r_vec<T>>(a_internal), as<T>(b_internal)));
     },
     a, b
   );
@@ -493,8 +493,8 @@ extern "C" SEXP _cpp20test_scalar_vec1(SEXP a, SEXP b) {
 extern "C" SEXP _cpp20test_scalar_vec2(SEXP a, SEXP b) {
   BEGIN_CPP20
   return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP a_internal, SEXP b_internal) -> decltype(cpp_to_sexp(scalar_vec2(as<r_vec<T>>(a_internal), as<U>(b_internal)))) {
-        return cpp_to_sexp(scalar_vec2(as<r_vec<T>>(a_internal), as<U>(b_internal)));
+    []<typename T, typename U>(SEXP a_internal, SEXP b_internal) -> decltype(cpp_to_sexp(::scalar_vec2(as<r_vec<T>>(a_internal), as<U>(b_internal)))) {
+        return cpp_to_sexp(::scalar_vec2(as<r_vec<T>>(a_internal), as<U>(b_internal)));
     },
     a, b
   );
@@ -504,8 +504,8 @@ extern "C" SEXP _cpp20test_scalar_vec2(SEXP a, SEXP b) {
 extern "C" SEXP _cpp20test_scalar_vec3(SEXP z, SEXP x, SEXP y, SEXP a) {
   BEGIN_CPP20
   return dispatch_template_impl<2, 4, std::array<int, 4>{0, 0, 1, 1}>(
-    []<typename T, typename U>(SEXP z_internal, SEXP x_internal, SEXP y_internal, SEXP a_internal) -> decltype(cpp_to_sexp(scalar_vec3(as<r_vec<T>>(z_internal), as<T>(x_internal), as<U>(y_internal), as<r_vec<U>>(a_internal)))) {
-        return cpp_to_sexp(scalar_vec3(as<r_vec<T>>(z_internal), as<T>(x_internal), as<U>(y_internal), as<r_vec<U>>(a_internal)));
+    []<typename T, typename U>(SEXP z_internal, SEXP x_internal, SEXP y_internal, SEXP a_internal) -> decltype(cpp_to_sexp(::scalar_vec3(as<r_vec<T>>(z_internal), as<T>(x_internal), as<U>(y_internal), as<r_vec<U>>(a_internal)))) {
+        return cpp_to_sexp(::scalar_vec3(as<r_vec<T>>(z_internal), as<T>(x_internal), as<U>(y_internal), as<r_vec<U>>(a_internal)));
     },
     z, x, y, a
   );
@@ -515,8 +515,8 @@ extern "C" SEXP _cpp20test_scalar_vec3(SEXP z, SEXP x, SEXP y, SEXP a) {
 extern "C" SEXP _cpp20test_test_mix2(SEXP a, SEXP b, SEXP c, SEXP d, SEXP e, SEXP f, SEXP g) {
   BEGIN_CPP20
   return dispatch_template_impl<2, 7, std::array<int, 7>{0, -1, 0, -1, 0, 0, 1}>(
-    []<typename T, typename V>(SEXP a_internal, SEXP b_internal, SEXP c_internal, SEXP d_internal, SEXP e_internal, SEXP f_internal, SEXP g_internal) -> decltype(cpp_to_sexp(test_mix2(as<r_vec<T>>(a_internal), as<double>(b_internal), as<T>(c_internal), as<int>(d_internal), as<T>(e_internal), as<T>(f_internal), as<V>(g_internal)))) {
-        return cpp_to_sexp(test_mix2(as<r_vec<T>>(a_internal), as<double>(b_internal), as<T>(c_internal), as<int>(d_internal), as<T>(e_internal), as<T>(f_internal), as<V>(g_internal)));
+    []<typename T, typename V>(SEXP a_internal, SEXP b_internal, SEXP c_internal, SEXP d_internal, SEXP e_internal, SEXP f_internal, SEXP g_internal) -> decltype(cpp_to_sexp(::test_mix2(as<r_vec<T>>(a_internal), as<double>(b_internal), as<T>(c_internal), as<int>(d_internal), as<T>(e_internal), as<T>(f_internal), as<V>(g_internal)))) {
+        return cpp_to_sexp(::test_mix2(as<r_vec<T>>(a_internal), as<double>(b_internal), as<T>(c_internal), as<int>(d_internal), as<T>(e_internal), as<T>(f_internal), as<V>(g_internal)));
     },
     a, b, c, d, e, f, g
   );
@@ -526,8 +526,8 @@ extern "C" SEXP _cpp20test_test_mix2(SEXP a, SEXP b, SEXP c, SEXP d, SEXP e, SEX
 extern "C" SEXP _cpp20test_test_str3(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_str3(as<T>(x_internal)))) {
-        return cpp_to_sexp(test_str3(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_str3(as<T>(x_internal)))) {
+        return cpp_to_sexp(::test_str3(as<T>(x_internal)));
     },
     x
   );
@@ -537,8 +537,8 @@ extern "C" SEXP _cpp20test_test_str3(SEXP x) {
 extern "C" SEXP _cpp20test_test_str4(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_str4(as<T>(x_internal)))) {
-        return cpp_to_sexp(test_str4(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_str4(as<T>(x_internal)))) {
+        return cpp_to_sexp(::test_str4(as<T>(x_internal)));
     },
     x
   );
@@ -548,8 +548,8 @@ extern "C" SEXP _cpp20test_test_str4(SEXP x) {
 extern "C" SEXP _cpp20test_test_specialisation(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_specialisation(as<r_vec<T>>(x_internal)))) {
-        return cpp_to_sexp(test_specialisation(as<r_vec<T>>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_specialisation(as<r_vec<T>>(x_internal)))) {
+        return cpp_to_sexp(::test_specialisation(as<r_vec<T>>(x_internal)));
     },
     x
   );
@@ -559,8 +559,8 @@ extern "C" SEXP _cpp20test_test_specialisation(SEXP x) {
 extern "C" SEXP _cpp20test_test_coerce(SEXP x, SEXP ptype) {
   BEGIN_CPP20
   return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP ptype_internal) -> decltype(cpp_to_sexp(test_coerce(as<r_vec<T>>(x_internal), as<U>(ptype_internal)))) {
-        return cpp_to_sexp(test_coerce(as<r_vec<T>>(x_internal), as<U>(ptype_internal)));
+    []<typename T, typename U>(SEXP x_internal, SEXP ptype_internal) -> decltype(cpp_to_sexp(::test_coerce(as<r_vec<T>>(x_internal), as<U>(ptype_internal)))) {
+        return cpp_to_sexp(::test_coerce(as<r_vec<T>>(x_internal), as<U>(ptype_internal)));
     },
     x, ptype
   );
@@ -570,15 +570,15 @@ extern "C" SEXP _cpp20test_test_coerce(SEXP x, SEXP ptype) {
 SEXP test_list_to_scalars(r_vec<r_sexp> x);
 extern "C" SEXP _cpp20test_test_list_to_scalars(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_list_to_scalars(as<r_vec<r_sexp>>(x)));
+  return cpp_to_sexp(::test_list_to_scalars(as<r_vec<r_sexp>>(x)));
   END_CPP20
 }
 // test.h
 extern "C" SEXP _cpp20test_test_combine2(SEXP x, SEXP y) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_combine2(as<T>(x_internal), as<T>(y_internal)))) {
-        return cpp_to_sexp(test_combine2(as<T>(x_internal), as<T>(y_internal)));
+    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(::test_combine2(as<T>(x_internal), as<T>(y_internal)))) {
+        return cpp_to_sexp(::test_combine2(as<T>(x_internal), as<T>(y_internal)));
     },
     x, y
   );
@@ -588,8 +588,8 @@ extern "C" SEXP _cpp20test_test_combine2(SEXP x, SEXP y) {
 extern "C" SEXP _cpp20test_test_dates2(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_dates2(as<T>(x_internal)))) {
-        return cpp_to_sexp(test_dates2(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_dates2(as<T>(x_internal)))) {
+        return cpp_to_sexp(::test_dates2(as<T>(x_internal)));
     },
     x
   );
@@ -599,8 +599,8 @@ extern "C" SEXP _cpp20test_test_dates2(SEXP x) {
 extern "C" SEXP _cpp20test_test_unique(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_unique(as<T>(x_internal)))) {
-        return cpp_to_sexp(test_unique(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_unique(as<T>(x_internal)))) {
+        return cpp_to_sexp(::test_unique(as<T>(x_internal)));
     },
     x
   );
@@ -610,8 +610,8 @@ extern "C" SEXP _cpp20test_test_unique(SEXP x) {
 extern "C" SEXP _cpp20test_test_seqs(SEXP size, SEXP from, SEXP by) {
   BEGIN_CPP20
   return dispatch_template_impl<2, 3, std::array<int, 3>{-1, 0, 1}>(
-    []<typename U, typename V>(SEXP size_internal, SEXP from_internal, SEXP by_internal) -> decltype(cpp_to_sexp(test_seqs(as<r_vec<r_int>>(size_internal), as<r_vec<U>>(from_internal), as<r_vec<V>>(by_internal)))) {
-        return cpp_to_sexp(test_seqs(as<r_vec<r_int>>(size_internal), as<r_vec<U>>(from_internal), as<r_vec<V>>(by_internal)));
+    []<typename U, typename V>(SEXP size_internal, SEXP from_internal, SEXP by_internal) -> decltype(cpp_to_sexp(::test_seqs(as<r_vec<r_int>>(size_internal), as<r_vec<U>>(from_internal), as<r_vec<V>>(by_internal)))) {
+        return cpp_to_sexp(::test_seqs(as<r_vec<r_int>>(size_internal), as<r_vec<U>>(from_internal), as<r_vec<V>>(by_internal)));
     },
     size, from, by
   );
@@ -621,8 +621,8 @@ extern "C" SEXP _cpp20test_test_seqs(SEXP size, SEXP from, SEXP by) {
 extern "C" SEXP _cpp20test_test_group_id(SEXP x, SEXP order) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP order_internal) -> decltype(cpp_to_sexp(test_group_id(as<T>(x_internal), as<bool>(order_internal)))) {
-        return cpp_to_sexp(test_group_id(as<T>(x_internal), as<bool>(order_internal)));
+    []<typename T>(SEXP x_internal, SEXP order_internal) -> decltype(cpp_to_sexp(::test_group_id(as<T>(x_internal), as<bool>(order_internal)))) {
+        return cpp_to_sexp(::test_group_id(as<T>(x_internal), as<bool>(order_internal)));
     },
     x, order
   );
@@ -632,8 +632,8 @@ extern "C" SEXP _cpp20test_test_group_id(SEXP x, SEXP order) {
 extern "C" SEXP _cpp20test_test_group_counts(SEXP x, SEXP order) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP order_internal) -> decltype(cpp_to_sexp(test_group_counts(as<T>(x_internal), as<bool>(order_internal)))) {
-        return cpp_to_sexp(test_group_counts(as<T>(x_internal), as<bool>(order_internal)));
+    []<typename T>(SEXP x_internal, SEXP order_internal) -> decltype(cpp_to_sexp(::test_group_counts(as<T>(x_internal), as<bool>(order_internal)))) {
+        return cpp_to_sexp(::test_group_counts(as<T>(x_internal), as<bool>(order_internal)));
     },
     x, order
   );
@@ -643,8 +643,8 @@ extern "C" SEXP _cpp20test_test_group_counts(SEXP x, SEXP order) {
 extern "C" SEXP _cpp20test_test_match(SEXP x, SEXP y) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_match(as<r_vec<T>>(x_internal), as<r_vec<T>>(y_internal)))) {
-        return cpp_to_sexp(test_match(as<r_vec<T>>(x_internal), as<r_vec<T>>(y_internal)));
+    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(::test_match(as<r_vec<T>>(x_internal), as<r_vec<T>>(y_internal)))) {
+        return cpp_to_sexp(::test_match(as<r_vec<T>>(x_internal), as<r_vec<T>>(y_internal)));
     },
     x, y
   );
@@ -654,8 +654,8 @@ extern "C" SEXP _cpp20test_test_match(SEXP x, SEXP y) {
 extern "C" SEXP _cpp20test_test_factor2(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_factor2(as<T>(x_internal)))) {
-        return cpp_to_sexp(test_factor2(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_factor2(as<T>(x_internal)))) {
+        return cpp_to_sexp(::test_factor2(as<T>(x_internal)));
     },
     x
   );
@@ -665,8 +665,8 @@ extern "C" SEXP _cpp20test_test_factor2(SEXP x) {
 extern "C" SEXP _cpp20test_test_n_unique(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_n_unique(as<T>(x_internal)))) {
-        return cpp_to_sexp(test_n_unique(as<T>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_n_unique(as<T>(x_internal)))) {
+        return cpp_to_sexp(::test_n_unique(as<T>(x_internal)));
     },
     x
   );
@@ -676,78 +676,78 @@ extern "C" SEXP _cpp20test_test_n_unique(SEXP x) {
 SEXP test_copy(SEXP x);
 extern "C" SEXP _cpp20test_test_copy(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_copy(as<SEXP>(x)));
+  return cpp_to_sexp(::test_copy(as<SEXP>(x)));
   END_CPP20
 }
 // test.h
 bool test_identical(SEXP x, SEXP y);
 extern "C" SEXP _cpp20test_test_identical(SEXP x, SEXP y) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_identical(as<SEXP>(x), as<SEXP>(y)));
+  return cpp_to_sexp(::test_identical(as<SEXP>(x), as<SEXP>(y)));
   END_CPP20
 }
 // test_attrs.cpp
 r_vec<r_sexp> test_attrs(SEXP x);
 extern "C" SEXP _cpp20test_test_attrs(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_attrs(as<SEXP>(x)));
+  return cpp_to_sexp(::test_attrs(as<SEXP>(x)));
   END_CPP20
 }
 // test_attrs.cpp
 r_vec<r_sexp> test_df(r_vec<r_sexp> cols);
 extern "C" SEXP _cpp20test_test_df(SEXP cols) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_df(as<r_vec<r_sexp>>(cols)));
+  return cpp_to_sexp(::test_df(as<r_vec<r_sexp>>(cols)));
   END_CPP20
 }
 // test_coerce.cpp
 SEXP test_as_sym(SEXP a, r_str b, r_dbl c, r_sym d, r_vec<r_str> e, r_vec<r_dbl> f);
 extern "C" SEXP _cpp20test_test_as_sym(SEXP a, SEXP b, SEXP c, SEXP d, SEXP e, SEXP f) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_as_sym(as<SEXP>(a), as<r_str>(b), as<r_dbl>(c), as<r_sym>(d), as<r_vec<r_str>>(e), as<r_vec<r_dbl>>(f)));
+  return cpp_to_sexp(::test_as_sym(as<SEXP>(a), as<r_str>(b), as<r_dbl>(c), as<r_sym>(d), as<r_vec<r_str>>(e), as<r_vec<r_dbl>>(f)));
   END_CPP20
 }
 // test_coerce.cpp
 SEXP test_as_int(SEXP a, r_str b, r_dbl c, r_sym d, r_vec<r_str> e, r_vec<r_dbl> f);
 extern "C" SEXP _cpp20test_test_as_int(SEXP a, SEXP b, SEXP c, SEXP d, SEXP e, SEXP f) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_as_int(as<SEXP>(a), as<r_str>(b), as<r_dbl>(c), as<r_sym>(d), as<r_vec<r_str>>(e), as<r_vec<r_dbl>>(f)));
+  return cpp_to_sexp(::test_as_int(as<SEXP>(a), as<r_str>(b), as<r_dbl>(c), as<r_sym>(d), as<r_vec<r_str>>(e), as<r_vec<r_dbl>>(f)));
   END_CPP20
 }
 // test_coerce.cpp
 SEXP test_as_dbl(SEXP a, r_str b, r_int c, r_sym d, r_vec<r_str> e, r_vec<r_int> f);
 extern "C" SEXP _cpp20test_test_as_dbl(SEXP a, SEXP b, SEXP c, SEXP d, SEXP e, SEXP f) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_as_dbl(as<SEXP>(a), as<r_str>(b), as<r_int>(c), as<r_sym>(d), as<r_vec<r_str>>(e), as<r_vec<r_int>>(f)));
+  return cpp_to_sexp(::test_as_dbl(as<SEXP>(a), as<r_str>(b), as<r_int>(c), as<r_sym>(d), as<r_vec<r_str>>(e), as<r_vec<r_int>>(f)));
   END_CPP20
 }
 // test_coerce.cpp
 SEXP test_as_str(SEXP a, r_int b, r_dbl c, r_sym d, r_vec<r_int> e, r_vec<r_dbl> f);
 extern "C" SEXP _cpp20test_test_as_str(SEXP a, SEXP b, SEXP c, SEXP d, SEXP e, SEXP f) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_as_str(as<SEXP>(a), as<r_int>(b), as<r_dbl>(c), as<r_sym>(d), as<r_vec<r_int>>(e), as<r_vec<r_dbl>>(f)));
+  return cpp_to_sexp(::test_as_str(as<SEXP>(a), as<r_int>(b), as<r_dbl>(c), as<r_sym>(d), as<r_vec<r_int>>(e), as<r_vec<r_dbl>>(f)));
   END_CPP20
 }
 // test_factor.cpp
 r_vec<r_sexp> test_factor1(r_factors x);
 extern "C" SEXP _cpp20test_test_factor1(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_factor1(as<r_factors>(x)));
+  return cpp_to_sexp(::test_factor1(as<r_factors>(x)));
   END_CPP20
 }
 // test_factor.cpp
 r_dbl test_factor3(r_factors x);
 extern "C" SEXP _cpp20test_test_factor3(SEXP x) {
   BEGIN_CPP20
-  return cpp_to_sexp(test_factor3(as<r_factors>(x)));
+  return cpp_to_sexp(::test_factor3(as<r_factors>(x)));
   END_CPP20
 }
 // test_nas.h
 extern "C" SEXP _cpp20test_test_nas(SEXP x) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(test_nas(as<T const&>(x_internal)))) {
-        return cpp_to_sexp(test_nas(as<T const&>(x_internal)));
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_sexp(::test_nas(as<T const&>(x_internal)))) {
+        return cpp_to_sexp(::test_nas(as<T const&>(x_internal)));
     },
     x
   );
@@ -757,29 +757,29 @@ extern "C" SEXP _cpp20test_test_nas(SEXP x) {
 inline r_vec<r_sexp> test_na_types();
 extern "C" SEXP _cpp20test_test_na_types() {
   BEGIN_CPP20
-  return cpp_to_sexp(test_na_types());
+  return cpp_to_sexp(::test_na_types());
   END_CPP20
 }
 // test_protect.cpp
 double bench_protect_insert_release_cpp20(int n);
 extern "C" SEXP _cpp20test_bench_protect_insert_release_cpp20(SEXP n) {
   BEGIN_CPP20
-  return cpp_to_sexp(bench_protect_insert_release_cpp20(as<int>(n)));
+  return cpp_to_sexp(::bench_protect_insert_release_cpp20(as<int>(n)));
   END_CPP20
 }
 // test_protect.cpp
 double bench_protect_copy_cpp20(int n);
 extern "C" SEXP _cpp20test_bench_protect_copy_cpp20(SEXP n) {
   BEGIN_CPP20
-  return cpp_to_sexp(bench_protect_copy_cpp20(as<int>(n)));
+  return cpp_to_sexp(::bench_protect_copy_cpp20(as<int>(n)));
   END_CPP20
 }
 // test_sort.h
 extern "C" SEXP _cpp20test_test_order(SEXP x, SEXP preserve_ties) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP preserve_ties_internal) -> decltype(cpp_to_sexp(test_order(as<T>(x_internal), as<bool>(preserve_ties_internal)))) {
-        return cpp_to_sexp(test_order(as<T>(x_internal), as<bool>(preserve_ties_internal)));
+    []<typename T>(SEXP x_internal, SEXP preserve_ties_internal) -> decltype(cpp_to_sexp(::test_order(as<T>(x_internal), as<bool>(preserve_ties_internal)))) {
+        return cpp_to_sexp(::test_order(as<T>(x_internal), as<bool>(preserve_ties_internal)));
     },
     x, preserve_ties
   );
@@ -789,8 +789,8 @@ extern "C" SEXP _cpp20test_test_order(SEXP x, SEXP preserve_ties) {
 extern "C" SEXP _cpp20test_test_sort(SEXP x, SEXP preserve_ties) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP preserve_ties_internal) -> decltype(cpp_to_sexp(test_sort(as<T>(x_internal), as<bool>(preserve_ties_internal)))) {
-        return cpp_to_sexp(test_sort(as<T>(x_internal), as<bool>(preserve_ties_internal)));
+    []<typename T>(SEXP x_internal, SEXP preserve_ties_internal) -> decltype(cpp_to_sexp(::test_sort(as<T>(x_internal), as<bool>(preserve_ties_internal)))) {
+        return cpp_to_sexp(::test_sort(as<T>(x_internal), as<bool>(preserve_ties_internal)));
     },
     x, preserve_ties
   );
@@ -800,8 +800,8 @@ extern "C" SEXP _cpp20test_test_sort(SEXP x, SEXP preserve_ties) {
 extern "C" SEXP _cpp20test_test_range(SEXP x, SEXP na_rm) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp_to_sexp(test_range(as<T>(x_internal), as<bool>(na_rm_internal)))) {
-        return cpp_to_sexp(test_range(as<T>(x_internal), as<bool>(na_rm_internal)));
+    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp_to_sexp(::test_range(as<T>(x_internal), as<bool>(na_rm_internal)))) {
+        return cpp_to_sexp(::test_range(as<T>(x_internal), as<bool>(na_rm_internal)));
     },
     x, na_rm
   );
@@ -811,8 +811,8 @@ extern "C" SEXP _cpp20test_test_range(SEXP x, SEXP na_rm) {
 extern "C" SEXP _cpp20test_test_sum(SEXP x, SEXP na_rm) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp_to_sexp(test_sum(as<r_vec<T>>(x_internal), as<bool>(na_rm_internal)))) {
-        return cpp_to_sexp(test_sum(as<r_vec<T>>(x_internal), as<bool>(na_rm_internal)));
+    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp_to_sexp(::test_sum(as<r_vec<T>>(x_internal), as<bool>(na_rm_internal)))) {
+        return cpp_to_sexp(::test_sum(as<r_vec<T>>(x_internal), as<bool>(na_rm_internal)));
     },
     x, na_rm
   );
@@ -822,8 +822,8 @@ extern "C" SEXP _cpp20test_test_sum(SEXP x, SEXP na_rm) {
 extern "C" SEXP _cpp20test_test_mean(SEXP x, SEXP na_rm) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp_to_sexp(test_mean(as<r_vec<T>>(x_internal), as<bool>(na_rm_internal)))) {
-        return cpp_to_sexp(test_mean(as<r_vec<T>>(x_internal), as<bool>(na_rm_internal)));
+    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp_to_sexp(::test_mean(as<r_vec<T>>(x_internal), as<bool>(na_rm_internal)))) {
+        return cpp_to_sexp(::test_mean(as<r_vec<T>>(x_internal), as<bool>(na_rm_internal)));
     },
     x, na_rm
   );
@@ -833,8 +833,8 @@ extern "C" SEXP _cpp20test_test_mean(SEXP x, SEXP na_rm) {
 extern "C" SEXP _cpp20test_test_var(SEXP x, SEXP na_rm) {
   BEGIN_CPP20
   return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp_to_sexp(test_var(as<r_vec<T>>(x_internal), as<bool>(na_rm_internal)))) {
-        return cpp_to_sexp(test_var(as<r_vec<T>>(x_internal), as<bool>(na_rm_internal)));
+    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp_to_sexp(::test_var(as<r_vec<T>>(x_internal), as<bool>(na_rm_internal)))) {
+        return cpp_to_sexp(::test_var(as<r_vec<T>>(x_internal), as<bool>(na_rm_internal)));
     },
     x, na_rm
   );
@@ -844,8 +844,8 @@ extern "C" SEXP _cpp20test_test_var(SEXP x, SEXP na_rm) {
 extern "C" SEXP _cpp20test_test_subset(SEXP x, SEXP i, SEXP invert) {
   BEGIN_CPP20
   return dispatch_template_impl<2, 3, std::array<int, 3>{0, 1, -1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP i_internal, SEXP invert_internal) -> decltype(cpp_to_sexp(test_subset(as<T>(x_internal), as<r_vec<U>>(i_internal), as<bool>(invert_internal)))) {
-        return cpp_to_sexp(test_subset(as<T>(x_internal), as<r_vec<U>>(i_internal), as<bool>(invert_internal)));
+    []<typename T, typename U>(SEXP x_internal, SEXP i_internal, SEXP invert_internal) -> decltype(cpp_to_sexp(::test_subset(as<T>(x_internal), as<r_vec<U>>(i_internal), as<bool>(invert_internal)))) {
+        return cpp_to_sexp(::test_subset(as<T>(x_internal), as<r_vec<U>>(i_internal), as<bool>(invert_internal)));
     },
     x, i, invert
   );
@@ -855,8 +855,8 @@ extern "C" SEXP _cpp20test_test_subset(SEXP x, SEXP i, SEXP invert) {
 extern "C" SEXP _cpp20test_test_fill(SEXP x, SEXP where, SEXP with) {
   BEGIN_CPP20
   return dispatch_template_impl<2, 3, std::array<int, 3>{0, -1, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP where_internal, SEXP with_internal) -> decltype(cpp_to_sexp(test_fill(as<r_vec<T>>(x_internal), as<r_vec<r_int>>(where_internal), as<r_vec<U>>(with_internal)))) {
-        return cpp_to_sexp(test_fill(as<r_vec<T>>(x_internal), as<r_vec<r_int>>(where_internal), as<r_vec<U>>(with_internal)));
+    []<typename T, typename U>(SEXP x_internal, SEXP where_internal, SEXP with_internal) -> decltype(cpp_to_sexp(::test_fill(as<r_vec<T>>(x_internal), as<r_vec<r_int>>(where_internal), as<r_vec<U>>(with_internal)))) {
+        return cpp_to_sexp(::test_fill(as<r_vec<T>>(x_internal), as<r_vec<r_int>>(where_internal), as<r_vec<U>>(with_internal)));
     },
     x, where, with
   );
@@ -866,8 +866,8 @@ extern "C" SEXP _cpp20test_test_fill(SEXP x, SEXP where, SEXP with) {
 extern "C" SEXP _cpp20test_test_counts(SEXP x, SEXP y) {
   BEGIN_CPP20
   return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_counts(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)))) {
-        return cpp_to_sexp(test_counts(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)));
+    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(::test_counts(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)))) {
+        return cpp_to_sexp(::test_counts(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)));
     },
     x, y
   );
@@ -877,8 +877,8 @@ extern "C" SEXP _cpp20test_test_counts(SEXP x, SEXP y) {
 extern "C" SEXP _cpp20test_test_remove(SEXP x, SEXP y) {
   BEGIN_CPP20
   return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_remove(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)))) {
-        return cpp_to_sexp(test_remove(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)));
+    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(::test_remove(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)))) {
+        return cpp_to_sexp(::test_remove(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)));
     },
     x, y
   );
@@ -888,8 +888,8 @@ extern "C" SEXP _cpp20test_test_remove(SEXP x, SEXP y) {
 extern "C" SEXP _cpp20test_test_find(SEXP x, SEXP y) {
   BEGIN_CPP20
   return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(test_find(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)))) {
-        return cpp_to_sexp(test_find(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)));
+    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_sexp(::test_find(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)))) {
+        return cpp_to_sexp(::test_find(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)));
     },
     x, y
   );
@@ -899,8 +899,8 @@ extern "C" SEXP _cpp20test_test_find(SEXP x, SEXP y) {
 extern "C" SEXP _cpp20test_test_replace(SEXP x, SEXP y, SEXP z) {
   BEGIN_CPP20
   return dispatch_template_impl<2, 3, std::array<int, 3>{0, 1, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP y_internal, SEXP z_internal) -> decltype(cpp_to_sexp(test_replace(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal), as<r_vec<U>>(z_internal)))) {
-        return cpp_to_sexp(test_replace(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal), as<r_vec<U>>(z_internal)));
+    []<typename T, typename U>(SEXP x_internal, SEXP y_internal, SEXP z_internal) -> decltype(cpp_to_sexp(::test_replace(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal), as<r_vec<U>>(z_internal)))) {
+        return cpp_to_sexp(::test_replace(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal), as<r_vec<U>>(z_internal)));
     },
     x, y, z
   );

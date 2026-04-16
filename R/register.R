@@ -268,7 +268,7 @@ wrap_call <- function(name, return_type, args, is_template, template_params) {
     return(wrap_call_template(name, return_type, args, template_params))
   }
 
-  call <- glue::glue('{name}({list_params})', list_params = glue_collapse_data(args, "as<{type}>({name})"))
+  call <- glue::glue('::{name}({list_params})', list_params = glue_collapse_data(args, "as<{type}>({name})"))
 
   if (type_is_void(return_type)){
     unclass(glue::glue("{call};\n  return R_NilValue;", .trim = FALSE))
@@ -308,7 +308,7 @@ wrap_call_template <- function(name, return_type, args, template_params) {
   conversions <- glue::glue("as<{args$type}>({args$name}_internal)")
   call_args_str <- paste(conversions, collapse = ", ")
 
-  call_str <- paste0(name, "(", call_args_str, ")")
+  call_str <- paste0("::", name, "(", call_args_str, ")")
 
   outer_args <- glue::glue_collapse(args$name, ", ")
 
