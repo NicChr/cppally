@@ -1,31 +1,15 @@
-# To be used on decor context
+# Detects the opening line of a template declaration (single- or multi-line).
+# `template` is a reserved keyword, so a line starting with it (as a whole
+# word) can only begin a template
 is_template_signature <- function(x){
-  if (!is.character(x)){
-    cli::cli_abort("{.arg x} must be a {.cls character} vector")
-  }
-  # Remove whitespace from start/end
-  x <- trimws(x)
-
-  # Match template<>
-  template_pattern <- "^template\\s*\\<.*\\>$"
-  stringr::str_detect(x, template_pattern)
+  stringr::str_detect(x, "^\\s*template\\b")
 }
 
 # To be used on decor context
 is_requires_signature <- function(x){
-  if (!is.character(x)){
-    cli::cli_abort("{.arg x} must be a {.cls character} vector")
-  }
-  # Remove whitespace from start/end
-  x <- trimws(x)
-
-  # Match requires clause
-  # The nice thing about c++ is that
-  # it won't allow lines like: requires () {
-  # or requires {}
-  # which should separate it from being detected as a function
-  requires_pattern <- "^requires\\s*.+"
-  stringr::str_detect(x, requires_pattern)
+  # The nice thing about c++ is that it won't allow lines like:
+  # `requires () {` or `requires {}`, which separates it from a function.
+  stringr::str_detect(x, "^\\s*requires\\b")
 }
 
 is_template_arg <- function(type, arg) {
@@ -39,38 +23,37 @@ is_template_arg <- function(type, arg) {
   cleaned == arg | stringr::str_detect(cleaned, pattern)
 }
 
-
 get_template_params <- function(context) {
   # Extract content between template < ... >
   # Handles "template <typename T, RVector U>"
   pattern <- "template\\s*<([^>]+)>"
-  match <- regmatches(context, regexpr(pattern, context))
+  match <- regmatches(context, regexpr(pattern, context, perl = TRUE))
 
   if (length(match) == 0) return(character(0))
 
   # Remove 'template <' and '>'
-  inner <- sub("template\\s*<", "", sub(">$", "", match))
+  inner <- sub("template\\s*<", "", sub(">$", "", match, perl = TRUE), perl = TRUE)
 
-  # Split by comma
-  parts <- strsplit(inner, ",")[[1]]
+  # Split by comma and trim whitespace (trimming BEFORE the regex is critical,
+  # since the `$` anchor in the extractor fails if there's trailing whitespace)
+  parts <- trimws(strsplit(inner, ",", perl = TRUE)[[1]])
 
   # Extract the last word of each part (the variable name)
   # e.g., "typename T" -> "T", "RVector U" -> "U"
-  params <- trimws(sub(".*\\s+(\\w+)$", "\\1", parts))
-  params
+  sub(".*\\s+(\\w+)$", "\\1", parts, perl = TRUE)
 }
 
 parse_cpp_function <- function(context, is_attribute = TRUE){
-
-  # Remove lines containing template or requires clauses
-  is_template_clause <- is_template_signature(context)
-  is_requires_clause <- is_requires_signature(context)
-
-  context <- context[!is_template_clause & !is_requires_clause]
+  # Strip any template/requires preamble by dropping everything before the
+  # [[ attribute line. Only called with is_attribute = TRUE (see register.R).
+  attr_idx <- which(grepl("^\\s*\\[\\[", context, perl = TRUE))[1]
+  has_template <- FALSE
+  if (!is.na(attr_idx) && attr_idx > 1L) {
+    preamble <- context[seq_len(attr_idx - 1L)]
+    has_template <- any(is_template_signature(preamble))
+    context <- context[attr_idx:length(context)]
+  }
   out <- decor::parse_cpp_function(context, is_attribute = is_attribute)
-  attr(out, "cpp_template") <- any(is_template_clause)
+  attr(out, "cpp_template") <- has_template
   out
-
 }
-
-

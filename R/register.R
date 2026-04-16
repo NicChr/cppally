@@ -180,13 +180,13 @@ check_init_signatures <- function(funs) {
 
   bad_return <- !type_is_void(funs$return_type)
   bad_args <- vapply(funs$args, function(a) {
-    nrow(a) != 1 || a$name != "dll" || !grepl("DllInfo\\s*\\*", a$type)
+    nrow(a) != 1 || a$name != "dll" || !grepl("DllInfo\\s*\\*", a$type, perl = TRUE)
   }, logical(1))
 
   bad <- bad_return | bad_args
   if (any(bad)) {
     msgs <- glue::glue_data(vctrs::vec_slice(funs, bad),
-      "- `{name}` on line {line} in '{basename(file)}'."
+                            "- `{name}` on line {line} in '{basename(file)}'."
     )
     cli::cli_abort(
       c(
