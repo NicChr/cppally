@@ -11,15 +11,20 @@ namespace cpp20 {
 
 // 0-indexed group IDs: [0, n - 1]
 struct groups {
-  r_vec<r_int> ids; 
+  r_vec<r_int> ids;
   int n_groups = 0;
   bool ordered = true;
-  bool sorted = true; 
+  bool sorted = true;
 
   // Default constructor
   groups() = default;
   // Manual constructor
-  explicit groups(r_vec<r_int> x, int ngroups, bool groups_sorted) : ids(std::move(x)), n_groups(ngroups), sorted(groups_sorted) {}
+  explicit groups(r_vec<r_int> group_ids, int num_groups, bool groups_ordered, bool groups_sorted) :
+    ids(std::move(group_ids)),
+    n_groups(num_groups),
+    ordered(groups_ordered),
+    sorted(groups_sorted)
+    {}
 
   // group start locations
   r_vec<r_int> starts() const {
@@ -31,7 +36,7 @@ struct groups {
     if (n_groups == 0){
         return out;
     }
-    
+
     int curr_group;
 
     if (sorted){
@@ -42,7 +47,7 @@ struct groups {
 
         curr_group = 0;
         p_out[0] = 0;
-        
+
         for (int i = 1; i < n; ++i){
             // New group
             if (p_ids[i] > curr_group){
@@ -59,10 +64,10 @@ struct groups {
         // so that for each group we take the min(out[i], i)
         // After passing through all data, this should reduce to the first location for each group
         out.fill(r_limits<r_int>::max());
-        
+
         const int* RESTRICT p_ids = ids.data();
         int* RESTRICT p_out = out.data();
-        
+
         for (int i = 0; i < n; ++i){
             curr_group = p_ids[i];
             p_out[curr_group] = std::min(p_out[curr_group], i);
@@ -73,7 +78,7 @@ struct groups {
                 p_out[i] = unwrap(na<r_int>()); // This can happen with unused factor levels for example
             }
           }
-    
+
         // This will set groups with no start locations to 0
         // (e.g. undropped factor levels)
         // If uncommenting the below line, make sure to remove RESTRICT keyword from pointers above
@@ -86,12 +91,12 @@ struct groups {
 r_vec<r_int> counts() const {
 
     r_size_t n = ids.length();
-  
+
     // Counts initialised to zero
     r_vec<r_int> out(n_groups, r_int(0));
     const int* RESTRICT p_group_id = ids.data();
     int* RESTRICT p_out = out.data();
-  
+
     // Count groups
     for (r_size_t i = 0; i < n; ++i) p_out[p_group_id[i]]++;
 
@@ -119,12 +124,12 @@ inline groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
     r_size_t n = x.length();
     groups g;
     g.ids = r_vec<r_int>(n);
-    
+
     if (n == 0) return g;
 
     auto* RESTRICT p_id = g.ids.data();
     auto* RESTRICT p_o = o.data();
-    
+
     int current_group = 0;
 
     p_id[p_o[0]] = 0;
@@ -139,7 +144,7 @@ inline groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
         if (!is_equal) {
             current_group++;
         }
-        
+
         p_id[idx_curr] = current_group;
     }
 
@@ -151,7 +156,7 @@ inline groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
 }
 
 template <RVal T>
-inline groups make_unordered_groups(const r_vec<T>& x) { 
+inline groups make_unordered_groups(const r_vec<T>& x) {
 
     using key_type = unwrap_t<T>;
     r_size_t n = x.length();
@@ -160,30 +165,30 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
     g.n_groups = 0;
     g.ordered = false;
     g.sorted = true;
-    
+
     if (n == 0) return groups();
 
     // Table Method (For int with small range)
     if constexpr (is<T, r_int>) {
 
         r_vec<T> rng = range(x, /*na_rm=*/true);
-        
+
         int min_val = unwrap(rng.get(0));
         int max_val = unwrap(rng.get(1));
-        
+
         // Check range results
         // If x had only NAs, result would also be c(NA, NA)
-        
+
         bool all_nas = is_na(min_val) && is_na(max_val);
         int64_t range_span = 0;
-        
+
         if (!all_nas) {
              range_span = static_cast<int64_t>(max_val) - static_cast<int64_t>(min_val);
         }
 
         // Table vs Hash Map
         // Table is faster if range is reasonably small (e.g. < 20M)
-        constexpr int64_t MAX_TABLE_SIZE = 20000000; 
+        constexpr int64_t MAX_TABLE_SIZE = 20000000;
 
 
         if (all_nas) {
@@ -195,19 +200,19 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
        }
 
         if (!all_nas && range_span < MAX_TABLE_SIZE) {
-            
+
             // --- FAST TABLE PATH ---
-            
+
             // Table maps (value - min_val) -> group_id
             r_vec<r_int> table(range_span + 1, r_int(-1));
             int na_group_id = -1; // Special slot for NA
-            
+
             auto* RESTRICT p_x = x.data();
             auto* RESTRICT p_id = g.ids.data();
             auto* RESTRICT p_table = table.data();
-            
+
             int next_id = 0;
-            
+
             for(r_size_t i = 0; i < n; ++i) {
                 int val = p_x[i];
 
@@ -220,7 +225,7 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
                 } else {
                     // Safe subtraction because we validated range
                     size_t idx = static_cast<size_t>(val - min_val);
-                  
+
                     id = p_table[idx];
                     if (id == -1) {
                         id = next_id++;
@@ -232,9 +237,9 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
             g.n_groups = next_id;
             // check if group IDs are sorted
             for (r_size_t i = 1; i < n; ++i) {
-              if (p_id[i] < p_id[i - 1]){ 
-                  g.sorted = false; 
-                  break; 
+              if (p_id[i] < p_id[i - 1]){
+                  g.sorted = false;
+                  break;
               }
             }
             return g;
@@ -242,18 +247,18 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
       }
 
         ankerl::unordered_dense::map<
-        key_type, 
-        int, 
+        key_type,
+        int,
         internal::r_hash<T>,
         internal::r_hash_eq<T>
       > lookup;
       lookup.reserve(internal::get_hash_map_reserve_size<T>(n));
-    
+
       auto* RESTRICT p_x = x.data();
       auto* RESTRICT p_id = g.ids.data();
-    
+
       int next_id = 0;
-    
+
       for (r_size_t i = 0; i < n; ++i) {
         key_type key = p_x[i];
         auto [it, inserted] = lookup.try_emplace(key, next_id);
@@ -266,9 +271,9 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
 
       // check if group IDs are sorted
       for (r_size_t i = 1; i < n; ++i) {
-        if (p_id[i] < p_id[i - 1]){ 
-            g.sorted = false; 
-            break; 
+        if (p_id[i] < p_id[i - 1]){
+            g.sorted = false;
+            break;
         }
       }
       g.n_groups = next_id;
