@@ -10,9 +10,19 @@
 namespace cpp20 {
 
 namespace internal {
-inline SEXP na_sym = NULL;
-inline SEXP lazy_load_symbol(SEXP null_or_symbol, const char* name){
-    return null_or_symbol == NULL ? Rf_installChar(Rf_mkCharCE(name, CE_UTF8)) : null_or_symbol;
+template <std::size_t N>
+struct sym_name {
+    char data[N];
+    constexpr sym_name(const char (&s)[N]) {
+      for (std::size_t i = 0; i < N; ++i) data[i] = s[i];
+    }
+};
+
+// Meyers-singleton method to cache R symbols
+template <sym_name name>
+inline SEXP lazy_sym() {
+    static SEXP s = Rf_installChar(Rf_mkCharCE(name.data, CE_UTF8));
+    return s;
 }
 }
 
@@ -21,7 +31,7 @@ struct r_sym {
   SEXP value;
   using value_type = r_sexp;
 
-  r_sym() : value(internal::lazy_load_symbol(internal::na_sym, "NA")){}
+  r_sym() : value(internal::lazy_sym<"NA">()){}
   explicit r_sym(SEXP x) : value{x} {
     internal::check_valid_construction<r_sym>(value);
   }
@@ -29,7 +39,7 @@ struct r_sym {
     internal::check_valid_construction<r_sym>(value);
   }
   explicit r_sym(const char *x) : value(Rf_installChar(Rf_mkCharCE(x, CE_UTF8))) {}
-  explicit r_sym(const r_str_view& x) : value(Rf_installChar(x.value == NA_STRING ? internal::lazy_load_symbol(internal::na_sym, "NA") : x.value)){}
+  explicit r_sym(const r_str_view& x) : value(x.value == NA_STRING ? internal::lazy_sym<"NA">() : Rf_installChar(x.value)){}
   explicit r_sym(const r_str& x) : r_sym(r_str_view(x)){}
   operator SEXP() const noexcept { return value; }
 };

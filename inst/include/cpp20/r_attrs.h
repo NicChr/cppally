@@ -86,7 +86,7 @@ template <RObject T>
 inline r_vec<r_sexp> get_attrs(const T& x) {
   if (can_have_attributes(x) && has_attrs(x)){
     SEXP x_ = x;
-    SEXP expr = Rf_protect(Rf_lang2(cpp20::internal::lazy_load_symbol(cpp20::internal::attrs_sym, "attributes"), x_));
+    SEXP expr = Rf_protect(Rf_lang2(cpp20::internal::lazy_sym<"attributes">(), x_));
     SEXP res = Rf_protect(Rf_eval(expr, R_BaseEnv));
     r_vec<r_sexp> out(res);
     Rf_unprotect(2);
