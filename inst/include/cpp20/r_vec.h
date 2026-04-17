@@ -492,7 +492,7 @@ struct r_vec {
 
   // POSIXct-only members
   r_str tzone() const requires RPsxctType<T> {
-    auto tz = r_vec<r_str_view>(Rf_getAttrib(sexp, r_sym("tzone")));
+    auto tz = r_vec<r_str_view>(Rf_getAttrib(sexp, lazy_sym<"tzone">()));
     
     if (tz.length() == 0){
       abort("`r_vec<r_psxct_t>` vector must have a valid tzone attribute");
@@ -506,7 +506,7 @@ struct r_vec {
   }
 
   void set_tzone(const char* tz) requires RPsxctType<T> {
-    Rf_setAttrib(sexp, r_sym("tzone"), r_vec<r_str>(1, r_str(tz)));
+    Rf_setAttrib(sexp, lazy_sym<"tzone">(), r_vec<r_str>(1, r_str(tz)));
   }
 
   // list-only members

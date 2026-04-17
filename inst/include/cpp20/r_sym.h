@@ -20,7 +20,7 @@ struct sym_name {
 
 // Meyers-singleton method to cache R symbols
 template <sym_name name>
-inline SEXP lazy_sym() {
+inline SEXP lazy_sym_impl() {
     static SEXP s = Rf_installChar(Rf_mkCharCE(name.data, CE_UTF8));
     return s;
 }
@@ -31,7 +31,7 @@ struct r_sym {
   SEXP value;
   using value_type = r_sexp;
 
-  r_sym() : value(internal::lazy_sym<"NA">()){}
+  r_sym() : value(internal::lazy_sym_impl<"NA">()){}
   explicit r_sym(SEXP x) : value{x} {
     internal::check_valid_construction<r_sym>(value);
   }
@@ -39,10 +39,15 @@ struct r_sym {
     internal::check_valid_construction<r_sym>(value);
   }
   explicit r_sym(const char *x) : value(Rf_installChar(Rf_mkCharCE(x, CE_UTF8))) {}
-  explicit r_sym(const r_str_view& x) : value(x.value == NA_STRING ? internal::lazy_sym<"NA">() : Rf_installChar(x.value)){}
+  explicit r_sym(const r_str_view& x) : value(x.value == NA_STRING ? internal::lazy_sym_impl<"NA">() : Rf_installChar(x.value)){}
   explicit r_sym(const r_str& x) : r_sym(r_str_view(x)){}
   operator SEXP() const noexcept { return value; }
 };
+
+template <internal::sym_name name>
+inline r_sym lazy_sym() {
+    return r_sym(internal::lazy_sym_impl<name>());
+}
 
 namespace symbol {
 

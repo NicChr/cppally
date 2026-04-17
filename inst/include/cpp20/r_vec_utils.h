@@ -103,7 +103,7 @@ inline r_sexp new_vec_impl(r_size_t n) {
     SET_STRING_ELT(cls, 0, Rf_mkCharCE("POSIXct", CE_UTF8));
     SET_STRING_ELT(cls, 1, Rf_mkCharCE("POSIXt", CE_UTF8));
     Rf_setAttrib(out, symbol::class_sym, cls);
-    Rf_setAttrib(out, r_sym("tzone"), Rf_ScalarString(Rf_mkCharCE("UTC", CE_UTF8)));
+    Rf_setAttrib(out, lazy_sym<"tzone">()), Rf_ScalarString(Rf_mkCharCE("UTC", CE_UTF8)));
     return out;
   } else {
     static_assert(
@@ -166,7 +166,7 @@ inline r_sexp new_scalar_vec(T const& default_value) {
     SET_STRING_ELT(cls, 0, Rf_mkCharCE("POSIXct", CE_UTF8));
     SET_STRING_ELT(cls, 1, Rf_mkCharCE("POSIXt", CE_UTF8));
     Rf_setAttrib(out, symbol::class_sym, cls);
-    Rf_setAttrib(out, r_sym("tzone"), Rf_ScalarString(r_str("UTC")));
+    Rf_setAttrib(out, lazy_sym<"tzone">(), Rf_ScalarString(r_str("UTC")));
     return out;
   } else {
     static_assert(
