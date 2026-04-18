@@ -146,7 +146,7 @@ struct r_hash_impl<r_sexp> {
             } else if constexpr (RSymbolType<vec_t>){
                 return hash_sym(vec);
             } else {
-                return hash_vec(vec);
+                return r_hash_impl<vec_t>{}(vec);
             }
         });
     }
