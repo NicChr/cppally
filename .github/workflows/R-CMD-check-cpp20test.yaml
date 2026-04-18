@@ -43,6 +43,10 @@ jobs:
           needs: check
           working-directory: cpp20test
 
+      - name: Install cpp20
+        shell: bash
+        run: R CMD INSTALL .
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
