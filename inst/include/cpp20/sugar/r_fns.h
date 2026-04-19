@@ -10,17 +10,14 @@
 namespace cpp20 {
 
 namespace fn {
+
 // Return R function from a specified package
-inline r_sexp find_pkg_fun(const char *name, const char *pkg, bool all_fns){
-
-  r_sexp expr = r_null;
-
-  if (all_fns){
-    expr = internal::make_call(r_sexp(R_TripleColonSymbol, internal::view_tag{}), r_sym(pkg), r_sym(name));
-  } else {
-    expr = internal::make_call(r_sexp(R_DoubleColonSymbol, internal::view_tag{}), r_sym(pkg), r_sym(name));
-  }
+inline r_sexp find_pkg_fun(r_sym name, r_sym pkg){
+  r_sexp expr = internal::make_call(cached_sym<"::">(), pkg, name);
   return eval(expr, env::base_env);
+}
+inline r_sexp find_pkg_fun(const char *name, const char *pkg){
+  return find_pkg_fun(r_sym(name), r_sym(pkg));
 }
 
 template<typename... Args>
