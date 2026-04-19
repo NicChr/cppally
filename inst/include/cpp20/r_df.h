@@ -53,7 +53,7 @@ inline r_vec<r_sexp> new_df_impl(const r_vec<r_sexp>& cols, bool recycle, int nr
     // Always provide names
     r_vec<r_str_view> names = cols.names();
     if (names.is_null()){
-        names = r_vec<r_str_view>(n, blank_r_string);
+        names = r_vec<r_str_view>(n, cached_str<"">());
     }
     out.set_names(names); 
 

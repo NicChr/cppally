@@ -85,8 +85,7 @@ struct r_str_view {
 
 inline r_str::r_str(r_str_view x) : value(static_cast<SEXP>(x)) {}
 
-// Blank string ''
-inline const r_str_view blank_r_string = r_str_view();
+// NA
 inline const r_str_view na_str = r_str_view(NA_STRING);
 
 template <internal::name T>
