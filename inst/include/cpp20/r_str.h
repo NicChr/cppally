@@ -17,7 +17,7 @@ struct r_str {
   r_sexp value;
   using value_type = r_sexp;
   // r_str() : value{internal::blank_string_constant, internal::view_tag{}} {}
-  r_str() : value{R_BlankString, internal::view_tag{}} {}
+  r_str() : value{internal::lazy_str_impl<"">(), internal::view_tag{}} {}
   // Explicit SEXP/const char* -> r_str
   explicit r_str(SEXP x) : value{x} {
     internal::check_valid_construction<r_str>(value);
