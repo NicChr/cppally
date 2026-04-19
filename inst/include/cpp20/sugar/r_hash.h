@@ -40,175 +40,125 @@ inline consteval uint64_t nan_hash(){
 }
 
 template <typename T>
-struct r_hash_impl {
-    // This tells Ankerl map 'this hash is already high quality'
-    using is_avalanching = void;
-
-    [[nodiscard]] uint64_t operator()(unwrap_t<T> x) const noexcept {
-        if constexpr (RTimeType<T>){
-            return r_hash_impl<inherited_type_t<T>>{}(T(x));
-        } else if constexpr (RIntegerType<T>){
-            return mix_u64(static_cast<uint64_t>(x));
-        } else {
-            return ankerl::unordered_dense::hash<unwrap_t<T>>{}(x);
-        }
+uint64_t r_hash_impl(const T& x) noexcept {
+    if constexpr (RTimeType<T>){
+        return r_hash_impl(inherited_type_t<T>(x));
+    } else if constexpr (RIntegerType<T>){
+        return mix_u64(static_cast<uint64_t>(unwrap(x)));
+    } else {
+        return ankerl::unordered_dense::hash<unwrap_t<T>>{}(unwrap(x));
     }
 };
 
 template <>
-struct r_hash_impl<r_dbl> {
-    using is_avalanching = void;
-
-    [[nodiscard]] uint64_t operator()(double x) const noexcept {
-        if (is_na(x)){
-            // Checks that x matches exactly to R's NA_REAL
-            return is_na_real(x) ? na_real_hash() : nan_hash();
-        } else {
-            // Hash normal double
-            // +0.0 to normalise -0.0 and 0.0 
-            return mix_u64(std::bit_cast<uint64_t>(x + 0.0));
-        }
+inline uint64_t r_hash_impl(const r_dbl& x) noexcept {
+    if (is_na(x)){
+        // Checks that x matches exactly to R's NA_REAL
+        return is_na_real(x) ? na_real_hash() : nan_hash();
+    } else {
+        // Hash normal double
+        // +0.0 to normalise -0.0 and 0.0 
+        return mix_u64(std::bit_cast<uint64_t>(unwrap(x) + 0.0));
     }
 };
 
 template <>
-struct r_hash_impl<r_cplx> {
-    using is_avalanching = void;
-
-    [[nodiscard]] uint64_t operator()(std::complex<double> x) const noexcept {
-        r_hash_impl<r_dbl> hasher;
+inline uint64_t r_hash_impl(const r_cplx& x) noexcept {
         // Hash real and imag parts and mix
-        uint64_t h1 = hasher(x.real());
-        uint64_t h2 = hasher(x.imag());
-        return hash_combine(h1, h2);
-    }
-};
-
-template<>
-struct r_hash_impl<r_str_view> {
-    using is_avalanching = void;
-
-    [[nodiscard]] uint64_t operator()(SEXP x) const noexcept {
-        // Cast pointer to integer (uintptr_t)
-        auto ptr_val = reinterpret_cast<uintptr_t>(x);
-        
-        // Scramble the bits
-        // We use ankerl's built-in wyhash mixer. It's just a multiply + XOR.
-        return ankerl::unordered_dense::detail::wyhash::hash(ptr_val);
-    }
-};
-
-template<>
-struct r_hash_impl<r_str> {
-    using is_avalanching = void;
-
-    [[nodiscard]] uint64_t operator()(SEXP x) const noexcept {
-        return r_hash_impl<r_str_view>{}(x);
-    }
+        return hash_combine(r_hash_impl(x.re()), r_hash_impl(x.im()));
 };
 
 template <>
-struct r_hash_impl<r_sym> {
-    [[nodiscard]] uint64_t operator()(SEXP x) const noexcept {
-        return r_hash_impl<r_str_view>{}(x);
-    }
+inline uint64_t r_hash_impl(const r_str_view& x) noexcept {
+    // Cast pointer to integer (uintptr_t)
+    auto ptr_val = reinterpret_cast<uintptr_t>(unwrap(x));
+    
+    // Scramble the bits
+    // We use ankerl's built-in wyhash mixer. It's just a multiply + XOR.
+    return ankerl::unordered_dense::detail::wyhash::hash(ptr_val);
 };
 
+template <>
+inline uint64_t r_hash_impl(const r_str& x) noexcept {
+        return r_hash_impl(r_str_view(x));
+};
+
+template <>
+inline uint64_t r_hash_impl(const r_sym& x) noexcept {
+    auto ptr_val = reinterpret_cast<uintptr_t>(unwrap(x));
+    return ankerl::unordered_dense::detail::wyhash::hash(ptr_val);
+};
 
 // Vector hashing
 
-// // Forward declarations before r_hash_impl<r_sexp>
-inline uint64_t hash_factor(const r_factors& x);
-
 template <RVector T>
-uint64_t hash_vec(const T& x);
+inline uint64_t r_hash_impl(const T& x) noexcept {
+        
+    if (x.is_null()) return 0;
+    r_size_t n = x.length();
+    // Initialise the seed using the hashed vector type
+    uint64_t seed = r_hash_impl(r_int(static_cast<int>(r_typeof<T>)));
+    // Hash the attributes list if it exists
+    if (attr::has_attrs(x)){
+        r_vec<r_sexp> attrs = attr::get_attrs(x);
+        seed = hash_combine(seed, r_hash_impl(attrs.names()));
+        for (r_size_t i = 0; i < attrs.length(); ++i){
+            seed = hash_combine(seed, r_hash_impl(attrs.view(i)));
+        }
+    }
+    // Recursively combine hashes of elements (even if elements are vectors)
+    for (r_size_t i = 0; i < n; ++i) {
+        seed = hash_combine(seed, r_hash_impl(x.view(i)));
+    }
+    return seed;
+};
 
-inline uint64_t hash_sym(const r_sym& x);
+template<>
+inline uint64_t r_hash_impl(const r_factors& x) noexcept {
+    return r_hash_impl(x.value);
+};
 
-template <RVal T>
-struct r_hash_impl<r_vec<T>>;
 
 // Specialization for elements of lists
 template<>
-struct r_hash_impl<r_sexp> {
-    using is_avalanching = void;
-    [[nodiscard]] uint64_t operator()(SEXP x) const {
-        auto x_ = r_sexp(x, internal::view_tag{});
-        if (x_.is_null()) return 0;
-        
-        // Recursively hash the element
-        return view_sexp(x_, [](const auto& vec) -> uint64_t {
-            using vec_t = std::remove_cvref_t<decltype(vec)>;
-            if constexpr (is<vec_t, r_sexp>){
-                abort("Unsupported element type, current implementation can only hash vectors and factors");
-            } else if constexpr (RFactor<vec_t>){
-                return hash_factor(vec);
-            } else if constexpr (RSymbolType<vec_t>){
-                return hash_sym(vec);
-            } else {
-                return hash_vec(vec);
-            }
-        });
-    }
-};
-
-template <RVal T>
-struct r_hash_impl<r_vec<T>> {
-    using is_avalanching = void;
-    [[nodiscard]] uint64_t operator()(const SEXP& x) const noexcept {
-
-        r_vec<T> xvec = r_vec<T>(x, internal::view_tag{});
-        
-        if (xvec.is_null()) return 0;
-        r_size_t n = xvec.length();
-        // Initialise the seed using the hashed vector type
-        uint64_t seed = r_hash_impl<r_int>{}(r_typeof<r_vec<T>>);
-        // Hash the attributes list if it exists
-        if (attr::has_attrs(xvec)){
-            r_vec<r_sexp> attrs = attr::get_attrs(xvec);
-            seed = hash_combine(seed, r_hash_impl<r_vec<r_str_view>>{}(attrs.names()));
-            for (r_size_t i = 0; i < attrs.length(); ++i){
-                seed = hash_combine(seed, r_hash_impl<r_sexp>{}(attrs.view(i)));
-            }
+inline uint64_t r_hash_impl(const r_sexp& x) noexcept {
+    if (x.is_null()) return 0;
+    
+    // Recursively hash the element
+    return view_sexp(x, [](const auto& vec) -> uint64_t {
+        using vec_t = std::remove_cvref_t<decltype(vec)>;
+        if constexpr (is<vec_t, r_sexp>){
+            abort("Unsupported element type, current implementation can only hash vectors and factors");
+        } else {
+            return r_hash_impl(vec);
         }
-        // Recursively combine hashes of elements (even if elements are vectors)
-        for (r_size_t i = 0; i < n; ++i) {
-            seed = hash_combine(seed, r_hash_impl<T>{}(unwrap(xvec.view(i))));
-        }
-        return seed;
-    }
+    });
 };
 
-template<>
-struct r_hash_impl<r_factors> {
-    using is_avalanching = void;
-    [[nodiscard]] uint64_t operator()(const SEXP& x) const noexcept {
-        return r_hash_impl<r_vec<r_int>>{}(x);
-    }
-};
-
-// Defined after r_vec<T> and r_factors are complete
-inline uint64_t hash_factor(const r_factors& x) {
-    return r_hash_impl<r_vec<r_int>>{}(x.value);
-}
-
-template <RVector T>
-uint64_t hash_vec(const T& x) {
-    return r_hash_impl<T>{}(x);
-}
-
-inline uint64_t hash_sym(const r_sym& x) {
-    return r_hash_impl<r_sym>{}(x);
-}
 
 template <typename T>
-struct r_hash : r_hash_impl<std::remove_cvref_t<T>> {};
+struct r_hash {
+    
+    using is_avalanching = void; // Tells ankerl this is already a good quality hash
+
+    // For hash map memory efficiency we use the underlying type
+    using base_t = unwrap_t<T>;
+    uint64_t operator()(const base_t& x) const noexcept {
+        if constexpr (std::is_constructible_v<T, base_t, internal::view_tag>){
+            return r_hash_impl(T(x, internal::view_tag{}));
+        } else {
+            return r_hash_impl(T(x));
+        }
+    }
+};
 
 // Hash equality
 
-template <RVal T>
+template <typename T>
 struct r_hash_eq {
+
     using is_transparent = void;
+
     using base_t = unwrap_t<T>;
     bool operator()(const base_t& a, const base_t& b) const {
         if constexpr (std::is_constructible_v<T, base_t, internal::view_tag>){
@@ -239,139 +189,3 @@ inline uint64_t get_hash_map_reserve_size<r_lgl>(uint64_t data_size) {
 }
 
 #endif
-
-// // Alternative (not working atm)
-
-// template <RIntegerType T>
-// uint64_t r_hash_impl (const T& x) noexcept {
-//     return mix_u64(static_cast<uint64_t>(unwrap(x)));
-// };
-
-// template <RFloatType T>
-// uint64_t r_hash_impl (const T& x) noexcept {
-//     if (is_na(x)){
-//         // Checks that x matches exactly to R's NA_REAL
-//         return is_na_real(x) ? na_real_hash() : nan_hash();
-//     } else {
-//         // Hash normal double
-//         // +0.0 to normalise -0.0 and 0.0 
-//         return mix_u64(std::bit_cast<uint64_t>(unwrap(x) + 0.0));
-//     }
-// };
-
-// template <RComplexType T>
-// uint64_t r_hash_impl (const T& x) noexcept {
-//     // Hash real and imag parts and mix
-//     uint64_t h1 = r_hash_impl<r_dbl>(x.re());
-//     uint64_t h2 = r_hash_impl<r_dbl>(x.im());
-//     return hash_combine(h1, h2);
-// };
-
-// template <RStringType T>
-// uint64_t r_hash_impl (const T& x) noexcept {
-//     // Cast pointer to integer (uintptr_t)
-//     uintptr_t ptr_val = reinterpret_cast<uintptr_t>(unwrap(x));
-//     // Scramble the bits
-//     // We use ankerl's built-in wyhash mixer. It's just a multiply + XOR.
-//     return ankerl::unordered_dense::detail::wyhash::hash(ptr_val);
-// };
-
-// template <RRawType T>
-// uint64_t r_hash_impl (const T& x) noexcept {
-//     return mix_u64(static_cast<uint64_t>(unwrap(x)));
-// }
-
-// template <RTimeType T>
-// uint64_t r_hash_impl (const T& x) noexcept {
-//     return r_hash_impl<inherited_type_t<T>>(x);
-// };
-
-
-// // Same as hashing strings above
-// template <RSymbolType T>
-// uint64_t r_hash_impl (const T& x) noexcept {
-//     uintptr_t ptr_val = reinterpret_cast<uintptr_t>(unwrap(x));
-//     return ankerl::unordered_dense::detail::wyhash::hash(ptr_val);
-// };
-
-// template <CastableToRVal T>
-// requires (CppType<T>)
-// uint64_t r_hash_impl (const T& x) noexcept {
-//     return r_hash_impl(as_r_val_t<T>(x));
-// };
-
-// // Vector hashing
-
-// // // Forward declarations before r_hash_impl<r_sexp>
-// template <RVector T>
-// uint64_t r_hash_impl(const T& x) noexcept;
-// template <RFactor T>
-// uint64_t r_hash_impl(const T& x) noexcept ;
-
-// // Specialization for elements of lists
-// template <typename T>
-// requires (is<T, r_sexp>)
-// uint64_t r_hash_impl(const T& x) noexcept {
-//     auto x_ = r_sexp(x, internal::view_tag{});
-//     if (x_.is_null()) return 0;
-//     // Recursively hash the element
-//     return view_sexp(x_, [](const auto& vec) -> uint64_t {
-//         using vec_t = std::remove_cvref_t<decltype(vec)>;
-//         if constexpr (is<vec_t, r_sexp>){
-//             abort("Unsupported element type, current implementation can only hash vectors and factors");
-//         } else {
-//             return r_hash_impl<vec_t>(vec);
-//         }
-//     });
-// };
-// template <RVector T>
-// uint64_t r_hash_impl(const T& x) noexcept {
-
-//     if (x.is_null()) return 0;
-//     r_size_t n = x.length();
-//     // Initialise the seed using the hashed vector type
-//     uint64_t seed = r_hash_impl<r_int>(r_int(r_typeof<r_vec<T>>));
-//     // Hash the attributes list if it exists
-//     if (attr::has_attrs(x)){
-//         r_vec<r_sexp> attrs = attr::get_attrs(x);
-//         seed = hash_combine(seed, r_hash_impl(attrs.names()));
-//         for (r_size_t i = 0; i < attrs.length(); ++i){
-//             seed = hash_combine(seed, r_hash_impl<r_sexp>(attrs.view(i)));
-//         }
-//     }
-//     // If vector is a list then we recursively combine hashes of vector elements
-//     if constexpr (is<T, r_sexp>){
-//         for (r_size_t i = 0; i < n; ++i){
-//             uint64_t h = view_sexp(x.view(i), [](const auto& vec) -> uint64_t {
-//                 using vec_t = std::remove_cvref_t<decltype(vec)>;
-//                 if constexpr (is<vec_t, r_sexp>){
-//                     abort("List contains unsupported element type, current implementation can only hash vectors and factors");
-//                 } else {
-//                     return r_hash_impl<vec_t>(vec);
-//                 }
-//             });
-//             seed = hash_combine(seed, h);
-//         }
-//     } else {
-//         for (r_size_t i = 0; i < n; ++i) {
-//             seed = hash_combine(seed, r_hash_impl<T>(x.view(i)));
-//         }
-//     }
-//     return seed;
-// };
-
-// template <RFactor T>
-// uint64_t r_hash_impl(const T& x) noexcept {
-//     return r_hash_impl<r_vec<r_int>>(x.value);
-// }
-
-// template <typename T>
-// struct r_dense_map_hash {
-//     using is_avalanching = void;
-//     [[nodiscard]] uint64_t operator()(const unwrap_t<T>& x) const noexcept {
-//         return r_hash_impl<T>(x);
-//     }
-// };
-
-// template <typename T>
-// struct r_hash : r_dense_map_hash<std::remove_cvref_t<T>>{};
