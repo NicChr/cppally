@@ -189,6 +189,11 @@ struct r_vec {
       }
   }
 
+  template <typename U>
+  void set(r_size_t index, const U& val) {
+    set(index, as<T>(val));
+  }
+
   template <internal::RSubscript U> 
   r_vec<T> subset(const r_vec<U>& indices, bool check = true, bool invert = false) const;
 

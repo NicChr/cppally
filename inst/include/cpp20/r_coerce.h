@@ -38,7 +38,7 @@ inline r_sexp as_sexp<r_sym>(r_sym const& x){
 }
 
 // Powerful and flexible coercion function that can handle many types and convert to R-specific C++ types and R vectors
-
+// Note: forwards declarations exist in r_coerce_impl.h
 template <typename T, typename U>
 requires is<T, U>
 inline std::remove_cvref_t<T> as(const U& x) {

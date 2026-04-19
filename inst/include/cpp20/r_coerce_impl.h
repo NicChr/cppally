@@ -16,6 +16,15 @@
 
 namespace cpp20 {
 
+// Forward declarations of main coercion template as<>
+template <typename T, typename U>
+requires is<T, U>
+inline std::remove_cvref_t<T> as(const U& x);
+
+template <typename T, typename U>
+inline std::remove_cvref_t<T> as(const U& x);
+
+
 namespace internal {
 
 // Assumes no NAs at all
