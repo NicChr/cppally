@@ -69,7 +69,7 @@ for use.
 library(cpp20)
 
 # Examples take too long to run and throw an R CMD check note
-\dontrun{
+\donttest{
 cpp_eval("r_int(0)")
 cpp_source(code = '
   #include <cpp20.hpp>
