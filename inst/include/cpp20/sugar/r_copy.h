@@ -7,24 +7,28 @@
 
 namespace cpp20 {
 
-inline r_sexp shallow_copy(const r_sexp& x){
-    return r_sexp(Rf_shallow_duplicate(x)); 
-}
+// Forward declarations
 
-// Forward declaration
+template <typename T>
+inline T deep_copy(const T& x) = delete;
+template<>
 inline r_sexp deep_copy(const r_sexp& x);
 
-template <RVal T>
-inline r_vec<T> deep_copy(const r_vec<T>& x){
+template <typename T>
+inline T shallow_copy(const T& x) = delete;
+template<>
+inline r_sexp shallow_copy(const r_sexp& x);
+
+template <RVector T>
+inline T deep_copy(const T& x){
+    
+    if (x.is_null()) return T(r_null);
 
     r_size_t n = x.length();
-
-    if (x.is_null()) return r_vec<T>(r_null);
-
-    r_vec<T> out(n);
+    T out(n);
 
     // If list, copy list elements
-    if constexpr (is<T, r_sexp>){
+    if constexpr (is<T, r_vec<r_sexp>>){
         for (r_size_t i = 0; i < n; ++i){
             out.set(i, deep_copy(x.view(i)));
         }
@@ -42,22 +46,68 @@ inline r_vec<T> deep_copy(const r_vec<T>& x){
     return out;
 }
 
+template<>
 inline r_factors deep_copy(const r_factors& x){
     r_vec<r_int> out = deep_copy(x.value);
     return r_factors(unwrap(out), false);
 }
 
 // Symbols can't be deep copied
+template<>
 inline r_sym deep_copy(const r_sym& x){
     return x;
 }
 
+template<>
 inline r_sexp deep_copy(const r_sexp& x){
     return view_sexp(x, [](const auto& vec) -> r_sexp {
         if constexpr (!is<decltype(vec), r_sexp>){
             return r_sexp(static_cast<SEXP>(deep_copy(vec)));
         } else {
             return r_sexp(safe[Rf_duplicate](vec));
+        }
+    });
+}
+
+template <RVector T>
+inline T shallow_copy(const T& x){
+    
+    if (x.is_null()) return T(r_null);
+
+    r_size_t n = x.length();
+    T out(n);
+
+    // If list, shallow copy list elements
+    if constexpr (is<T, r_vec<r_sexp>>){
+        for (r_size_t i = 0; i < n; ++i){
+            out.set(i, x.view(i));
+        }
+    } else {
+        r_copy_n(out, x, 0, n);
+    }    
+    attr::set_attrs(out, attr::get_attrs(x));
+    return out;
+}
+
+template<>
+inline r_factors shallow_copy(const r_factors& x){
+    r_vec<r_int> out = shallow_copy(x.value);
+    return r_factors(unwrap(out), false);
+}
+
+// Symbols can't be copied
+template<>
+inline r_sym shallow_copy(const r_sym& x){
+    return x;
+}
+
+template<>
+inline r_sexp shallow_copy(const r_sexp& x){
+    return view_sexp(x, [](const auto& vec) -> r_sexp {
+        if constexpr (!is<decltype(vec), r_sexp>){
+            return r_sexp(static_cast<SEXP>(shallow_copy(vec)));
+        } else {
+            return r_sexp(safe[Rf_shallow_duplicate](vec));
         }
     });
 }
