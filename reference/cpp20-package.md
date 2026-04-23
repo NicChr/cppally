@@ -1,10 +1,12 @@
-# cpp20: A C++20 API for Interacting with R
+# cpp20: A 'C++20' API for R
 
-A header-only API designed for advanced R data manipulation within C++.
-This package emphasises type-safety, modern C++ syntax and
-high-performance computing through Single-Instruction-Multiple-Data and
-parallelisation. Leveraging C++20 concepts specific to R, it enables
-seamless template programming with a highly efficient API.
+A header-only 'C++20' API for manipulating R data structures from 'C++'.
+Provides 'C++20' concepts specific to R, custom scalar and vector
+classes with built-in NA handling, automatic object protection, 'SIMD'
+(single-instruction-multiple-data), parallelisation, and a streamlined
+system for registering 'C++' functions, including templates, to R. Full
+API reference and documentation are available at
+<https://nicchr.github.io/cpp20>.
 
 ## See also
 
@@ -17,4 +19,4 @@ Useful links:
 ## Author
 
 **Maintainer**: Nick Christofides <nick.christofides.r@gmail.com>
-([ORCID](https://orcid.org/0000-0002-9743-7342))
+([ORCID](https://orcid.org/0000-0002-9743-7342)) \[copyright holder\]

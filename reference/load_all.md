@@ -25,3 +25,7 @@ load_all(path = ".", debug = FALSE, ...)
 
   Further arguments passed on to
   [`pkgload::load_all()`](https://pkgload.r-lib.org/reference/load_all.html)
+
+## Value
+
+Invisibly registers cpp20 tagged functions and compiles C++ code.

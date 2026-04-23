@@ -84,8 +84,9 @@ cpp_eval(
 library(cpp20)
 
 # Examples take too long to run and throw an R CMD check note
-if (FALSE) { # \dontrun{
+# \donttest{
 cpp_eval("r_int(0)")
+#> [1] 0
 cpp_source(code = '
   #include <cpp20.hpp>
   using namespace cpp20;
@@ -96,6 +97,8 @@ cpp_source(code = '
   }
 ', debug = TRUE)
 add(1, 2)
+#> [1] 3
 add(2, NA)
-} # }
+#> [1] NA
+# }
 ```
