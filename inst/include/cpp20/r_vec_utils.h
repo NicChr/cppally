@@ -94,45 +94,51 @@ inline const unsigned char* vector_ptr<const r_raw>(SEXP x) {
 // ALTREP-safe accessors
 template <RPtrWritableType T>
 inline unwrap_t<T> elt(SEXP x, r_size_t i) {
-  if constexpr (RTimeType<T>){
-    return static_cast<unwrap_t<T>>(elt<inherited_type_t<T>>(x, i));
-  } else {
-    static_assert(
-      always_false<T>,
-      "Unsupported type for elt"
-    );
-    return {};
-  }
+  static_assert(
+    always_false<T>,
+    "Unsupported type for elt"
+  );
+  return {};
 }
 
 template<>
-inline int elt<r_lgl>(SEXP x, r_size_t i) {
+inline unwrap_t<r_lgl> elt<r_lgl>(SEXP x, r_size_t i) {
   return LOGICAL_ELT(x, i);
 }
 template<>
-inline int elt<r_int>(SEXP x, r_size_t i) {
+inline unwrap_t<r_int> elt<r_int>(SEXP x, r_size_t i) {
   return INTEGER_ELT(x, i);
 }
 template<>
-inline double elt<r_dbl>(SEXP x, r_size_t i) {
+inline unwrap_t<r_dbl> elt<r_dbl>(SEXP x, r_size_t i) {
   return REAL_ELT(x, i);
 }
 template<>
-inline int64_t elt<r_int64>(SEXP x, r_size_t i) {
+inline unwrap_t<r_int64> elt<r_int64>(SEXP x, r_size_t i) {
   double d = REAL_ELT(x, i);
   int64_t v;
   std::memcpy(&v, &d, sizeof(v));
   return v;
 }
 template<>
-inline std::complex<double> elt<r_cplx>(SEXP x, r_size_t i) {
+inline unwrap_t<r_cplx> elt<r_cplx>(SEXP x, r_size_t i) {
   Rcomplex c = COMPLEX_ELT(x, i);
-  return {c.r, c.i};
+  return std::complex<double>{c.r, c.i};
 }
 template<>
-inline unsigned char elt<r_raw>(SEXP x, r_size_t i) {
+inline unwrap_t<r_raw> elt<r_raw>(SEXP x, r_size_t i) {
   return RAW_ELT(x, i);
 }
+template <>
+inline unwrap_t<r_date> elt<r_date>(SEXP x, r_size_t i) {
+  return static_cast<unwrap_t<r_date>>(elt<inherited_type_t<r_date>>(x, i));
+}
+
+template <>
+inline unwrap_t<r_psxct> elt<r_psxct>(SEXP x, r_size_t i) {
+  return static_cast<unwrap_t<r_psxct>>(elt<inherited_type_t<r_psxct>>(x, i));
+}
+
 
 // Internal vec constructor
 template <RVal T>
