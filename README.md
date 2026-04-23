@@ -1,7 +1,7 @@
 
 <!-- badges: start -->
 
-[![R-CMD-check](https://github.com/NicChr/cpp20/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/NicChr/cpp20/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/NicChr/cppally/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/NicChr/cppally/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 ## Acknowledgements
@@ -22,7 +22,7 @@ Single-Instruction-Multiple-Data (SIMD) vectorisation, cppally enables
 type-safety, performance, flexible templates and readable code.
 
 For info on using cppally see [Getting started with
-cppally](https://nicchr.github.io/cpp20/articles/cpp20.html)
+cppally](https://nicchr.github.io/cppally/articles/cppally.html)
 
 ## Design choices
 
@@ -40,7 +40,7 @@ be written in header files if they are to be used across multiple
 compilation units. The R limitation has to do with automatic template
 argument deduction. There is a workaround discussed in the main vignette
 [Getting started with
-cppally](https://nicchr.github.io/cpp20/articles/cpp20.html)
+cppally](https://nicchr.github.io/cppally/articles/cppally.html)
 
 ### Scalar R types and custom methods
 
@@ -57,7 +57,7 @@ can work with the underlying C/C++ types using `unwrap_t<>` and
 
 Like the excellent cpp11 package, cppally also handles automatic
 protection for R objects. For more info see [Automatic
-Protection](https://nicchr.github.io/cpp20/articles/protection.html)
+Protection](https://nicchr.github.io/cppally/articles/protection.html)
 
 ### Interopability with the R C API
 
@@ -74,7 +74,7 @@ that R C API functions are called via cppally’s `safe[]`.
 To avoid the overhead associated with automatic protection entirely, one
 can use view types like e.g. `r_str_view`, a non-owning class for R
 strings. For more info on views see [Automatic
-Protection](https://nicchr.github.io/cpp20/articles/protection.html)
+Protection](https://nicchr.github.io/cppally/articles/protection.html)
 
 ### No copy-on-write or copy-on-modify
 

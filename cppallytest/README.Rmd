@@ -15,4 +15,4 @@ knitr::opts_chunk$set(
 
 # cppallytest
 
-This package exists to test the cppally R package which can be found here: [cpp20](https://github.com/NicChr/cpp20)
+This package exists to test the cppally R package which can be found here: [cppally](https://github.com/NicChr/cppally)

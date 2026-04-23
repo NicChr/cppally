@@ -11,7 +11,7 @@ Unit tests for the R package cppally.
 \seealso{
 Useful links:
 \itemize{
-  \item Report bugs at \url{https://github.com/NicChr/cpp20/issues}
+  \item Report bugs at \url{https://github.com/NicChr/cppally/issues}
 }
 
 }

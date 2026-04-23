@@ -4,7 +4,7 @@ output: github_document
 ---
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/NicChr/cpp20/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/NicChr/cpp20/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/NicChr/cppally/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/NicChr/cppally/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 
@@ -27,7 +27,7 @@ I first want to thank the authors and contributors of the fantastic [cpp11](http
 cppally is a high-performance header-only library providing a rich C++20 API for advanced R data manipulation. Leveraging C++20 Concepts, custom R-based classes, templated functions and Single-Instruction-Multiple-Data (SIMD) vectorisation, cppally enables type-safety, performance, flexible templates and readable code.
 
 
-For info on using cppally see [Getting started with cppally](https://nicchr.github.io/cpp20/articles/cpp20.html)
+For info on using cppally see [Getting started with cppally](https://nicchr.github.io/cppally/articles/cppally.html)
 
 ## Design choices
 
@@ -35,7 +35,7 @@ For info on using cppally see [Getting started with cppally](https://nicchr.gith
 
 cppally makes heavy use of templates for powerful object-oriented programming. While this offers a flexible framework for writing generic functions, it comes at the cost of slower compile times and larger binary sizes.
 
-Users can write and optionally register their own templates (to R). There are two main limitations to be aware of - a C++ specific one and an R specific one. The C++ limitation is that templates generally must be written in header files if they are to be used across multiple compilation units. The R limitation has to do with automatic template argument deduction. There is a workaround discussed in the main vignette [Getting started with cppally](https://nicchr.github.io/cpp20/articles/cpp20.html)
+Users can write and optionally register their own templates (to R). There are two main limitations to be aware of - a C++ specific one and an R specific one. The C++ limitation is that templates generally must be written in header files if they are to be used across multiple compilation units. The R limitation has to do with automatic template argument deduction. There is a workaround discussed in the main vignette [Getting started with cppally](https://nicchr.github.io/cppally/articles/cppally.html)
 
 ### Scalar R types and custom methods
 
@@ -43,7 +43,7 @@ cppally offers R-based C++ scalar types that are `NA` aware. To achieve this mul
 
 ### Automatic protection
 
-Like the excellent cpp11 package, cppally also handles automatic protection for R objects. For more info see [Automatic Protection](https://nicchr.github.io/cpp20/articles/protection.html)
+Like the excellent cpp11 package, cppally also handles automatic protection for R objects. For more info see [Automatic Protection](https://nicchr.github.io/cppally/articles/protection.html)
 
 ### Interopability with the R C API
 
@@ -53,7 +53,7 @@ If R throws an error via `Rf_error()` a 'longjmp' will occur, meaning C++ destru
 
 ### views
 
-To avoid the overhead associated with automatic protection entirely, one can use view types like e.g. `r_str_view`, a non-owning class for R strings. For more info on views see [Automatic Protection](https://nicchr.github.io/cpp20/articles/protection.html)
+To avoid the overhead associated with automatic protection entirely, one can use view types like e.g. `r_str_view`, a non-owning class for R strings. For more info on views see [Automatic Protection](https://nicchr.github.io/cppally/articles/protection.html)
 
 ### No copy-on-write or copy-on-modify
 

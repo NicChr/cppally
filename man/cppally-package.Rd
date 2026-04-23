@@ -6,13 +6,13 @@
 \alias{cppally-package}
 \title{cppally: A 'C++20' API for R}
 \description{
-A header-only 'C++20' API for manipulating R data structures from 'C++'. Provides 'C++20' concepts specific to R, custom scalar and vector classes with built-in NA handling, automatic object protection, 'SIMD' (single-instruction-multiple-data), parallelisation, and a streamlined system for registering 'C++' functions, including templates, to R. Full API reference and documentation are available at \url{https://nicchr.github.io/cpp20}.
+A header-only 'C++20' API for manipulating R data structures from 'C++'. Provides 'C++20' concepts specific to R, custom scalar and vector classes with built-in NA handling, automatic object protection, 'SIMD' (single-instruction-multiple-data), parallelisation, and a streamlined system for registering 'C++' functions, including templates, to R. Full API reference and documentation are available at \url{https://nicchr.github.io/cppally}.
 }
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://nicchr.github.io/cpp20/}
-  \item Report bugs at \url{https://github.com/NicChr/cpp20/issues}
+  \item \url{https://nicchr.github.io/cppally/}
+  \item Report bugs at \url{https://github.com/NicChr/cppally/issues}
 }
 
 }
