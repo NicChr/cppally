@@ -72,7 +72,6 @@ for use.
 
 library(cpp20)
 
-# Examples take too long to run and throw an R CMD check note
 \donttest{
 cpp_eval("r_int(0)")
 cpp_source(code = '
@@ -86,6 +85,53 @@ cpp_source(code = '
 ', debug = TRUE)
 add(1, 2)
 add(2, NA)
+
+### ALTREP ###
+
+# cpp20 also supports lazy ALTREP materialisation as an opt-in feature.
+# To opt-in, set `preserve_altrep = TRUE`
+
+cpp_source(
+  code = '
+  #include <cpp20.hpp>
+  using namespace cpp20;
+
+  [[cpp20::register]]
+  r_int last_altrep_unaware(r_vec<r_int> x){
+    r_int out;
+    r_size_t n = x.length();
+
+    if (n > 0){
+      out = x.get(n - 1);
+    }
+    return out;
+  }
+', debug = TRUE
+)
+
+cpp_source(
+  code = '
+  #include <cpp20.hpp>
+  using namespace cpp20;
+
+  [[cpp20::register]]
+  r_int last_altrep_aware(r_vec<r_int> x){
+    r_int out;
+    r_size_t n = x.length();
+
+    if (n > 0){
+      out = x.get(n - 1);
+    }
+    return out;
+  }
+', debug = TRUE,
+  preserve_altrep = TRUE
+)
+
+library(bench)
+mark(last_altrep_aware(1:10^5)) # No materialisation
+mark(last_altrep_unaware(1:10^5)) # Materialises full vector
+
 }
 
 }
