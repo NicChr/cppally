@@ -2,7 +2,7 @@
 % Please edit documentation in R/document.R
 \name{document}
 \alias{document}
-\title{A wrapper around \code{devtools::document()} to support cpp20 package development}
+\title{A wrapper around \code{devtools::document()} to support cppally package development}
 \usage{
 document(pkg = ".", roclets = NULL, quiet = FALSE)
 }
@@ -14,9 +14,9 @@ document(pkg = ".", roclets = NULL, quiet = FALSE)
 \item{quiet}{See \code{?devtools::document}}
 }
 \value{
-Invisibly updates roxygen documentation, compiles C++ code and exports cpp20
+Invisibly updates roxygen documentation, compiles C++ code and exports cppally
 tagged functions to R.
 }
 \description{
-A wrapper around \code{devtools::document()} to support cpp20 package development
+A wrapper around \code{devtools::document()} to support cppally package development
 }

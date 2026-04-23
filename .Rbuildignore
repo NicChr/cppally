@@ -1,4 +1,4 @@
-^cpp20\.Rproj$
+^cppally\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^README\.Rmd$
@@ -15,4 +15,4 @@
 ^Meta$
 ^_pkgdown\.yml$
 ^pkgdown$
-^cpp20test$
+^cppallytest$

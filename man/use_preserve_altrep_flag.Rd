@@ -2,12 +2,12 @@
 % Please edit documentation in R/use_preserve_altrep.R
 \name{use_preserve_altrep_flag}
 \alias{use_preserve_altrep_flag}
-\title{Adds the CPP20_PRESERVE_ALTREP flag to Makevars}
+\title{Adds the CPPALLY_PRESERVE_ALTREP flag to Makevars}
 \usage{
 use_preserve_altrep_flag()
 }
 \value{
-Invisibly adds the CPP20_PRESERVE_ALTREP flag to Makevars.
+Invisibly adds the CPPALLY_PRESERVE_ALTREP flag to Makevars.
 }
 \description{
 Adds a flag to Makevars which enables lazy materialisation of

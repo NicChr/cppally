@@ -1,3 +1,3 @@
-# cpp20 0.1.0
+# cppally 0.1.0
 
 * Initial CRAN submission.

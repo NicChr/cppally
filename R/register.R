@@ -130,7 +130,7 @@ get_registered_functions <- function(decorations, tag, quiet = !is_interactive()
   out
 }
 
-generate_cpp_functions <- function(funs, package = "cpp20") {
+generate_cpp_functions <- function(funs, package = "cppally") {
 
   if (NROW(funs) == 0){
     return(character())
@@ -152,9 +152,9 @@ generate_cpp_functions <- function(funs, package = "cpp20") {
                     '
     // {basename(file)}
     extern "C" SEXP _{package}_{name}({sexp_params}) {{
-      BEGIN_CPP20
+      BEGIN_CPPALLY
       {calls}
-      END_CPP20
+      END_CPPALLY
     }}
     '
     ),
@@ -163,9 +163,9 @@ generate_cpp_functions <- function(funs, package = "cpp20") {
     // {basename(file)}
     {declaration}
     extern "C" SEXP _{package}_{name}({sexp_params}) {{
-      BEGIN_CPP20
+      BEGIN_CPPALLY
       {calls}
-      END_CPP20
+      END_CPPALLY
     }}
     '
     )
@@ -190,7 +190,7 @@ check_init_signatures <- function(funs) {
     )
     cli::cli_abort(
       c(
-        "[[cpp20::init]] functions must return void and take a single DllInfo* arg named 'dll'",
+        "[[cpp::init]] functions must return void and take a single DllInfo* arg named 'dll'",
         {msgs}
       )
     )
@@ -227,7 +227,7 @@ generate_init_functions <- function(funs) {
   )
 }
 
-generate_r_functions <- function(funs, package = "cpp20", use_package = FALSE) {
+generate_r_functions <- function(funs, package = "cppally", use_package = FALSE) {
 
   if (NROW(funs) == 0){
     return(character())
@@ -385,14 +385,14 @@ get_call_entries <- function(path, names, package) {
 }
 
 get_cpp_register_needs <- function() {
-  res <- read.dcf(system.file("DESCRIPTION", package = "cpp20"))[, "Config/Needs/cpp20/cpp_register"]
+  res <- read.dcf(system.file("DESCRIPTION", package = "cppally"))[, "Config/Needs/cppally/cpp_register"]
   strsplit(res, "[[:space:]]*,[[:space:]]*")[[1]]
 }
 
 check_valid_attributes <- function(decorations, file = decorations$file) {
 
-  bad_decor <- startsWith(decorations$decoration, "cpp20::") &
-    (!decorations$decoration %in% c("cpp20::register", "cpp20::init", "cpp20::linking_to"))
+  bad_decor <- startsWith(decorations$decoration, "cpp::") &
+    (!decorations$decoration %in% c("cpp::register", "cpp::init", "cpp::linking_to"))
 
   if(any(bad_decor)) {
     lines <- decorations$line[bad_decor]
@@ -400,7 +400,7 @@ check_valid_attributes <- function(decorations, file = decorations$file) {
     bad_lines <- glue::glue_collapse(glue::glue("- Invalid attribute `{names}` on
                  line {lines} in file '{file}'."), "\n")
 
-    msg <- glue::glue("cpp20 attributes must be one of `cpp20::register`, `cpp20::init` or `cpp20::linking_to`:
+    msg <- glue::glue("cppally attributes must be one of `cpp::register`, `cpp::init` or `cpp::linking_to`:
       {bad_lines}
       ")
     stop(msg, call. = FALSE)
@@ -413,12 +413,12 @@ check_valid_attributes <- function(decorations, file = decorations$file) {
 #'
 #' @description
 #' Register C++ functions to be callable from R. C++ functions decorated with
-#' `[[cpp20::register]]` will be registered (including template functions).
+#' `[[cpp::register]]` will be registered (including template functions).
 #'
 #'
 #' @param path Path to package root directory.
 #' @param quiet If `TRUE` suppresses output from this function.
-#' @param extension The file extension to use for the generated src/cpp20 file.
+#' @param extension The file extension to use for the generated src/cppally file.
 #' Options are either '.cpp' (the default) or '.cc'.
 #'
 #' @returns
@@ -429,9 +429,9 @@ cpp_register <- function(path = ".", quiet = !is_interactive(), extension = c(".
   stop_unless_installed(get_cpp_register_needs())
   extension <- match.arg(extension)
 
-  r_path <- file.path(path, "R", "cpp20.R")
+  r_path <- file.path(path, "R", "cppally.R")
   src_path <- file.path(path, "src")
-  cpp_path <- file.path(src_path, paste0("cpp20", extension))
+  cpp_path <- file.path(src_path, paste0("cppally", extension))
   dll_path <- package_dll(path)
   if (file.exists(cpp_path) && file.exists(r_path) && file.exists(dll_path)){
     # If no C++ code has been modified after package dll, then no need to re-register
@@ -461,20 +461,20 @@ cpp_register <- function(path = ".", quiet = !is_interactive(), extension = c(".
 
   check_valid_attributes(all_decorations)
 
-  funs <- get_registered_functions(all_decorations, "cpp20::register", quiet)
+  funs <- get_registered_functions(all_decorations, "cpp::register", quiet)
 
   package <- current_package(path)
 
   cpp_functions_definitions <- generate_cpp_functions(funs, package)
 
-  init <- generate_init_functions(get_registered_functions(all_decorations, "cpp20::init", quiet))
+  init <- generate_init_functions(get_registered_functions(all_decorations, "cpp::init", quiet))
 
   r_functions <- generate_r_functions(funs, package, use_package = FALSE)
 
   dir.create(dirname(r_path), recursive = TRUE, showWarnings = FALSE)
 
   brio::write_lines(path = r_path, glue::glue('
-      # Generated by cpp20: do not edit by hand
+      # Generated by cppally: do not edit by hand
 
       {r_functions}
       '
@@ -487,7 +487,7 @@ cpp_register <- function(path = ".", quiet = !is_interactive(), extension = c(".
   call_entries <- get_call_entries(path, funs$name, package)
 
   cpp_function_registration <- glue::glue_data(funs, '    {{
-    "_cpp20_{name}", (DL_FUNC) &_{package}_{name}, {n_args}}}, ',
+    "_cppally_{name}", (DL_FUNC) &_{package}_{name}, {n_args}}}, ',
                                                n_args = viapply(funs$args, nrow)
   )
 
@@ -501,7 +501,7 @@ cpp_register <- function(path = ".", quiet = !is_interactive(), extension = c(".
   user_includes <- paste0(user_includes, collapse = "\n")
 
   # Adjust in the case of 0-registered fns but
-  # 1 or more cpp20::init declarations
+  # 1 or more cpp::init declarations
   user_includes <- paste0("", user_includes)
   extra_includes <- paste0("", extra_includes)
   cpp_functions_definitions <- paste0("", cpp_functions_definitions)
@@ -517,15 +517,15 @@ cpp_register <- function(path = ".", quiet = !is_interactive(), extension = c(".
   }
 
   brio::write_lines(path = cpp_path, glue::glue('
-      // Generated by cpp20: do not edit by hand
+      // Generated by cppally: do not edit by hand
       // clang-format off
 
       {extra_includes}
-      #include <cpp20/r_dispatch.h>
+      #include <cppally/r_dispatch.h>
       #include <R_ext/Visibility.h>
       {user_includes}
 
-      using namespace cpp20;
+      using namespace cppally;
       using internal::cpp_to_sexp;
       using internal::dispatch_template_impl;
 

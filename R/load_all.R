@@ -1,4 +1,4 @@
-#' A wrapper around `devtools::load_all()` specifically for cpp20
+#' A wrapper around `devtools::load_all()` specifically for cppally
 #'
 #' @param path Path to package.
 #' @param debug Should package be built without optimisations?
@@ -6,7 +6,7 @@
 #' @param ... Further arguments passed on to `pkgload::load_all()`
 #'
 #' @returns
-#' Invisibly registers cpp20 tagged functions and compiles C++ code.
+#' Invisibly registers cppally tagged functions and compiles C++ code.
 #'
 #' @export
 load_all <- function (path = ".", debug = FALSE, ...){

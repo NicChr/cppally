@@ -1,11 +1,11 @@
-#' A wrapper around `devtools::document()` to support cpp20 package development
+#' A wrapper around `devtools::document()` to support cppally package development
 #'
 #' @param pkg See `?devtools::document`
 #' @param roclets See `?devtools::document`
 #' @param quiet See `?devtools::document`
 #'
 #' @returns
-#' Invisibly updates roxygen documentation, compiles C++ code and exports cpp20
+#' Invisibly updates roxygen documentation, compiles C++ code and exports cppally
 #' tagged functions to R.
 #'
 #' @export

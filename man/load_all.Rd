@@ -2,7 +2,7 @@
 % Please edit documentation in R/load_all.R
 \name{load_all}
 \alias{load_all}
-\title{A wrapper around \code{devtools::load_all()} specifically for cpp20}
+\title{A wrapper around \code{devtools::load_all()} specifically for cppally}
 \usage{
 load_all(path = ".", debug = FALSE, ...)
 }
@@ -15,8 +15,8 @@ Default is \code{FALSE} which builds with optimisations.}
 \item{...}{Further arguments passed on to \code{pkgload::load_all()}}
 }
 \value{
-Invisibly registers cpp20 tagged functions and compiles C++ code.
+Invisibly registers cppally tagged functions and compiles C++ code.
 }
 \description{
-A wrapper around \code{devtools::load_all()} specifically for cpp20
+A wrapper around \code{devtools::load_all()} specifically for cppally
 }

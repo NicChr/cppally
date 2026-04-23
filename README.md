@@ -13,22 +13,22 @@ authors and contributors of [Rcpp](https://github.com/RcppCore/Rcpp) for
 developing this ecosystem that has laid much of the groundwork for C++
 and R integration.
 
-# cpp20
+# cppally
 
-cpp20 is a high-performance header-only library providing a rich C++20
+cppally is a high-performance header-only library providing a rich C++20
 API for advanced R data manipulation. Leveraging C++20 Concepts, custom
 R-based classes, templated functions and
-Single-Instruction-Multiple-Data (SIMD) vectorisation, cpp20 enables
+Single-Instruction-Multiple-Data (SIMD) vectorisation, cppally enables
 type-safety, performance, flexible templates and readable code.
 
-For info on using cpp20 see [Getting started with
-cpp20](https://nicchr.github.io/cpp20/articles/cpp20.html)
+For info on using cppally see [Getting started with
+cppally](https://nicchr.github.io/cpp20/articles/cpp20.html)
 
 ## Design choices
 
 ### Templates
 
-cpp20 makes heavy use of templates for powerful object-oriented
+cppally makes heavy use of templates for powerful object-oriented
 programming. While this offers a flexible framework for writing generic
 functions, it comes at the cost of slower compile times and larger
 binary sizes.
@@ -40,11 +40,11 @@ be written in header files if they are to be used across multiple
 compilation units. The R limitation has to do with automatic template
 argument deduction. There is a workaround discussed in the main vignette
 [Getting started with
-cpp20](https://nicchr.github.io/cpp20/articles/cpp20.html)
+cppally](https://nicchr.github.io/cpp20/articles/cpp20.html)
 
 ### Scalar R types and custom methods
 
-cpp20 offers R-based C++ scalar types that are `NA` aware. To achieve
+cppally offers R-based C++ scalar types that are `NA` aware. To achieve
 this multiple methods such as binary arithmetic operators have been
 written to ensure `NA` is propagated correctly. While every attempt has
 been made to make this as fast as possible, it adds some overhead and in
@@ -55,19 +55,19 @@ can work with the underlying C/C++ types using `unwrap_t<>` and
 
 ### Automatic protection
 
-Like the excellent cpp11 package, cpp20 also handles automatic
+Like the excellent cpp11 package, cppally also handles automatic
 protection for R objects. For more info see [Automatic
 Protection](https://nicchr.github.io/cpp20/articles/protection.html)
 
 ### Interopability with the R C API
 
-Using cpp20 and the R C API is generally discouraged.
+Using cppally and the R C API is generally discouraged.
 
 If R throws an error via `Rf_error()` a ‘longjmp’ will occur, meaning
 C++ destructors won’t run and memory that should have been released will
-not be released. If you really want to use the R C API and cpp20, you
+not be released. If you really want to use the R C API and cppally, you
 must make sure that either the code is exception safe (unlikely), or
-that R C API functions are called via cpp20’s `safe[]`.
+that R C API functions are called via cppally’s `safe[]`.
 
 ### views
 
@@ -79,10 +79,10 @@ Protection](https://nicchr.github.io/cpp20/articles/protection.html)
 ### No copy-on-write or copy-on-modify
 
 Deep copies are almost never triggered when modifying vectors, a design
-choice that contrasts cpp11’s copy-on-write approach. cpp20’s `r_vec<T>`
-member `set()` always modifies in-place. It is up to the user to ensure
-that a fresh vector is created before further manipulation or that it’s
-safe to modify the existing vector.
+choice that contrasts cpp11’s copy-on-write approach. cppally’s
+`r_vec<T>` member `set()` always modifies in-place. It is up to the user
+to ensure that a fresh vector is created before further manipulation or
+that it’s safe to modify the existing vector.
 
 ### Lossy coercion
 
@@ -108,22 +108,22 @@ All indexing is 0-based including subsetting vectors.
 
 On the C++ side, 64-bit integers are fully supported, including vectors.
 To return 64-bit integers to R we need the bit64 package to be loaded.
-cpp20 delegates the handling of 64-bit integer vectors to bit64 by
+cppally delegates the handling of 64-bit integer vectors to bit64 by
 marking them with the “integer64” class.
 
 ``` cpp
-[[cpp20::register]]
+[[cpp::register]]
 r_int64 as_int64(r_int x){
     return as<r_int64>(x);
 }
 ```
 
 Please note that other 64-bit signed integer types like `int64_t`,
-`R_xlen_t`, or cpp20’s identical `r_size_t` will convert to 64-bit
+`R_xlen_t`, or cppally’s identical `r_size_t` will convert to 64-bit
 integer vectors when returned to R.
 
 ``` cpp
-[[cpp20::register]]
+[[cpp::register]]
 r_size_t as_r_size_t(r_int x){
     return as<r_size_t>(x);
 }
@@ -141,7 +141,7 @@ integer64
 
 ### Using R’s `NULL`
 
-The cpp20 version of R’s `R_NilValue` is `r_null` which is of type
+The cppally version of R’s `R_NilValue` is `r_null` which is of type
 `r_sexp`. In an attempt to avoid the use of additional meta-programming
 tactics to deal with `r_null`, we allow vectors to be able to contain
 `r_null` which makes programming with R attributes easier. This means
@@ -150,7 +150,7 @@ member function.
 
 ## Useful Makevars flags
 
-Because cpp20 is a template-heavy library, binary sizes can sometimes
+Because cppally is a template-heavy library, binary sizes can sometimes
 get large. This is primarily an issue on windows which will throw a
 compiler error if a single .o file gets too big. In this case you may
 want to consider adding the following flag to Makevars.win
@@ -198,7 +198,7 @@ My json file looks like this:
         "C:/Program Files/R/R-4.*/include",
         "${env:LOCALAPPDATA}/R/win-library/4.*/cpp11/include",
         "${env:LOCALAPPDATA}/R/win-library/4.*/Rcpp/include",
-        "${env:LOCALAPPDATA}/R/win-library/4.*/cpp20/include"
+        "${env:LOCALAPPDATA}/R/win-library/4.*/cppally/include"
       ],
       "defines": [
         "_DEBUG",

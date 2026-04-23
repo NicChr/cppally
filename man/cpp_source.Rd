@@ -51,11 +51,11 @@ The default is a temporary directory via \code{tempfile()} which is removed when
 }
 \value{
 \code{cpp_source()} invisibly compiles the C++ code and registers
-the \verb{[[cpp20::register]]} tagged functions to R. \cr
+the \verb{[[cpp::register]]} tagged functions to R. \cr
 \code{cpp_eval()} returns the result of the evaluated C++ expression.
 }
 \description{
-cpp11-style helpers to compile cpp20 code outside of a cpp20-linked package
+cpp11-style helpers to compile cppally code outside of a cppally-linked package
 context.
 
 \code{cpp_source()} compiles and loads a single C++ file for use in R,
@@ -64,21 +64,21 @@ This may include multiple C++ functions.
 
 \code{cpp_eval()} evaluates a single C++ expression and returns the result.
 For example \code{cpp_eval('get_threads()')} will run the C++ function
-\code{cpp20::get_threads()} and return the number of OMP threads currently set
+\code{cppally::get_threads()} and return the number of OMP threads currently set
 for use.
 \code{void} return is not supported in \code{cpp_eval()}.
 }
 \examples{
 
-library(cpp20)
+library(cppally)
 
 \donttest{
 cpp_eval("r_int(0)")
 cpp_source(code = '
-  #include <cpp20.hpp>
-  using namespace cpp20;
+  #include <cppally.hpp>
+  using namespace cppally;
 
-  [[cpp20::register]]
+  [[cpp::register]]
   r_dbl add(r_dbl x, r_dbl y){
     return x + y;
   }
@@ -88,15 +88,15 @@ add(2, NA)
 
 ### ALTREP ###
 
-# cpp20 also supports lazy ALTREP materialisation as an opt-in feature.
+# cppally also supports lazy ALTREP materialisation as an opt-in feature.
 # To opt-in, set `preserve_altrep = TRUE`
 
 cpp_source(
   code = '
-  #include <cpp20.hpp>
-  using namespace cpp20;
+  #include <cppally.hpp>
+  using namespace cppally;
 
-  [[cpp20::register]]
+  [[cpp::register]]
   r_int last_altrep_unaware(r_vec<r_int> x){
     r_int out;
     r_size_t n = x.length();
@@ -111,10 +111,10 @@ cpp_source(
 
 cpp_source(
   code = '
-  #include <cpp20.hpp>
-  using namespace cpp20;
+  #include <cppally.hpp>
+  using namespace cppally;
 
-  [[cpp20::register]]
+  [[cpp::register]]
   r_int last_altrep_aware(r_vec<r_int> x){
     r_int out;
     r_size_t n = x.length();

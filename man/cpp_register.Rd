@@ -15,7 +15,7 @@ cpp_register(
 
 \item{quiet}{If \code{TRUE} suppresses output from this function.}
 
-\item{extension}{The file extension to use for the generated src/cpp20 file.
+\item{extension}{The file extension to use for the generated src/cppally file.
 Options are either '.cpp' (the default) or '.cc'.}
 }
 \value{
@@ -23,5 +23,5 @@ The paths to the generated R and C++ source files.
 }
 \description{
 Register C++ functions to be callable from R. C++ functions decorated with
-\verb{[[cpp20::register]]} will be registered (including template functions).
+\verb{[[cpp::register]]} will be registered (including template functions).
 }
