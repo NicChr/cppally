@@ -22,6 +22,7 @@ cpp_source(
   clean = TRUE,
   quiet = TRUE,
   debug = FALSE,
+  preserve_altrep = FALSE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20"),
   dir = tempfile()
 )
@@ -62,6 +63,11 @@ cpp_eval(
 
   Should C++ code be compiled in a debug build? Default is `FALSE`.
 
+- preserve_altrep:
+
+  Should ALTREP vectors be preserved by avoiding materialisation where
+  possible? Default is `FALSE`.
+
 - cxx_std:
 
   C++ standard to use. Should be \>= C++20.
@@ -83,7 +89,6 @@ cpp_eval(
 ``` r
 library(cpp20)
 
-# Examples take too long to run and throw an R CMD check note
 # \donttest{
 cpp_eval("r_int(0)")
 #> [1] 0
@@ -100,5 +105,62 @@ add(1, 2)
 #> [1] 3
 add(2, NA)
 #> [1] NA
+
+### ALTREP ###
+
+# cpp20 also supports lazy ALTREP materialisation as an opt-in feature.
+# To opt-in, set `preserve_altrep = TRUE`
+
+cpp_source(
+  code = '
+  #include <cpp20.hpp>
+  using namespace cpp20;
+
+  [[cpp20::register]]
+  r_int last_altrep_unaware(r_vec<r_int> x){
+    r_int out;
+    r_size_t n = x.length();
+
+    if (n > 0){
+      out = x.get(n - 1);
+    }
+    return out;
+  }
+', debug = TRUE
+)
+
+cpp_source(
+  code = '
+  #include <cpp20.hpp>
+  using namespace cpp20;
+
+  [[cpp20::register]]
+  r_int last_altrep_aware(r_vec<r_int> x){
+    r_int out;
+    r_size_t n = x.length();
+
+    if (n > 0){
+      out = x.get(n - 1);
+    }
+    return out;
+  }
+', debug = TRUE,
+  preserve_altrep = TRUE
+)
+
+library(bench)
+mark(last_altrep_aware(1:10^5)) # No materialisation
+#> # A tibble: 1 × 13
+#>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
+#>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 last_altrep… 1.48µs 1.59µs   453341.        0B        0 10000     0     22.1ms
+#> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
+mark(last_altrep_unaware(1:10^5)) # Materialises full vector
+#> # A tibble: 1 × 13
+#>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
+#>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 last_altrep… 36.9µs 37.6µs    23176.     391KB     186.  3997    32      172ms
+#> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
+
 # }
 ```

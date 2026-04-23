@@ -78,6 +78,7 @@ for use.
 <span>  clean <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  quiet <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  debug <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  preserve_altrep <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  cxx_std <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"CXX_STD"</span>, <span class="st">"CXX20"</span><span class="op">)</span>,</span>
 <span>  dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -121,6 +122,11 @@ for use.
 Default is <code>FALSE</code>.</p></dd>
 
 
+<dt id="arg-preserve-altrep">preserve_altrep<a class="anchor" aria-label="anchor" href="#arg-preserve-altrep"></a></dt>
+<dd><p>Should ALTREP vectors be preserved by avoiding
+materialisation where possible? Default is <code>FALSE</code>.</p></dd>
+
+
 <dt id="arg-cxx-std">cxx_std<a class="anchor" aria-label="anchor" href="#arg-cxx-std"></a></dt>
 <dd><p>C++ standard to use. Should be &gt;= C++20.</p></dd>
 
@@ -142,7 +148,6 @@ the <code>[[cpp20::register]]</code> tagged functions to R. <br><code>cpp_eval()
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://nicchr.github.io/cpp20/">cpp20</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Examples take too long to run and throw an R CMD check note</span></span></span>
 <span class="r-in"><span><span class="co"># \donttest{</span></span></span>
 <span class="r-in"><span><span class="fu">cpp_eval</span><span class="op">(</span><span class="st">"r_int(0)"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
@@ -159,6 +164,63 @@ the <code>[[cpp20::register]]</code> tagged functions to R. <br><code>cpp_eval()
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 3</span>
 <span class="r-in"><span><span class="fu">add</span><span class="op">(</span><span class="fl">2</span>, <span class="cn">NA</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] NA</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">### ALTREP ###</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># cpp20 also supports lazy ALTREP materialisation as an opt-in feature.</span></span></span>
+<span class="r-in"><span><span class="co"># To opt-in, set `preserve_altrep = TRUE`</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">cpp_source</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  code <span class="op">=</span> <span class="st">'</span></span></span>
+<span class="r-in"><span><span class="st">  #include &lt;cpp20.hpp&gt;</span></span></span>
+<span class="r-in"><span><span class="st">  using namespace cpp20;</span></span></span>
+<span class="r-in"><span><span class="st"></span></span></span>
+<span class="r-in"><span><span class="st">  [[cpp20::register]]</span></span></span>
+<span class="r-in"><span><span class="st">  r_int last_altrep_unaware(r_vec&lt;r_int&gt; x){</span></span></span>
+<span class="r-in"><span><span class="st">    r_int out;</span></span></span>
+<span class="r-in"><span><span class="st">    r_size_t n = x.length();</span></span></span>
+<span class="r-in"><span><span class="st"></span></span></span>
+<span class="r-in"><span><span class="st">    if (n &gt; 0){</span></span></span>
+<span class="r-in"><span><span class="st">      out = x.get(n - 1);</span></span></span>
+<span class="r-in"><span><span class="st">    }</span></span></span>
+<span class="r-in"><span><span class="st">    return out;</span></span></span>
+<span class="r-in"><span><span class="st">  }</span></span></span>
+<span class="r-in"><span><span class="st">'</span>, debug <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">cpp_source</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  code <span class="op">=</span> <span class="st">'</span></span></span>
+<span class="r-in"><span><span class="st">  #include &lt;cpp20.hpp&gt;</span></span></span>
+<span class="r-in"><span><span class="st">  using namespace cpp20;</span></span></span>
+<span class="r-in"><span><span class="st"></span></span></span>
+<span class="r-in"><span><span class="st">  [[cpp20::register]]</span></span></span>
+<span class="r-in"><span><span class="st">  r_int last_altrep_aware(r_vec&lt;r_int&gt; x){</span></span></span>
+<span class="r-in"><span><span class="st">    r_int out;</span></span></span>
+<span class="r-in"><span><span class="st">    r_size_t n = x.length();</span></span></span>
+<span class="r-in"><span><span class="st"></span></span></span>
+<span class="r-in"><span><span class="st">    if (n &gt; 0){</span></span></span>
+<span class="r-in"><span><span class="st">      out = x.get(n - 1);</span></span></span>
+<span class="r-in"><span><span class="st">    }</span></span></span>
+<span class="r-in"><span><span class="st">    return out;</span></span></span>
+<span class="r-in"><span><span class="st">  }</span></span></span>
+<span class="r-in"><span><span class="st">'</span>, debug <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>  preserve_altrep <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bench.r-lib.org/" class="external-link">bench</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">last_altrep_aware</span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">^</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span> <span class="co"># No materialisation</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 13</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> last_altrep… 1.48µs 1.59µs   <span style="text-decoration: underline;">453</span>341.        0B        0 <span style="text-decoration: underline;">10</span>000     0     22.1ms</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: result &lt;list&gt;, memory &lt;list&gt;, time &lt;list&gt;, gc &lt;list&gt;</span></span>
+<span class="r-in"><span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">last_altrep_unaware</span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">^</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span> <span class="co"># Materialises full vector</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 13</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> last_altrep… 36.9µs 37.6µs    <span style="text-decoration: underline;">23</span>176.     391KB     186.  <span style="text-decoration: underline;">3</span>997    32      172ms</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: result &lt;list&gt;, memory &lt;list&gt;, time &lt;list&gt;, gc &lt;list&gt;</span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

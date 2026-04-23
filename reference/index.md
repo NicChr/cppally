@@ -23,3 +23,6 @@
 
 - [`use_cpp20()`](https://nicchr.github.io/cpp20/reference/use_cpp20.md)
   : Helper for developing packages with cpp20
+
+- [`use_preserve_altrep_flag()`](https://nicchr.github.io/cpp20/reference/use_preserve_altrep_flag.md)
+  : Adds the CPP20_PRESERVE_ALTREP flag to Makevars
