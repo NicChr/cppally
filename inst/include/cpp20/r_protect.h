@@ -31,49 +31,13 @@ inline SEXP unwind_token() {
     return token;
 }
 
-// Prefer __builtin_setjmp on GCC/Clang
-// Fall back to std::setjmp on MSVC and anywhere the builtin isn't available.
-#if !defined(CPP20_NO_BUILTIN_SETJMP) && (defined(__GNUC__) || defined(__clang__)) \
-    && !defined(__aarch64__) && !defined(__arm64__)
-    using cpp20_jmp_buf = void*[5];
-    #define CPP20_SETJMP(buf) __builtin_setjmp(buf)
-    [[noreturn]] inline void cpp20_longjmp_from_voidp(void* ptr) {
-        __builtin_longjmp(*static_cast<cpp20_jmp_buf*>(ptr), 1);
-    }
-#else
-    using cpp20_jmp_buf = std::jmp_buf;
-    #define CPP20_SETJMP(buf) setjmp(buf)
-    [[noreturn]] inline void cpp20_longjmp_from_voidp(void* ptr) {
-        std::longjmp(*static_cast<cpp20_jmp_buf*>(ptr), 1);
-    }
-#endif
-
-// Depth counter for nested-call elision
-// When depth > 0 we are already inside an outer unwind_protect, and any R
-// longjmp will unwind up to it -- so the inner call can skip setjmp +
-// R_UnwindProtect entirely and just invoke the user's code directly.
-inline int& unwind_depth() { static int d = 0; return d; }
-
-struct unwind_depth_guard {
-    unwind_depth_guard() noexcept { ++unwind_depth(); }
-    ~unwind_depth_guard() noexcept { --unwind_depth(); }
-    unwind_depth_guard(const unwind_depth_guard&) = delete;
-    unwind_depth_guard& operator=(const unwind_depth_guard&) = delete;
-};
-
 // The core unwind_protect (no tuple/gcc4.8 hacks)
 template <typename Fun>
 auto unwind_protect(Fun&& code) -> decltype(code()) {
-    
-    if (unwind_depth() > 0) {
-        return code();
-    }
-
-    unwind_depth_guard _depth_guard;
     SEXP token = unwind_token();
 
-    cpp20_jmp_buf jmpbuf;
-    if (CPP20_SETJMP(jmpbuf)) [[unlikely]] {
+    std::jmp_buf jmpbuf;
+    if (setjmp(jmpbuf)) [[unlikely]] {
         throw unwind_exception(token);
     }
 
@@ -82,7 +46,7 @@ auto unwind_protect(Fun&& code) -> decltype(code()) {
 
     static_assert(std::is_same_v<ReturnType, SEXP> || std::is_same_v<ReturnType, void>,
         "unwind_protect only supports returning SEXP or void");
-
+    
     if constexpr (std::is_same_v<ReturnType, SEXP>) {
         SEXP res = R_UnwindProtect(
             [](void* data) -> SEXP {
@@ -90,7 +54,7 @@ auto unwind_protect(Fun&& code) -> decltype(code()) {
             },
             &code,
             [](void* jmpbuf_ptr, Rboolean jump) {
-                if (jump == TRUE) [[unlikely]] cpp20_longjmp_from_voidp(jmpbuf_ptr);
+                if (jump == TRUE) [[unlikely]] longjmp(*static_cast<std::jmp_buf*>(jmpbuf_ptr), 1);
             },
             &jmpbuf, token);
         SETCAR(token, R_NilValue);
@@ -103,7 +67,7 @@ auto unwind_protect(Fun&& code) -> decltype(code()) {
             },
             &code,
             [](void* jmpbuf_ptr, Rboolean jump) {
-                if (jump == TRUE) [[unlikely]] cpp20_longjmp_from_voidp(jmpbuf_ptr);
+                if (jump == TRUE) [[unlikely]] longjmp(*static_cast<std::jmp_buf*>(jmpbuf_ptr), 1);
             },
             &jmpbuf, token);
         SETCAR(token, R_NilValue);
