@@ -31,13 +31,31 @@ inline SEXP unwind_token() {
     return token;
 }
 
+// Prefer __builtin_setjmp on GCC/Clang
+// Fall back to std::setjmp on MSVC and anywhere the builtin isn't available.
+#if !defined(CPP20_NO_BUILTIN_SETJMP) && (defined(__GNUC__) || defined(__clang__)) \
+    && !defined(__aarch64__) && !defined(__arm64__)
+    using cpp20_jmp_buf = void*[5];
+    #define CPP20_SETJMP(buf) __builtin_setjmp(buf)
+    [[noreturn]] inline void cpp20_longjmp_from_voidp(void* ptr) {
+        __builtin_longjmp(*static_cast<cpp20_jmp_buf*>(ptr), 1);
+    }
+#else
+    using cpp20_jmp_buf = std::jmp_buf;
+    #define CPP20_SETJMP(buf) setjmp(buf)
+    [[noreturn]] inline void cpp20_longjmp_from_voidp(void* ptr) {
+        std::longjmp(*static_cast<cpp20_jmp_buf*>(ptr), 1);
+    }
+#endif
+
 // The core unwind_protect (no tuple/gcc4.8 hacks)
 template <typename Fun>
 auto unwind_protect(Fun&& code) -> decltype(code()) {
+
     SEXP token = unwind_token();
 
-    std::jmp_buf jmpbuf;
-    if (setjmp(jmpbuf)) [[unlikely]] {
+    cpp20_jmp_buf jmpbuf;
+    if (CPP20_SETJMP(jmpbuf)) [[unlikely]] {
         throw unwind_exception(token);
     }
 
@@ -46,7 +64,7 @@ auto unwind_protect(Fun&& code) -> decltype(code()) {
 
     static_assert(std::is_same_v<ReturnType, SEXP> || std::is_same_v<ReturnType, void>,
         "unwind_protect only supports returning SEXP or void");
-    
+
     if constexpr (std::is_same_v<ReturnType, SEXP>) {
         SEXP res = R_UnwindProtect(
             [](void* data) -> SEXP {
@@ -54,7 +72,7 @@ auto unwind_protect(Fun&& code) -> decltype(code()) {
             },
             &code,
             [](void* jmpbuf_ptr, Rboolean jump) {
-                if (jump == TRUE) [[unlikely]] longjmp(*static_cast<std::jmp_buf*>(jmpbuf_ptr), 1);
+                if (jump == TRUE) [[unlikely]] cpp20_longjmp_from_voidp(jmpbuf_ptr);
             },
             &jmpbuf, token);
         SETCAR(token, R_NilValue);
@@ -67,7 +85,7 @@ auto unwind_protect(Fun&& code) -> decltype(code()) {
             },
             &code,
             [](void* jmpbuf_ptr, Rboolean jump) {
-                if (jump == TRUE) [[unlikely]] longjmp(*static_cast<std::jmp_buf*>(jmpbuf_ptr), 1);
+                if (jump == TRUE) [[unlikely]] cpp20_longjmp_from_voidp(jmpbuf_ptr);
             },
             &jmpbuf, token);
         SETCAR(token, R_NilValue);
