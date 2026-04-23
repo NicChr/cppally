@@ -12,6 +12,7 @@ cpp_source(
   clean = TRUE,
   quiet = TRUE,
   debug = FALSE,
+  preserve_altrep = FALSE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20"),
   dir = tempfile()
 )
@@ -38,6 +39,9 @@ cpp_eval(
 
 \item{debug}{Should C++ code be compiled in a debug build?
 Default is \code{FALSE}.}
+
+\item{preserve_altrep}{Should ALTREP vectors be preserved by avoiding
+materialisation where possible? Default is \code{FALSE}.}
 
 \item{cxx_std}{C++ standard to use. Should be >= C++20.}
 

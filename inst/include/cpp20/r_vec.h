@@ -39,7 +39,6 @@ struct r_vec {
     return sexp.is_null();
   }
 
-
   bool is_altrep() const noexcept {
     return ALTREP(sexp.value);
   }
@@ -51,23 +50,24 @@ struct r_vec {
   // unwrap_t<T> - Otherwise
   static constexpr bool is_write_barrier_protected = RObject<T>;
   using ptr_t = std::conditional_t<is_write_barrier_protected, const SEXP*, unwrap_t<T>*>;
+#ifdef CPP20_PRESERVE_ALTREP
   // `mutable` so that lazy materialisation for ALTREP inputs can happen
-  // For non-ALTREP this is a one-shot init at construction and behaves identically to before
+  // For non-ALTREP this is a one-shot init at construction
   mutable ptr_t m_ptr = nullptr;
+#else
+  ptr_t m_ptr = nullptr;
+#endif
 
   void initialise_ptr(){
-    // For ALTREP leave m_ptr null
-    // Only materialise on write via set
-    // read-only access via `get/view` does not need to materialise
-    // using data() will always materialised
+#ifdef CPP20_PRESERVE_ALTREP
+    // For ALTREP leave m_ptr null so get/view go through elt<T>
+    // data() will materialise on first call
+    if (is_altrep()) return;
+#endif
     if constexpr (is_write_barrier_protected){
-      if (!is_altrep()) [[likely]] {
-        m_ptr = internal::vector_ptr_ro<T>(sexp);
-      }
+      m_ptr = internal::vector_ptr_ro<T>(sexp);
     } else {
-      if (!is_altrep()) [[likely]] {
-        m_ptr = internal::vector_ptr<T>(sexp);
-      }
+      m_ptr = internal::vector_ptr<T>(sexp);
     }
   }
 
@@ -138,17 +138,17 @@ struct r_vec {
     return sexp;
   }
 
-  // Direct pointer access - materialises ALTREP
+  // Direct pointer access - materialises ALTREP when CPP20_PRESERVE_ALTREP is on
   ptr_t data() const {
-    if constexpr (is_write_barrier_protected) {
-      if (!m_ptr) [[unlikely]] {
+#ifdef CPP20_PRESERVE_ALTREP
+    if (!m_ptr) [[unlikely]] {
+      if constexpr (is_write_barrier_protected) {
         m_ptr = internal::vector_ptr_ro<T>(sexp);
-      }
-    } else {
-      if (!m_ptr) [[unlikely]] {
+      } else {
         m_ptr = internal::vector_ptr<T>(sexp);
       }
     }
+#endif
     return m_ptr;
   }
 
@@ -188,28 +188,40 @@ struct r_vec {
 
   // Get element (no bounds-check)
   T get(r_size_t index) const {
+#ifdef CPP20_PRESERVE_ALTREP
     if (m_ptr) [[likely]] {
       return T(m_ptr[index]);
     } else {
       return T(internal::elt<T>(sexp, index));
     }
+#else
+    return T(m_ptr[index]);
+#endif
   }
 
   // View element (like `get()` but elements must be short-lived)
   // Element must not outlive the parent vector
   T view(r_size_t index) const {
     if constexpr (std::is_constructible_v<data_type, unwrap_t<data_type>, internal::view_tag>) {
+#ifdef CPP20_PRESERVE_ALTREP
       if (m_ptr) [[likely]] {
         return T(m_ptr[index], internal::view_tag{});
       } else {
         return T(internal::elt<T>(sexp, index), internal::view_tag{});
       }
+#else
+      return T(m_ptr[index], internal::view_tag{});
+#endif
     } else {
+#ifdef CPP20_PRESERVE_ALTREP
       if (m_ptr) [[likely]] {
         return T(m_ptr[index]);
       } else {
         return T(internal::elt<T>(sexp, index));
       }
+#else
+      return T(m_ptr[index]);
+#endif
     }
   }
 
