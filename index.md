@@ -53,9 +53,19 @@ Like the excellent cpp11 package, cppally also handles automatic
 protection for R objects. For more info see [Automatic
 Protection](https://nicchr.github.io/cppally/articles/protection.html)
 
+### ALTREP
+
+For performance reasons, ALTREP materialisation is eager by default,
+which means that ALTREP vectors are materialised on construction. To
+preserve ALTREP compact representations, one can enable the package-wide
+‘CPPALLY_PRESERVE_ALTREP’ flag. This can be done through
+[`cppally::use_preserve_altrep_flag()`](https://nicchr.github.io/cppally/reference/use_preserve_altrep_flag.md)
+or `cppally::cpp_source(..., preserve_altrep = TRUE)`. You can also
+manually add the ‘-CPPALLY_PRESERVE_ALTREP’ flag to Makevars.
+
 ### Interopability with the R C API
 
-Using cppally and the R C API is generally discouraged.
+Using cppally together with the R C API is generally discouraged.
 
 If R throws an error via `Rf_error()` a ‘longjmp’ will occur, meaning
 C++ destructors won’t run and memory that should have been released will

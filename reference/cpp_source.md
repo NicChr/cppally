@@ -33,6 +33,7 @@ cpp_eval(
   clean = TRUE,
   quiet = TRUE,
   debug = FALSE,
+  preserve_altrep = FALSE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20")
 )
 ```
@@ -153,13 +154,13 @@ mark(last_altrep_aware(1:10^5)) # No materialisation
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 1.39µs 1.43µs   540947.        0B        0 10000     0     18.5ms
+#> 1 last_altrep… 1.43µs 1.49µs   532638.        0B        0 10000     0     18.8ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
-#>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 44.6µs 48.1µs    18913.     391KB     152.  3615    29      191ms
+#>   <bch:expr>    <bch> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 last_altrep_…  42µs 46.1µs    18581.     391KB     146.  3688    29      198ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 # }
