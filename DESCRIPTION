@@ -1,9 +1,15 @@
 Package: cppally
 Title: A 'C++20' API for R
 Version: 0.1.0
-Authors@R:
+Authors@R: c(
     person("Nick", "Christofides", , "nick.christofides.r@gmail.com", role = c("aut", "cre", "cph"),
-           comment = c(ORCID = "0000-0002-9743-7342"))
+           comment = c(ORCID = "0000-0002-9743-7342")),
+    person("Martin Leitner-Ankerl", role = "cph",
+           comment = "Author of bundled ankerl::unordered_dense library"),
+    person("Malte Skarupke", role = "cph",
+           comment = "Author of bundled ska_sort library"),
+    person("Posit Software, PBC", role = "cph",
+           comment = "SEXP protection mechanism in r_sexp.h inspired by cpp11"))
 Maintainer: Nick Christofides <nick.christofides.r@gmail.com>
 Description: A header-only 'C++20' API for manipulating R data structures
     from 'C++'. Provides 'C++20' concepts specific to R, custom scalar and
