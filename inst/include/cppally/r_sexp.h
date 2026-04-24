@@ -14,7 +14,10 @@ struct view_tag {};
 
 // General SEXP, automatic protection handled via cppally-managed vector list
 //
-// ----- All credits go to cpp11 authors/maintainers for inspiration from `cpp11::sexp` -----
+// The SEXP protection mechanism here is inspired by cpp11::sexp
+//   cpp11: https://github.com/r-lib/cpp11
+//   Copyright (c) 2020 Posit Software, PBC
+//   Licensed under the MIT License <https://opensource.org/licenses/MIT>
 //
 
 struct r_sexp {
