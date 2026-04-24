@@ -29,6 +29,7 @@ Suggests:
     brio,
     callr,
     cli,
+    cpp11,
     decor,
     desc,
     devtools,
