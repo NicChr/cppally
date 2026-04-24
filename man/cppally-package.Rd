@@ -19,5 +19,12 @@ Useful links:
 \author{
 \strong{Maintainer}: Nick Christofides \email{nick.christofides.r@gmail.com} (\href{https://orcid.org/0000-0002-9743-7342}{ORCID}) [copyright holder]
 
+Other contributors:
+\itemize{
+  \item Martin Leitner-Ankerl (Author of bundled ankerl::unordered_dense library) [copyright holder]
+  \item Malte Skarupke (Author of bundled ska_sort library) [copyright holder]
+  \item Posit Software, PBC (SEXP protection mechanism in r_sexp.h inspired by cpp11) [copyright holder]
+}
+
 }
 \keyword{internal}
