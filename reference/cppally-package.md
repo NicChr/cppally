@@ -6,7 +6,7 @@ classes with built-in NA handling, automatic object protection, 'SIMD'
 (single-instruction-multiple-data), parallelisation, and a streamlined
 system for registering 'C++' functions, including templates, to R. Full
 API reference and documentation are available at
-<https://nicchr.github.io/cppally>.
+<https://nicchr.github.io/cppally/>.
 
 ## See also
 
@@ -14,7 +14,7 @@ Useful links:
 
 - <https://nicchr.github.io/cppally/>
 
-- Report bugs at <https://github.com/NicChr/cppally/issues>
+- Report bugs at <https://github.com/NicChr/cppally/issues/>
 
 ## Author
 
