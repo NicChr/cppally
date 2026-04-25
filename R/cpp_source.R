@@ -52,6 +52,10 @@ generate_include_paths <- function(packages){
   out
 }
 
+curr_env <- function(){
+  parent.frame()
+}
+
 #' Compile C++20 code
 #'
 #' @description
@@ -271,11 +275,11 @@ cpp_eval <- function(code, env = parent.frame(), clean = TRUE,
       "[[cppally::register]]",
       body
     ), collapse = "\n"),
-    env = env, clean = clean, quiet = quiet,
+    env = curr_env(), clean = clean, quiet = quiet,
     debug = debug, cxx_std = cxx_std,
     preserve_altrep = preserve_altrep
   )
-  result <- get("f", envir = env)()
+  result <- get("f", envir = curr_env())()
   if (result[["is_void"]]){
     invisible(result[["result"]])
   } else {
