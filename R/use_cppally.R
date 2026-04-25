@@ -56,7 +56,7 @@ use_cppally <- function(){
   stop_unless_installed(c("rlang", "usethis", "desc", "purrr", "brio", "cli", "rstudioapi"))
   proj_path <- utils::getFromNamespace("proj_path", "usethis")
   utils::getFromNamespace("check_is_package", "usethis")("use_cppally()")
-  rlang::check_installed("cppally")
+  stop_unless_installed("cppally")
   utils::getFromNamespace("check_uses_roxygen", "usethis")("use_cppally()")
   utils::getFromNamespace("check_has_package_doc", "usethis")("use_cppally()")
   suppressMessages(utils::getFromNamespace("use_src", "usethis")())

@@ -39,7 +39,6 @@ Suggests:
     pkgload,
     purrr,
     readr,
-    rlang,
     rmarkdown,
     roxygen2,
     rstudioapi,
