@@ -17,7 +17,9 @@ knitr::opts_chunk$set(
 ```
 
 ```{r, include = FALSE}
-required <- c("bench", "brio", "callr", "cli", "decor", "desc", "glue", "vctrs")
+required <- c("bench", "brio", "callr", "cli", "decor", 
+              "desc", "glue", "purrr", "readr", "stringr", 
+              "vctrs", "withr")
 if (!all(vapply(required, requireNamespace, logical(1), quietly = TRUE))) {
   knitr::opts_chunk$set(eval = FALSE)
   knitr::knit_exit()
@@ -63,7 +65,10 @@ source_and_display <- function(x, env = parent.frame(), ...){
   as_cpp_chunk(x)
 }
 eval_and_display <- function(x, env = parent.frame(), ...){
- res <- cpp_eval(x, env = env, ...)
+ res <- try(cpp_eval(x, env = env, ...), silent = TRUE)
+ if (inherits(res, "try-error")){
+  res <- as.character(res) 
+ }
  as_cpp_chunk(x)
  cat("\n---\n\n")
  as_r_chunk(paste(capture.output(print(res)), collapse = "\n"))
