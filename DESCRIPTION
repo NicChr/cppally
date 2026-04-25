@@ -17,10 +17,10 @@ Description: A header-only 'C++20' API for manipulating R data structures
     'SIMD' (single-instruction-multiple-data), parallelisation, and a
     streamlined system for registering 'C++' functions, including
     templates, to R. Full API reference and documentation are available at
-    <https://nicchr.github.io/cppally>.
+    <https://nicchr.github.io/cppally/>.
 License: MIT + file LICENSE
 URL: https://nicchr.github.io/cppally/
-BugReports: https://github.com/NicChr/cppally/issues
+BugReports: https://github.com/NicChr/cppally/issues/
 Depends:
     R (>= 4.5.0)
 Suggests:
