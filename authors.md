@@ -12,7 +12,7 @@
   Author of bundled ska_sort library
 
 - **Posit Software, PBC**. Copyright holder.  
-  SEXP protection mechanism in r_sexp.h inspired by cpp11
+  SEXP protection mechanism in r_protect.h inspired by cpp11
 
 ## Citation
 

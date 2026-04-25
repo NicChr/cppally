@@ -29,5 +29,5 @@ Other contributors:
 - Malte Skarupke (Author of bundled ska_sort library) \[copyright
   holder\]
 
-- Posit Software, PBC (SEXP protection mechanism in r_sexp.h inspired by
-  cpp11) \[copyright holder\]
+- Posit Software, PBC (SEXP protection mechanism in r_protect.h inspired
+  by cpp11) \[copyright holder\]
