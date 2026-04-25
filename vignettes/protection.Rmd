@@ -15,6 +15,15 @@ knitr::opts_chunk$set(
 )
 ```
 
+```{r, include = FALSE}
+required <- c("bench", "brio", "callr", "cli", "cpp11", 
+              "decor", "desc", "glue", "vctrs")
+if (!all(vapply(required, requireNamespace, logical(1), quietly = TRUE))) {
+  knitr::opts_chunk$set(eval = FALSE)
+  knitr::knit_exit()
+}
+```
+
 
 ```{r, echo=FALSE}
 # Helpers to compile all examples in debug mode

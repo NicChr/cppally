@@ -16,6 +16,14 @@ knitr::opts_chunk$set(
 )
 ```
 
+```{r, include = FALSE}
+required <- c("bench", "brio", "callr", "cli", "decor", "desc", "glue", "vctrs")
+if (!all(vapply(required, requireNamespace, logical(1), quietly = TRUE))) {
+  knitr::opts_chunk$set(eval = FALSE)
+  knitr::knit_exit()
+}
+```
+
 
 Let's briefly show some of the capabilities of cppally, from its custom 
 C++ scalar and vectors, to using templates and concepts.
