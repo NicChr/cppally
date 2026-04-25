@@ -235,7 +235,7 @@ cpp_source <- function(file, code = NULL, env = parent.frame(),
 }
 #' @rdname cpp_source
 #' @export
-cpp_eval <- function(code, env = parent.frame(), clean = TRUE,
+cpp_eval <- function(code, env = curr_env(), clean = TRUE,
                      quiet = TRUE, debug = FALSE,
                      preserve_altrep = FALSE,
                      cxx_std = Sys.getenv("CXX_STD", "CXX20")){
@@ -275,11 +275,11 @@ cpp_eval <- function(code, env = parent.frame(), clean = TRUE,
       "[[cppally::register]]",
       body
     ), collapse = "\n"),
-    env = curr_env(), clean = clean, quiet = quiet,
+    env = env, clean = clean, quiet = quiet,
     debug = debug, cxx_std = cxx_std,
     preserve_altrep = preserve_altrep
   )
-  result <- get("f", envir = curr_env())()
+  result <- get("f", envir = env)()
   if (result[["is_void"]]){
     invisible(result[["result"]])
   } else {

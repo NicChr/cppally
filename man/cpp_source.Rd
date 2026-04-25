@@ -19,7 +19,7 @@ cpp_source(
 
 cpp_eval(
   code,
-  env = parent.frame(),
+  env = curr_env(),
   clean = TRUE,
   quiet = TRUE,
   debug = FALSE,
