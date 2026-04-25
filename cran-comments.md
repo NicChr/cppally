@@ -17,7 +17,7 @@ Below I address each point raised by the CRAN team.
   are now single-quoted in both the Title and Description fields.
 
 * **Web reference in Description.** Added
-  `<https://nicchr.github.io/cppally>` to the end of the Description field
+  `<https://nicchr.github.io/cppally/>` to the end of the Description field
   using angle brackets for auto-linking.
 
 * **Missing `\value` tags.** Added `\value` to `load_all.Rd` (and verified
@@ -40,7 +40,7 @@ Below I address each point raised by the CRAN team.
   - Malte Skarupke — author of the bundled `ska_sort` library
     (Boost Software License 1.0), included at `inst/include/ska_sort/`.
   - Posit Software, PBC — the SEXP protection mechanism in
-    `inst/include/cppally/r_sexp.h` was inspired by `cpp11::sexp` (MIT).
+    `inst/include/cppally/r_protect.h` was inspired by `cpp11::sexp` (MIT).
 
   An `inst/COPYRIGHTS` file has also been added listing each third-party
   component, its copyright holder, and its license. The original copyright
