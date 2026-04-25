@@ -73,7 +73,11 @@ curr_env <- function(){
 #' `NULL` invisibly.
 #'
 #' @param file C++ file.
-#' @param code If `file` is `NULL` then a string of C++ code to compile.
+#' @param code For `cpp_source()` - If `file` is `NULL`
+#' then a string of C++ code to compile.
+#' This can include the contents of a cpp file which
+#' can contain multiple `[[cppally::register]]` tagged functions.
+#' For `cpp_eval` - This can be a character vector of single-line expressions.
 #' @param env Environment where R functions should be defined.
 #' @param clean Should files be cleaned up after sourcing? Default is `TRUE`.
 #' @param quiet Should compiler output be suppressed? Default is `TRUE`.
@@ -85,19 +89,34 @@ curr_env <- function(){
 #' @param dir Directory to store the source files.
 #' The default is a temporary directory via `tempfile()` which is removed when
 #' `clean = TRUE`.
+#' @param simplify Applies to `cpp_eval`. A list of results is returned unless
+#' `length(code) == 1` and `simplify = TRUE`.
 #'
 #' @returns
 #' `cpp_source()` invisibly compiles the C++ code and registers
 #' the `[[cppally::register]]` tagged functions to R. \cr
-#' `cpp_eval()` returns the result of the evaluated C++ expression.
+#' `cpp_eval()` returns the results of the evaluated C++ expressions.
 #'
 #' @examples
 #'
 #' library(cppally)
-#'
+#' library(bit64)
 #' \donttest{
 #' cpp_eval('print("hello world!")')
-#' cpp_eval('r_int(0)')
+#'
+#' # Default values of all cppally scalars
+#' cpp_eval(c(
+#'   'r_lgl()',
+#'   'r_int()',
+#'   'r_dbl()',
+#'   'r_int64()',
+#'   'r_str()',
+#'   'r_raw()',
+#'   'r_cplx()',
+#'   'r_date()',
+#'   'r_psxct()'
+#' ))
+#'
 #' cpp_source(code = '
 #'   #include <cppally.hpp>
 #'   using namespace cppally;
@@ -288,6 +307,7 @@ source_single_exprs <- function(exprs, env = parent.frame(), clean = TRUE,
 cpp_eval <- function(code, env = curr_env(), clean = TRUE,
                      quiet = TRUE, debug = FALSE,
                      preserve_altrep = FALSE,
+                     simplify = TRUE,
                      cxx_std = Sys.getenv("CXX_STD", "CXX20")){
   curr_objs <- names(env)
   source_single_exprs(
@@ -302,6 +322,10 @@ cpp_eval <- function(code, env = curr_env(), clean = TRUE,
   results <- lapply(fns, \(fn) fn())
   is_void <- vapply(results, \(x) x[["is_void"]], logical(1))
   results <- lapply(results, \(x) x[["result"]])[!is_void]
+
+  if (!simplify){
+    return(results)
+  }
 
   if (length(results) == 0){
     invisible()

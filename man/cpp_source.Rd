@@ -24,13 +24,18 @@ cpp_eval(
   quiet = TRUE,
   debug = FALSE,
   preserve_altrep = FALSE,
+  simplify = TRUE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20")
 )
 }
 \arguments{
 \item{file}{C++ file.}
 
-\item{code}{If \code{file} is \code{NULL} then a string of C++ code to compile.}
+\item{code}{For \code{cpp_source()} - If \code{file} is \code{NULL}
+then a string of C++ code to compile.
+This can include the contents of a cpp file which
+can contain multiple \verb{[[cppally::register]]} tagged functions.
+For \code{cpp_eval} - This can be a character vector of single-line expressions.}
 
 \item{env}{Environment where R functions should be defined.}
 
@@ -49,11 +54,14 @@ materialisation where possible? Default is \code{FALSE}.}
 \item{dir}{Directory to store the source files.
 The default is a temporary directory via \code{tempfile()} which is removed when
 \code{clean = TRUE}.}
+
+\item{simplify}{Applies to \code{cpp_eval}. A list of results is returned unless
+\code{length(code) == 1} and \code{simplify = TRUE}.}
 }
 \value{
 \code{cpp_source()} invisibly compiles the C++ code and registers
 the \verb{[[cppally::register]]} tagged functions to R. \cr
-\code{cpp_eval()} returns the result of the evaluated C++ expression.
+\code{cpp_eval()} returns the results of the evaluated C++ expressions.
 }
 \description{
 cpp11-style helpers to compile cppally code outside of a cppally-linked package
@@ -72,10 +80,23 @@ for use. For expressions no return result, the call is evaluated and returns
 \examples{
 
 library(cppally)
-
+library(bit64)
 \donttest{
 cpp_eval('print("hello world!")')
-cpp_eval('r_int(0)')
+
+# Default values of all cppally scalars
+cpp_eval(c(
+  'r_lgl()',
+  'r_int()',
+  'r_dbl()',
+  'r_int64()',
+  'r_str()',
+  'r_raw()',
+  'r_cplx()',
+  'r_date()',
+  'r_psxct()'
+))
+
 cpp_source(code = '
   #include <cppally.hpp>
   using namespace cppally;
