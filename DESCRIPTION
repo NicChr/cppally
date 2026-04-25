@@ -9,7 +9,7 @@ Authors@R: c(
     person("Malte Skarupke", role = "cph",
            comment = "Author of bundled ska_sort library"),
     person("Posit Software, PBC", role = "cph",
-           comment = "SEXP protection mechanism in r_sexp.h inspired by cpp11"))
+           comment = "SEXP protection mechanism in r_protect.h inspired by cpp11"))
 Maintainer: Nick Christofides <nick.christofides.r@gmail.com>
 Description: A header-only 'C++20' API for manipulating R data structures
     from 'C++'. Provides 'C++20' concepts specific to R, custom scalar and

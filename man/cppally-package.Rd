@@ -23,7 +23,7 @@ Other contributors:
 \itemize{
   \item Martin Leitner-Ankerl (Author of bundled ankerl::unordered_dense library) [copyright holder]
   \item Malte Skarupke (Author of bundled ska_sort library) [copyright holder]
-  \item Posit Software, PBC (SEXP protection mechanism in r_sexp.h inspired by cpp11) [copyright holder]
+  \item Posit Software, PBC (SEXP protection mechanism in r_protect.h inspired by cpp11) [copyright holder]
 }
 
 }

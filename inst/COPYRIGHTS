@@ -2,15 +2,15 @@ Files: inst/include/ankerl/unordered_dense.h
        inst/include/ankerl/stl.h
 Copyright: 2022 Martin Leitner-Ankerl <martin.ankerl@gmail.com>
 License: MIT
-  https://github.com/martinus/unordered_dense
+  https://github.com/martinus/unordered_dense/
 
 Files: inst/include/ska_sort/ska_sort.hpp
 Copyright: 2016 Malte Skarupke
 License: BSL-1.0 (Boost Software License, Version 1.0)
-  http://www.boost.org/LICENSE_1_0.txt
+  https://www.boost.org/LICENSE_1_0.txt
 
-Files: inst/include/cppally/r_sexp.h
+Files: inst/include/cppally/r_protect.h
 Copyright: 2020 Posit Software, PBC
 License: MIT
   SEXP protection mechanism inspired by cpp11::sexp
-  (https://github.com/r-lib/cpp11)
+  https://github.com/r-lib/cpp11/
