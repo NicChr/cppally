@@ -31,14 +31,11 @@ library(cppally)
 ```
 
 ```{r, include=FALSE}
-# Helpers to compile all examples in debug mode
 cpp_source <- function(..., code, debug = FALSE, env = parent.frame()){
   preamble <- c("#include <cppally.hpp>", "using namespace cppally;")
   code <- paste(c(preamble, code), collapse = "\n")
   cppally::cpp_source(debug = debug, env = env, code = code, ...)
 }
-
-# Helpers to source and display C++/R code
 chunk_impl <- function(x, language){
   paste0("```", language, "\n", x, "\n```\n")
 }
