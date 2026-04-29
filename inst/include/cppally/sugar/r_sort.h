@@ -7,6 +7,7 @@
 #include <cstdint> // For uint32_t and similar
 #include <cstring> // For strcmp
 #include <vector> // For C++ vectors
+#include <numeric>
 #include <limits>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 #include <ska_sort/ska_sort.hpp> // For radix sorting via ska_sort
@@ -23,8 +24,7 @@ r_vec<r_int> cpp_order(const T& x) {
     using data_t = typename T::data_type;
     int n = x.size();
     r_vec<r_int> p(n);
-    OMP_SIMD
-    for (r_size_t i = 0; i < n; ++i) p.set(i, r_int(static_cast<int>(i)));
+    p.iota();
 
     auto *p_x = x.data();
 
@@ -56,8 +56,7 @@ r_vec<r_int> cpp_stable_order(const T& x) {
     using data_t = typename T::data_type;
     int n = x.size();
     r_vec<r_int> p(n);
-    OMP_SIMD
-    for (r_size_t i = 0; i < n; ++i) p.set(i, r_int(static_cast<int>(i)));
+    p.iota();
 
     auto *p_x = x.data();
 
@@ -126,8 +125,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         
         // All NAs - just return sequential indices
         if (all_nas) {
-            OMP_SIMD
-            for (uint32_t i = 0; i < n; ++i) out.set(i, r_int(static_cast<int>(i)));
+            out.iota();
             return out;
         }
 
@@ -192,9 +190,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
 
         if constexpr (sizeof(unsigned_t) == sizeof(int)) {
             // 32-bit key: sort r_vec<r_int> backing directly — single allocation, no copy
-            OMP_SIMD
-            for (r_size_t i = 0; i < n; ++i) p_out[i] = static_cast<int>(i);
-            // std::iota(p_out, p_out + n, 0);
+            out.iota();
 
             if (preserve_ties) {
                 ska_sort::ska_sort(p_out, p_out + n, [&](uint32_t ui) {
@@ -289,18 +285,10 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         uint32_t n_uniques = uniques.size();
 
         // Sort the unique group IDs
-        std::vector<uint32_t> sorted_ids;
-        sorted_ids.reserve(n_uniques);
-        std::vector<const char*> raw_strings;
-        raw_strings.reserve(n_uniques);
-
-        for (uint32_t i = 0; i < n_uniques; ++i){
-            sorted_ids.push_back(i);
-            raw_strings.push_back(CHAR(uniques[i]));
-        }
-
+        std::vector<uint32_t> sorted_ids(n_uniques);
+        std::iota(sorted_ids.begin(), sorted_ids.end(), 0u);
         std::sort(sorted_ids.begin(), sorted_ids.end(), [&](uint32_t a, uint32_t b) {
-            return std::strcmp(raw_strings[a], raw_strings[b]) < 0;
+            return std::strcmp(CHAR(uniques[a]), CHAR(uniques[b])) < 0;
         });
         
         // Prefix Sums: calculate the starting write offset for each group
