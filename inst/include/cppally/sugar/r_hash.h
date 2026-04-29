@@ -122,7 +122,7 @@ inline uint64_t r_hash_impl(const r_factors& x) noexcept {
 // Specialization for elements of lists
 template<>
 inline uint64_t r_hash_impl(const r_sexp& x) noexcept {
-    return CPPALLY_VIEW_AND_APPLY(/*return_type = */ uint64_t, /*fn = */ r_hash_impl, x);
+    return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ uint64_t, /*fn = */ r_hash_impl);
 };
 
 

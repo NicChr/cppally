@@ -310,7 +310,7 @@ inline groups make_groups(const T& x, bool ordered = false) {
 }
 template <RSexpType T>
 inline groups make_groups(const T& x, bool ordered = false) {
-    return CPPALLY_VIEW_AND_APPLY(/*return_type = */ groups, /*fn = */ make_groups, x, ordered);
+    return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ groups, /*fn = */ make_groups, /*rest of args = */ ordered);
 }
 
 // namespace internal {
