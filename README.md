@@ -2,6 +2,8 @@
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/NicChr/cppally/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/NicChr/cppally/actions/workflows/R-CMD-check.yaml)
+[![CRAN
+status](https://www.r-pkg.org/badges/version/cppally)](https://CRAN.R-project.org/package=cppally)
 <!-- badges: end -->
 
 ## Acknowledgements
