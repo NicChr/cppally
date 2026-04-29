@@ -538,8 +538,13 @@ struct r_vec {
     return out;
   }
 
-  // Forward decl
-  // r_vec<T> remove(r_size_t index) const;
+  void iota(T init = T(0)) requires (any<T, r_int, r_int64>) {
+    r_size_t n = length();
+    OMP_SIMD
+    for (r_size_t i = 0; i < n; ++i){
+      set(i, init + i);
+    }
+  }
 
 
   // Conditional member functions (only available for certain types)
