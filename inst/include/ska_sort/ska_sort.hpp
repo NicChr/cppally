@@ -7,10 +7,10 @@
 #include <cstdint>
 #include <algorithm>
 #include <type_traits>
+#include <tuple>
 #include <utility>
 
-// Ska Sort with tuple machinery removed
-// std::result_of has been removed in C++20 and so we use std::invoke_result_t instead
+// Note: std::result_of has been removed in C++20 and so we use std::invoke_result_t instead
 
 namespace ska_sort 
 { 
@@ -533,6 +533,125 @@ struct RadixSorter<const std::pair<K, V> &>
     }
 
     static constexpr size_t pass_count = RadixSorter<K>::pass_count + RadixSorter<V>::pass_count;
+};
+template<size_t I, size_t S, typename Tuple>
+struct TupleRadixSorter
+{
+    using NextSorter = TupleRadixSorter<I + 1, S, Tuple>;
+    using ThisSorter = RadixSorter<typename std::tuple_element<I, Tuple>::type>;
+
+    template<typename It, typename OutIt, typename ExtractKey>
+    static bool sort(It begin, It end, OutIt out_begin, OutIt out_end, ExtractKey && extract_key)
+    {
+        bool which = NextSorter::sort(begin, end, out_begin, out_end, extract_key);
+        auto extract_i = [&](auto && o)
+        {
+            return std::get<I>(extract_key(o));
+        };
+        if (which)
+            return !ThisSorter::sort(out_begin, out_end, begin, extract_i);
+        else
+            return ThisSorter::sort(begin, end, out_begin, extract_i);
+    }
+
+    static constexpr size_t pass_count = ThisSorter::pass_count + NextSorter::pass_count;
+};
+template<size_t I, size_t S, typename Tuple>
+struct TupleRadixSorter<I, S, const Tuple &>
+{
+    using NextSorter = TupleRadixSorter<I + 1, S, const Tuple &>;
+    using ThisSorter = RadixSorter<typename std::tuple_element<I, Tuple>::type>;
+
+    template<typename It, typename OutIt, typename ExtractKey>
+    static bool sort(It begin, It end, OutIt out_begin, OutIt out_end, ExtractKey && extract_key)
+    {
+        bool which = NextSorter::sort(begin, end, out_begin, out_end, extract_key);
+        auto extract_i = [&](auto && o) -> decltype(auto)
+        {
+            return std::get<I>(extract_key(o));
+        };
+        if (which)
+            return !ThisSorter::sort(out_begin, out_end, begin, extract_i);
+        else
+            return ThisSorter::sort(begin, end, out_begin, extract_i);
+    }
+
+    static constexpr size_t pass_count = ThisSorter::pass_count + NextSorter::pass_count;
+};
+template<size_t I, typename Tuple>
+struct TupleRadixSorter<I, I, Tuple>
+{
+    template<typename It, typename OutIt, typename ExtractKey>
+    static bool sort(It, It, OutIt, OutIt, ExtractKey &&)
+    {
+        return false;
+    }
+
+    static constexpr size_t pass_count = 0;
+};
+template<size_t I, typename Tuple>
+struct TupleRadixSorter<I, I, const Tuple &>
+{
+    template<typename It, typename OutIt, typename ExtractKey>
+    static bool sort(It, It, OutIt, OutIt, ExtractKey &&)
+    {
+        return false;
+    }
+
+    static constexpr size_t pass_count = 0;
+};
+
+template<typename... Args>
+struct RadixSorter<std::tuple<Args...>>
+{
+    using SorterImpl = TupleRadixSorter<0, sizeof...(Args), std::tuple<Args...>>;
+
+    template<typename It, typename OutIt, typename ExtractKey>
+    static bool sort(It begin, It end, OutIt buffer_begin, ExtractKey && extract_key)
+    {
+        return SorterImpl::sort(begin, end, buffer_begin, buffer_begin + (end - begin), extract_key);
+    }
+
+    static constexpr size_t pass_count = SorterImpl::pass_count;
+};
+
+template<typename... Args>
+struct RadixSorter<const std::tuple<Args...> &>
+{
+    using SorterImpl = TupleRadixSorter<0, sizeof...(Args), const std::tuple<Args...> &>;
+
+    template<typename It, typename OutIt, typename ExtractKey>
+    static bool sort(It begin, It end, OutIt buffer_begin, ExtractKey && extract_key)
+    {
+        return SorterImpl::sort(begin, end, buffer_begin, buffer_begin + (end - begin), extract_key);
+    }
+
+    static constexpr size_t pass_count = SorterImpl::pass_count;
+};
+
+template<typename T, size_t S>
+struct RadixSorter<std::array<T, S>>
+{
+    template<typename It, typename OutIt, typename ExtractKey>
+    static bool sort(It begin, It end, OutIt buffer_begin, ExtractKey && extract_key)
+    {
+        auto buffer_end = buffer_begin + (end - begin);
+        bool which = false;
+        for (size_t i = S; i > 0; --i)
+        {
+            auto extract_i = [&, i = i - 1](auto && o)
+            {
+                return extract_key(o)[i];
+            };
+            if (which)
+                which = !RadixSorter<T>::sort(buffer_begin, buffer_end, begin, extract_i);
+            else
+                which = RadixSorter<T>::sort(begin, end, buffer_begin, extract_i);
+        }
+        return which;
+    }
+
+    static constexpr size_t pass_count = RadixSorter<T>::pass_count * S;
 };
 
 template<typename T>
