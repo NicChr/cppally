@@ -1,6 +1,6 @@
 Package: cppally
 Title: A 'C++20' API for R
-Version: 0.1.0
+Version: 0.1.0.9000
 Authors@R: c(
     person("Nick", "Christofides", , "nick.christofides.r@gmail.com", role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0000-0002-9743-7342")),
