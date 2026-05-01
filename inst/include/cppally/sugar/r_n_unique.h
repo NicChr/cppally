@@ -4,6 +4,7 @@
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
 #include <cppally/r_factor.h>
+#include <cppally/sugar/r_groups.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 
 namespace cppally {
@@ -40,6 +41,11 @@ inline r_size_t n_unique(const T& x) {
 template <RFactor T>
 inline r_size_t n_unique(const T& x) {
   return n_unique(x.value);
+}
+
+template <RDataFrame T>
+inline r_size_t n_unique(const T& x) {
+  return make_groups(x, false).n_groups;
 }
 
 template <RSexpType T>

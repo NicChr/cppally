@@ -58,6 +58,11 @@ r_vec<r_lgl> duplicated(const T& x, bool all = false){
     return duplicated(x.value);
 }
 
+template <RDataFrame T>
+r_vec<r_lgl> duplicated(const T& x, bool all = false){
+    return duplicated(make_groups(x, false).ids, all);
+}
+
 template <RSexpType T>
 r_vec<r_lgl> duplicated(const T& x, bool all = false){
     return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ r_vec<r_lgl>, /*fn = */ duplicated, /*rest of args = */ all);
