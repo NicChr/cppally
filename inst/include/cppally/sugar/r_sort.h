@@ -22,7 +22,7 @@ namespace internal {
 template <RSortableVector T>
 r_vec<r_int> cpp_order(const T& x) {
     using data_t = typename T::data_type;
-    int n = x.size();
+    int n = x.length();
     r_vec<r_int> p(n);
     p.iota();
 
@@ -54,7 +54,7 @@ r_vec<r_int> cpp_order(const T& x) {
 template <RSortableVector T>
 r_vec<r_int> cpp_stable_order(const T& x) {
     using data_t = typename T::data_type;
-    int n = x.size();
+    int n = x.length();
     r_vec<r_int> p(n);
     p.iota();
 
@@ -93,7 +93,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
     using data_t = typename T::data_type;
     using base_t = unwrap_t<data_t>;
 
-    uint32_t n = x.size();
+    uint32_t n = x.length();
     if (n < 500){
         if (preserve_ties){
             return internal::cpp_stable_order(x);

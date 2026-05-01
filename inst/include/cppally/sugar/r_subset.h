@@ -353,7 +353,7 @@ inline r_df subset(const r_df& x, const r_vec<r_int>& indices, bool check = true
   for (int i = 0; i < ncol; ++i){
     out.set(i, subset(x.value.view(i), indices, check, invert));
   }
-  return r_df(out, false, out.view(0).length());
+  return r_df(out, false, length(out.view(0)));
 }
 
 template <internal::RSubscript U>

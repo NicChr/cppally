@@ -59,7 +59,7 @@ inline r_vec<r_sexp> new_df_impl(const r_vec<r_sexp>& cols, bool recycle = true)
         if (cols.length() == 0){
             nrows = 0;
         } else {
-            nrows = cols.view(0).length();
+            nrows = length(cols.view(0));
         }
     }
     return new_df_impl(cols, recycle, nrows);
@@ -77,7 +77,7 @@ inline r_df::r_df(const r_vec<T>& col) : value(internal::new_df_impl(r_vec<r_sex
 // Factor constructor
 inline r_df::r_df(const r_factors& col) : value(internal::new_df_impl(r_vec<r_sexp>(1, r_sexp(static_cast<SEXP>(col))))){}
 
-r_vec<r_sexp> r_df::get(int index){
+inline r_vec<r_sexp> r_df::get(int index){
     return subset(*this, r_vec<r_int>(1, r_int(index)), false, false).value;
 }
 

@@ -43,12 +43,12 @@ struct r_df {
     void validate_col_sizes(const r_vec<r_sexp>& x){
         r_size_t n = x.length();
         if (n > 0){
-            r_size_t init_size = x.view(0).length();
+            r_size_t init_size = length(x.view(0));
             if (init_size > unwrap(r_limits<r_int>::max())) [[unlikely]] {
                 abort("Data frames can only contain short vectors, please check");
             }
             for (r_size_t i = 0; i < n; ++i){
-                if (init_size != x.view(i).length()){
+                if (init_size != length(x.view(i))){
                     abort("All lengths of a data frame must be equal");
                 }
             }

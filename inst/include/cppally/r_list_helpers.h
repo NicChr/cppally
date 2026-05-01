@@ -3,6 +3,7 @@
 
 #include <cppally/r_vec.h>
 #include <cppally/r_visit.h>
+#include <cppally/r_length.h>
 #include <cppally/r_rep.h>
 
 namespace cppally {
@@ -16,7 +17,7 @@ inline r_size_t recycle_size(const r_vec<r_sexp>& x){
     r_size_t out = 0;
 
     for (r_size_t i = 0; i < n; ++i){
-        r_size_t size = x.view(i).length();
+        r_size_t size = length(x.view(i));
         if (size == 0) return 0;
         out = std::max(out, size);
     }
