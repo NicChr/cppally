@@ -126,6 +126,11 @@ struct r_df {
     int ncol() const noexcept {
         return value.length();
     }
+
+    void set_nrow(int n) {
+        attr::set_attr(value, symbol::row_names_sym, internal::create_row_names(n));
+    }
+
     template <RStringType U>
     void set_colnames(const r_vec<U>& colnames) {
         value.set_names(colnames);
