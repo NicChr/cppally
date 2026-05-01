@@ -4,6 +4,7 @@
 #include <cppally/r_vec.h>
 #include <cppally/r_factor.h>
 #include <cppally/r_sexp_types.h>
+#include <cppally/r_df.h>
 
 namespace cppally {
 
@@ -26,7 +27,7 @@ switch (internal::CPPALLY_TYPEOF(x)) {
     case internal::CPPALLY_REALPSXTSXP:     return f(r_vec<r_psxct>(x));
     case internal::CPPALLY_FCTSXP:          return f(r_factors(x));
     case SYMSXP:                            return f(r_sym(x));
-    // case CPPALLY_DFSXP:                  return f(r_df(x));
+    case internal::CPPALLY_DFSXP:           return f(r_df(x));
     default:                                return f(r_sexp(x));
 }
 }
@@ -47,7 +48,7 @@ switch (internal::CPPALLY_TYPEOF(x)) {
     case internal::CPPALLY_REALPSXTSXP:   return f(r_vec<r_psxct>(x));
     case internal::CPPALLY_FCTSXP:        return f(r_factors(x));
     case SYMSXP:                        return f(r_sym(x));
-    // case CPPALLY_DFSXP:                return f(r_df(x));
+    case internal::CPPALLY_DFSXP:           return f(r_df(x));
     default:                            return f(r_sexp(x));
 }
 }
@@ -104,7 +105,7 @@ switch (internal::CPPALLY_TYPEOF(x)) {
     case internal::CPPALLY_REALPSXTSXP:   return f(r_vec<r_psxct>(x, internal::view_tag{}));
     case internal::CPPALLY_FCTSXP:        return f(r_factors(x, internal::view_tag{}));
     case SYMSXP:                        return f(r_sym(x, internal::view_tag{}));
-    // case CPPALLY_DFSXP:                return f(r_df(x));
+    case internal::CPPALLY_DFSXP:                return f(r_df(x, internal::view_tag{}));
     default:                            return f(r_sexp(x, internal::view_tag{}));
 }
 }
@@ -125,28 +126,9 @@ switch (internal::CPPALLY_TYPEOF(x)) {
     case internal::CPPALLY_REALPSXTSXP:   return f(r_vec<r_psxct>(x, internal::view_tag{}));
     case internal::CPPALLY_FCTSXP:        return f(r_factors(x, internal::view_tag{}));
     case SYMSXP:                        return f(r_sym(x, internal::view_tag{}));
-    // case CPPALLY_DFSXP:                return f(r_df(x));
+    case internal::CPPALLY_DFSXP:                return f(r_df(x, internal::view_tag{}));
     default:                            return f(r_sexp(x, internal::view_tag{}));
 }
-}
-
-namespace internal {
-
-// visits all elements, visitor receives (r_size_t i, r_vec<T> elem)
-template <typename Visitor>
-void view_elements(const r_vec<r_sexp>& x, Visitor&& vis) {
-    r_size_t n = x.length();
-    for (r_size_t i = 0; i < n; ++i) {
-        view_sexp(x.view(i), [&]<typename T>(const T& elem) {
-            if constexpr (is<T, r_sexp>){
-                abort("Don't know how to deal with object of type %s", internal::r_type_to_str(internal::CPPALLY_TYPEOF(elem)));
-            } else {
-                vis(i, elem);
-            }
-        });
-    }
-}
-
 }
 
 // Helper that disambiguates r_sexp type via view_sexp and then calls the named function
@@ -162,6 +144,18 @@ void view_elements(const r_vec<r_sexp>& x, Visitor&& vis) {
             abort("No available method for type %s in `" #fn "()`",             \
                 internal::type_str<std::remove_cvref_t<decltype(x_)>>());       \
         }                                                                       \
+    })
+
+#define CPPALLY_VISIT_AND_APPLY(x, ret, fn, ...)                                 \
+    visit_sexp(x, [&](const auto& x_) -> ret {                                   \
+        if constexpr (is<std::remove_cvref_t<decltype(x_)>, r_sexp>) {           \
+            abort("Unsupported SEXP type in `" #fn "()`");                       \
+        } else if constexpr (requires { fn(x_ __VA_OPT__(,) __VA_ARGS__); }) {   \
+            return fn(x_ __VA_OPT__(,) __VA_ARGS__);                             \
+        } else {                                                                 \
+            abort("No available method for type %s in `" #fn "()`",              \
+                internal::type_str<std::remove_cvref_t<decltype(x_)>>());        \
+        }                                                                        \
     })
 
 }

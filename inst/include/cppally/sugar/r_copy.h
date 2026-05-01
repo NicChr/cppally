@@ -52,6 +52,11 @@ inline r_factors deep_copy(const r_factors& x){
     return r_factors(unwrap(out), false);
 }
 
+template<>
+inline r_df deep_copy(const r_df& x){
+    return r_df(deep_copy(x.value));
+}
+
 // Symbols can't be deep copied
 template<>
 inline r_sym deep_copy(const r_sym& x){
@@ -95,6 +100,11 @@ template<>
 inline r_factors shallow_copy(const r_factors& x){
     r_vec<r_int> out = shallow_copy(x.value);
     return r_factors(unwrap(out), false);
+}
+
+template<>
+inline r_df shallow_copy(const r_df& x){
+    return r_df(shallow_copy(x.value));
 }
 
 // Symbols can't be copied

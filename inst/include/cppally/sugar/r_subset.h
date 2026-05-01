@@ -170,7 +170,7 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check, bool inver
         j = unwrap(indices.get(i));
         if (static_cast<r_size_t>(j) < xn){
           out.set(i, view(static_cast<r_size_t>(j)));
-        } else if (j > na_val){
+        } else if (j > na_val) [[unlikely]] {
           // If j > n_val then it is a negative signed integer
           abort("Negative indices are unsupported, use `invert = true`");
         } else {
@@ -179,13 +179,17 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check, bool inver
           }
         }
       }
-      return out;
     } else {
       for (r_size_t i = 0; i < n; ++i){
         out.set(i, view(unwrap(indices.get(i))));
     }
-    return out;
   }
+  r_vec<r_str_view> nms = attr::get_old_names(*this);
+  if (!nms.is_null()){
+    r_vec<r_str_view> new_nms = nms.subset(indices, check, invert);
+    attr::set_old_names(out, new_nms);
+  }
+  return out;
 }
 }
 
@@ -325,6 +329,42 @@ void r_vec<T>::replace(const r_vec<T>& old_values, const r_vec<T>& new_values){
   }
 }
 
+// Free subset functions
+
+template <RVector T, internal::RSubscript U>
+inline T subset(const T& x, const r_vec<U>& indices, bool check = true, bool invert = false) {
+  return x.subset(indices, check, invert);
+}
+template <internal::RSubscript U>
+inline r_factors subset(const r_factors& x, const r_vec<U>& indices, bool check = true, bool invert = false) {
+  return x.subset(indices, check, invert);
+}
+
+template <internal::RSubscript U>
+inline r_sexp subset(const r_sexp& x, const r_vec<U>& indices, bool check = true, bool invert = false);
+
+inline r_df subset(const r_df& x, const r_vec<r_int>& indices, bool check = true, bool invert = false){
+
+  int ncol = x.ncol();
+
+  if (ncol == 0){
+    // We don't have a function atm that tells us what the resulting size should be here
+    // So subset a dummy vector
+    r_vec<r_int> dummy(x.nrow()); // Uninitialised dummy vector
+    return r_df(r_vec<r_sexp>(), false, subset(dummy, indices, check, invert).length());
+  }
+  r_vec<r_sexp> out(ncol);
+  for (int i = 0; i < ncol; ++i){
+    out.set(i, subset(x.value.view(i), indices, check, invert));
+  }
+  attr::set_old_names(out, attr::get_old_names(x));
+  return r_df(out, false, length(out.view(0)));
+}
+
+template <internal::RSubscript U>
+inline r_sexp subset(const r_sexp& x, const r_vec<U>& indices, bool check, bool invert){
+  return r_sexp(CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ SEXP, /*fn = */ subset, /*rest of args = */ indices, check, invert));
+}
 }
 
 #endif

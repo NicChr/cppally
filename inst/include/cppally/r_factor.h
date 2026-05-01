@@ -155,7 +155,6 @@ struct r_factors {
 
   FORWARD_METHOD(length)
   FORWARD_METHOD(is_null)
-  FORWARD_METHOD(size)
   FORWARD_METHOD(data)
   FORWARD_METHOD(begin)
   FORWARD_METHOD(end)

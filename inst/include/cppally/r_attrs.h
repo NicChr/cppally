@@ -111,7 +111,7 @@ inline void set_old_names(SEXP x, const r_vec<U>& names){
     return;
   } else if (names.is_null()){
     attr::set_attr(x_, symbol::names_sym, r_null);
-  } else if (names.length() != x_.length()){
+  } else if (names.length() != Rf_xlength(x_)){
     abort("`length(names)` must equal `length(x)`");
   } else if (can_have_names(x_)){
     Rf_namesgets(x_, names);

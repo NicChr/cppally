@@ -4,14 +4,12 @@
 
 #include <cppally/r_vec.h>
 #include <cppally/r_attrs.h>
-#include <cppally/r_list_helpers.h>
 
 namespace cppally {
 
 namespace internal {
-
+    
 inline r_vec<r_int> create_row_names(int n){
-
     if (n == 0){
         return r_vec<r_int>();
     } else {
@@ -22,63 +20,7 @@ inline r_vec<r_int> create_row_names(int n){
     }
 }
 
-
-inline r_vec<r_sexp> new_df_impl(const r_vec<r_sexp>& cols, bool recycle, int nrows){
-
-    r_size_t n = cols.length();
-    r_vec<r_sexp> out(n);
-
-    if (nrows < 0){
-        abort("Supply a valid `nrows`");
-    }
-
-    if (recycle){
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, 
-            view_sexp(cols.view(i), [nrows](const auto& vec) -> r_sexp {
-                if constexpr (!RVector<decltype(vec)> && !RMetaVector<decltype(vec)>){
-                    abort("Don't know how to visit this r_sexp!");
-                } else {
-                    return r_sexp(vec.rep_len(nrows), internal::view_tag{});
-                }
-        })
-    );
-        }
-    } else {
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, cols.view(i));
-        }
-    }
-
-    // Always provide names
-    r_vec<r_str_view> names = cols.names();
-    if (names.is_null()){
-        names = r_vec<r_str_view>(n, cached_str<"">());
-    }
-    out.set_names(names); 
-
-    r_vec<r_int> row_names = create_row_names(nrows);
-    attr::set_attr(out, symbol::class_sym, r_vec<r_str_view>(1, r_str_view(cached_str<"data.frame">())));
-    attr::set_attr(out, symbol::row_names_sym, row_names);
-    return out;
-}
-
-inline r_vec<r_sexp> new_df_impl(const r_vec<r_sexp>& cols, bool recycle = true){
-    r_size_t nrows;
-    if (recycle){
-        nrows = internal::recycle_size(cols);
-    } else {
-        if (cols.length() == 0){
-            nrows = 0;
-        } else {
-            nrows = cols.view(0).length();
-        }
-    }
-    return new_df_impl(cols, recycle, nrows);
-}
-
 inline r_vec<r_sexp> new_df_impl(int nrows){
-
     r_vec<r_sexp> out{};
     r_vec<r_int> row_names = create_row_names(nrows);
     out.set_names(r_vec<r_str_view>());
@@ -86,6 +28,7 @@ inline r_vec<r_sexp> new_df_impl(int nrows){
     attr::set_attr(out, symbol::row_names_sym, row_names);
     return out;
 }
+
 }
 
 struct r_df {
@@ -100,12 +43,12 @@ struct r_df {
     void validate_col_sizes(const r_vec<r_sexp>& x){
         r_size_t n = x.length();
         if (n > 0){
-            r_size_t init_size = x.view(0).length();
+            r_size_t init_size = length(x.view(0));
             if (init_size > unwrap(r_limits<r_int>::max())) [[unlikely]] {
                 abort("Data frames can only contain short vectors, please check");
             }
             for (r_size_t i = 0; i < n; ++i){
-                if (init_size != x.view(i).length()){
+                if (init_size != length(x.view(i))){
                     abort("All lengths of a data frame must be equal");
                 }
             }
@@ -143,17 +86,18 @@ struct r_df {
     explicit r_df(const r_sexp& s) : value(s) {validate_df(value);}
     explicit r_df(const r_sexp& s, internal::view_tag) : value(s, internal::view_tag{}) {validate_df(value);}
     
-    // Constructor from list of cols
-    // Supply a nrows value for a custom recycle length
-    explicit r_df(const r_vec<r_sexp>& cols, bool recycle = true) : value(internal::new_df_impl(cols, recycle)){}
-    explicit r_df(const r_vec<r_sexp>& cols, bool recycle, int nrows) : value(internal::new_df_impl(cols, recycle, nrows)){}
+    // Forward declarations, defined in r_df_methods.h
+    explicit r_df(const r_vec<r_sexp>& cols, bool recycle = true);
+    explicit r_df(const r_vec<r_sexp>& cols, bool recycle, int nrows);
+    template <RScalar T>
+    explicit r_df(const r_vec<T>& col);
+    explicit r_df(const r_factors& col);
 
     // Implicit conversion to SEXP
     operator SEXP() const noexcept { return unwrap(value); }
 
     private: 
 
-    // For methods that just return a non-factor (like length())
     #define FORWARD_METHOD(NAME)                               \
         template <typename... Args>                            \
         decltype(auto) NAME(Args&&... args) const {            \
@@ -181,24 +125,24 @@ struct r_df {
     int ncol() const noexcept {
         return value.length();
     }
+
+    void set_nrow(int n) {
+        attr::set_attr(value, symbol::row_names_sym, internal::create_row_names(n));
+    }
+
     template <RStringType U>
     void set_colnames(const r_vec<U>& colnames) {
         value.set_names(colnames);
     }
+
     template <internal::RSubscript U>
-    r_df subset(const r_vec<U>& indices) const {
-        if (ncol() == 0){
-            // We don't have a function atm that tells us what the resulting size should be here
-            // So subset a dummy vector
-            r_vec<r_int> dummy(nrow()); // Uninitialised dummy vector
-            return r_df(r_vec<r_sexp>(), false, dummy.subset(indices).length());
-        }
-        r_vec<r_sexp> out(ncol());
-        internal::view_elements(value, [&]<typename T>(r_size_t i, const T& elem) {
-            out.set(i, elem.subset(indices));
-        });
-        return r_df(out, false, out.view(0).length());
-    }
+    r_df select(const r_vec<U>& cols) const;
+
+    inline r_df get_row(int index) const;
+    inline r_sexp get_col(int index) const;
+    inline r_sexp get_col(const char* name) const;
+    template <RStringType U>
+    inline r_sexp get_col(U name) const;
 };
 
 }

@@ -80,16 +80,17 @@ struct r_sexp {
   // convert SEXP -> r_sexp directly without extra protection
   explicit r_sexp(SEXP s, internal::view_tag) noexcept : value(s), ctl_(nullptr) {}
 
-  r_size_t length() const noexcept {
-    return Rf_xlength(value);
-  }
-
-  r_size_t size() const noexcept {
-    return length();
-  }
-
   bool is_null() const noexcept { return value == R_NilValue; }
   
+  r_size_t length() const {
+    static bool warned = false;
+    if (!warned) {
+        warn("`r_sexp.length()` is deprecated, please use `cppally::length()`");
+        warned = true;
+    }
+    return Rf_xlength(value);
+}
+
   r_str address() const;
 };
 

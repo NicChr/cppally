@@ -272,33 +272,11 @@ r_vec<r_int> factor_codes(r_factors x){
 	return x.codes();
 }
 ',
-  list_as_df = '
+  setnames = '
 [[cppally::register]]
-r_vec<r_sexp> list_as_df(r_vec<r_sexp> x){
-
-  r_size_t n = x.length();
-
-  if (n_unique(x.lengths()) > 1){
-    abort("List must have vectors of equal length to be converted to a data frame");
-  }
-
-  r_vec<r_str> names(attr::get_attr(x, cached_sym<"names">()));
-  if (names.is_null()){
-     abort("list must have names to be converted to a data frame");
-  }
-
-  r_vec<r_sexp> out = shallow_copy(x);
-
-  int nrow = 0;
-  r_vec<r_int> row_names;
-  if (n > 0){
-    nrow = out.view(0).length();
-    row_names = make_vec<r_int>(na<r_int>(), -nrow);
-  }
-
-  attr::set_attr(out, cached_sym<"row.names">(), row_names);
-  attr::set_attr(out, cached_sym<"class">(), make_vec<r_str>("data.frame"));
-  return out;
+r_vec<r_sexp> set_list_names(r_vec<r_sexp> x, r_vec<r_str> names){
+  attr::set_old_names(x, names);
+  return x;
 }
 '
 )
@@ -909,18 +887,17 @@ letter_fct |>
 
 Attributes can be manipulated via functions defined in the attr namespace.
 
-**Example:** Converting a list of samples to a data frame
+**Example:** Adding names to a list
 
 ```{r, echo=FALSE, results = 'asis'}
-as_cpp_chunk(examples[["list_as_df"]])
+as_cpp_chunk(examples[["setnames"]])
 ```
 
 
 ```{r}
 set.seed(42)
 norm_samples <- lapply(1:5, \(x) rnorm(10, mean = x))
-names(norm_samples) <- paste0("sample_", 1:5)
-list_as_df(norm_samples)
+set_list_names(norm_samples, paste0("sample_", 1:5))
 ```
 
 

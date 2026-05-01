@@ -12,6 +12,8 @@
 
 #include <cppally/r_sexp_types.h>
 #include <cppally/r_coerce.h>
+#include <cppally/r_length.h>
+#include <cppally/r_df_methods.h> 
 #include <cstdint> // For uint32_t and similar
 #include <tuple>
 #include <utility>
@@ -89,7 +91,7 @@ using r_types = std::tuple<
     r_sexp // Catch-all
 >;
 
-using r_classed_vector_types = std::tuple<r_factors>;
+using r_classed_vector_types = std::tuple<r_factors, r_df>;
 
 
 template<typename Tuple> struct to_r_vec_tuple_impl;

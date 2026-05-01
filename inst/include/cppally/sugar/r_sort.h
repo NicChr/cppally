@@ -22,7 +22,7 @@ namespace internal {
 template <RSortableVector T>
 r_vec<r_int> cpp_order(const T& x) {
     using data_t = typename T::data_type;
-    int n = x.size();
+    int n = x.length();
     r_vec<r_int> p(n);
     p.iota();
 
@@ -54,7 +54,7 @@ r_vec<r_int> cpp_order(const T& x) {
 template <RSortableVector T>
 r_vec<r_int> cpp_stable_order(const T& x) {
     using data_t = typename T::data_type;
-    int n = x.size();
+    int n = x.length();
     r_vec<r_int> p(n);
     p.iota();
 
@@ -93,7 +93,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
     using data_t = typename T::data_type;
     using base_t = unwrap_t<data_t>;
 
-    uint32_t n = x.size();
+    uint32_t n = x.length();
     if (n < 500){
         if (preserve_ties){
             return internal::cpp_stable_order(x);
@@ -323,14 +323,61 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
     }
 }
 
-template <RFactor T>
-inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
+inline r_vec<r_int> order(const r_factors& x, bool preserve_ties = true) {
     return order(x.value);
 }
 
+// Lexicographic order across all columns of a data frame
+inline r_vec<r_int> order(const r_df& x, bool preserve_ties = true) {
+    int nrow = x.nrow();
+    int ncol = x.ncol();
 
-template <RSexpType T>
-inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
+    r_vec<r_int> out(nrow);
+    out.iota();
+
+    if (nrow == 0 || ncol == 0){
+        return out;
+    }
+
+    // Build per-column 3-way comparators once
+    // returns -1 if a<b, 0 if equal, 1 if a>b
+    std::vector<std::function<int(int, int)>> cmps;
+    cmps.reserve(ncol);
+
+    for (int c = 0; c < ncol; ++c) {
+        view_sexp(x.value.view(c), [&]<typename ColT>(const ColT& col) {
+            if constexpr (requires (int i, int j) {
+                identical(col.view(i), col.view(j));
+                is_na(col.view(i));
+                col.view(i) < col.view(j);
+            }) {
+                cmps.emplace_back([col](int i, int j) -> int {
+                    bool i_na = is_na(col.view(i));
+                    bool j_na = is_na(col.view(j));
+                    if (i_na && j_na) return 0;
+                    if (i_na) return 1;   // NA sorts last
+                    if (j_na) return -1;
+                    if (identical(col.view(i), col.view(j))) return 0;
+                    auto lt = col.view(i) < col.view(j);
+                    return static_cast<bool>(unwrap(lt)) ? -1 : 1;
+                });
+            } else {
+                abort("make_groups(r_df): ordered grouping requires sortable columns");
+            }
+        });
+    }
+    std::stable_sort(out.data(), out.data() + nrow, [&](int a, int b) {
+        for (auto& cmp : cmps) {
+            int r = cmp(a, b);
+            if (r != 0) return r < 0;
+        }
+        return false;
+    });
+    return out;
+}
+
+
+inline r_vec<r_int> order(const r_sexp& x, bool preserve_ties = true) {
     return CPPALLY_VIEW_AND_APPLY(
         x, /*return_type = */ r_vec<r_int>, /*fn = */ order, 
         /*rest of args = */ preserve_ties

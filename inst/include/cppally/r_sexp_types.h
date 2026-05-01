@@ -44,6 +44,10 @@ inline SEXPTYPE CPPALLY_TYPEOF(SEXP x) noexcept {
         if (Rf_inherits(x, "integer64")) return CPPALLY_INT64SXP; 
         return xtype;
     }
+    case VECSXP: {
+        if (Rf_isDataFrame(x)) return CPPALLY_DFSXP;
+        return xtype;
+    }
     default: {
         return xtype;
     }
@@ -80,6 +84,7 @@ template <> inline const char* type_str<r_sexp>(){return "r_sexp";}
 template <> inline const char* type_str<r_date>(){return "r_date";}
 template <> inline const char* type_str<r_psxct>(){return "r_psxct";}
 template <> inline const char* type_str<r_factors>(){return "r_factors";}
+template <> inline const char* type_str<r_df>(){return "r_df";}
 
 template<RVector T>
 inline const char* type_str(){
@@ -111,7 +116,7 @@ inline const char* type_str(){
 
 // Mapping from C++ type to R TYPEOF
 
-template <typename T> inline constexpr uint16_t r_typeof_impl =              std::numeric_limits<uint16_t>::max();
+template <typename T> inline constexpr uint16_t r_typeof_impl =             std::numeric_limits<uint16_t>::max();
 template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_lgl>> =          LGLSXP;
 template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_int>> =          INTSXP;
 template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_dbl>> =          REALSXP;
@@ -127,6 +132,7 @@ template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_int64>> =        REAL
 template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_date>> =         REALSXP;
 template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_psxct>> =        REALSXP;
 template<> inline constexpr uint16_t r_typeof_impl<r_factors> =             INTSXP;
+template<> inline constexpr uint16_t r_typeof_impl<r_df> =                  VECSXP;
 
 
 // The above mappings represent the plain TYPEOF values of cppally objects, this enables r_vec<T> to check the primitive type id during construction
@@ -137,6 +143,7 @@ template<> inline constexpr uint16_t r_typeof<r_vec<r_int64>> =             CPPA
 template<> inline constexpr uint16_t r_typeof<r_vec<r_date>> =              CPPALLY_REALDATESXP;
 template<> inline constexpr uint16_t r_typeof<r_vec<r_psxct>> =             CPPALLY_REALPSXTSXP;
 template<> inline constexpr uint16_t r_typeof<r_factors> =                  CPPALLY_FCTSXP;
+template<> inline constexpr uint16_t r_typeof<r_df> =                       CPPALLY_DFSXP;
 
 // Low-level type ID check, primarily used in constructing classed cppally objects from SEXP
 template <typename T>

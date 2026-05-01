@@ -4,6 +4,9 @@
 #include <cppally/r_utils.h>
 #include <cppally/r_vec.h>
 
+// Vectorised binary operators: +,-,*,/,&,|,+=,-=,*=,/=,==,<=,<,>=,>
+// Vectorised unary operators: !,-,
+
 namespace cppally {
 
 template<typename T, typename U>
@@ -464,6 +467,7 @@ inline r_vec<T> operator-(const r_vec<T>& x){
     }
     return out;
 }
+
 
 #undef CPPALLY_BINARY_OP
 #undef CPPALLY_BINARY_OP_IN_PLACE

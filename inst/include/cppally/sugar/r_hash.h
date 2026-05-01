@@ -4,7 +4,7 @@
 #include <cppally/r_vec.h>
 #include <cppally/r_visit.h>
 #include <cppally/r_attrs.h>
-#include <cppally/sugar/r_identical.h>
+#include <cppally/r_identical.h>
 #include <bit>
 #include <algorithm>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match

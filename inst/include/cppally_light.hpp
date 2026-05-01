@@ -21,7 +21,10 @@
 #include <cppally/r_factor.h>
 #include <cppally/r_df.h>
 #include <cppally/r_visit.h>
+#include <cppally/r_length.h>
 #include <cppally/r_list_helpers.h>
 #include <cppally/r_coerce.h>
+#include <cppally/r_rep.h>
+#include <cppally/r_df_methods.h>
 
 #endif

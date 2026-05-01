@@ -18,6 +18,9 @@ inline constexpr bool identical(const T& a, const U& b);
 
 template <RVal T>
 inline void r_copy_n(r_vec<T>& target, const r_vec<T>& source, r_size_t target_offset, r_size_t n);
+
+// Declared in r_length.h
+inline r_size_t length(const r_sexp& x);
   
 namespace internal {
 
@@ -164,7 +167,7 @@ struct r_vec {
   }
 
   ptr_t end() {
-      return data() + size();
+      return data() + length();
   }
 
   ptr_t begin() const {
@@ -172,16 +175,11 @@ struct r_vec {
   }
 
   ptr_t end() const {
-      return data() + size();
+      return data() + length();
   }
 
   r_size_t length() const noexcept {
-    return sexp.length();
-  }
-
-  // Get size
-  r_size_t size() const noexcept {
-    return length();
+    return Rf_xlength(sexp);
   }
 
   bool is_long() const noexcept {
@@ -267,7 +265,7 @@ struct r_vec {
   void set_names(const r_vec<U>& names){
     if (names.is_null()){
       Rf_setAttrib(sexp, symbol::names_sym, r_null);
-    } else if (names.length() != sexp.length()) [[unlikely]] {
+    } else if (names.length() != Rf_xlength(sexp)) [[unlikely]] {
       abort("`length(names)` must equal `length(x)`");
     } else {
       Rf_namesgets(sexp, names);
@@ -573,9 +571,9 @@ struct r_vec {
   r_vec<r_int> lengths() const requires is<T, r_sexp> {
     r_size_t n = length();
     r_vec<r_int> out(n);
-
+  
     for (r_size_t i = 0; i < n; ++i){
-      r_size_t len = view(i).length();
+      r_size_t len = cppally::length(view(i));
       if (len > unwrap(r_limits<r_int>::max())) [[unlikely]] {
         abort("`lengths()` does not currently support long-vectors");
       }

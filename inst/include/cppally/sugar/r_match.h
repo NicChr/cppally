@@ -3,7 +3,7 @@
 
 #include <cppally/r_coerce.h>
 #include <cppally/sugar/r_hash.h>
-#include <cppally/sugar/r_vec_methods.h>
+#include <cppally/r_vec_methods.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 
 namespace cppally {

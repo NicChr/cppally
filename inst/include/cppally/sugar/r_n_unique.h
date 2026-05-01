@@ -4,6 +4,7 @@
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
 #include <cppally/r_factor.h>
+#include <cppally/sugar/r_groups.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 
 namespace cppally {
@@ -37,13 +38,15 @@ inline r_size_t n_unique(const T& x) {
   return seen.size();
 }
 
-template <RFactor T>
-inline r_size_t n_unique(const T& x) {
+inline r_size_t n_unique(const r_factors& x) {
   return n_unique(x.value);
 }
 
-template <RSexpType T>
-inline r_size_t n_unique(const T& x) {
+inline r_size_t n_unique(const r_df& x) {
+  return make_groups(x, false).n_groups;
+}
+
+inline r_size_t n_unique(const r_sexp& x) {
   return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ r_size_t, /*fn = */ n_unique);
 }
 

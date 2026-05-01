@@ -21,7 +21,7 @@ inline bool identical_impl(const T& a, const T& b) {
         using r_t = as_r_scalar_t<T>;
         return identical_impl<r_t>(r_t(a), r_t(b));
     } else {
-        return a == b;
+        static_assert(always_false<T>, "Unsupported type for `identical_impl()`");
     }
 }
 
@@ -94,6 +94,11 @@ inline bool identical_impl(const T& a, const T& b) {
 
 template<>
 inline bool identical_impl<r_factors>(const r_factors& a, const r_factors& b) {
+    return identical_impl(a.value, b.value);
+}
+
+template<>
+inline bool identical_impl<r_df>(const r_df& a, const r_df& b) {
     return identical_impl(a.value, b.value);
 }
 

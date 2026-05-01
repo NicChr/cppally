@@ -65,6 +65,7 @@ inline std::remove_cvref_t<T> as(const U& x) {
   } else if constexpr (is<to_t, r_sexp>){ // To r_sexp (to SEXP is handled above)
     return internal::as_sexp(x);
 
+    // TO-DO: Check whether this should go after the branch below
   } else if constexpr (RFactor<to_t>){ // To factor
     return r_factors(x);
 
@@ -76,7 +77,8 @@ inline std::remove_cvref_t<T> as(const U& x) {
         return as<to_t>(xvec);
       }
     });
-
+  } else if constexpr (RDataFrame<to_t>){
+    return r_df(x);
   } else if constexpr (is<r_sym, to_t>){ // To symbol
     if constexpr (is<from_t, const char*> || RStringType<from_t>){
       return r_sym(x);
@@ -121,6 +123,12 @@ inline std::remove_cvref_t<T> as(const U& x) {
       return as<to_t>(out);
     }
 
+  } else if constexpr (RDataFrame<from_t>){ // from data frame
+    r_vec<r_sexp> lst(safe[Rf_shallow_duplicate](x.value));
+    attr::clear_attrs(lst);
+    // Keep names
+    attr::set_old_names(lst, attr::get_old_names(x));
+    return as<to_t>(lst);
   } else if constexpr (RScalar<to_t> && RVector<from_t>){ // From vector to scalar
     if (x.length() != 1){
       abort("Vector must be length-1 to be coerced to requested scalar type");

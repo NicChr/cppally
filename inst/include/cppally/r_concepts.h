@@ -226,9 +226,13 @@ concept Scalar = CppScalar<T> || RScalar<T>;
 template <typename T>
 inline constexpr bool is_sexp = any<T, SEXP, r_sexp>;
 
+// cppally types that are vectors or other containers
+template <typename T>
+concept RComposite = RVector<T> || RMetaVector<T> || RDataFrame<T>;
+
 // All R types defined by cppally
 template <typename T>
-concept CppallyType = RVal<T> || RVector<T> || RMetaVector<T> || RDataFrame<T> || RSymbolType<T>;
+concept CppallyType = RVal<T> || RSymbolType<T> || RComposite<T>;
 
 template <typename T>
 concept CppType = !CppallyType<T>;
@@ -415,9 +419,7 @@ consteval uint8_t r_type_rank() {
     if constexpr (is<T, r_psxct>)                   return 7;
     if constexpr (is<T, r_str>)                     return 8;
     if constexpr (is<T, r_str_view>)                return 9;
-
-    if constexpr (is<T, r_sexp>)                     return std::numeric_limits<uint8_t>::max()  - 1;
-    return std::numeric_limits<uint8_t>::max();
+    if constexpr (is<T, r_sexp>)                    return std::numeric_limits<uint8_t>::max()  - 1;
 }
 
 template <MathType T, MathType U>
