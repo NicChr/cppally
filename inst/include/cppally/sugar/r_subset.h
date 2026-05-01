@@ -357,6 +357,7 @@ inline r_df subset(const r_df& x, const r_vec<r_int>& indices, bool check = true
   for (int i = 0; i < ncol; ++i){
     out.set(i, subset(x.value.view(i), indices, check, invert));
   }
+  attr::set_old_names(out, attr::get_old_names(x));
   return r_df(out, false, length(out.view(0)));
 }
 
