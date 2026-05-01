@@ -829,52 +829,36 @@ vector, use the public <code>codes()</code> member function</p>
 </h2>
 <p>Attributes can be manipulated via functions defined in the attr
 namespace.</p>
-<p><strong>Example:</strong> Converting a list of samples to a data
-frame</p>
+<p><strong>Example:</strong> Adding names to a list</p>
 <div class="sourceCode" id="cb68"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb68-1"><a href="#cb68-1" tabindex="-1"></a></span>
 <span id="cb68-2"><a href="#cb68-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb68-3"><a href="#cb68-3" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> list_as_df<span class="op">(</span>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> x<span class="op">){</span></span>
-<span id="cb68-4"><a href="#cb68-4" tabindex="-1"></a></span>
-<span id="cb68-5"><a href="#cb68-5" tabindex="-1"></a>  <span class="dt">r_size_t</span> n <span class="op">=</span> x<span class="op">.</span>length<span class="op">();</span></span>
-<span id="cb68-6"><a href="#cb68-6" tabindex="-1"></a></span>
-<span id="cb68-7"><a href="#cb68-7" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>n_unique<span class="op">(</span>x<span class="op">.</span>lengths<span class="op">())</span> <span class="op">&gt;</span> <span class="dv">1</span><span class="op">){</span></span>
-<span id="cb68-8"><a href="#cb68-8" tabindex="-1"></a>    abort<span class="op">(</span><span class="st">"List must have vectors of equal length to be converted to a data frame"</span><span class="op">);</span></span>
-<span id="cb68-9"><a href="#cb68-9" tabindex="-1"></a>  <span class="op">}</span></span>
-<span id="cb68-10"><a href="#cb68-10" tabindex="-1"></a></span>
-<span id="cb68-11"><a href="#cb68-11" tabindex="-1"></a>  r_vec<span class="op">&lt;</span>r_str<span class="op">&gt;</span> names<span class="op">(</span>attr<span class="op">::</span>get_attr<span class="op">(</span>x<span class="op">,</span> cached_sym<span class="op">&lt;</span><span class="st">"names"</span><span class="op">&gt;()));</span></span>
-<span id="cb68-12"><a href="#cb68-12" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>names<span class="op">.</span>is_null<span class="op">()){</span></span>
-<span id="cb68-13"><a href="#cb68-13" tabindex="-1"></a>     abort<span class="op">(</span><span class="st">"list must have names to be converted to a data frame"</span><span class="op">);</span></span>
-<span id="cb68-14"><a href="#cb68-14" tabindex="-1"></a>  <span class="op">}</span></span>
-<span id="cb68-15"><a href="#cb68-15" tabindex="-1"></a></span>
-<span id="cb68-16"><a href="#cb68-16" tabindex="-1"></a>  r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> out <span class="op">=</span> shallow_copy<span class="op">(</span>x<span class="op">);</span></span>
-<span id="cb68-17"><a href="#cb68-17" tabindex="-1"></a></span>
-<span id="cb68-18"><a href="#cb68-18" tabindex="-1"></a>  <span class="dt">int</span> nrow <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb68-19"><a href="#cb68-19" tabindex="-1"></a>  r_vec<span class="op">&lt;</span>r_int<span class="op">&gt;</span> row_names<span class="op">;</span></span>
-<span id="cb68-20"><a href="#cb68-20" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>n <span class="op">&gt;</span> <span class="dv">0</span><span class="op">){</span></span>
-<span id="cb68-21"><a href="#cb68-21" tabindex="-1"></a>    nrow <span class="op">=</span> out<span class="op">.</span>view<span class="op">(</span><span class="dv">0</span><span class="op">).</span>length<span class="op">();</span></span>
-<span id="cb68-22"><a href="#cb68-22" tabindex="-1"></a>    row_names <span class="op">=</span> make_vec<span class="op">&lt;</span>r_int<span class="op">&gt;(</span>na<span class="op">&lt;</span>r_int<span class="op">&gt;(),</span> <span class="op">-</span>nrow<span class="op">);</span></span>
-<span id="cb68-23"><a href="#cb68-23" tabindex="-1"></a>  <span class="op">}</span></span>
-<span id="cb68-24"><a href="#cb68-24" tabindex="-1"></a></span>
-<span id="cb68-25"><a href="#cb68-25" tabindex="-1"></a>  attr<span class="op">::</span>set_attr<span class="op">(</span>out<span class="op">,</span> cached_sym<span class="op">&lt;</span><span class="st">"row.names"</span><span class="op">&gt;(),</span> row_names<span class="op">);</span></span>
-<span id="cb68-26"><a href="#cb68-26" tabindex="-1"></a>  attr<span class="op">::</span>set_attr<span class="op">(</span>out<span class="op">,</span> cached_sym<span class="op">&lt;</span><span class="st">"class"</span><span class="op">&gt;(),</span> make_vec<span class="op">&lt;</span>r_str<span class="op">&gt;(</span><span class="st">"data.frame"</span><span class="op">));</span></span>
-<span id="cb68-27"><a href="#cb68-27" tabindex="-1"></a>  <span class="cf">return</span> out<span class="op">;</span></span>
-<span id="cb68-28"><a href="#cb68-28" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<span id="cb68-3"><a href="#cb68-3" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> set_list_names<span class="op">(</span>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> x<span class="op">,</span> r_vec<span class="op">&lt;</span>r_str<span class="op">&gt;</span> names<span class="op">){</span></span>
+<span id="cb68-4"><a href="#cb68-4" tabindex="-1"></a>  attr<span class="op">::</span>set_old_names<span class="op">(</span>x<span class="op">,</span> names<span class="op">);</span></span>
+<span id="cb68-5"><a href="#cb68-5" tabindex="-1"></a>  <span class="cf">return</span> x<span class="op">;</span></span>
+<span id="cb68-6"><a href="#cb68-6" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
 <span><span class="va">norm_samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">10</span>, mean <span class="op">=</span> <span class="va">x</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">norm_samples</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"sample_"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span></span>
-<span><span class="fu">list_as_df</span><span class="op">(</span><span class="va">norm_samples</span><span class="op">)</span></span>
-<span><span class="co">#&gt;     sample_1   sample_2 sample_3 sample_4 sample_5</span></span>
-<span><span class="co">#&gt; 1  2.3709584  3.3048697 2.693361 4.455450 5.205999</span></span>
-<span><span class="co">#&gt; 2  0.4353018  4.2866454 1.218692 4.704837 4.638943</span></span>
-<span><span class="co">#&gt; 3  1.3631284  0.6111393 2.828083 5.035104 5.758163</span></span>
-<span><span class="co">#&gt; 4  1.6328626  1.7212112 4.214675 3.391074 4.273295</span></span>
-<span><span class="co">#&gt; 5  1.4042683  1.8666787 4.895193 4.504955 3.631719</span></span>
-<span><span class="co">#&gt; 6  0.8938755  2.6359504 2.569531 2.282991 5.432818</span></span>
-<span><span class="co">#&gt; 7  2.5115220  1.7157471 2.742731 3.215541 4.188607</span></span>
-<span><span class="co">#&gt; 8  0.9053410 -0.6564554 1.236837 3.149092 6.444101</span></span>
-<span><span class="co">#&gt; 9  3.0184237 -0.4404669 3.460097 1.585792 4.568554</span></span>
-<span><span class="co">#&gt; 10 0.9372859  3.3201133 2.360005 4.036123 5.655648</span></span></code></pre></div>
+<span><span class="fu">set_list_names</span><span class="op">(</span><span class="va">norm_samples</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"sample_"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $sample_1</span></span>
+<span><span class="co">#&gt;  [1] 2.3709584 0.4353018 1.3631284 1.6328626 1.4042683 0.8938755 2.5115220</span></span>
+<span><span class="co">#&gt;  [8] 0.9053410 3.0184237 0.9372859</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $sample_2</span></span>
+<span><span class="co">#&gt;  [1]  3.3048697  4.2866454  0.6111393  1.7212112  1.8666787  2.6359504</span></span>
+<span><span class="co">#&gt;  [7]  1.7157471 -0.6564554 -0.4404669  3.3201133</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $sample_3</span></span>
+<span><span class="co">#&gt;  [1] 2.693361 1.218692 2.828083 4.214675 4.895193 2.569531 2.742731 1.236837</span></span>
+<span><span class="co">#&gt;  [9] 3.460097 2.360005</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $sample_4</span></span>
+<span><span class="co">#&gt;  [1] 4.455450 4.704837 5.035104 3.391074 4.504955 2.282991 3.215541 3.149092</span></span>
+<span><span class="co">#&gt;  [9] 1.585792 4.036123</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $sample_5</span></span>
+<span><span class="co">#&gt;  [1] 5.205999 4.638943 5.758163 4.273295 3.631719 5.432818 4.188607 6.444101</span></span>
+<span><span class="co">#&gt;  [9] 4.568554 5.655648</span></span></code></pre></div>
 <p>More useful attribute helpers</p>
 <ul>
 <li>
@@ -925,8 +909,8 @@ of number of unique values.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression            min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_n_unique      1.18ms   1.41ms      712.    1.38MB     18.2</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_n_unique 280.56µs 283.61µs     <span style="text-decoration: underline;">3</span>460.        0B      0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_n_unique       763µs    780µs     <span style="text-decoration: underline;">1</span>225.    1.38MB     35.7</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_n_unique    280µs    283µs     <span style="text-decoration: underline;">3</span>483.        0B      0</span></span></code></pre></div>
 <p>More useful sugar functions</p>
 <ul>
 <li><p><code><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique()</a></code> - Like R’s <code><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique()</a></code> but with a

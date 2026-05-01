@@ -819,36 +819,14 @@ letter_fct |>
 Attributes can be manipulated via functions defined in the attr
 namespace.
 
-**Example:** Converting a list of samples to a data frame
+**Example:** Adding names to a list
 
 ``` cpp
 
 [[cppally::register]]
-r_vec<r_sexp> list_as_df(r_vec<r_sexp> x){
-
-  r_size_t n = x.length();
-
-  if (n_unique(x.lengths()) > 1){
-    abort("List must have vectors of equal length to be converted to a data frame");
-  }
-
-  r_vec<r_str> names(attr::get_attr(x, cached_sym<"names">()));
-  if (names.is_null()){
-     abort("list must have names to be converted to a data frame");
-  }
-
-  r_vec<r_sexp> out = shallow_copy(x);
-
-  int nrow = 0;
-  r_vec<r_int> row_names;
-  if (n > 0){
-    nrow = out.view(0).length();
-    row_names = make_vec<r_int>(na<r_int>(), -nrow);
-  }
-
-  attr::set_attr(out, cached_sym<"row.names">(), row_names);
-  attr::set_attr(out, cached_sym<"class">(), make_vec<r_str>("data.frame"));
-  return out;
+r_vec<r_sexp> set_list_names(r_vec<r_sexp> x, r_vec<r_str> names){
+  attr::set_old_names(x, names);
+  return x;
 }
 ```
 
@@ -856,19 +834,26 @@ r_vec<r_sexp> list_as_df(r_vec<r_sexp> x){
 
 set.seed(42)
 norm_samples <- lapply(1:5, \(x) rnorm(10, mean = x))
-names(norm_samples) <- paste0("sample_", 1:5)
-list_as_df(norm_samples)
-#>     sample_1   sample_2 sample_3 sample_4 sample_5
-#> 1  2.3709584  3.3048697 2.693361 4.455450 5.205999
-#> 2  0.4353018  4.2866454 1.218692 4.704837 4.638943
-#> 3  1.3631284  0.6111393 2.828083 5.035104 5.758163
-#> 4  1.6328626  1.7212112 4.214675 3.391074 4.273295
-#> 5  1.4042683  1.8666787 4.895193 4.504955 3.631719
-#> 6  0.8938755  2.6359504 2.569531 2.282991 5.432818
-#> 7  2.5115220  1.7157471 2.742731 3.215541 4.188607
-#> 8  0.9053410 -0.6564554 1.236837 3.149092 6.444101
-#> 9  3.0184237 -0.4404669 3.460097 1.585792 4.568554
-#> 10 0.9372859  3.3201133 2.360005 4.036123 5.655648
+set_list_names(norm_samples, paste0("sample_", 1:5))
+#> $sample_1
+#>  [1] 2.3709584 0.4353018 1.3631284 1.6328626 1.4042683 0.8938755 2.5115220
+#>  [8] 0.9053410 3.0184237 0.9372859
+#> 
+#> $sample_2
+#>  [1]  3.3048697  4.2866454  0.6111393  1.7212112  1.8666787  2.6359504
+#>  [7]  1.7157471 -0.6564554 -0.4404669  3.3201133
+#> 
+#> $sample_3
+#>  [1] 2.693361 1.218692 2.828083 4.214675 4.895193 2.569531 2.742731 1.236837
+#>  [9] 3.460097 2.360005
+#> 
+#> $sample_4
+#>  [1] 4.455450 4.704837 5.035104 3.391074 4.504955 2.282991 3.215541 3.149092
+#>  [9] 1.585792 4.036123
+#> 
+#> $sample_5
+#>  [1] 5.205999 4.638943 5.758163 4.273295 3.631719 5.432818 4.188607 6.444101
+#>  [9] 4.568554 5.655648
 ```
 
 More useful attribute helpers
@@ -914,8 +899,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique      1.18ms   1.41ms      712.    1.38MB     18.2
-#> 2 cppally_n_unique 280.56µs 283.61µs     3460.        0B      0
+#> 1 base_n_unique       763µs    780µs     1225.    1.38MB     35.7
+#> 2 cppally_n_unique    280µs    283µs     3483.        0B      0
 ```
 
 More useful sugar functions
