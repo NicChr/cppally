@@ -135,6 +135,8 @@ struct r_df {
     void set_colnames(const r_vec<U>& colnames) {
         value.set_names(colnames);
     }
+
+    r_vec<r_sexp> get(int index);
 };
 
 }

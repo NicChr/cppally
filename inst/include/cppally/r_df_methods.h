@@ -8,6 +8,7 @@
 #include <cppally/r_visit.h>
 #include <cppally/r_rep.h>
 #include <cppally/r_list_helpers.h>
+#include <cppally/sugar/r_subset.h>
 #include <string>
 
 namespace cppally {
@@ -75,6 +76,10 @@ template <RScalar T>
 inline r_df::r_df(const r_vec<T>& col) : value(internal::new_df_impl(r_vec<r_sexp>(1, r_sexp(static_cast<SEXP>(col))))){}
 // Factor constructor
 inline r_df::r_df(const r_factors& col) : value(internal::new_df_impl(r_vec<r_sexp>(1, r_sexp(static_cast<SEXP>(col))))){}
+
+r_vec<r_sexp> r_df::get(int index){
+    return subset(*this, r_vec<r_int>(1, r_int(index)), false, false).value;
+}
 
 }
 

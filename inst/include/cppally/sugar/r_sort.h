@@ -327,6 +327,55 @@ inline r_vec<r_int> order(const r_factors& x, bool preserve_ties = true) {
     return order(x.value);
 }
 
+// Lexicographic order across all columns of a data frame
+inline r_vec<r_int> order(const r_df& x, bool preserve_ties = true) {
+    int nrow = x.nrow();
+    int ncol = x.ncol();
+
+    r_vec<r_int> out(nrow);
+    out.iota();
+
+    if (nrow == 0 || ncol == 0){
+        return out;
+    }
+
+    // Build per-column 3-way comparators once
+    // returns -1 if a<b, 0 if equal, 1 if a>b
+    std::vector<std::function<int(int, int)>> cmps;
+    cmps.reserve(ncol);
+
+    for (int c = 0; c < ncol; ++c) {
+        view_sexp(x.value.view(c), [&]<typename ColT>(const ColT& col) {
+            if constexpr (requires (int i, int j) {
+                identical(col.view(i), col.view(j));
+                is_na(col.view(i));
+                col.view(i) < col.view(j);
+            }) {
+                cmps.emplace_back([col](int i, int j) -> int {
+                    bool i_na = is_na(col.view(i));
+                    bool j_na = is_na(col.view(j));
+                    if (i_na && j_na) return 0;
+                    if (i_na) return 1;   // NA sorts last
+                    if (j_na) return -1;
+                    if (identical(col.view(i), col.view(j))) return 0;
+                    auto lt = col.view(i) < col.view(j);
+                    return static_cast<bool>(unwrap(lt)) ? -1 : 1;
+                });
+            } else {
+                abort("make_groups(r_df): ordered grouping requires sortable columns");
+            }
+        });
+    }
+    std::stable_sort(out.data(), out.data() + nrow, [&](int a, int b) {
+        for (auto& cmp : cmps) {
+            int r = cmp(a, b);
+            if (r != 0) return r < 0;
+        }
+        return false;
+    });
+    return out;
+}
+
 
 inline r_vec<r_int> order(const r_sexp& x, bool preserve_ties = true) {
     return CPPALLY_VIEW_AND_APPLY(
