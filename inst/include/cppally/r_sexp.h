@@ -82,6 +82,15 @@ struct r_sexp {
 
   bool is_null() const noexcept { return value == R_NilValue; }
   
+  r_size_t length() const {
+    static bool warned = false;
+    if (!warned) {
+        warn("`r_sexp.length()` is deprecated, please use `cppally::length()`");
+        warned = true;
+    }
+    return Rf_xlength(value);
+}
+
   r_str address() const;
 };
 
