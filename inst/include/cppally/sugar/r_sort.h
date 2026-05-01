@@ -323,14 +323,12 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
     }
 }
 
-template <RFactor T>
-inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
+inline r_vec<r_int> order(const r_factors& x, bool preserve_ties = true) {
     return order(x.value);
 }
 
 
-template <RSexpType T>
-inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
+inline r_vec<r_int> order(const r_df& x, bool preserve_ties = true) {
     return CPPALLY_VIEW_AND_APPLY(
         x, /*return_type = */ r_vec<r_int>, /*fn = */ order, 
         /*rest of args = */ preserve_ties

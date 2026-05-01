@@ -226,9 +226,13 @@ concept Scalar = CppScalar<T> || RScalar<T>;
 template <typename T>
 inline constexpr bool is_sexp = any<T, SEXP, r_sexp>;
 
+// cppally types that are vectors or other containers
+template <typename T>
+concept RComposite = RVector<T> || RMetaVector<T> || RDataFrame<T>;
+
 // All R types defined by cppally
 template <typename T>
-concept CppallyType = RVal<T> || RVector<T> || RMetaVector<T> || RDataFrame<T> || RSymbolType<T>;
+concept CppallyType = RVal<T> || RSymbolType<T> || RComposite<T>;
 
 template <typename T>
 concept CppType = !CppallyType<T>;

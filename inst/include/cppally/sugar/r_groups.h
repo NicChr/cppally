@@ -123,8 +123,7 @@ r_vec<r_int> order() const {
 };
 
 // Forward decl
-template <RSexpType T>
-inline groups make_groups(const T& x, bool ordered = false);
+inline groups make_groups(const r_sexp& x, bool ordered = false);
 
 namespace internal {
 
@@ -409,13 +408,11 @@ inline groups make_groups(const T& x, bool ordered = false) {
     }
 }
 
-template <RFactor T>
-inline groups make_groups(const T& x, bool ordered = false) {
+inline groups make_groups(const r_factors& x, bool ordered = false) {
     return make_groups(x.value, ordered);
 }
 
-template <RDataFrame T>
-inline groups make_groups(const T& x, bool ordered = false) {
+inline groups make_groups(const r_df& x, bool ordered = false) {
     if (ordered){
         abort("Ordered data frame groups are currently unsupported");
     } else {
@@ -423,8 +420,7 @@ inline groups make_groups(const T& x, bool ordered = false) {
     }
 }
 
-template <RSexpType T>
-inline groups make_groups(const T& x, bool ordered){
+inline groups make_groups(const r_sexp& x, bool ordered){
     return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ groups, /*fn = */ make_groups, /*rest of args = */ ordered);
 }
 

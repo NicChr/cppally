@@ -9,7 +9,7 @@
 namespace cppally {
 
 template <typename T>
-requires (RVector<T> || RFactor<T> || RDataFrame<T> || RSexpType<T>)
+requires (RComposite<T> || RSexpType<T>)
 T unique(const T& x, bool sort = false) {
     groups group_info = make_groups(x, sort);
     auto starts = group_info.starts();
@@ -30,18 +30,15 @@ r_vec<r_lgl> duplicated(const T& x, bool all = false){
   }
 }
 
-template <RFactor T>
-r_vec<r_lgl> duplicated(const T& x, bool all = false){
+r_vec<r_lgl> duplicated(const r_factors& x, bool all = false){
     return duplicated(x.value);
 }
 
-template <RDataFrame T>
-r_vec<r_lgl> duplicated(const T& x, bool all = false){
+r_vec<r_lgl> duplicated(const r_df& x, bool all = false){
     return duplicated(make_groups(x, false).ids, all);
 }
 
-template <RSexpType T>
-r_vec<r_lgl> duplicated(const T& x, bool all = false){
+r_vec<r_lgl> duplicated(const r_sexp& x, bool all = false){
     return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ r_vec<r_lgl>, /*fn = */ duplicated, /*rest of args = */ all);
 }
 

@@ -38,18 +38,15 @@ inline r_size_t n_unique(const T& x) {
   return seen.size();
 }
 
-template <RFactor T>
-inline r_size_t n_unique(const T& x) {
+inline r_size_t n_unique(const r_factors& x) {
   return n_unique(x.value);
 }
 
-template <RDataFrame T>
-inline r_size_t n_unique(const T& x) {
+inline r_size_t n_unique(const r_df& x) {
   return make_groups(x, false).n_groups;
 }
 
-template <RSexpType T>
-inline r_size_t n_unique(const T& x) {
+inline r_size_t n_unique(const r_sexp& x) {
   return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ r_size_t, /*fn = */ n_unique);
 }
 
