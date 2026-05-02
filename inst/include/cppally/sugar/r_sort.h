@@ -102,85 +102,83 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         }
     }
 
+    if constexpr (RNumericType<data_t>) {
+
+        // ----------------------------------------------------------------------
+        // Integers with small range optimisation
+        // ----------------------------------------------------------------------
+        
+        if constexpr (RIntegerType<data_t>) {
     
-    // ----------------------------------------------------------------------
-    // Integers with small range optimisation
-    // ----------------------------------------------------------------------
+            if (n >= 100000){
     
-    if constexpr (RIntegerType<data_t>) {
-
-        if (n >= 100000){
-
-        r_vec<r_int> out(n);
-
-        auto rng = range(x, true);
-
-        auto* RESTRICT px = x.data();
-        
-        // Find min/max and check for NAs
-        auto min_val = rng.get(0), max_val = rng.get(1);
-        r_int64 delta = is_na(max_val) || is_na(min_val) ? na<r_int64>() : 
-        r_int64(static_cast<int64_t>(unwrap(max_val))) - r_int64(static_cast<int64_t>(unwrap(min_val)));
-        bool all_nas = is_na(delta);
-        
-        // All NAs - just return sequential indices
-        if (all_nas) {
-            out.iota();
-            return out;
-        }
-
-        constexpr int64_t COUNTING_SORT_THRESHOLD = 10000000;
-        
-        // Use counting sort for small range (O(n + range))
-        if ((delta >= 0 && delta < COUNTING_SORT_THRESHOLD).is_true()){
-            std::vector<uint32_t> counts(unwrap(delta) + 1, 0);
+            r_vec<r_int> out(n);
+    
+            auto rng = range(x, true);
+    
+            auto* RESTRICT px = x.data();
             
-            // First pass: count occurrences (ignore NAs)
-            bool has_nas = false;
-            for (uint32_t i = 0; i < n; ++i) {
-                if (!is_na(px[i])) {
-                    size_t idx = static_cast<size_t>(unwrap(px[i]) - min_val);
-                    counts[idx]++;
-                } else {
-                    has_nas = true;
-                }
+            // Find min/max and check for NAs
+            auto min_val = rng.get(0), max_val = rng.get(1);
+            r_int64 delta = is_na(max_val) || is_na(min_val) ? na<r_int64>() : 
+            r_int64(static_cast<int64_t>(unwrap(max_val))) - r_int64(static_cast<int64_t>(unwrap(min_val)));
+            bool all_nas = is_na(delta);
+            
+            // All NAs - just return sequential indices
+            if (all_nas) {
+                out.iota();
+                return out;
             }
+    
+            constexpr int64_t COUNTING_SORT_THRESHOLD = 10000000;
             
-            // Prefix sum: counts[i] becomes the starting position for value i
-            uint32_t total = 0;
-            uint32_t n_counts = counts.size();
-            for (size_t i = 0; i < n_counts; ++i) {
-                uint32_t old_count = counts[i];
-                counts[i] = total;
-                total += old_count;
-            }
-            
-            // Second pass: write indices in sorted order (stable)
-            int* RESTRICT p_out = out.data();
-            
-            // For each element, place it at counts[value], then increment
-            for (uint32_t i = 0; i < n; ++i) {
-                if (!is_na(px[i])) {
-                    size_t idx = static_cast<size_t>(unwrap(px[i]) - min_val);
-                    p_out[counts[idx]++] = static_cast<int>(i);
-                }
-            }
-            
-            // Append NAs at end (preserving input order)
-            if (has_nas) {
+            // Use counting sort for small range (O(n + range))
+            if ((delta >= 0 && delta < COUNTING_SORT_THRESHOLD).is_true()){
+                std::vector<uint32_t> counts(unwrap(delta) + 1, 0);
+                
+                // First pass: count occurrences (ignore NAs)
+                bool has_nas = false;
                 for (uint32_t i = 0; i < n; ++i) {
-                    if (is_na(px[i])) {
-                        p_out[total++] = static_cast<int>(i);
+                    if (!is_na(px[i])) {
+                        size_t idx = static_cast<size_t>(unwrap(px[i]) - min_val);
+                        counts[idx]++;
+                    } else {
+                        has_nas = true;
                     }
                 }
+                
+                // Prefix sum: counts[i] becomes the starting position for value i
+                uint32_t total = 0;
+                uint32_t n_counts = counts.size();
+                for (size_t i = 0; i < n_counts; ++i) {
+                    uint32_t old_count = counts[i];
+                    counts[i] = total;
+                    total += old_count;
+                }
+                
+                // Second pass: write indices in sorted order (stable)
+                int* RESTRICT p_out = out.data();
+                
+                // For each element, place it at counts[value], then increment
+                for (uint32_t i = 0; i < n; ++i) {
+                    if (!is_na(px[i])) {
+                        size_t idx = static_cast<size_t>(unwrap(px[i]) - min_val);
+                        p_out[counts[idx]++] = static_cast<int>(i);
+                    }
+                }
+                
+                // Append NAs at end (preserving input order)
+                if (has_nas) {
+                    for (uint32_t i = 0; i < n; ++i) {
+                        if (is_na(px[i])) {
+                            p_out[total++] = static_cast<int>(i);
+                        }
+                    }
+                }
+                return out;
             }
-            
-            return out;
         }
     }
-}
-
-    if constexpr (RNumericType<data_t>) {
 
         r_vec<r_int> out(n);
         int* RESTRICT p_out = out.data();
