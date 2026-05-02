@@ -5,6 +5,8 @@
 #include <cppally/sugar/r_hash.h>
 #include <cppally/r_vec_methods.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
+#include <functional>
+#include <vector>
 
 namespace cppally {
 
@@ -115,6 +117,115 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
   }
 
   return out;
+}
+
+namespace internal {
+
+// Per-column eq probe across two dfs at matching column positions.
+// Each probe takes (needle_row, haystack_row) and returns whether the
+// values at those rows in column c are identical().
+inline std::vector<std::function<bool(int, int)>>
+build_cross_col_eq_probes(const r_df& needles, const r_df& haystack) {
+    int ncols = needles.ncol();
+    std::vector<std::function<bool(int, int)>> eqs;
+    eqs.reserve(ncols);
+    for (int c = 0; c < ncols; ++c) {
+        view_sexp(needles.value.view(c), [&]<typename NCol>(const NCol& nc) {
+            view_sexp(haystack.value.view(c), [&]<typename HCol>(const HCol& hc) {
+                if constexpr (!is<NCol, HCol>) {
+                    abort("match(r_df, r_df): column %d types differ", c);
+                } else if constexpr (requires (int i, int j) {
+                    identical(nc.view(i), hc.view(j));
+                }) {
+                    eqs.emplace_back([nc, hc](int i, int j) {
+                        return identical(nc.view(i), hc.view(j));
+                    });
+                } else {
+                    abort("match(r_df, r_df): unsupported column type at %d", c);
+                }
+            });
+        });
+    }
+    return eqs;
+}
+
+}
+
+// match() for r_df: row-level match of needle rows against haystack rows
+template <internal::RNumericSubscript U = r_int>
+r_vec<U> match(const r_df& needles, const r_df& haystack) {
+    int n_ncol = needles.ncol();
+    int h_ncol = haystack.ncol();
+    if (n_ncol != h_ncol) {
+        abort("match(r_df, r_df): both data frames must have the same number of columns");
+    }
+
+    r_size_t n_needles  = needles.nrow();
+    r_size_t n_haystack = haystack.nrow();
+
+    if constexpr (is<U, r_int>) {
+        if (n_haystack > r_limits<r_int>::max()) {
+            abort("Cannot match to a long vector, please use match<r_int64> instead");
+        }
+    }
+
+    // 0-col: every needle row matches row 0 (if haystack non-empty), else NA
+    if (n_ncol == 0) {
+        return r_vec<U>(n_needles, n_haystack > 0 ? U(0) : na<U>());
+    }
+
+    // 1-col: delegate to scalar match (incl. integer-table fast path)
+    if (n_ncol == 1) {
+        r_vec<U> out;
+        view_sexp(needles.value.view(0), [&]<typename NCol>(const NCol& nc) {
+            view_sexp(haystack.value.view(0), [&]<typename HCol>(const HCol& hc) {
+                if constexpr (is<NCol, HCol> && RVector<NCol>) {
+                    out = match<U>(nc, hc);
+                } else {
+                    abort("match(r_df, r_df): single-column type mismatch or unsupported");
+                }
+            });
+        });
+        return out;
+    }
+
+    r_vec<U> out(n_needles);
+    if (n_needles == 0) return out;
+
+    auto h_hashes = internal::row_hashes(haystack);
+    auto n_hashes = internal::row_hashes(needles);
+    auto eqs      = internal::build_cross_col_eq_probes(needles, haystack);
+
+    auto rows_equal = [&](int i, int j) {
+        for (auto& fn : eqs) if (!fn(i, j)) return false;
+        return true;
+    };
+
+    // hash -> chain of haystack row indices (insertion order preserved)
+    ankerl::unordered_dense::map<uint64_t, std::vector<int>> lookup;
+    lookup.reserve(internal::get_hash_map_reserve_size<r_int>(
+        static_cast<uint64_t>(n_haystack)));
+    for (r_size_t j = 0; j < n_haystack; ++j) {
+        lookup[h_hashes[j]].push_back(static_cast<int>(j));
+    }
+
+    using int_t = unwrap_t<U>;
+    auto* RESTRICT p_out = out.data();
+
+    for (r_size_t i = 0; i < n_needles; ++i) {
+        auto it = lookup.find(n_hashes[i]);
+        int_t found = unwrap(na<U>());
+        if (it != lookup.end()) {
+            for (int j : it->second) {
+                if (rows_equal(static_cast<int>(i), j)) {
+                    found = static_cast<int_t>(j);
+                    break;  // first occurrence wins
+                }
+            }
+        }
+        p_out[i] = found;
+    }
+    return out;
 }
 
 template <RVal T>

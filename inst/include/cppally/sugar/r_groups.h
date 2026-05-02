@@ -161,25 +161,6 @@ inline groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
     return groups(group_ids, n_groups, ordered, sorted);
 }
 
-// Build vector of row hashes by combining hashes across cols
-inline std::vector<uint64_t> row_hashes(const r_df& x) {
-    int nrow = x.nrow();
-    int ncol = x.ncol();
-    std::vector<uint64_t> row_ids(size_t(nrow), 0U);
-    for (int c = 0; c < ncol; ++c) {
-        view_sexp(x.value.view(c), [&]<typename ColT>(const ColT& col) {
-            if constexpr (requires (int i) { r_hash_impl(col.view(i)); }) {
-                for (int i = 0; i < nrow; ++i) {
-                    row_ids[i] = hash_combine(row_ids[i], r_hash_impl(col.view(i)));
-                }
-            } else {
-                abort("make_groups(r_df): unsupported column type");
-            }
-        });
-    }
-    return row_ids;
-}
-
 // Build a per-column equality probe for every column of `x`.
 // Each probe takes two row indices and returns whether the column values
 // at those rows are identical(). Columns whose type doesn't support

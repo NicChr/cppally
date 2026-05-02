@@ -172,7 +172,24 @@ inline uint64_t get_hash_map_reserve_size<r_lgl>(uint64_t data_size) {
     return std::min<uint64_t>(std::bit_floor(data_size >> 2), 4);
 }
 
-
+// Vector of data frame row hashes - combine hashes across cols
+inline std::vector<uint64_t> row_hashes(const r_df& x) {
+    int nrow = x.nrow();
+    int ncol = x.ncol();
+    std::vector<uint64_t> row_ids(size_t(nrow), 0U);
+    for (int c = 0; c < ncol; ++c) {
+        view_sexp(x.value.view(c), [&]<typename ColT>(const ColT& col) {
+            if constexpr (requires (int i) { r_hash_impl(col.view(i)); }) {
+                for (int i = 0; i < nrow; ++i) {
+                    row_ids[i] = hash_combine(row_ids[i], r_hash_impl(col.view(i)));
+                }
+            } else {
+                abort("make_groups(r_df): unsupported column type");
+            }
+        });
+    }
+    return row_ids;
+}
 
 }
 
