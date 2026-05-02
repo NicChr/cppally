@@ -180,54 +180,57 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         }
     }
 
-        r_vec<r_int> out(n);
-        int* RESTRICT p_out = out.data();
-        const auto* RESTRICT p_x = x.data();
+    r_vec<r_int> out(n);
+    int* RESTRICT p_out = out.data();
+    const auto* RESTRICT p_x = x.data();
 
-        using unsigned_t = decltype(ska_sort::detail::to_unsigned_or_bool(std::declval<base_t>()));
+    using unsigned_t = decltype(ska_sort::detail::to_unsigned_or_bool(std::declval<base_t>()));
 
-        if constexpr (sizeof(unsigned_t) == sizeof(int)) {
-            // 32-bit key: sort r_vec<r_int> backing directly — single allocation, no copy
-            out.iota();
+    if constexpr (sizeof(unsigned_t) == sizeof(int)) {
+        // 32-bit key: sort r_vec<r_int> backing directly — single allocation, no copy
+        out.iota();
 
-            if (preserve_ties) {
-                ska_sort::ska_sort(p_out, p_out + n, [&](uint32_t ui) {
-                    unsigned_t key = is_na(p_x[ui]) ? std::numeric_limits<unsigned_t>::max()
-                                                   : ska_sort::detail::to_unsigned_or_bool(p_x[ui]) - 1u; // -1 so that INT_MAX doesn't sort after NA
-                    return std::make_pair(key, ui);
-                });
-            } else {
-                ska_sort::ska_sort(p_out, p_out + n, [&](uint32_t ui) {
-                    return is_na(p_x[ui]) ? std::numeric_limits<unsigned_t>::max()
-                                        : ska_sort::detail::to_unsigned_or_bool(p_x[ui]) - 1u; // -1 so that INT_MAX doesn't sort after NA
-                });
-            }
+        if (preserve_ties) {
+            ska_sort::ska_sort(p_out, p_out + n, [&](uint32_t ui) {
+                unsigned_t key = is_na(p_x[ui]) ? std::numeric_limits<unsigned_t>::max()
+                                               : ska_sort::detail::to_unsigned_or_bool(p_x[ui]) - 1u; // -1 so that INT_MAX doesn't sort after NA
+                return std::make_pair(key, ui);
+            });
         } else {
-            // 64-bit key: key_index struct keeps key co-located with index during sort
-            struct key_index { unsigned_t key; uint32_t index; };
-
-            std::vector<key_index> pairs(n);
-            for (uint32_t i = 0; i < n; ++i) {
-                pairs[i] = {
-                    is_na(p_x[i]) ? std::numeric_limits<unsigned_t>::max()
-                                 : ska_sort::detail::to_unsigned_or_bool(p_x[i]) - 1u, // -1 so that INT_MAX doesn't sort after NA
-                    i
-                };
-            }
-
-            if (preserve_ties) {
-                ska_sort::ska_sort(pairs.begin(), pairs.end(),
-                    [](const key_index& k) { return std::make_pair(k.key, k.index); });
-            } else {
-                ska_sort::ska_sort(pairs.begin(), pairs.end(),
-                    [](const key_index& k) { return k.key; });
-            }
-            OMP_SIMD
-            for (uint32_t i = 0; i < n; ++i) {
-                p_out[i] = static_cast<int>(pairs[i].index);
-            }
+            ska_sort::ska_sort(p_out, p_out + n, [&](uint32_t ui) {
+                return is_na(p_x[ui]) ? std::numeric_limits<unsigned_t>::max()
+                                    : ska_sort::detail::to_unsigned_or_bool(p_x[ui]) - 1u; // -1 so that INT_MAX doesn't sort after NA
+            });
         }
-        return out;
+    } else {
+        // 64-bit key: key_index struct keeps key co-located with index during sort
+        struct key_index {
+            unsigned_t key; 
+            uint32_t index; 
+        };
+
+        std::vector<key_index> pairs(n);
+        for (uint32_t i = 0; i < n; ++i) {
+            pairs[i] = {
+                is_na(p_x[i]) ? std::numeric_limits<unsigned_t>::max()
+                             : ska_sort::detail::to_unsigned_or_bool(p_x[i]), // -1 so that INT_MAX doesn't sort after NA
+                i
+            };
+        }
+
+        if (preserve_ties) {
+            ska_sort::ska_sort(pairs.begin(), pairs.end(),
+                [](const key_index& k) { return std::make_pair(k.key, k.index); });
+        } else {
+            ska_sort::ska_sort(pairs.begin(), pairs.end(),
+                [](const key_index& k) { return k.key; });
+        }
+        OMP_SIMD
+        for (uint32_t i = 0; i < n; ++i) {
+            p_out[i] = static_cast<int>(pairs[i].index);
+        }
+    }
+    return out;
     }
 
     // ----------------------------------------------------------------------
@@ -325,7 +328,19 @@ inline r_vec<r_int> order(const r_factors& x, bool preserve_ties = true) {
     return order(x.value);
 }
 
+inline r_vec<r_int> order(const r_sexp& x, bool preserve_ties = true);
+
 // Lexicographic order across all columns of a data frame
+//
+// Segmented multi-key sort:
+//   1. Sort all rows by col 0 using the fast single-column order() (ska_sort /
+//      counting sort / string hash-sort depending on type)
+//   2. Walk the result and find contiguous runs of equal col-0 values (tied
+//      segments). Any segment of length > 1 is pushed onto a work stack with
+//      col=1
+//   3. Pop a frame {start, end, col}: stable_sort out[start..end) by that
+//      column, then find ties within the sorted subrange and push survivors
+//      with col+1
 inline r_vec<r_int> order(const r_df& x, bool preserve_ties = true) {
     int nrow = x.nrow();
     int ncol = x.ncol();
@@ -333,49 +348,69 @@ inline r_vec<r_int> order(const r_df& x, bool preserve_ties = true) {
     r_vec<r_int> out(nrow);
     out.iota();
 
-    if (nrow == 0 || ncol == 0){
+    if (nrow <= 1 || ncol == 0){
         return out;
     }
 
-    // Build per-column 3-way comparators once
-    // returns -1 if a<b, 0 if equal, 1 if a>b
-    std::vector<std::function<int(int, int)>> cmps;
-    cmps.reserve(ncol);
+    int* p_out = out.data();
 
-    for (int c = 0; c < ncol; ++c) {
-        view_sexp(x.value.view(c), [&]<typename ColT>(const ColT& col) {
-            if constexpr (requires (int i, int j) {
-                identical(col.view(i), col.view(j));
-                is_na(col.view(i));
-                col.view(i) < col.view(j);
+    // Each frame: sort out[start..end) by columns starting at `col`
+    struct frame { int start; int end; int col; };
+    std::vector<frame> stack;
+    stack.push_back({0, nrow, 0});
+
+    while (!stack.empty()) {
+        frame f = stack.back();
+        stack.pop_back();
+        if (f.col >= ncol) continue;
+
+        view_sexp(x.value.view(f.col), [&]<typename ColT>(const ColT& col) {
+            if constexpr (requires (const ColT& c, int i) {
+                order(c, false);
+                identical(c.view(i), c.view(i));
             }) {
-                cmps.emplace_back([col](int i, int j) -> int {
-                    bool i_na = is_na(col.view(i));
-                    bool j_na = is_na(col.view(j));
-                    if (i_na && j_na) return 0;
-                    if (i_na) return 1;   // NA sorts last
-                    if (j_na) return -1;
-                    if (identical(col.view(i), col.view(j))) return 0;
-                    auto lt = col.view(i) < col.view(j);
-                    return static_cast<bool>(unwrap(lt)) ? -1 : 1;
-                });
+                if (f.start == 0 && f.end == nrow) {
+                    // Full-range sort: use the fast single-column order().
+                    // Must be stable when preserve_ties=true so rows fully tied
+                    // across all columns keep input-order through the chain.
+                    r_vec<r_int> o = order(col, preserve_ties);
+                    std::memcpy(p_out, o.data(), sizeof(int) * nrow);
+                } else {
+                    // Subsegment: stable_sort with single-column comparator
+                    std::stable_sort(p_out + f.start, p_out + f.end, [&](int a, int b) {
+                        if (is_na(col.view(a))) return false;
+                        if (is_na(col.view(b))) return true;
+                        auto lt = col.view(a) < col.view(b);
+                        return static_cast<bool>(unwrap(lt));
+                    });
+                }
+
+                // Push tied subsegments (size > 1) for next column
+                if (f.col + 1 < ncol) {
+                    int seg_start = f.start;
+                    for (int i = f.start + 1; i < f.end; ++i) {
+                        if (!identical(col.view(p_out[i]), col.view(p_out[i - 1]))) {
+                            if (i - seg_start > 1) {
+                                stack.push_back({seg_start, i, f.col + 1});
+                            }
+                            seg_start = i;
+                        }
+                    }
+                    if (f.end - seg_start > 1) {
+                        stack.push_back({seg_start, f.end, f.col + 1});
+                    }
+                }
             } else {
-                abort("make_groups(r_df): ordered grouping requires sortable columns");
+                abort("order(r_df): column does not support ordering");
             }
         });
     }
-    std::stable_sort(out.data(), out.data() + nrow, [&](int a, int b) {
-        for (auto& cmp : cmps) {
-            int r = cmp(a, b);
-            if (r != 0) return r < 0;
-        }
-        return false;
-    });
+
     return out;
 }
 
 
-inline r_vec<r_int> order(const r_sexp& x, bool preserve_ties = true) {
+inline r_vec<r_int> order(const r_sexp& x, bool preserve_ties) {
     return CPPALLY_VIEW_AND_APPLY(
         x, /*return_type = */ r_vec<r_int>, /*fn = */ order, 
         /*rest of args = */ preserve_ties
