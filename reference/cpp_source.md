@@ -217,14 +217,14 @@ library(bench)
 mark(last_altrep_aware(1:10^5)) # No materialisation
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
-#>   <bch:expr>    <bch> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep_… 3.5µs 4.43µs   221453.    3.18KB        0 10000     0     45.2ms
+#>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 last_altrep… 3.52µs 5.13µs   194074.    3.18KB        0 10000     0     51.5ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 44.6µs 49.2µs    18702.     391KB     149.  3901    31      209ms
+#> 1 last_altrep… 38.9µs 40.1µs    21912.     391KB     174.  3901    31      178ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 # }
