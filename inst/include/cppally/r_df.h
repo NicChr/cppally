@@ -3,35 +3,10 @@
 
 #include <cppally/r_vec.h>
 #include <cppally/r_attrs.h>
-#include <cppally/r_factor.h>
-#include <variant>
-#include <vector>
 
 namespace cppally {
 
 namespace internal {
-
-// view variant cached per r_df column
-using col_view_t = std::variant<
-    r_vec<r_lgl>,
-    r_vec<r_int>,
-    r_vec<r_int64>,
-    r_vec<r_dbl>,
-    r_vec<r_str>,
-    r_vec<r_cplx>,
-    r_vec<r_raw>,
-    r_vec<r_date>,
-    r_vec<r_psxct>,
-    r_factors,
-    r_vec<r_sexp>,
-    r_sexp
->;
-
-template <typename T, typename Variant>
-inline constexpr bool is_variant_alt_v = false;
-
-template <typename T, typename... Ts>
-inline constexpr bool is_variant_alt_v<T, std::variant<Ts...>> = (std::is_same_v<T, Ts> || ...);
     
 inline r_vec<r_int> create_row_names(int n){
     if (n == 0){
@@ -67,18 +42,11 @@ struct r_df {
 
     int nrow_;
 
-    mutable std::vector<internal::col_view_t> m_cols;
-    mutable bool m_cache_built = false;
-
-    // Defined in r_df_methods.h
-    void build_col_cache() const;
-
     public:
     
     // Default constructor (empty data frame)
     r_df() : value(internal::new_df_impl(0)) {
         nrow_ = 0;
-        build_col_cache();
     }
 
     r_vec<r_str_view> colnames() const {
@@ -134,7 +102,6 @@ struct r_df {
       void init_df() {
         validate_df();
         nrow_ = get_nrow();
-        build_col_cache();
         validate_col_sizes();
       }
 
@@ -192,11 +159,6 @@ struct r_df {
     inline r_sexp get_col(const char* name) const;
     template <RStringType U>
     inline r_sexp get_col(U name) const;
-
-    // Defined in r_df_methods.h.
-    // template <class F> decltype(auto) visit_col(int c, F&& f) const;
-    template <class F> decltype(auto) view_col(int c, F&& f) const;
-    // template <class F> void for_each_col(F&& f) const;
 };
 
 }

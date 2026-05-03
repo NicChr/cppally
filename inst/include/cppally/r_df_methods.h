@@ -70,64 +70,23 @@ inline r_vec<r_sexp> new_df_impl(const r_vec<r_sexp>& cols, bool recycle = true)
 
 }
 
-inline void r_df::build_col_cache() const {
-    int ncols = ncol();
-    m_cols.clear();
-    m_cols.reserve(ncols);
-    for (int c = 0; c < ncols; ++c) {
-        view_sexp(value.view(c), [&]<typename T>(const T& col) {
-            if constexpr (internal::is_variant_alt_v<T, internal::col_view_t>) {
-                m_cols.emplace_back(std::in_place_type<T>, col);
-            } else {
-                if constexpr (RObject<T>){
-                    m_cols.emplace_back(std::in_place_type<r_sexp>, r_sexp(static_cast<SEXP>(col), internal::view_tag{}));
-                } else {
-                    m_cols.emplace_back(std::in_place_type<r_sexp>, as<r_sexp>(col));
-                }
-            }
-        });
-    }
-    m_cache_built = true;
-}
-
-// template <class F>
-// inline decltype(auto) r_df::visit_col(int c, F&& f) const {
-//     if (!m_cache_built) build_col_cache();
-//     const auto& alt = m_cols[c];
-//     if (std::holds_alternative<r_sexp>(alt)) [[unlikely]] {
-//         return visit_sexp(std::get<r_sexp>(alt), std::forward<F>(f));
-//     }
-//     return std::visit(std::forward<F>(f), alt);
-// }
-
-template <class F>
-inline decltype(auto) r_df::view_col(int c, F&& f) const {
-    const auto& alt = m_cols[c];
-    if (std::holds_alternative<r_sexp>(alt)) [[unlikely]] {
-        return view_sexp(std::get<r_sexp>(alt), std::forward<F>(f));
-    }
-    return std::visit(std::forward<F>(f), alt);
-}
-
 // Constructor from list of cols
 // Supply a nrows value for a custom recycle length
 inline r_df::r_df(const r_vec<r_sexp>& cols, bool recycle) : value(internal::new_df_impl(cols, recycle)){
     init_df();
 }
 inline r_df::r_df(const r_vec<r_sexp>& cols, bool recycle, int nrows) : value(internal::new_df_impl(cols, recycle, nrows)){
-    nrow_ = get_nrow();
-    build_col_cache();
+    nrow_ = nrows;
 }
 // Atomic vector constructor
 template <RScalar T>
 inline r_df::r_df(const r_vec<T>& col) : value(internal::new_df_impl(r_vec<r_sexp>(1, r_sexp(static_cast<SEXP>(col))))){
-    nrow_ = get_nrow();
-    build_col_cache();
+    // TO-DO: USE above list constructors for vector -> r_df construction
+    nrow_ = col.length();
 }
 // Factor constructor
 inline r_df::r_df(const r_factors& col) : value(internal::new_df_impl(r_vec<r_sexp>(1, r_sexp(static_cast<SEXP>(col))))){
-    nrow_ = get_nrow();
-    build_col_cache();
+    nrow_ = col.length();
 }
 
 inline r_df r_df::get_row(int index) const {
