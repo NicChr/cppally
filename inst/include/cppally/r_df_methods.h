@@ -80,14 +80,9 @@ inline r_df::r_df(const r_vec<r_sexp>& cols, bool recycle, int nrows) : value(in
 }
 // Atomic vector constructor
 template <RScalar T>
-inline r_df::r_df(const r_vec<T>& col) : value(internal::new_df_impl(r_vec<r_sexp>(1, r_sexp(static_cast<SEXP>(col))))){
-    // TO-DO: USE above list constructors for vector -> r_df construction
-    nrow_ = col.length();
-}
+inline r_df::r_df(const r_vec<T>& col) : r_df(r_vec<r_sexp>(1, r_sexp(static_cast<SEXP>(col), internal::view_tag{})), false, static_cast<int>(col.length())) {}
 // Factor constructor
-inline r_df::r_df(const r_factors& col) : value(internal::new_df_impl(r_vec<r_sexp>(1, r_sexp(static_cast<SEXP>(col))))){
-    nrow_ = col.length();
-}
+inline r_df::r_df(const r_factors& col) : r_df(col.value){}
 
 inline r_df r_df::get_row(int index) const {
     return subset(*this, r_vec<r_int>(1, r_int(index)), false, false);
