@@ -39,6 +39,42 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="cppally-development-version">cppally (development version)<a class="anchor" aria-label="anchor" href="#cppally-development-version"></a></h2>
+<div class="section level4">
+<h4 id="data-frames-development-version">Data frames<a class="anchor" aria-label="anchor" href="#data-frames-development-version"></a></h4>
+<ul><li><p><code>r_df</code> is now fully integrated into cppally</p></li>
+<li><p>New variadic function <code>make_df()</code> to create in-line data frames</p></li>
+</ul></div>
+<div class="section level4">
+<h4 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h4>
+<ul><li><p><code>r_sexp.length()</code> has been deprecated, in favour of the free function <code><a href="https://rdrr.io/r/base/length.html" class="external-link">length()</a></code></p></li>
+<li><p><code>length(r_df)</code> now returns the number of rows instead of the number of cols, marking a shift in how cppally treats data frames. They are now seen as row-wise vectors</p></li>
+<li><p><code>visit_vector()</code> and <code>visit_sexp()</code> now visit <code>r_null</code> as <code>r_vec&lt;r_sexp&gt;(r_null)</code>, essentially treating <code>NULL</code> as an empty list but without changing the underlying data</p></li>
+</ul><p>For example, in the below pseudo-code, when x is <code>r_null</code> of type <code>r_sexp</code>, <code>visit_vector()</code> will disambiguate it as <code>r_vec&lt;r_sexp&gt;(r_null)</code>, preserving its data as R’s <code>NULL</code> but assigning its type as <code>r_vec&lt;r_sexp&gt;</code> (list).</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a> visit_vector<span class="op">(</span>x<span class="op">,</span> <span class="op">[&amp;](</span><span class="at">const</span> <span class="kw">auto</span><span class="op">&amp;</span> vec<span class="op">)</span> <span class="op">-&gt;</span> <span class="dt">bool</span> <span class="op">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>  <span class="cf">return</span> vec<span class="op">.</span>is_null<span class="op">();</span></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a> <span class="op">});</span></span></code></pre></div>
+<p>This preservation behaviour is not new, in fact all <code>r_vec&lt;T&gt;</code> vectors preserve <code>r_null</code> by design, allowing for efficient and easier attribute manipulation with vectors that may or may not be <code>r_null</code>. What is new is that previously <code>r_null</code> was not a visitable <code>r_sexp</code> object and now it is.</p>
+</div>
+<div class="section level4">
+<h4 id="stdvector-development-version">std::vector<a class="anchor" aria-label="anchor" href="#stdvector-development-version"></a></h4>
+<ul><li>Partial support for <code>std::vector</code> coercion. The following <code>std::vector</code> coercion directions are supported:
+<ul><li>
+<code>std::vector</code> -&gt; <code>std::vector</code>
+</li>
+<li>
+<code>std::vector</code> -&gt; <code>cppally::r_vec</code>
+</li>
+<li>
+<code>cppally::r_vec</code> -&gt; <code>std::vector</code>
+</li>
+</ul></li>
+</ul><p>Any coercion between <code>std::vector</code> and <code>cppally::r_vec</code> is possible so long as the element coercions are supported by <code>cppally::as</code></p>
+</div>
+<div class="section level4">
+<h4 id="improvements-development-version">Improvements<a class="anchor" aria-label="anchor" href="#improvements-development-version"></a></h4>
+<ul><li><p>When registering C++ functions, cppally.hpp is now included in the generated C++ code. Not including it caused issues when trying to compile functions that constructed factors</p></li>
+<li><p>Named-vector subsetting is now supported</p></li>
+</ul></div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="cppally-010">cppally 0.1.0<a class="anchor" aria-label="anchor" href="#cppally-010"></a></h2><p class="text-muted">CRAN release: 2026-04-28</p>
