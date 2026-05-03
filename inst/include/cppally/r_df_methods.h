@@ -30,6 +30,9 @@ inline r_vec<r_sexp> new_df_impl(const r_vec<r_sexp>& cols, bool recycle, int nr
         }
     } else {
         for (r_size_t i = 0; i < n; ++i){
+            if (static_cast<int>(length(cols.view(i))) != nrows) [[unlikely]] {
+                abort("new_df_impl: lengths of cols must match `nrows`");
+            }
             out.set(i, cols.view(i));
         }
     }
@@ -73,21 +76,38 @@ inline r_df::r_df(const r_vec<r_sexp>& cols, bool recycle) : value(internal::new
     init_df();
 }
 inline r_df::r_df(const r_vec<r_sexp>& cols, bool recycle, int nrows) : value(internal::new_df_impl(cols, recycle, nrows)){
-    init_df();
+    nrow_ = get_nrow();
 }
 // Atomic vector constructor
 template <RScalar T>
 inline r_df::r_df(const r_vec<T>& col) : value(internal::new_df_impl(r_vec<r_sexp>(1, r_sexp(static_cast<SEXP>(col))))){
-    init_df();
+    nrow_ = get_nrow();
 }
 // Factor constructor
 inline r_df::r_df(const r_factors& col) : value(internal::new_df_impl(r_vec<r_sexp>(1, r_sexp(static_cast<SEXP>(col))))){
-    init_df();
+    nrow_ = get_nrow();
 }
 
 inline r_df r_df::get_row(int index) const {
     return subset(*this, r_vec<r_int>(1, r_int(index)), false, false);
 }
+
+// inline r_vec<r_sexp> r_df::get_row(int index) const {
+//     int ncols = ncol();
+//     r_vec<r_sexp> out(ncols);
+//     attr::set_old_names(out, colnames());
+//     for (int i = 0; i < ncols; ++i){
+//         out.set(i, r_sexp(view_sexp(value.view(i), [index](const auto& vec) -> SEXP {
+//             using vec_t = decltype(vec);
+//             if constexpr (RVector<vec_t> || RFactor<vec_t>){
+//                 return as<SEXP>(vec.view(index));
+//             } else {
+//                 abort("error");
+//             }
+//         }), internal::view_tag{}));
+//     }
+//     return out;
+// }
 
 inline r_sexp r_df::get_col(int index) const {
     return subset(value, r_vec<r_int>(1, r_int(index)), false, false).get(0);

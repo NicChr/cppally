@@ -155,6 +155,7 @@ struct r_df {
     r_df select(const r_vec<U>& cols) const;
 
     inline r_df get_row(int index) const;
+    // inline r_vec<r_sexp> get_row(int index) const; // Probably faster
     inline r_sexp get_col(int index) const;
     inline r_sexp get_col(const char* name) const;
     template <RStringType U>
