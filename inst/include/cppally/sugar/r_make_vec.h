@@ -16,7 +16,7 @@ inline r_vec<T> make_vec(Args... args) {
   constexpr int n = sizeof...(args);
 
   if constexpr (n == 0){
-    return r_vec<T>(0);
+    return r_vec<T>();
   } else {
 
     r_vec<T> out(n);
