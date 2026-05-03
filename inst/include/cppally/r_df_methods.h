@@ -9,6 +9,7 @@
 #include <cppally/r_rep.h>
 #include <cppally/r_list_helpers.h>
 #include <cppally/sugar/r_subset.h>
+#include <cppally/sugar/r_make_vec.h>
 #include <string>
 
 namespace cppally {
@@ -122,6 +123,12 @@ inline r_sexp r_df::get_col(const char* name) const {
 template <internal::RSubscript U>
 inline r_df r_df::select(const r_vec<U>& cols) const {
     return r_df(value.subset(cols), false, nrow());
+}
+
+// Make in-line data frame
+template <typename... Args>
+inline r_df make_df(Args&&... args) {
+    return r_df(make_vec<r_sexp>(std::forward<Args>(args)...), /*recycle = */ true);
 }
 
 }
