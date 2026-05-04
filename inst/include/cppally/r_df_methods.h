@@ -96,7 +96,7 @@ inline r_df r_df::get_row(int index) const {
             if constexpr (requires { vec.view(index); }){
                 return as<SEXP>(vec.view(index));
             } else {
-                abort("No view member exists for type %s", internal::type_str<vec_t>);
+                abort("No view member exists for type %s", internal::type_str<vec_t>());
             }
         }), internal::view_tag{}));
     }
