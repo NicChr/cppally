@@ -29,6 +29,7 @@
 #include <cppally/r_coerce.h>
 #include <cppally/r_identical.h>
 #include <cppally/r_rep.h>
+#include <cppally/r_vec_sugar.h>
 #include <cppally/r_df_methods.h>
 #include <cppally/sugar/r_named_arg.h>
 #include <cppally/sugar/r_stats.h>
