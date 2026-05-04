@@ -8,6 +8,8 @@ namespace cppally {
 
 namespace internal {
 
+struct no_checks_tag {};
+
 // Lazily cache data frame class for re-use
 inline r_vec<r_str_view> data_frame_class(){
     static r_vec<r_str_view> df_cls = r_vec<r_str_view>(1, r_str_view(cached_str<"data.frame">()));
@@ -136,6 +138,13 @@ struct r_df {
     }
 
     explicit r_df(int nrows) : value(internal::new_df_impl(nrows)) {
+        nrow_ = nrows;
+    }
+
+    // Unsafe constructor (the list is expected to be a valid data frame with ALL necessary attributes)
+    // You must also supply the correct nrows
+    // Use mainly for tight loops where many r_df objects are constructed
+    explicit r_df(const r_vec<r_sexp>& df, int nrows, internal::no_checks_tag) : value(df){
         nrow_ = nrows;
     }
     

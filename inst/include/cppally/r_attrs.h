@@ -164,7 +164,7 @@ inline void modify_attrs_impl(const T& x, const r_vec<r_sexp>& attrs) {
 
   r_sexp x_ = r_sexp(x, internal::view_tag{});
 
-  if (x_.is_null()){
+  if (x_.is_null()) [[unlikely]] {
     abort("Cannot add attributes to `NULL`");
   }
 
@@ -174,7 +174,7 @@ inline void modify_attrs_impl(const T& x, const r_vec<r_sexp>& attrs) {
 
   r_vec<r_str_view> names = attr::get_old_names(attrs);
 
-  if (names.is_null()){
+  if (names.is_null()) [[unlikely]] { 
     abort("attributes must be a named list");
   }
 
@@ -186,10 +186,10 @@ inline void modify_attrs_impl(const T& x, const r_vec<r_sexp>& attrs) {
     if ( (names.view(i) != cached_str<"">()).is_true() ) {
       attr_nm = r_sym(names.view(i));
       // We can't add an object as its own attribute in-place (as this will crash R)
-      if (x_.address() == attrs.view(i).address()){
+      if (static_cast<SEXP>(x_) == static_cast<SEXP>(attrs.view(i))) [[unlikely]] {
         r_sexp dup_attr = r_sexp(safe[Rf_duplicate](attrs.view(i)));
         attr::set_attr(x_, attr_nm, dup_attr);
-      } else {
+      } else [[likely]] {
         attr::set_attr(x_, attr_nm, attrs.view(i));
       }
     }
