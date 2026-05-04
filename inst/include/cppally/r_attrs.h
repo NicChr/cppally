@@ -6,15 +6,11 @@
 
 namespace cppally {
 
-namespace internal {
-  inline SEXP attrs_sym = NULL;
-}
-
 namespace attr {
 
 template <RObject T>
 inline bool can_have_attributes(const T& x) noexcept {
-  if constexpr (RVector<T> || RMetaVector<T>){
+  if constexpr (RComposite<T>){
     return true; 
   } else if constexpr (is_sexp<T>){
     switch (TYPEOF(x)){
@@ -45,9 +41,15 @@ inline bool can_have_attributes(const T& x) noexcept {
   }
 }
 
+inline void check_can_have_attributes(SEXP x){
+  if (!can_have_attributes(x)) [[unlikely]] {
+    abort("%s: `x` cannot have attributes added to it", __func__);
+  }
+}
+
 template <RObject T>
 inline bool can_have_names(const T& x) noexcept {
-  if constexpr (RVector<T> || RMetaVector<T>){
+  if constexpr (RComposite<T>){
     return true; 
   } else if constexpr (is_sexp<T>){
     switch (TYPEOF(x)){
@@ -100,9 +102,8 @@ inline r_sexp get_attr(SEXP x, const r_sym& sym){
 }
 template <RObject T, RObject U> 
 inline void set_attr(const T& x, const r_sym& sym, const U& value){
-  if (can_have_attributes(x)){
-    safe[Rf_setAttrib](x, sym, value); 
-  }
+  check_can_have_attributes(x);
+  safe[Rf_setAttrib](x, sym, value);
 }
 template <RStringType U>
 inline void set_old_names(SEXP x, const r_vec<U>& names){
@@ -112,7 +113,7 @@ inline void set_old_names(SEXP x, const r_vec<U>& names){
   } else if (names.is_null()){
     attr::set_attr(x_, symbol::names_sym, r_null);
   } else if (names.length() != Rf_xlength(x_)){
-    abort("`length(names)` must equal `length(x)`");
+    abort("`length(names)` must equal `Rf_xlength(x)`");
   } else if (can_have_names(x_)){
     Rf_namesgets(x_, names);
   } else {
@@ -127,9 +128,8 @@ inline r_vec<r_str_view> get_old_class(SEXP x){
 }
 template <RObject T, RStringType U>
 inline void set_old_class(const T& x, const r_vec<U>& cls){
-  if (can_have_attributes(x)){
-    Rf_classgets(x, cls);
-  }
+  check_can_have_attributes(x);
+  Rf_classgets(x, cls);
 }
 template <RStringType U>
 inline bool inherits_any(SEXP x, const r_vec<U>& classes){
