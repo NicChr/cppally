@@ -43,7 +43,7 @@ struct r_vec {
   }
 
   bool is_altrep() const noexcept {
-    return ALTREP(sexp.value);
+    return sexp.is_altrep();
   }
 
   private:
@@ -342,7 +342,7 @@ struct r_vec {
     return true;
   }
 
-  bool any_v(const T& val) const {
+  bool any_eq(const T& val) const {
     r_size_t n = length();
     for (r_size_t i = 0; i < n; ++i){
       if (identical(view(i), val)) return true;
@@ -350,7 +350,7 @@ struct r_vec {
     return false;
   }
 
-  bool all_v(const T& val) const {
+  bool all_eq(const T& val) const {
     r_size_t n = length();
     for (r_size_t i = 0; i < n; ++i){
       if (!identical(view(i), val)) return false;
