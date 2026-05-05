@@ -24,13 +24,8 @@ struct r_factors {
   }
 
   r_vec<r_int> codes() const {
-    r_size_t n = value.length();
-    r_vec<r_int> out(n);
-    // r_copy_n(out, value, 0, n);
-    OMP_SIMD
-    for (r_size_t i = 0; i < n; ++i){
-      out.set(i, value.get(i));
-    }
+    r_vec<r_int> out(value.length());
+    r_copy_n(out, value, 0, value.length());
     return out;
   }
 
