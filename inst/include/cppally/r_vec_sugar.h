@@ -37,34 +37,29 @@ inline r_vec<r_int> lengths(const r_df& x){
     return x.value.lengths();
 }
 
-template <RVal T>
-r_size_t count(const r_vec<T>&x, const T& value){
-    return x.count(value);
-}
+// template <RVal T>
+// r_size_t count(const r_vec<T>&x, const T& value){
+//     return x.count(value);
+// }
 
-inline r_size_t count(const r_factors&x, r_str value){
-    r_vec<r_str_view> lvls = x.levels();
-    r_vec<r_int> code_loc = x.levels().find(value);
-    if (code_loc.length() == 0){
-        return 0;
-    }
-    int code = code_loc.get(0);
-    return x.value.count(r_int(code + 1));
-}
+// template <RStringType U>
+// inline r_size_t count(const r_factors& x, const U& val){
+//     return x.count(val);
+// }
 
-template <typename T>
-r_size_t count(const r_sexp& x, const T& value){
-    return view_sexp(x, [&](const auto& x_) -> r_size_t {
-        using x_t = std::remove_cvref_t<decltype(x_)>;
-        if constexpr (is<x_t, r_sexp>){
-            abort("Unsupported SEXP type in `count()`");
-        } else if constexpr (requires { count(x_, value); }){
-            return count(x_, value);
-        } else {
-            abort("No available method for type %s in `count()`", internal::type_str<std::remove_cvref_t<decltype(x_)>>());
-        }
-      });
-}
+// template <typename T>
+// r_size_t count(const r_sexp& x, const T& value){
+//     return view_sexp(x, [&](const auto& x_) -> r_size_t {
+//         using x_t = std::remove_cvref_t<decltype(x_)>;
+//         if constexpr (is<x_t, r_sexp>){
+//             abort("Unsupported SEXP type in `count()`");
+//         } else if constexpr (requires { count(x_, value); }){
+//             return count(x_, value);
+//         } else {
+//             abort("No available method for type %s in `count()`", internal::type_str<std::remove_cvref_t<decltype(x_)>>());
+//         }
+//       });
+// }
 
 
 // Fns left to do:
