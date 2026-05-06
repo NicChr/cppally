@@ -16,6 +16,9 @@ of the free function `length()`
 marking a shift in how cppally treats data frames. They are now seen as row-wise 
 vectors
 
+* `r_factors` elements are now treated as `r_str` in member 
+functions like `get()` and `set()`
+
 * `visit_vector()` and `visit_sexp()` now visit `r_null` as `r_vec<r_sexp>(r_null)`, 
 essentially treating `NULL` as an empty list but without changing the underlying 
 data
