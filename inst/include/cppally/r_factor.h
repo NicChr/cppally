@@ -276,7 +276,14 @@ struct r_factors {
   void replace(r_size_t start, r_size_t n, const U& old_val, const U& new_val){
     r_int old_code = get_code(old_val);
     r_int new_code = get_code(new_val);
-  
+
+    bool valid_old_code = is_na(old_val) == is_na(old_code);
+    bool valid_new_code = is_na(new_val) == is_na(new_code);
+
+    if (!valid_old_code || !valid_new_code){
+      return;
+    }
+
     for (r_size_t i = 0; i < n; ++i) {
       r_size_t idx = start + i;
       if (identical(value.get(idx), old_code)){
@@ -302,6 +309,33 @@ struct r_factors {
     }
     r_vec<r_int> fct_codes = value.remove(code);
     return r_factors(std::move(fct_codes), this->levels(), false);
+  }
+
+  template <RStringType U>
+  void append_level(const U& level){
+    r_int existing_code = get_code(level);
+    // Level already exists
+    if (!is_na(existing_code)){
+      return;
+    }
+
+    // If new level is NA, existing factor NA values are replaced with corresponding code matching the newly added NA level
+    if (is_na(level)){
+      value.replace(na<r_int>(), r_int(static_cast<int>(levels().length() + 1)));
+    }
+
+    // Build new levels
+    r_vec<r_str_view> new_levels(levels().length() + 1);
+    r_copy_n(new_levels, levels(), 0, levels().length());
+    new_levels.set(new_levels.length() - 1, level);
+
+    // Store previous hash table as set_levels() resets
+    auto previous_hash_table = levels_hash_table;
+
+    set_levels(new_levels, false);
+
+    previous_hash_table->emplace(unwrap(level), previous_hash_table->size() + 1);
+    levels_hash_table = std::move(previous_hash_table);
   }
 
 };
