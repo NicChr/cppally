@@ -19,8 +19,8 @@ struct r_factors {
 
   r_vec<r_str_view> cached_levels; // Cache levels to avoid overhead of retrieving attribute
 
-  // Lazily-loaded hash table of levels (initialised once when `find_code()` is called)
-  using levels_map_t = ankerl::unordered_dense::map<SEXP, int>; // nullptr until first find_code()
+  // Lazily-loaded hash table of levels (initialised once when `get_code()` is called)
+  using levels_map_t = ankerl::unordered_dense::map<SEXP, int>; // nullptr until first get_code()
   mutable std::optional<levels_map_t> levels_hash_table;
 
   public: 
@@ -118,19 +118,6 @@ struct r_factors {
     }
   }
 
-  // Find factor code associated with factor string
-  // Since levels are assumed to be unique, we find the first match
-  template <RStringType U>
-  r_int find_code(const U& val) const {
-    lazy_hash_levels();
-
-    auto it = levels_hash_table->find(unwrap(val));
-    if (it == levels_hash_table->end()) {
-        return na<r_int>();
-    }
-    return r_int(it->second);
-  }
-
   // For methods that just return a non-factor (like length())
   #define FORWARD_METHOD(NAME)                               \
       template <typename... Args>                            \
@@ -203,17 +190,45 @@ struct r_factors {
   #undef FORWARD_METHOD
   #undef FORWARD_FACTOR_METHOD
 
+  // Find factor code associated with factor string
+  // Since levels are assumed to be unique, we find the first match
+  template <RStringType U>
+  r_int get_code(const U& val) const {
+    lazy_hash_levels();
+    auto it = levels_hash_table->find(unwrap(val));
+    if (it == levels_hash_table->end()) {
+        return na<r_int>();
+    }
+    return r_int(it->second);
+  }
+
+  r_int get_code(r_size_t index) const {
+    return value.get(index);
+  }
+
+  void set_code(r_size_t index, r_int val) {
+    value.set(index, val);
+  }
+
   r_str get(r_size_t index) const {
-    return r_str(levels().get(unwrap(value.get(index)) - 1));
+    r_int code = value.get(index);
+    if (is_na(code)){
+      return na<r_str>();
+    }
+    return r_str(levels().get(unwrap(code) - 1));
   }
 
   r_str_view view(r_size_t index) const {
-    return levels().view(unwrap(value.get(index)) - 1);
+    r_int code = value.get(index);
+    if (is_na(code)){
+      return na<r_str_view>();
+    }
+    return levels().view(unwrap(code) - 1);
   }
 
   template <RStringType U>
   void set(r_size_t index, const U& val) {
-    value.set(index, find_code(val));
+    value.set(index, get_code(val));
   }
 
   template <RStringType U>
@@ -221,7 +236,7 @@ struct r_factors {
     if (is_na(val)){
       return value.na_count();
     } else {
-      r_int code = find_code(val);
+      r_int code = get_code(val);
       if (is_na(code)){
         return 0;
       } else {
@@ -232,7 +247,7 @@ struct r_factors {
 
   template <RStringType U>
   void fill(r_size_t start, r_size_t n, const U& val){
-    return is_na(val) ? value.fill(start, n, na<r_int>()) : value.fill(start, n, find_code(val));
+    return is_na(val) ? value.fill(start, n, na<r_int>()) : value.fill(start, n, get_code(val));
   }
   template <RStringType U>
   void fill(const U& val){
@@ -242,19 +257,25 @@ struct r_factors {
   template <RStringType U>
   r_vec<r_int> find(const U& val, bool invert = false) const {
     if (is_na(val)){
-      return value.find(na<r_int>());
+      return value.find(na<r_int>(), invert);
     }
-    r_int code = find_code(val);
+    r_int code = get_code(val);
     if (is_na(code)){
-      return r_vec<r_int>();
+      if (invert){
+        r_vec<r_int> out(value.length());
+        out.iota();
+        return out;
+      } else {
+        return r_vec<r_int>();
+      }
     }
-    return value.find(code);
+    return value.find(code, invert);
   }
 
   template <RStringType U>
   void replace(r_size_t start, r_size_t n, const U& old_val, const U& new_val){
-    r_int old_code = find_code(old_val);
-    r_int new_code = find_code(new_val);
+    r_int old_code = get_code(old_val);
+    r_int new_code = get_code(new_val);
   
     for (r_size_t i = 0; i < n; ++i) {
       r_size_t idx = start + i;
@@ -271,7 +292,7 @@ struct r_factors {
 
   template <RStringType U>
   r_factors remove(const U& val) const {
-    r_int code = find_code(val);
+    r_int code = get_code(val);
     r_vec<r_int> fct_codes = value.remove(code);
     attr::set_old_class(fct_codes, r_vec<r_str>(1, cached_str<"factor">()));
     attr::set_attr(fct_codes, symbol::levels_sym, levels());
