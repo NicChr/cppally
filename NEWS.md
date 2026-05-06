@@ -48,11 +48,16 @@ is possible so long as the element coercions are supported by `cppally::as`
 
 ### Improvements
 
+* Named-vector subsetting is now supported
+
+* `r_factors` now internally stores a hash map of the factor levels, making 
+repeated lookups much faster
+
+### Bug fixes
+
 * When registering C++ functions, cppally.hpp is now included 
 in the generated C++ code. Not including it caused issues when trying to compile 
 functions that constructed factors
-
-* Named-vector subsetting is now supported
 
 # cppally 0.1.0
 
