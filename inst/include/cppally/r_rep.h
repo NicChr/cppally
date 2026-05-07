@@ -54,13 +54,14 @@ inline r_df resize(const r_df& x, r_size_t n){
     if (n == x.nrow()){
         return x;
     }
-    int ncols = x.ncol();
-    r_vec<r_sexp> out(ncols);
+    r_df out = shallow_copy(x);
+    out.set_nrow(n);
+    int ncols = out.ncol();
+
     for (int i = 0; i < ncols; ++i){
-        out.set(i, resize(x.value.view(i), n));
+        out.set_col(i, resize(out.view_col(i), n));
     }
-    attr::set_old_names(out, attr::get_old_names(x));
-    return r_df(out, false, n);
+    return out;
 }
 
 inline r_sexp resize(const r_sexp& x, r_size_t n){
