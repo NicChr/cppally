@@ -97,6 +97,8 @@ curr_env <- function(){
 #' the `[[cppally::register]]` tagged functions to R. \cr
 #' `cpp_eval()` returns the results of the evaluated C++ expressions.
 #'
+#' @seealso [cpp_register]
+#'
 #' @examples
 #'
 #' library(cppally)

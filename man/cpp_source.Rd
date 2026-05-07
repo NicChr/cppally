@@ -158,3 +158,6 @@ mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 }
 
 }
+\seealso{
+\link{cpp_register}
+}

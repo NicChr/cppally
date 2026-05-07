@@ -25,3 +25,6 @@ The paths to the generated R and C++ source files.
 Register C++ functions to be callable from R. C++ functions decorated with
 \verb{[[cppally::register]]} will be registered (including template functions).
 }
+\seealso{
+\link{cpp_source}
+}
