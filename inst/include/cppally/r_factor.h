@@ -17,6 +17,12 @@ struct r_factors {
 
   private: 
 
+  #ifdef CPPALLY_CHECK_FACTOR_LEVELS
+  static constexpr bool chk_fct_lvls_opt = true;
+  #else
+  static constexpr bool chk_fct_lvls_opt = false;
+  #endif
+
   r_vec<r_str_view> cached_levels; // Cache levels to avoid overhead of retrieving attribute
 
   // Lazily-loaded hash table of levels (initialised once when `get_code()` is called)
@@ -63,7 +69,7 @@ struct r_factors {
     }
   }
 
-  void validate_factor(bool check_valid_levels = false){
+  void validate_factor(bool check_valid_levels = chk_fct_lvls_opt){
     if (!attr::inherits1(value, "factor")) [[unlikely]] {
       abort("SEXP must be of class 'factor' to be constructed as a factor");
     }
@@ -75,7 +81,7 @@ struct r_factors {
   public:
 
   template <RStringType T>
-  void set_levels(const r_vec<T>& levels, bool check_valid_levels = false) {
+  void set_levels(const r_vec<T>& levels, bool check_valid_levels = chk_fct_lvls_opt) {
     if (check_valid_levels){
       validate_levels(value, levels);
     }
@@ -87,7 +93,7 @@ struct r_factors {
   private:
 
   template <RStringType T>
-  void init_factor(const r_vec<T>& levels, bool check_valid_levels = false) {
+  void init_factor(const r_vec<T>& levels, bool check_valid_levels = chk_fct_lvls_opt) {
       // Set class
       attr::set_attr(value, symbol::class_sym, r_vec<r_str_view>(1, r_str_view(cached_str<"factor">())));
       // Set levels
@@ -96,7 +102,7 @@ struct r_factors {
 
   // Internal direct constructor
   template <RStringType T>
-  explicit r_factors(r_vec<r_int>&& codes, const r_vec<T>& levels, bool check_valid_levels = false) : value(std::move(codes)){
+  explicit r_factors(r_vec<r_int>&& codes, const r_vec<T>& levels, bool check_valid_levels = chk_fct_lvls_opt) : value(std::move(codes)){
       init_factor(levels, check_valid_levels);
     }
 
@@ -141,14 +147,14 @@ struct r_factors {
     init_factor(r_vec<r_str_view>(), false);
   }
 
-  explicit r_factors(SEXP x, bool check_valid_levels = false) : value(x) {
+  explicit r_factors(SEXP x, bool check_valid_levels = chk_fct_lvls_opt) : value(x) {
     if (!value.is_null()){
       cached_levels = r_vec<r_str_view>(attr::get_attr(value, symbol::levels_sym));
       validate_factor(check_valid_levels);
     }
   }
 
-  explicit r_factors(SEXP x, internal::view_tag, bool check_valid_levels = false) : value(x, internal::view_tag{}) {
+  explicit r_factors(SEXP x, internal::view_tag, bool check_valid_levels = chk_fct_lvls_opt) : value(x, internal::view_tag{}) {
     if (!value.is_null()){
       cached_levels = r_vec<r_str_view>(attr::get_attr(value, symbol::levels_sym));
       validate_factor(check_valid_levels);
