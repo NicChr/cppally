@@ -8,7 +8,7 @@ is_windows <- function(){
 
 generate_makevars <- function (
     includes, cxx_std, debug,
-    preserve_altrep, check_factor_levels
+    preserve_altrep, check_factors
 ){
   out <- c(
     sprintf("CXX_STD=%s", cxx_std),
@@ -17,8 +17,8 @@ generate_makevars <- function (
   if (preserve_altrep){
     out[2] <- paste(out[2], "-DCPPALLY_PRESERVE_ALTREP")
   }
-  if (check_factor_levels){
-   out[2]  <- paste(out[2], "-DCPPALLY_CHECK_FACTOR_LEVELS")
+  if (check_factors){
+   out[2]  <- paste(out[2], "-DCPPALLY_CHECK_FACTORS")
   }
   if (debug) {
     out <- c(out, "override CXXFLAGS += -O0")
@@ -92,7 +92,7 @@ curr_env <- function(){
 #' Default is `FALSE`.
 #' @param preserve_altrep Should ALTREP vectors be preserved by avoiding
 #' materialisation where possible? Default is `FALSE`.
-#' @param check_factor_levels Should factor levels be validated for
+#' @param check_factors Should factor levels be validated when using
 #' `r_factors` objects? Default is `FALSE`. When `TRUE`, factor levels are
 #' checked once on `r_factors` construction to ensure they are valid, reducing
 #' the chance of R crashing when passing factors with invalid levels.
@@ -194,7 +194,7 @@ curr_env <- function(){
 cpp_source <- function(file, code = NULL, env = parent.frame(),
                        clean = TRUE, quiet = TRUE, debug = FALSE,
                        preserve_altrep = FALSE,
-                       check_factor_levels = FALSE,
+                       check_factors = FALSE,
                        cxx_std = Sys.getenv("CXX_STD", "CXX20"),
                        dir = tempfile()){
   stop_unless_installed(
@@ -247,7 +247,7 @@ cpp_source <- function(file, code = NULL, env = parent.frame(),
                                       use_package = TRUE)
   makevars_content <- generate_makevars(
     includes, cxx_std, debug,
-    preserve_altrep, check_factor_levels
+    preserve_altrep, check_factors
     )
   brio::write_lines(makevars_content, file.path(new_dir, "Makevars"))
   shared_lib_name <- paste0(tools::file_path_sans_ext(new_file_name), .Platform$dynlib.ext)
@@ -271,7 +271,7 @@ cpp_source <- function(file, code = NULL, env = parent.frame(),
 source_single_exprs <- function(exprs, env = parent.frame(), clean = TRUE,
                                 quiet = TRUE, debug = FALSE,
                                 preserve_altrep = FALSE,
-                                check_factor_levels = FALSE,
+                                check_factors = FALSE,
                                 cxx_std = Sys.getenv("CXX_STD", "CXX20")){
   if (length(exprs) == 0){
     cli::cli_abort("{.arg exprs} is length 0, please supply a valid input")
@@ -317,7 +317,7 @@ source_single_exprs <- function(exprs, env = parent.frame(), clean = TRUE,
     env = env, clean = clean, quiet = quiet,
     debug = debug, cxx_std = cxx_std,
     preserve_altrep = preserve_altrep,
-    check_factor_levels = check_factor_levels
+    check_factors = check_factors
   )
 }
 #' @rdname cpp_source
@@ -325,7 +325,7 @@ source_single_exprs <- function(exprs, env = parent.frame(), clean = TRUE,
 cpp_eval <- function(code, env = curr_env(), clean = TRUE,
                      quiet = TRUE, debug = FALSE,
                      preserve_altrep = FALSE,
-                     check_factor_levels = FALSE,
+                     check_factors = FALSE,
                      simplify = TRUE,
                      cxx_std = Sys.getenv("CXX_STD", "CXX20")){
   curr_objs <- names(env)
@@ -333,7 +333,7 @@ cpp_eval <- function(code, env = curr_env(), clean = TRUE,
     code, env = env, clean = clean,
     quiet = quiet, debug = debug,
     preserve_altrep = preserve_altrep,
-    check_factor_levels = check_factor_levels,
+    check_factors = check_factors,
     cxx_std = cxx_std
   )
   fn_names <- paste0("f", seq_along(code))

@@ -17,7 +17,7 @@ struct r_factors {
 
   private: 
 
-  #ifdef CPPALLY_CHECK_FACTOR_LEVELS
+  #ifdef CPPALLY_CHECK_FACTORS
   static constexpr bool chk_fct_lvls_opt = true;
   #else
   static constexpr bool chk_fct_lvls_opt = false;
