@@ -78,7 +78,8 @@ inline r_df::r_df(const r_vec<r_sexp>& cols, bool recycle) : value(internal::new
     init_df();
 }
 inline r_df::r_df(const r_vec<r_sexp>& cols, bool recycle, int nrows) : value(internal::new_df_impl(cols, recycle, nrows)){
-    nrow_ = nrows;
+    cached_nrow = nrows;
+    cached_colnames = get_colnames();
 }
 // Atomic vector constructor
 template <RScalar T>
@@ -103,25 +104,6 @@ inline r_df r_df::get_row(int index) const {
         }), internal::view_tag{}));
     }
     return r_df(out, 1, internal::no_checks_tag{});
-}
-
-template <RStringType U>
-inline r_sexp r_df::get_col(U name) const {
-    r_vec<r_sexp> sset = subset(value, r_vec<U>(1, name), true, false);
-    if (sset.length() == 0){
-        return sset.sexp;
-    } else {
-        return sset.get(0);
-    }
-}
-
-inline r_sexp r_df::get_col(const char* name) const {
-    return get_col(r_str(name));
-}
-
-template <RObject col_t>
-void r_df::set_col(int index, const col_t& col) {
-    value.set(index, r_sexp(col, internal::view_tag{}));
 }
 
 template <internal::RSubscript U>

@@ -3,6 +3,7 @@
 
 #include <cppally/r_vec.h>
 #include <cppally/r_attrs.h>
+#include <cppally/r_hash_names.h>
 
 namespace cppally {
 
@@ -42,27 +43,34 @@ struct r_df {
 
     r_vec<r_sexp> value;
 
-    private: 
+    private:
+
+    internal::hashed_names cached_colnames; // Lazily-hashed colnames for O(1) lookup
 
     int get_nrow() const noexcept {
         return Rf_length(Rf_getAttrib(value, symbol::row_names_sym));
     }
 
-    int nrow_;
+    internal::hashed_names get_colnames() const {
+        return internal::hashed_names(attr::get_old_names(value));
+    }
+
+    int cached_nrow;
 
     public:
     
     // Default constructor (empty data frame)
     r_df() : value(internal::new_df_impl(0)) {
-        nrow_ = 0;
+        cached_nrow = 0;
+        cached_colnames = get_colnames();
     }
 
     r_vec<r_str_view> colnames() const {
-        return value.names();
+        return cached_colnames.names;
     }
 
     int nrow() const noexcept {
-        return nrow_;
+        return cached_nrow;
     }
     int ncol() const noexcept {
         return value.length();
@@ -70,7 +78,7 @@ struct r_df {
 
     void set_nrow(int n) {
         attr::set_attr(value, symbol::row_names_sym, internal::create_row_names(n));
-        nrow_ = n;
+        cached_nrow = n;
     }
 
     template <RStringType U>
@@ -84,6 +92,7 @@ struct r_df {
     template <RStringType U>
     void set_colnames(const r_vec<U>& colnames) {
         attr::set_old_names(value, colnames);
+        cached_colnames = internal::hashed_names(r_vec<r_str_view>(static_cast<SEXP>(colnames)));
     }
 
     private: 
@@ -91,7 +100,7 @@ struct r_df {
     void validate_col_sizes(){
         int ncols = ncol();
         for (int i = 0; i < ncols; ++i){
-            if (length(value.view(i)) != static_cast<r_size_t>(nrow_)) [[unlikely]] {
+            if (length(value.view(i)) != static_cast<r_size_t>(cached_nrow)) [[unlikely]] {
                 abort("All data frame col lengths must match `nrow()`");
             }
         }
@@ -117,7 +126,8 @@ struct r_df {
 
       void init_df() {
         validate_df();
-        nrow_ = get_nrow();
+        cached_nrow = get_nrow();
+        cached_colnames = get_colnames();
         validate_col_sizes();
       }
 
@@ -138,14 +148,16 @@ struct r_df {
     }
 
     explicit r_df(int nrows) : value(internal::new_df_impl(nrows)) {
-        nrow_ = nrows;
+        cached_nrow = nrows;
+        cached_colnames = get_colnames();
     }
 
     // Unsafe constructor (the list is expected to be a valid data frame with ALL necessary attributes)
     // You must also supply the correct nrows
     // Use mainly for tight loops where many r_df objects are constructed
     explicit r_df(const r_vec<r_sexp>& df, int nrows, internal::no_checks_tag) : value(df){
-        nrow_ = nrows;
+        cached_nrow = nrows;
+        cached_colnames = get_colnames();
     }
     
     // Forward declarations, defined in r_df_methods.h
@@ -182,18 +194,47 @@ struct r_df {
     template <internal::RSubscript U>
     r_df select(const r_vec<U>& cols) const;
     r_df get_row(int index) const;
+
     r_sexp get_col(int index) const {
         return value.get(index);
     }
-    r_sexp get_col(const char* name) const;
+
     template <RStringType U>
-    r_sexp get_col(U name) const;
+    r_sexp view_col(const U& name) const {
+        r_int index = cached_colnames.find(name);
+        if (is_na(index)) [[unlikely]] {
+            if (is_na(name)){
+                abort("%s: Please supply a non-NA colname", __func__);
+            } else {
+                abort("%s: There is no col named '%s'", __func__, name.c_str());
+            }
+        }
+        return value.view(unwrap(index));
+    }
+
+    r_sexp view_col(const char* name) const {
+        return view_col(r_str(name));
+    }
+
+    template <RStringType U>
+    r_sexp get_col(const U& name) const {
+        return r_sexp(static_cast<SEXP>(view_col(name)));
+    }
+
+    r_sexp get_col(const char* name) const {
+        return get_col(r_str(name));
+    }
+
+
     r_sexp view_col(int index) const {
         return value.view(index);
     }
 
+    
     template <RObject col_t>
-    void set_col(int index, const col_t& col);
+    void set_col(int index, const col_t& col) {
+        value.set(index, r_sexp(col, internal::view_tag{}));
+    }
 
     // template <internal::RSubscript T, internal::RSubscript U>
     // void fill(const r_vec<T>& row_indices, const r_vec<U>& col_indices, const r_df& replacement);

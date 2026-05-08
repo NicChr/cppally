@@ -80,7 +80,7 @@ inline uint64_t r_hash_impl(const r_str_view& x) noexcept {
 
 template <>
 inline uint64_t r_hash_impl(const r_str& x) noexcept {
-        return r_hash_impl(r_str_view(x));
+    return r_hash_impl(r_str_view(x));
 };
 
 template <>
