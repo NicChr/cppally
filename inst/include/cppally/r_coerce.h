@@ -171,6 +171,7 @@ inline std::remove_cvref_t<T> as(const U& x) {
         out.set(i, as<to_data_t>(x.view(i)));
       }
     }
+    out.set_names(x.names());
     return out;
   } else if constexpr (RScalar<to_t> && RScalar<from_t>) {
     return internal::as_scalar_impl<to_t>(x);

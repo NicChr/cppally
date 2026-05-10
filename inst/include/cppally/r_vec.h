@@ -8,6 +8,7 @@
 #include <cppally/r_scalar_methods.h>
 #include <cppally/r_vec_utils.h>
 #include <cppally/r_coerce_impl.h>
+#include <cppally/r_hash_names.h>
 #include <algorithm>
 
 namespace cppally {
@@ -19,10 +20,13 @@ inline constexpr bool identical(const T& a, const U& b);
 template <RVal T>
 inline void r_copy_n(r_vec<T>& target, const r_vec<T>& source, r_size_t target_offset, r_size_t n);
 
-// Declared in r_length.h
+// Defined in r_length.h
 inline r_size_t length(const r_sexp& x);
   
 namespace internal {
+
+template <typename V>
+inline void share_name_cache(V&, const V&);
 
 // Concept helpers for location-based subset helpers
 template <typename T>
@@ -74,6 +78,36 @@ struct r_vec {
     }
   }
 
+  // Shared cache: any two r_vec wrappers around the same SEXP point to the same
+  // names_map via the registry, so set_names() propagates to all of them
+  mutable std::shared_ptr<internal::names_map> cached_names;
+
+  void ensure_names_cached() const {
+    if (!cached_names) {
+      cached_names = internal::get_or_create_name_cache(sexp.value);
+    }
+    if (!cached_names->names.has_value()) {
+      // Construct via r_vec<r_str_view> so the SEXP type is validated before
+      // we ever call STRING_PTR_RO on it inside lazy_build()
+      r_vec<r_str_view> validated(Rf_getAttrib(sexp, symbol::names_sym));
+      cached_names->names.emplace(static_cast<r_sexp>(validated));
+    }
+  }
+
+  template <RStringType U>
+  r_size_t get_index(const U& name) const {
+    ensure_names_cached();
+    r_int index = cached_names->find(name);
+    if (cppally::is_na(index)) [[unlikely]] {
+        if (cppally::is_na(name)){
+            abort("%s: Please supply a non-NA name", __func__);
+        } else {
+            abort("%s: There is no value named '%s'", __func__, name.c_str());
+        }
+    }
+    return static_cast<r_size_t>(unwrap(index));
+  }
+
   // By default do nothing (e.g. for vectors with no attrs)
   template <typename U>
   void validate_attrs(SEXP x){
@@ -115,7 +149,9 @@ struct r_vec {
     fill(r_size_t(0), n, default_value);
   }
   
-  r_vec(): r_vec(r_size_t(0)){}
+  r_vec(): r_vec(r_size_t(0)){
+    initialise_ptr();
+  }
 
   // Constructors from existing r_sexp/SEXP
   explicit r_vec(r_sexp s) : sexp(std::move(s)) {
@@ -192,41 +228,51 @@ struct r_vec {
 
   // Get element (no bounds-check)
   T get(r_size_t index) const {
-#ifdef CPPALLY_PRESERVE_ALTREP
+    #ifdef CPPALLY_PRESERVE_ALTREP
     if (m_ptr) [[likely]] {
       return T(m_ptr[index]);
     } else {
       return T(internal::elt<T>(sexp, index));
     }
-#else
+    #else
     return T(m_ptr[index]);
-#endif
+    #endif
+  }
+  
+  template <RStringType U>
+  T get(const U& name) const {
+    return get(get_index(name));
   }
 
   // View element (like `get()` but elements must be short-lived)
   // Element must not outlive the parent vector
   T view(r_size_t index) const {
     if constexpr (std::is_constructible_v<data_type, unwrap_t<data_type>, internal::view_tag>) {
-#ifdef CPPALLY_PRESERVE_ALTREP
+      #ifdef CPPALLY_PRESERVE_ALTREP
       if (m_ptr) [[likely]] {
         return T(m_ptr[index], internal::view_tag{});
       } else {
         return T(internal::elt<T>(sexp, index), internal::view_tag{});
       }
-#else
+      #else
       return T(m_ptr[index], internal::view_tag{});
-#endif
+      #endif
     } else {
-#ifdef CPPALLY_PRESERVE_ALTREP
+      #ifdef CPPALLY_PRESERVE_ALTREP
       if (m_ptr) [[likely]] {
         return T(m_ptr[index]);
       } else {
         return T(internal::elt<T>(sexp, index));
       }
-#else
+      #else
       return T(m_ptr[index]);
-#endif
+      #endif
     }
+  }
+
+  template <RStringType U>
+  T view(const U& name) const {
+      return view(get_index(name));
   }
 
   // Set element (no bounds-check)
@@ -246,7 +292,12 @@ struct r_vec {
     set(index, as<T>(val));
   }
 
-  template <internal::RSubscript U> 
+  template <RStringType U>
+  void set(const U& name, const T& val) {
+      set(get_index(name), val);
+  }
+
+  template <internal::RSubscript U>
   r_vec<T> subset(const r_vec<U>& indices, bool check = true, bool invert = false) const;
 
   r_vec<T> subset(r_size_t index, bool check = true, bool invert = false) const {
@@ -254,11 +305,8 @@ struct r_vec {
   }
 
   r_vec<r_str_view> names() const {
-    r_vec<r_str_view> out = r_vec<r_str_view>(Rf_getAttrib(sexp, symbol::names_sym));
-    if (!out.is_null() && out.length() != length()) [[unlikely]] {
-      abort("bad names detected, length of names must match vector length");
-    }
-    return out;
+    ensure_names_cached();
+    return r_vec<r_str_view>(*cached_names->names);
   }
 
   template <RStringType U>
@@ -270,7 +318,15 @@ struct r_vec {
     } else {
       Rf_namesgets(sexp, names);
     }
+    if (!cached_names) {
+      cached_names = internal::get_or_create_name_cache(sexp.value);
+    }
+    cached_names->invalidate();
   }
+
+  template <typename V>
+  friend void internal::share_name_cache(V&, const V&);
+
 
   r_vec<r_lgl> is_na() const {
     r_size_t n = length();
@@ -609,6 +665,29 @@ inline void r_copy_n(r_vec<T>& target, const r_vec<T>& source, r_size_t target_o
       target.set(target_offset + i, source.view(i));
     }
   }
+}
+
+namespace internal {
+
+// Transplant a populated names cache from source to target. Intended for
+// shallow-copy paths where the new SEXP shares the names STRSXP with source —
+// the existing hash is still valid and rebuilding would be wasteful at high
+// column counts. No-op if source has no populated cache or if target's names
+// attribute differs from source's cached names.
+template <typename V>
+inline void share_name_cache(V& target, const V& source) {
+    if (!source.cached_names) return;
+    if (!source.cached_names->names.has_value()) return;
+    SEXP target_names = Rf_protect(Rf_getAttrib(target, symbol::names_sym));
+    if (target_names != static_cast<SEXP>(*source.cached_names->names)){
+        Rf_unprotect(1);
+        return;
+    }
+    target.cached_names = source.cached_names;
+    name_cache_storage()[target.sexp.value] = target.cached_names;
+    Rf_unprotect(1);
+}
+
 }
 
 }

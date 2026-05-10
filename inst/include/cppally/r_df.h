@@ -45,28 +45,23 @@ struct r_df {
 
     private:
 
-    internal::hashed_names cached_colnames; // Lazily-hashed colnames for O(1) lookup
-
     int get_nrow() const noexcept {
         return Rf_length(Rf_getAttrib(value, symbol::row_names_sym));
-    }
-
-    internal::hashed_names get_colnames() const {
-        return internal::hashed_names(attr::get_old_names(value));
     }
 
     int cached_nrow;
 
     public:
-    
+
     // Default constructor (empty data frame)
     r_df() : value(internal::new_df_impl(0)) {
         cached_nrow = 0;
-        cached_colnames = get_colnames();
     }
 
+    // colnames are stored as the underlying VECSXP's names attribute, so we
+    // share the names cache directly with `value` (no separate r_df cache).
     r_vec<r_str_view> colnames() const {
-        return cached_colnames.names;
+        return value.names();
     }
 
     int nrow() const noexcept {
@@ -91,8 +86,7 @@ struct r_df {
 
     template <RStringType U>
     void set_colnames(const r_vec<U>& colnames) {
-        attr::set_old_names(value, colnames);
-        cached_colnames = internal::hashed_names(r_vec<r_str_view>(static_cast<SEXP>(colnames)));
+        value.set_names(colnames);
     }
 
     private: 
@@ -127,7 +121,6 @@ struct r_df {
       void init_df() {
         validate_df();
         cached_nrow = get_nrow();
-        cached_colnames = get_colnames();
         #ifdef CPPALLY_CHECK_DATA_FRAMES
         validate_col_sizes();
         #endif
@@ -151,7 +144,6 @@ struct r_df {
 
     explicit r_df(int nrows) : value(internal::new_df_impl(nrows)) {
         cached_nrow = nrows;
-        cached_colnames = get_colnames();
     }
 
     // Unsafe constructor (the list is expected to be a valid data frame with ALL necessary attributes)
@@ -159,7 +151,6 @@ struct r_df {
     // Use mainly for tight loops where many r_df objects are constructed
     explicit r_df(const r_vec<r_sexp>& df, int nrows, internal::no_checks_tag) : value(df){
         cached_nrow = nrows;
-        cached_colnames = get_colnames();
     }
     
     // Forward declarations, defined in r_df_methods.h
@@ -203,15 +194,7 @@ struct r_df {
 
     template <RStringType U>
     r_sexp view_col(const U& name) const {
-        r_int index = cached_colnames.find(name);
-        if (is_na(index)) [[unlikely]] {
-            if (is_na(name)){
-                abort("%s: Please supply a non-NA colname", __func__);
-            } else {
-                abort("%s: There is no col named '%s'", __func__, name.c_str());
-            }
-        }
-        return value.view(unwrap(index));
+        return value.view(name);
     }
 
     r_sexp view_col(const char* name) const {
@@ -220,7 +203,7 @@ struct r_df {
 
     template <RStringType U>
     r_sexp get_col(const U& name) const {
-        return r_sexp(static_cast<SEXP>(view_col(name)));
+        return value.get(name);
     }
 
     r_sexp get_col(const char* name) const {

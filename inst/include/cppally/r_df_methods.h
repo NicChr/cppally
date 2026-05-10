@@ -79,7 +79,6 @@ inline r_df::r_df(const r_vec<r_sexp>& cols, bool recycle) : value(internal::new
 }
 inline r_df::r_df(const r_vec<r_sexp>& cols, bool recycle, int nrows) : value(internal::new_df_impl(cols, recycle, nrows)){
     cached_nrow = nrows;
-    cached_colnames = get_colnames();
 }
 // Atomic vector constructor
 template <RScalar T>

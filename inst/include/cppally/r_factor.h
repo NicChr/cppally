@@ -8,6 +8,10 @@
 
 namespace cppally {
 
+namespace internal {
+inline void share_levels_cache(r_factors&, const r_factors&);
+}
+
 struct r_factors {
 
   public:
@@ -22,12 +26,26 @@ struct r_factors {
   static constexpr bool chk_fct_lvls_opt = false;
   #endif
 
-  internal::hashed_names cached_levels; // Lazily cache hashed levels for O(1) lookup and reduced attribute overhead
+  // Shared cache for levels — see r_vec::cached_names for the design
+  mutable std::shared_ptr<internal::names_map> cached_levels;
 
-  public: 
+  friend void internal::share_levels_cache(r_factors&, const r_factors&);
 
-  r_vec<r_str_view> levels() const noexcept {
-    return cached_levels.names;
+  void ensure_levels_cached() const {
+    if (!cached_levels) {
+      cached_levels = internal::get_or_create_levels_cache(static_cast<SEXP>(value));
+    }
+    if (!cached_levels->names.has_value()) {
+      r_vec<r_str_view> validated(Rf_getAttrib(value, symbol::levels_sym));
+      cached_levels->names.emplace(static_cast<r_sexp>(validated));
+    }
+  }
+
+  public:
+
+  r_vec<r_str_view> levels() const {
+    ensure_levels_cached();
+    return r_vec<r_str_view>(*cached_levels->names);
   }
 
   r_vec<r_int> codes() const {
@@ -80,8 +98,11 @@ struct r_factors {
     if (check_valid_levels){
       validate_levels(value, levels);
     }
-    attr::set_attr(value, symbol::levels_sym, levels);
-    cached_levels = internal::hashed_names(r_vec<r_str_view>(static_cast<SEXP>(levels)));
+    safe[Rf_setAttrib](value, symbol::levels_sym, levels);
+    if (!cached_levels) {
+      cached_levels = internal::get_or_create_levels_cache(static_cast<SEXP>(value));
+    }
+    cached_levels->invalidate();
   }
 
   private:
@@ -126,14 +147,12 @@ struct r_factors {
 
   explicit r_factors(SEXP x, bool check_valid_levels = chk_fct_lvls_opt) : value(x) {
     if (!value.is_null()){
-      cached_levels = internal::hashed_names(r_vec<r_str_view>(attr::get_attr(value, symbol::levels_sym)));
       validate_factor(check_valid_levels);
     }
   }
 
   explicit r_factors(SEXP x, internal::view_tag, bool check_valid_levels = chk_fct_lvls_opt) : value(x, internal::view_tag{}) {
     if (!value.is_null()){
-      cached_levels = internal::hashed_names(r_vec<r_str_view>(attr::get_attr(value, symbol::levels_sym)));
       validate_factor(check_valid_levels);
     }
   }
@@ -176,7 +195,8 @@ struct r_factors {
   // Since levels are assumed to be unique, we find the first match
   template <RStringType U>
   r_int get_code(const U& val) const {
-    return cached_levels.find(val, /*offset = */ 1);
+    ensure_levels_cached();
+    return cached_levels->find(val, /*offset = */ 1);
   }
 
   template <RStringType U>
@@ -289,7 +309,9 @@ struct r_factors {
     if (is_na(val)){
       r_vec<r_int> fct_codes = value.remove(na<r_int>());
       r_factors result(std::move(fct_codes), this->levels(), false);
-      result.cached_levels.map = this->cached_levels.map;
+      ensure_levels_cached();
+      result.ensure_levels_cached();
+      result.cached_levels->map = this->cached_levels->map;
       return result;
     }
     r_int code = get_code(val);
@@ -298,7 +320,9 @@ struct r_factors {
     }
     r_vec<r_int> fct_codes = value.remove(code);
     r_factors result(std::move(fct_codes), this->levels(), false);
-    result.cached_levels.map = this->cached_levels.map;
+    ensure_levels_cached();
+    result.ensure_levels_cached();
+    result.cached_levels->map = this->cached_levels->map;
     return result;
   }
 
@@ -321,17 +345,39 @@ struct r_factors {
     new_levels.set(new_levels.length() - 1, level);
 
     // Preserve the lazy hash across set_levels() (which resets it)
-    auto previous_map = std::move(cached_levels.map);
+    ensure_levels_cached();
+    auto previous_map = std::move(cached_levels->map);
 
     set_levels(new_levels, false);
 
     if (previous_map.has_value()){
       previous_map->emplace(unwrap(level), static_cast<int>(previous_map->size()));
-      cached_levels.map = std::move(previous_map);
+      ensure_levels_cached();
+      cached_levels->names.emplace(static_cast<r_sexp>(new_levels));
+      cached_levels->map = std::move(previous_map);
     }
   }
 
 };
+
+
+namespace internal {
+
+// Same shape as share_name_cache, for the levels cache on r_factors.
+inline void share_levels_cache(r_factors& target, const r_factors& source) {
+    if (!source.cached_levels) return;
+    if (!source.cached_levels->names.has_value()) return;
+    SEXP target_levels = Rf_protect(Rf_getAttrib(target, symbol::levels_sym));
+    if (target_levels != static_cast<SEXP>(*source.cached_levels->names)){
+        Rf_unprotect(1);
+        return;
+    }
+    target.cached_levels = source.cached_levels;
+    levels_cache_storage()[target] = target.cached_levels;
+    Rf_unprotect(1);
+}
+
+}
 
 }
 
