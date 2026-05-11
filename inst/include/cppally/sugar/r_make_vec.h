@@ -23,7 +23,7 @@ inline r_vec<T> make_vec(Args... args) {
 
     constexpr bool any_named = (NamedArg<Args> || ...);
 
-    auto nms = any_named ? r_vec<r_str_view>(n) : r_vec<r_str_view>(r_null);
+    r_vec<r_str_view> nms = any_named ? r_vec<r_str_view>(n) : r_vec<r_str_view>(r_null);
 
     int i = 0;
     (([&]() {
@@ -35,8 +35,7 @@ inline r_vec<T> make_vec(Args... args) {
       }
       ++i;
     }()), ...);
-
-    attr::set_old_names(out.sexp, nms);
+    out.set_names(nms);
     return out;
   }
 }

@@ -185,7 +185,7 @@ inline void modify_attrs_impl(const T& x, const r_vec<r_sexp>& attrs) {
     return;
   }
 
-  r_vec<r_str_view> names = attr::get_old_names(attrs);
+  r_vec<r_str_view> names = attrs.names();
 
   if (names.is_null()) [[unlikely]] { 
     abort("attributes must be a named list");

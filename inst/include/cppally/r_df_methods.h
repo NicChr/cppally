@@ -89,7 +89,7 @@ inline r_df::r_df(const r_factors& col) : r_df(col.value){}
 inline r_df r_df::get_row(int index) const {
     int ncols = ncol();
     r_vec<r_sexp> out(ncols);
-    attr::set_old_names(out, colnames());
+    out.set_names(colnames());
     attr::set_old_class(out, internal::data_frame_class());
     attr::set_attr(out, symbol::row_names_sym, internal::create_row_names(1));
     for (int i = 0; i < ncols; ++i){

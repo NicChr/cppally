@@ -107,8 +107,8 @@ struct r_df {
         if (!Rf_isDataFrame(value)) [[unlikely]] {
           abort("SEXP must be of class 'data.frame' to be constructed as a data frame");
         }
-        r_vec<r_str_view> names = attr::get_old_names(value);
-        if (names.length() != value.length()) [[unlikely]] {
+        r_vec<r_str_view> names = value.names();
+        if (names.length() != ncol()) [[unlikely]] {
           abort("length of colnames must match `ncol()`");
         }
         SEXP row_names = Rf_protect(Rf_getAttrib(value, symbol::row_names_sym));

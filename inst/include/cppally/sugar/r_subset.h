@@ -70,7 +70,7 @@ r_vec<V> clean_locs(const r_vec<U>& locs, const T& x){
 
   if constexpr (RStringType<U>){
     
-    r_vec<r_str_view> names = attr::get_old_names(x);
+    r_vec<r_str_view> names = x.names();
 
     if (names.is_null()){
       abort("Cannot subset on the names of an unnamed vector");
@@ -184,10 +184,10 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check, bool inver
         out.set(i, view(unwrap(indices.get(i))));
     }
   }
-  r_vec<r_str_view> nms = attr::get_old_names(*this);
+  r_vec<r_str_view> nms = names();
   if (!nms.is_null()){
     r_vec<r_str_view> new_nms = nms.subset(indices, check, invert);
-    attr::set_old_names(out, new_nms);
+    out.set_names(new_nms);
   }
   return out;
 }
@@ -324,7 +324,7 @@ inline r_df subset(const r_df& x, const r_vec<r_int>& indices, bool check = true
   for (int i = 0; i < ncol; ++i){
     out.set(i, subset(x.value.view(i), indices, check, invert));
   }
-  attr::set_old_names(out, attr::get_old_names(x));
+  out.set_names(x.colnames());
   return r_df(out, false, length(out.view(0)));
 }
 
