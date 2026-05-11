@@ -244,6 +244,10 @@ struct r_vec {
     return get(name_index(name));
   }
 
+  T get(std::string_view name) const {
+    return get(name_index(r_str(name.data())));
+  }
+
   // View element (like `get()` but elements must be short-lived)
   // Element must not outlive the parent vector
   T view(r_size_t index) const {
@@ -275,6 +279,10 @@ struct r_vec {
       return view(name_index(name));
   }
 
+  T view(std::string_view name) const {
+    return view(name_index(r_str(name.data())));
+  }
+
   // Set element (no bounds-check)
   void set(r_size_t index, const T& val) {
       if constexpr (RStringType<T>){
@@ -295,6 +303,10 @@ struct r_vec {
   template <RStringType U>
   void set(const U& name, const T& val) {
       set(name_index(name), val);
+  }
+  
+  void set(std::string_view name, const T& val) {
+      set(r_str(name_index(name.data())), val);
   }
 
   template <internal::RSubscript U>

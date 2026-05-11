@@ -197,8 +197,8 @@ struct r_df {
         return value.view(name);
     }
 
-    r_sexp view_col(const char* name) const {
-        return view_col(r_str(name));
+    r_sexp view_col(std::string_view name) const {
+        return view_col(r_str(name.data()));
     }
 
     template <RStringType U>
@@ -206,10 +206,9 @@ struct r_df {
         return value.get(name);
     }
 
-    r_sexp get_col(const char* name) const {
-        return get_col(r_str(name));
+    r_sexp get_col(std::string_view name) const {
+        return get_col(r_str(name.data()));
     }
-
 
     r_sexp view_col(int index) const {
         return value.view(index);
@@ -219,6 +218,10 @@ struct r_df {
     template <RObject col_t>
     void set_col(int index, const col_t& col) {
         value.set(index, r_sexp(col, internal::view_tag{}));
+    }
+    template <RObject col_t>
+    void set_col(std::string_view colname, const col_t& col) {
+        set_col(value.name_index(r_str(colname.data())), col);
     }
 
     // template <internal::RSubscript T, internal::RSubscript U>

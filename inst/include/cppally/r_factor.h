@@ -199,6 +199,10 @@ struct r_factors {
     return cached_levels->find(val, /*offset = */ 1);
   }
 
+  r_int get_code(std::string_view val) const {
+    return get_code(r_str(val.data()));
+  }
+
   template <RStringType U>
   r_vec<r_int> get_codes(const r_vec<U>& vals) const {
     int n = vals.length();
