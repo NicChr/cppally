@@ -84,7 +84,7 @@ struct r_vec {
   // Counts name_index calls on this wrapper. First lookup uses a linear scan;
   // the hash table is only built on the second, so one-shot callers pay no
   // build cost and the benefit accrues to repeated-lookup C++ code.
-  mutable uint8_t name_lookups = 0;
+  mutable bool first_access = false;
 
   void ensure_names_cached() const {
     if (!cached_names) {
@@ -232,14 +232,14 @@ struct r_vec {
     }
 
     // Second-or-later lookup without a built cache: build it now.
-    if (name_lookups > 0) {
+    if (first_access) {
       ensure_names_cached();
       r_int index = cached_names->find(name);
       if (cppally::is_na(index)) [[unlikely]] return report_missing();
       return static_cast<r_size_t>(unwrap(index));
     }
 
-    ++name_lookups;
+    first_access = true;
 
     // First lookup: linear scan, no hash-table allocation.
     SEXP names_attr = Rf_getAttrib(sexp, symbol::names_sym);

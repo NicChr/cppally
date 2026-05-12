@@ -31,7 +31,7 @@ struct r_factors {
   // Counts get_code calls on this wrapper. First lookup is a linear scan over
   // levels; the hash is only built on the second so one-shot lookups pay no
   // build cost.
-  mutable uint8_t levels_lookups = 0;
+  mutable bool first_access = false;
 
   friend void internal::share_levels_cache(r_factors&, const r_factors&);
 
@@ -208,12 +208,12 @@ struct r_factors {
     }
 
     // Second-or-later lookup without a built cache: build it.
-    if (levels_lookups > 0) {
+    if (first_access) {
       ensure_levels_cached();
       return cached_levels->find(val, /*offset = */ 1);
     }
 
-    ++levels_lookups;
+    first_access = true;
 
     // First lookup: linear scan over the levels STRSXP.
     SEXP levels_attr = Rf_getAttrib(value, symbol::levels_sym);
