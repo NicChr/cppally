@@ -28,6 +28,10 @@ struct r_factors {
 
   // Shared cache for levels — see r_vec::cached_names for the design
   mutable std::shared_ptr<internal::names_map> cached_levels;
+  // Counts get_code calls on this wrapper. First lookup is a linear scan over
+  // levels; the hash is only built on the second so one-shot lookups pay no
+  // build cost.
+  mutable uint8_t levels_lookups = 0;
 
   friend void internal::share_levels_cache(r_factors&, const r_factors&);
 
@@ -198,8 +202,29 @@ struct r_factors {
   // Since levels are assumed to be unique, we find the first match
   template <RStringType U>
   r_int get_code(const U& val) const {
-    ensure_levels_cached();
-    return cached_levels->find(val, /*offset = */ 1);
+    // Hash path: cache already built by us or by a sibling wrapper.
+    if (cached_levels && cached_levels->names.has_value()) {
+      return cached_levels->find(val, /*offset = */ 1);
+    }
+
+    // Second-or-later lookup without a built cache: build it.
+    if (levels_lookups > 0) {
+      ensure_levels_cached();
+      return cached_levels->find(val, /*offset = */ 1);
+    }
+
+    ++levels_lookups;
+
+    // First lookup: linear scan over the levels STRSXP.
+    SEXP levels_attr = Rf_getAttrib(value, symbol::levels_sym);
+    if (levels_attr == R_NilValue) [[unlikely]] return na<r_int>();
+    SEXP key = unwrap(val);
+    r_size_t n = Rf_xlength(levels_attr);
+    const SEXP* RESTRICT p = STRING_PTR_RO(levels_attr);
+    for (r_size_t i = 0; i < n; ++i) {
+      if (p[i] == key) return r_int(static_cast<int>(i) + 1);
+    }
+    return na<r_int>();
   }
 
   r_int get_code(std::string_view val) const {

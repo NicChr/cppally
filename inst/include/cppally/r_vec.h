@@ -81,6 +81,10 @@ struct r_vec {
   // Shared cache: any two r_vec wrappers around the same SEXP point to the same
   // names_map via the registry, so set_names() propagates to all of them
   mutable std::shared_ptr<internal::names_map> cached_names;
+  // Counts name_index calls on this wrapper. First lookup uses a linear scan;
+  // the hash table is only built on the second, so one-shot callers pay no
+  // build cost and the benefit accrues to repeated-lookup C++ code.
+  mutable uint8_t name_lookups = 0;
 
   void ensure_names_cached() const {
     if (!cached_names) {
@@ -214,16 +218,41 @@ struct r_vec {
 
   template <RStringType U>
   r_size_t name_index(const U& name) const {
-    ensure_names_cached();
-    r_int index = cached_names->find(name);
-    if (cppally::is_na(index)) [[unlikely]] {
-        if (cppally::is_na(name)){
-            abort("%s: Please supply a non-NA name", __func__);
-        } else {
-            abort("%s: There is no value named '%s'", __func__, name.c_str());
-        }
+    auto report_missing = [&]() -> r_size_t {
+      if (cppally::is_na(name)) abort("%s: Please supply a non-NA name", __func__);
+      abort("%s: There is no value named '%s'", __func__, name.c_str());
+    };
+
+    // Hash path: the cache already exists, either because we built it on a
+    // prior call or because a sibling wrapper around the same SEXP did.
+    if (cached_names && cached_names->names.has_value()) {
+      r_int index = cached_names->find(name);
+      if (cppally::is_na(index)) [[unlikely]] return report_missing();
+      return static_cast<r_size_t>(unwrap(index));
     }
-    return static_cast<r_size_t>(unwrap(index));
+
+    // Second-or-later lookup without a built cache: build it now.
+    if (name_lookups > 0) {
+      ensure_names_cached();
+      r_int index = cached_names->find(name);
+      if (cppally::is_na(index)) [[unlikely]] return report_missing();
+      return static_cast<r_size_t>(unwrap(index));
+    }
+
+    ++name_lookups;
+
+    // First lookup: linear scan, no hash-table allocation.
+    SEXP names_attr = Rf_getAttrib(sexp, symbol::names_sym);
+    if (names_attr == R_NilValue) [[unlikely]] {
+      abort("%s: vector has no names", __func__);
+    }
+    SEXP key = unwrap(name);
+    r_size_t n = Rf_xlength(names_attr);
+    const SEXP* RESTRICT p = STRING_PTR_RO(names_attr);
+    for (r_size_t i = 0; i < n; ++i) {
+      if (p[i] == key) return i;
+    }
+    return report_missing();
   }
 
   // Get element (no bounds-check)
