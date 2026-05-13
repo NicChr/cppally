@@ -80,57 +80,57 @@ r_vec<V> clean_locs(const r_vec<U>& locs, const T& x){
     }
 
     // If hash vector names on 1st lookup is re-implemented we can use this fast method
-    // r_vec<r_int> out(n);
-    // for (r_size_t i = 0; i < n; ++i){
-    //   out.set(i, x.name_index(locs.view(i)));
-    // }
-
-    r_vec<r_int> matches = match<r_int>(r_vec<r_str_view>(unwrap(locs), internal::view_tag{}), names);
-    r_size_t n_na = matches.na_count();
-    r_size_t out_size = n - n_na;
-    r_vec<r_int> out(out_size);
-
-    r_size_t k = 0;
+    r_vec<r_int> out(n);
     for (r_size_t i = 0; i < n; ++i){
-      if (!is_na(matches.get(i))) out.set(k++, matches.get(i));
+      out.set(i, x.name_index(locs.view(i)));
     }
+
+    // r_vec<r_int> matches = match<r_int>(r_vec<r_str_view>(unwrap(locs), internal::view_tag{}), names);
+    // r_size_t n_na = matches.na_count();
+    // r_size_t out_size = n - n_na;
+    // r_vec<r_int> out(out_size);
+
+    // r_size_t k = 0;
+    // for (r_size_t i = 0; i < n; ++i){
+    //   if (!is_na(matches.get(i))) out.set(k++, matches.get(i));
+    // }
     return out;
   } else if constexpr (RLogicalType<U>){
-    if (locs.length() != xn){
+    if (locs.length() != xn) [[unlikely]] {
       abort("length of indices must match vector length when indices is `r_vec<r_lgl>`");
     }
     return locs.template find<V>(r_true, false);
   } else {
-    r_size_t pos_count = 0,
+    r_size_t in_bounds_count = 0,
     oob_count = 0,
     na_count = 0,
     neg_count = 0;
 
-  for (r_size_t i = 0; i < n; ++i){
-    auto loc = unwrap(locs.get(i));
-    if (is_na(loc)){
-      ++na_count;
-    } else if (loc < 0){
-      ++neg_count;
-    } else {
-      ++pos_count;
-      if (static_cast<r_size_t>(loc) >= xn){
+    for (r_size_t i = 0; i < n; ++i){
+      auto loc = locs.data()[i];
+      if (is_na(loc)){
+        ++na_count;
+      } else if (loc < 0){
+        ++neg_count;
+      } else if (static_cast<r_size_t>(loc) >= xn){
         ++oob_count;
+      } else {
+        ++in_bounds_count;
       }
     }
-  }
 
-  if (neg_count > 0){
+  if (neg_count > 0) [[unlikely]] {
     abort("Negative indices are not allowed, use `invert = true`");
   }
   if (oob_count > 0 || na_count > 0){
-    r_size_t out_size = pos_count - oob_count;
-    r_vec<V> out(out_size);
-
+    r_vec<V> out(in_bounds_count);
     r_size_t k = 0;
+    
+    using unsigned_int_t = std::make_unsigned_t<unwrap_t<U>>;
+
     for (r_size_t i = 0; i < n; ++i){
-      auto loc = unwrap(locs.get(i));
-      if (!is_na(loc) && loc >= 0 && static_cast<r_size_t>(loc) < xn){
+      unsigned_int_t loc = static_cast<unsigned_int_t>(locs.data()[i]);
+      if (static_cast<r_size_t>(loc) < xn){
         out.set(k++, V(static_cast<unwrap_t<V>>(loc)));
       }
     }
@@ -150,30 +150,26 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check, bool inver
     return *this;
   }
 
-  if constexpr (RStringType<U>){
+  // Potentially faster method for named subsetting
+  // if (invert){
+  //   return subset(internal::clean_locs<r_int>(indices, *this), /*check=*/ false, /*invert=*/ true);
+  // } else {
+  //   r_size_t n = indices.length();
+  //   r_vec<T> out(n);
+  //   for (r_size_t i = 0; i < n; ++i){
+  //     out.set(i, view(indices.view(i)));
+  //   }
+  //   out.set_names(indices);
+  //   return out;
+  // }
+
+  if constexpr (RLogicalType<U> || RStringType<U>){
     if (is_long()){
-      abort("%s: Named subsetting on long-vectors is unsupported", __func__);
-    }
-    
-    // If hash vector names on 1st lookup is re-implemented we can use this fast method
-
-    // if (invert){
-    //   return subset(internal::clean_locs<r_int>(indices, *this), /*check=*/ false, /*invert=*/ true);
-    // } else {
-    //   r_size_t n = indices.length();
-    //   r_vec<T> out(n);
-    //   for (r_size_t i = 0; i < n; ++i){
-    //     out.set(i, view(indices.view(i)));
-    //   }
-    //   out.set_names(indices);
-    //   return out;
-    // }
-
-    return subset(internal::clean_locs<r_int>(indices, *this), /*check=*/ false, /*invert=*/ invert);
-
-  } else if constexpr (RLogicalType<U>){
-    if (is_long()){
-      return subset(internal::clean_locs<r_int64>(indices, *this), /*check=*/ false, /*invert=*/ invert);
+      if constexpr (RStringType<U>){
+        abort("%s: Named subsetting on long-vectors is unsupported", __func__);
+      } else {
+        return subset(internal::clean_locs<r_int64>(indices, *this), /*check=*/ false, /*invert=*/ invert);
+      }      
     } else {
       return subset(internal::clean_locs<r_int>(indices, *this), /*check=*/ false, /*invert=*/ invert);
     }
