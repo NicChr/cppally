@@ -178,6 +178,8 @@ struct r_df {
     FORWARD_METHOD(is_null)
     FORWARD_METHOD(data)
     FORWARD_METHOD(address)
+    FORWARD_METHOD(names)
+    FORWARD_METHOD(set_names)
   
     // Undefine the macros so they don't leak out of the struct
     #undef FORWARD_METHOD
