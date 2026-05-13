@@ -1,6 +1,5 @@
 # cppally (development version)
 
-
 ### Data frames
 
 * `r_df` is now fully integrated into cppally
@@ -51,10 +50,14 @@ is possible so long as the element coercions are supported by `cppally::as`
 
 ### Improvements
 
-* Named-vector subsetting is now supported
+* New alias of `r_vec`, `r_vector`
 
-* `r_factors` now internally stores a hash map of the factor levels, making 
-repeated lookups much faster
+* For named vectors, lookup by name has been improved in C++ 
+by introducing a hashing approach. On second lookup, a hash map of names 
+is created and cached, making subsequent lookups much faster. This also 
+applies to factor levels.
+
+* Named-vector subsetting is now supported
 
 ### Bug fixes
 
