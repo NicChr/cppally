@@ -13,6 +13,8 @@ cpp_source(
   quiet = TRUE,
   debug = FALSE,
   preserve_altrep = FALSE,
+  check_factors = FALSE,
+  check_data_frames = FALSE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20"),
   dir = tempfile()
 )
@@ -24,6 +26,8 @@ cpp_eval(
   quiet = TRUE,
   debug = FALSE,
   preserve_altrep = FALSE,
+  check_factors = FALSE,
+  check_data_frames = FALSE,
   simplify = TRUE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20")
 )
@@ -48,6 +52,14 @@ Default is \code{FALSE}.}
 
 \item{preserve_altrep}{Should ALTREP vectors be preserved by avoiding
 materialisation where possible? Default is \code{FALSE}.}
+
+\item{check_factors}{Should factor levels be validated when using
+\code{r_factors} objects? Default is \code{FALSE}. When \code{TRUE}, factor levels are
+checked once on \code{r_factors} construction to ensure they are valid, reducing
+the chance of R crashing when passing factors with invalid levels.}
+
+\item{check_data_frames}{Should data frames be validated when constructing
+\code{r_df} objects from \code{SEXP}? Default is \code{FALSE}.}
 
 \item{cxx_std}{C++ standard to use. Should be >= C++20.}
 
@@ -157,4 +169,7 @@ mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 
 }
 
+}
+\seealso{
+\link{cpp_register}
 }

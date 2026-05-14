@@ -424,6 +424,8 @@ check_valid_attributes <- function(decorations, file = decorations$file) {
 #' @returns
 #' The paths to the generated R and C++ source files.
 #'
+#' @seealso [cpp_source]
+#'
 #' @export
 cpp_register <- function(path = ".", quiet = !is_interactive(), extension = c(".cpp", ".cc")) {
   stop_unless_installed(get_cpp_register_needs())

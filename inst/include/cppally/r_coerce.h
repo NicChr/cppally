@@ -129,7 +129,7 @@ inline std::remove_cvref_t<T> as(const U& x) {
     r_vec<r_sexp> lst(safe[Rf_shallow_duplicate](x.value));
     attr::clear_attrs(lst);
     // Keep names
-    attr::set_old_names(lst, attr::get_old_names(x));
+    lst.set_names(x.colnames());
     return as<to_t>(lst);
   } else if constexpr (RScalar<to_t> && RVector<from_t>){ // From vector to scalar
     if (x.length() != 1){
@@ -171,6 +171,7 @@ inline std::remove_cvref_t<T> as(const U& x) {
         out.set(i, as<to_data_t>(x.view(i)));
       }
     }
+    out.set_names(x.names());
     return out;
   } else if constexpr (RScalar<to_t> && RScalar<from_t>) {
     return internal::as_scalar_impl<to_t>(x);

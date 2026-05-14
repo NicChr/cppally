@@ -275,7 +275,7 @@ r_vec<r_int> factor_codes(r_factors x){
   setnames = '
 [[cppally::register]]
 r_vec<r_sexp> set_list_names(r_vec<r_sexp> x, r_vec<r_str> names){
-  attr::set_old_names(x, names);
+  x.set_names(names);
   return x;
 }
 '

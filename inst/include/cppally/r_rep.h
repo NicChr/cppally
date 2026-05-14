@@ -3,6 +3,7 @@
 
 #include <cppally/r_vec.h>
 #include <cppally/r_visit.h>
+#include <cppally/r_copy.h>
 
 namespace cppally {
 
@@ -20,16 +21,51 @@ inline r_factors rep_len(const r_factors& x, r_size_t n){
 inline r_sexp rep_len(const r_sexp& x, r_size_t n);
 
 inline r_df rep_len(const r_df& x, r_size_t n){
-    r_df out(x.value, false, x.nrow());
-    for (r_size_t i = 0; i < x.ncol(); ++i){
-        out.value.set(i, rep_len(out.value.view(i), n));
-    }
-    out.set_nrow(n);
-    return out;
+    if (x.nrow() == n){
+        return x;
+      }
+      r_df out = shallow_copy(x);
+      out.set_nrow(n);
+      int ncols = out.ncol();
+      for (int i = 0; i < ncols; ++i){
+          out.set_col(i, rep_len(out.view_col(i), n));
+      }
+      return out;
 }
 
 inline r_sexp rep_len(const r_sexp& x, r_size_t n){
     return r_sexp(CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ SEXP, /*fn = */ rep_len, n));
+}
+
+template <RVector T>
+T resize(const T& x, r_size_t n){
+    return x.resize(n);
+}
+inline r_factors resize(const r_factors& x, r_size_t n){
+    r_vec<r_int> out = x.value.resize(n);
+    attr::set_attrs(out, attr::get_attrs(x));
+    return r_factors(static_cast<SEXP>(out), false);
+}
+
+// Forward decl
+inline r_sexp resize(const r_sexp& x, r_size_t n);
+
+inline r_df resize(const r_df& x, r_size_t n){
+    if (n == x.nrow()){
+        return x;
+    }
+    r_df out = shallow_copy(x);
+    out.set_nrow(n);
+    int ncols = out.ncol();
+
+    for (int i = 0; i < ncols; ++i){
+        out.set_col(i, resize(out.view_col(i), n));
+    }
+    return out;
+}
+
+inline r_sexp resize(const r_sexp& x, r_size_t n){
+    return r_sexp(CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ SEXP, /*fn = */ resize, n));
 }
 
 }

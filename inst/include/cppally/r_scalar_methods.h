@@ -6,6 +6,7 @@
 #include <cppally/r_types.h>
 #include <cppally/r_nas.h>
 #include <cstring> // For strcmp
+#include <string>
 
 namespace cppally {
 
@@ -96,6 +97,13 @@ inline r_lgl operator>=(const r_str& lhs, const r_str& rhs) {
 inline r_lgl operator==(const r_sexp& lhs, const r_sexp& rhs) {
   return r_lgl{unwrap(lhs) == unwrap(rhs)};
 }
+
+template <RStringType T, RStringType U>
+inline T operator+(const T& lhs, const U& rhs){
+  std::string a(lhs.c_str());
+  return T((a + rhs.c_str()).c_str());
+}
+
 // inline r_lgl operator!=(const r_sexp& lhs, const r_sexp& rhs) {
 //   return r_lgl{unwrap(lhs) != unwrap(rhs)};
 // }

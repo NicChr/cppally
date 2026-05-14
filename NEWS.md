@@ -1,6 +1,5 @@
 # cppally (development version)
 
-
 ### Data frames
 
 * `r_df` is now fully integrated into cppally
@@ -15,6 +14,9 @@ of the free function `length()`
 * `length(r_df)` now returns the number of rows instead of the number of cols, 
 marking a shift in how cppally treats data frames. They are now seen as row-wise 
 vectors
+
+* `r_factors` elements are now treated as `r_str` in member 
+functions like `get()` and `set()`
 
 * `visit_vector()` and `visit_sexp()` now visit `r_null` as `r_vec<r_sexp>(r_null)`, 
 essentially treating `NULL` as an empty list but without changing the underlying 
@@ -48,11 +50,20 @@ is possible so long as the element coercions are supported by `cppally::as`
 
 ### Improvements
 
+* New alias of `r_vec`, `r_vector`
+
+* For named vectors, lookup by name has been improved in C++ 
+by introducing a hashing approach. On second lookup, a hash map of names 
+is created and cached, making subsequent lookups much faster. This also 
+applies to factor levels.
+
+* Named-vector subsetting is now supported
+
+### Bug fixes
+
 * When registering C++ functions, cppally.hpp is now included 
 in the generated C++ code. Not including it caused issues when trying to compile 
 functions that constructed factors
-
-* Named-vector subsetting is now supported
 
 # cppally 0.1.0
 

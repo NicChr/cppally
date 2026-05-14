@@ -78,7 +78,7 @@ inline r_df::r_df(const r_vec<r_sexp>& cols, bool recycle) : value(internal::new
     init_df();
 }
 inline r_df::r_df(const r_vec<r_sexp>& cols, bool recycle, int nrows) : value(internal::new_df_impl(cols, recycle, nrows)){
-    nrow_ = nrows;
+    cached_nrow = nrows;
 }
 // Atomic vector constructor
 template <RScalar T>
@@ -89,36 +89,20 @@ inline r_df::r_df(const r_factors& col) : r_df(col.value){}
 inline r_df r_df::get_row(int index) const {
     int ncols = ncol();
     r_vec<r_sexp> out(ncols);
-    attr::set_old_names(out, colnames());
+    out.set_names(colnames());
+    attr::set_old_class(out, internal::data_frame_class());
+    attr::set_attr(out, symbol::row_names_sym, internal::create_row_names(1));
     for (int i = 0; i < ncols; ++i){
         out.set(i, r_sexp(view_sexp(value.view(i), [index](const auto& vec) -> SEXP {
             using vec_t = std::remove_cvref_t<decltype(vec)>;
             if constexpr (requires { vec.view(index); }){
                 return as<SEXP>(vec.view(index));
             } else {
-                abort("No view member exists for type %s", internal::type_str<vec_t>);
+                abort("No view member exists for type %s", internal::type_str<vec_t>());
             }
         }), internal::view_tag{}));
     }
-    return r_df(out, false, 1);
-}
-
-inline r_sexp r_df::get_col(int index) const {
-    return subset(value, r_vec<r_int>(1, r_int(index)), false, false).get(0);
-}
-
-template <RStringType U>
-inline r_sexp r_df::get_col(U name) const {
-    r_vec<r_sexp> sset = subset(value, r_vec<U>(1, name), true, false);
-    if (sset.length() == 0){
-        return sset.sexp;
-    } else {
-        return sset.get(0);
-    }
-}
-
-inline r_sexp r_df::get_col(const char* name) const {
-    return get_col(r_str(name));
+    return r_df(out, 1, internal::no_checks_tag{});
 }
 
 template <internal::RSubscript U>
@@ -129,6 +113,45 @@ inline r_df r_df::select(const r_vec<U>& cols) const {
 inline r_vec<r_str> r_df::rownames() const {
     return as<r_vec<r_str>>(attr::get_attr(value, symbol::row_names_sym));
 }
+
+// inline void check_compatible_dfs(const r_df& x, const r_df& y){
+//     if (!identical(x.colnames(), y.colnames())) [[unlikely]] {
+//         abort("(compatible_dfs): `x` and `y` must have the same colnames");
+//     }
+//     if (!identical(x.nrow(), y.nrow())) [[unlikely]] {
+//         abort("(compatible_dfs): `x` and `y` must have the same nrows");
+//     }
+//     // If col types aren't the same..
+//     //     abort("(compatible_dfs): `x` and `y` must have the same nrows");
+//     // }
+// }
+
+// template <internal::RSubscript T, internal::RSubscript U>
+// void r_df::fill(const r_vec<T>& row_indices, const r_vec<U>& col_indices, const r_df& replacement) {
+
+//     r_vec<r_int> row_locs = internal::clean_locs(row_indices, *this);
+//     r_vec<r_int> col_locs = internal::clean_locs(col_indices, *this);
+
+//     int ncols = col_locs.length();
+
+//     if (ncols != replacement.ncol()){
+//         abort("fill: `replacement.ncol()` must equal data frame ncol");
+//     }
+
+//     for (int i = 0; i < ncols; ++i){
+//         int col_loc = col_locs.get(i);
+//         r_sexp col = get_col(col_loc);
+//         cppally::fill(col, row_locs, replacement.value.view(i));
+//     }
+
+// }
+
+// template <internal::RSubscript T>
+// void r_df::fill(const r_vec<T>& row_indices, const r_df& replacement) {
+//     r_vec<r_int> col_locs(ncol());
+//     col_locs.iota();
+//     this->fill(row_indices, col_locs, replacement);
+// }
 
 // Make in-line data frame
 template <typename... Args>

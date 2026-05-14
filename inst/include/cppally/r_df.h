@@ -3,10 +3,13 @@
 
 #include <cppally/r_vec.h>
 #include <cppally/r_attrs.h>
+#include <cppally/r_hash_names.h>
 
 namespace cppally {
 
 namespace internal {
+
+struct no_checks_tag {};
 
 // Lazily cache data frame class for re-use
 inline r_vec<r_str_view> data_frame_class(){
@@ -40,27 +43,29 @@ struct r_df {
 
     r_vec<r_sexp> value;
 
-    private: 
+    private:
 
     int get_nrow() const noexcept {
         return Rf_length(Rf_getAttrib(value, symbol::row_names_sym));
     }
 
-    int nrow_;
+    int cached_nrow;
 
     public:
-    
+
     // Default constructor (empty data frame)
     r_df() : value(internal::new_df_impl(0)) {
-        nrow_ = 0;
+        cached_nrow = 0;
     }
 
+    // colnames are stored as the underlying VECSXP's names attribute, so we
+    // share the names cache directly with `value` (no separate r_df cache).
     r_vec<r_str_view> colnames() const {
         return value.names();
     }
 
     int nrow() const noexcept {
-        return nrow_;
+        return cached_nrow;
     }
     int ncol() const noexcept {
         return value.length();
@@ -68,7 +73,7 @@ struct r_df {
 
     void set_nrow(int n) {
         attr::set_attr(value, symbol::row_names_sym, internal::create_row_names(n));
-        nrow_ = n;
+        cached_nrow = n;
     }
 
     template <RStringType U>
@@ -81,7 +86,7 @@ struct r_df {
 
     template <RStringType U>
     void set_colnames(const r_vec<U>& colnames) {
-        attr::set_old_names(value, colnames);
+        value.set_names(colnames);
     }
 
     private: 
@@ -89,7 +94,7 @@ struct r_df {
     void validate_col_sizes(){
         int ncols = ncol();
         for (int i = 0; i < ncols; ++i){
-            if (length(value.view(i)) != static_cast<r_size_t>(nrow_)) [[unlikely]] {
+            if (length(value.view(i)) != static_cast<r_size_t>(cached_nrow)) [[unlikely]] {
                 abort("All data frame col lengths must match `nrow()`");
             }
         }
@@ -102,8 +107,8 @@ struct r_df {
         if (!Rf_isDataFrame(value)) [[unlikely]] {
           abort("SEXP must be of class 'data.frame' to be constructed as a data frame");
         }
-        r_vec<r_str_view> names = attr::get_old_names(value);
-        if (names.length() != value.length()) [[unlikely]] {
+        r_vec<r_str_view> names = value.names();
+        if (names.length() != ncol()) [[unlikely]] {
           abort("length of colnames must match `ncol()`");
         }
         SEXP row_names = Rf_protect(Rf_getAttrib(value, symbol::row_names_sym));
@@ -115,8 +120,10 @@ struct r_df {
 
       void init_df() {
         validate_df();
-        nrow_ = get_nrow();
+        cached_nrow = get_nrow();
+        #ifdef CPPALLY_CHECK_DATA_FRAMES
         validate_col_sizes();
+        #endif
       }
 
     public: 
@@ -136,7 +143,14 @@ struct r_df {
     }
 
     explicit r_df(int nrows) : value(internal::new_df_impl(nrows)) {
-        nrow_ = nrows;
+        cached_nrow = nrows;
+    }
+
+    // Unsafe constructor (the list is expected to be a valid data frame with ALL necessary attributes)
+    // You must also supply the correct nrows
+    // Use mainly for tight loops where many r_df objects are constructed
+    explicit r_df(const r_vec<r_sexp>& df, int nrows, internal::no_checks_tag) : value(df){
+        cached_nrow = nrows;
     }
     
     // Forward declarations, defined in r_df_methods.h
@@ -164,6 +178,8 @@ struct r_df {
     FORWARD_METHOD(is_null)
     FORWARD_METHOD(data)
     FORWARD_METHOD(address)
+    FORWARD_METHOD(names)
+    FORWARD_METHOD(set_names)
   
     // Undefine the macros so they don't leak out of the struct
     #undef FORWARD_METHOD
@@ -172,11 +188,52 @@ struct r_df {
     r_vec<r_str> rownames() const;
     template <internal::RSubscript U>
     r_df select(const r_vec<U>& cols) const;
-    inline r_df get_row(int index) const;
-    inline r_sexp get_col(int index) const;
-    inline r_sexp get_col(const char* name) const;
+    r_df get_row(int index) const;
+
+    r_sexp get_col(int index) const {
+        return value.get(index);
+    }
+
     template <RStringType U>
-    inline r_sexp get_col(U name) const;
+    r_sexp view_col(const U& name) const {
+        return value.view(name);
+    }
+
+    r_sexp view_col(std::string_view name) const {
+        return view_col(r_str(name.data()));
+    }
+
+    template <RStringType U>
+    r_sexp get_col(const U& name) const {
+        return value.get(name);
+    }
+
+    r_sexp get_col(std::string_view name) const {
+        return get_col(r_str(name.data()));
+    }
+
+    r_sexp view_col(int index) const {
+        return value.view(index);
+    }
+
+    
+    template <RObject col_t>
+    void set_col(int index, const col_t& col) {
+        value.set(index, r_sexp(col, internal::view_tag{}));
+    }
+    template <RStringType U, RObject col_t>
+    void set_col(const U& colname, const col_t& col) {
+        set_col(value.name_index(colname), col);
+    }
+    template <RObject col_t>
+    void set_col(std::string_view colname, const col_t& col) {
+        set_col(r_str(colname.data()), col);
+    }
+
+    // template <internal::RSubscript T, internal::RSubscript U>
+    // void fill(const r_vec<T>& row_indices, const r_vec<U>& col_indices, const r_df& replacement);
+    // template <internal::RSubscript T>
+    // void fill(const r_vec<T>& row_indices, const r_df& replacement);
 };
 
 }

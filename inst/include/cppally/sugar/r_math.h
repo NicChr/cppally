@@ -185,8 +185,8 @@ inline r_cplx log(r_cplx x){
   if (is_na(x)){
     return x;
   }
-  r_dbl real = as<r_dbl>(0.5 * (log(pow(x.re(), 2.0) + pow(x.im(), 2.0))));
-  r_dbl imag = as<r_dbl>(std::atan2(as<r_dbl>(x.im()), as<r_dbl>(x.re())));
+  r_dbl real = r_dbl(0.5 * (log(pow(x.re(), 2.0) + pow(x.im(), 2.0))));
+  r_dbl imag = r_dbl(std::atan2(as<r_dbl>(x.im()), as<r_dbl>(x.re())));
   return r_cplx{real, imag};
 }
 
@@ -205,7 +205,7 @@ inline r_dbl round(T x, U digits){
   } else if (identical(digits, pos_inf)){
     return x;
   } else {
-    r_dbl scale = std::pow(10.0, as<r_dbl>(digits));
+    r_dbl scale = r_dbl(std::pow(10.0, as<r_dbl>(digits)));
     return internal::round_to_even(as<r_dbl>(x) * scale) / scale;
   }
 }

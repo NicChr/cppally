@@ -8,6 +8,7 @@
 #include <cppally/r_scalar_methods.h>
 #include <cppally/r_vec_utils.h>
 #include <cppally/r_coerce_impl.h>
+#include <cppally/r_hash_names.h>
 #include <algorithm>
 
 namespace cppally {
@@ -19,10 +20,13 @@ inline constexpr bool identical(const T& a, const U& b);
 template <RVal T>
 inline void r_copy_n(r_vec<T>& target, const r_vec<T>& source, r_size_t target_offset, r_size_t n);
 
-// Declared in r_length.h
+// Defined in r_length.h
 inline r_size_t length(const r_sexp& x);
   
 namespace internal {
+
+template <typename V>
+inline void share_name_cache(V&, const V&);
 
 // Concept helpers for location-based subset helpers
 template <typename T>
@@ -43,7 +47,7 @@ struct r_vec {
   }
 
   bool is_altrep() const noexcept {
-    return ALTREP(sexp.value);
+    return sexp.is_altrep();
   }
 
   private:
@@ -73,6 +77,29 @@ struct r_vec {
       m_ptr = internal::vector_ptr<T>(sexp);
     }
   }
+
+  // Shared cache: any two r_vec wrappers around the same SEXP point to the same
+  // names_map via the registry, so set_names() propagates to all of them
+  mutable std::shared_ptr<internal::names_map> cached_names;
+  // Counts name_index calls on this wrapper. First lookup uses a linear scan;
+  // the hash table is only built on the second, so one-shot callers pay no
+  // build cost and the benefit accrues to repeated-lookup C++ code.
+  mutable bool first_access = false;
+
+  void ensure_names_cached() const {
+    if (!cached_names) {
+      cached_names = internal::name_cache().get_or_create(sexp.value);
+    }
+    if (!cached_names->names.has_value()) {
+      // Construct via r_vec<r_str_view> so the SEXP type is validated before
+      // we ever call STRING_PTR_RO on it inside lazy_build()
+      r_vec<r_str_view> validated(Rf_getAttrib(sexp, symbol::names_sym));
+      cached_names->names.emplace(static_cast<r_sexp>(validated));
+    }
+  }
+
+  template <typename V>
+  friend void internal::share_name_cache(V&, const V&);
 
   // By default do nothing (e.g. for vectors with no attrs)
   template <typename U>
@@ -115,7 +142,9 @@ struct r_vec {
     fill(r_size_t(0), n, default_value);
   }
   
-  r_vec(): r_vec(r_size_t(0)){}
+  r_vec(): r_vec(r_size_t(0)){
+    initialise_ptr();
+  }
 
   // Constructors from existing r_sexp/SEXP
   explicit r_vec(r_sexp s) : sexp(std::move(s)) {
@@ -190,43 +219,126 @@ struct r_vec {
     return sexp.address();
   }
 
+  r_vec<r_str_view> names() const {
+    ensure_names_cached();
+    return r_vec<r_str_view>(*cached_names->names);
+  }
+
+  template <RStringType U>
+  void set_names(const r_vec<U>& names){
+      if (names.is_null()){
+        // Removing names from an unnamed vector - return early
+        if (Rf_getAttrib(*this, symbol::names_sym) == R_NilValue){
+          return;
+        }
+        Rf_setAttrib(sexp, symbol::names_sym, r_null);
+      } else if (names.length() != length()) [[unlikely]] {
+          abort("`length(names)` must equal `length(x)`");
+      } else {
+          Rf_namesgets(sexp, names);
+      }
+      if (!cached_names) {
+        cached_names = internal::name_cache().get_or_create(sexp);
+      }
+      cached_names->invalidate();
+  }
+
+  // For named vectors: find first index of name
+  // `abort_on_missing` - When supplied name doesn't exist, abort, otherwise return `NA`
+  template <RStringType U>
+  r_int name_index(const U& name, bool abort_on_missing = true) const {
+    auto report_no_match = [&]() {
+      abort("%s: There is no value named '%s'", __func__, name.c_str());
+    };
+
+    // Second-or-later lookup - cache hash map
+    if (first_access) {
+      ensure_names_cached();
+      r_int index = cached_names->find(name);
+      if (cppally::is_na(index)){ 
+        if (abort_on_missing) {
+          report_no_match();
+        } else {
+          return na<r_int>();
+        }
+      }
+      return index;
+    }
+
+    first_access = true;
+
+    // First lookup: linear scan, no hash-table allocation
+    r_vec<r_str_view> names_attr = names();
+    if (names_attr.is_null()) [[unlikely]] {
+      abort("%s: vector has no names", __func__);
+    }
+    SEXP key = unwrap(name);
+    r_size_t n = names_attr.length();
+    const auto* RESTRICT p = names_attr.data();
+    for (r_size_t i = 0; i < n; ++i) {
+      if (p[i] == key) return r_int(static_cast<int>(i));
+    }
+    if (abort_on_missing){
+      report_no_match();
+    }
+    return na<r_int>();
+  }
+
   // Get element (no bounds-check)
   T get(r_size_t index) const {
-#ifdef CPPALLY_PRESERVE_ALTREP
+    #ifdef CPPALLY_PRESERVE_ALTREP
     if (m_ptr) [[likely]] {
       return T(m_ptr[index]);
     } else {
       return T(internal::elt<T>(sexp, index));
     }
-#else
+    #else
     return T(m_ptr[index]);
-#endif
+    #endif
+  }
+  
+  template <RStringType U>
+  T get(const U& name) const {
+    return get(static_cast<r_size_t>(unwrap(name_index(name))));
+  }
+
+  T get(std::string_view name) const {
+    return get(r_str(name.data()));
   }
 
   // View element (like `get()` but elements must be short-lived)
   // Element must not outlive the parent vector
   T view(r_size_t index) const {
     if constexpr (std::is_constructible_v<data_type, unwrap_t<data_type>, internal::view_tag>) {
-#ifdef CPPALLY_PRESERVE_ALTREP
+      #ifdef CPPALLY_PRESERVE_ALTREP
       if (m_ptr) [[likely]] {
         return T(m_ptr[index], internal::view_tag{});
       } else {
         return T(internal::elt<T>(sexp, index), internal::view_tag{});
       }
-#else
+      #else
       return T(m_ptr[index], internal::view_tag{});
-#endif
+      #endif
     } else {
-#ifdef CPPALLY_PRESERVE_ALTREP
+      #ifdef CPPALLY_PRESERVE_ALTREP
       if (m_ptr) [[likely]] {
         return T(m_ptr[index]);
       } else {
         return T(internal::elt<T>(sexp, index));
       }
-#else
+      #else
       return T(m_ptr[index]);
-#endif
+      #endif
     }
+  }
+
+  template <RStringType U>
+  T view(const U& name) const {
+    return view(static_cast<r_size_t>(unwrap(name_index(name))));
+  }
+
+  T view(std::string_view name) const {
+    return view(r_str(name.data()));
   }
 
   // Set element (no bounds-check)
@@ -246,30 +358,20 @@ struct r_vec {
     set(index, as<T>(val));
   }
 
-  template <internal::RSubscript U> 
+  template <RStringType U>
+  void set(const U& name, const T& val) {
+      set(static_cast<r_size_t>(unwrap(name_index(name))), val);
+  }
+  
+  void set(std::string_view name, const T& val) {
+      set(r_str(name.data()), val);
+  }
+
+  template <internal::RSubscript U>
   r_vec<T> subset(const r_vec<U>& indices, bool check = true, bool invert = false) const;
 
   r_vec<T> subset(r_size_t index, bool check = true, bool invert = false) const {
     return subset(r_vec<r_int64>(1, r_int64(static_cast<int64_t>(index))), check, invert);
-  }
-
-  r_vec<r_str_view> names() const {
-    r_vec<r_str_view> out = r_vec<r_str_view>(Rf_getAttrib(sexp, symbol::names_sym));
-    if (!out.is_null() && out.length() != length()) [[unlikely]] {
-      abort("bad names detected, length of names must match vector length");
-    }
-    return out;
-  }
-
-  template <RStringType U>
-  void set_names(const r_vec<U>& names){
-    if (names.is_null()){
-      Rf_setAttrib(sexp, symbol::names_sym, r_null);
-    } else if (names.length() != Rf_xlength(sexp)) [[unlikely]] {
-      abort("`length(names)` must equal `length(x)`");
-    } else {
-      Rf_namesgets(sexp, names);
-    }
   }
 
   r_vec<r_lgl> is_na() const {
@@ -342,7 +444,7 @@ struct r_vec {
     return true;
   }
 
-  bool any_v(const T& val) const {
+  bool any_eq(const T& val) const {
     r_size_t n = length();
     for (r_size_t i = 0; i < n; ++i){
       if (identical(view(i), val)) return true;
@@ -350,7 +452,7 @@ struct r_vec {
     return false;
   }
 
-  bool all_v(const T& val) const {
+  bool all_eq(const T& val) const {
     r_size_t n = length();
     for (r_size_t i = 0; i < n; ++i){
       if (!identical(view(i), val)) return false;
@@ -358,7 +460,7 @@ struct r_vec {
     return true;
   } 
 
-  r_size_t count(T const& value) const {
+  r_size_t count(T const& val) const {
     r_size_t out = 0;
     r_size_t n = length();
 
@@ -366,18 +468,18 @@ struct r_vec {
       // SIMD vectorisation isn't working with identical function (sad)
       OMP_SIMD_REDUCTION1(+:out)
       for (r_size_t i = 0; i < n; ++i){
-        out += (unwrap(get(i)) == unwrap(value));
+        out += (unwrap(get(i)) == unwrap(val));
       }
     } else {
       // Fall-back
       for (r_size_t i = 0; i < n; ++i){
-        out += identical(view(i), value);
+        out += identical(view(i), val);
       }
     }
     return out;
   }
-  r_vec<T> remove(T const& value) const {
-    r_size_t n_remove = count(value);
+  r_vec<T> remove(T const& val) const {
+    r_size_t n_remove = count(val);
     r_size_t n = length();
 
     if (n_remove == 0){
@@ -389,7 +491,7 @@ struct r_vec {
       r_size_t k = 0;
 
       for (r_size_t i = 0; i < n; ++i){
-        if (!identical(view(i), value)){
+        if (!identical(view(i), val)){
           out.set(k++, view(i));
         }
       }
@@ -399,7 +501,7 @@ struct r_vec {
 
   // locations of value in vector
   template <internal::RNumericSubscript V = r_int>
-  r_vec<V> find(T const& value, bool invert = false) const {
+  r_vec<V> find(T const& val, bool invert = false) const {
 
     r_size_t n = length();
 
@@ -411,7 +513,7 @@ struct r_vec {
       }
     }
   
-    r_size_t n_vals = count(value);
+    r_size_t n_vals = count(val);
     int_t whichi = 0; 
     int_t i = 0; 
   
@@ -420,7 +522,7 @@ struct r_vec {
       r_vec<V> out(out_size);
       while (whichi < out_size){
           out.set(whichi, V(i));
-          whichi += static_cast<int_t>(!identical(view(i++), value));
+          whichi += static_cast<int_t>(!identical(view(i++), val));
       }
       return out;
     } else {
@@ -428,7 +530,7 @@ struct r_vec {
       r_vec<V> out(out_size);
       while (whichi < out_size){
         out.set(whichi, V(i));
-        whichi += static_cast<int_t>(identical(view(i++), value));
+        whichi += static_cast<int_t>(identical(view(i++), val));
     }
     return out;
     }
@@ -584,6 +686,10 @@ struct r_vec {
 
 };
 
+// Alias of r_vec
+template <RVal T>
+using r_vector = r_vec<T>;
+
 template <RVal T>
 inline void r_copy_n(r_vec<T>& target, const r_vec<T>& source, r_size_t target_offset, r_size_t n){
 
@@ -609,6 +715,29 @@ inline void r_copy_n(r_vec<T>& target, const r_vec<T>& source, r_size_t target_o
       target.set(target_offset + i, source.view(i));
     }
   }
+}
+
+namespace internal {
+
+// Transplant a populated names cache from source to target. Intended for
+// shallow-copy paths where the new SEXP shares the names STRSXP with source —
+// the existing hash is still valid and rebuilding would be wasteful at high
+// column counts. No-op if source has no populated cache or if target's names
+// attribute differs from source's cached names.
+template <typename V>
+inline void share_name_cache(V& target, const V& source) {
+    if (!source.cached_names) return;
+    if (!source.cached_names->names.has_value()) return;
+    SEXP target_names = Rf_protect(Rf_getAttrib(target, symbol::names_sym));
+    if (target_names != static_cast<SEXP>(*source.cached_names->names)){
+        Rf_unprotect(1);
+        return;
+    }
+    target.cached_names = source.cached_names;
+    name_cache().store(target.sexp.value, target.cached_names);
+    Rf_unprotect(1);
+}
+
 }
 
 }

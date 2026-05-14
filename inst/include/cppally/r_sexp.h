@@ -80,7 +80,13 @@ struct r_sexp {
   // convert SEXP -> r_sexp directly without extra protection
   explicit r_sexp(SEXP s, internal::view_tag) noexcept : value(s), ctl_(nullptr) {}
 
-  bool is_null() const noexcept { return value == R_NilValue; }
+  bool is_null() const noexcept {
+    return value == R_NilValue; 
+  }
+
+  bool is_altrep() const noexcept {
+    return static_cast<bool>(ALTREP(value));
+  }
   
   r_size_t length() const {
     static bool warned = false;

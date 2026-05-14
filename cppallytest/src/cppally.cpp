@@ -3,6 +3,7 @@
 
 
 #include <cppally/r_dispatch.h>
+#include <cppally.hpp>
 #include <R_ext/Visibility.h>
 #include "readme.h"
 #include "test.h"

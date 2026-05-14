@@ -75,36 +75,29 @@ inline r_sexp deep_copy(const r_sexp& x){
 }
 
 template <RVector T>
-inline T shallow_copy(const T& x){
-    
-    return T(safe[Rf_shallow_duplicate](x));
-
-    // if (x.is_null()) return T(r_null);
-
-    // r_size_t n = x.length();
-    // T out(n);
-
-    // // If list, shallow copy list elements
-    // if constexpr (is<T, r_vec<r_sexp>>){
-    //     for (r_size_t i = 0; i < n; ++i){
-    //         out.set(i, x.view(i));
-    //     }
-    // } else {
-    //     r_copy_n(out, x, 0, n);
-    // }    
-    // attr::set_attrs(out, attr::get_attrs(x));
-    // return out;
+T shallow_copy(const T& x){
+    if (x.is_null()) return x;
+    r_size_t n = x.length();
+    T out(n);
+    for (r_size_t i = 0; i < n; ++i){
+        out.set(i, x.view(i));
+    }
+    attr::set_attrs(out, attr::get_attrs(x));
+    internal::share_name_cache(out, x);
+    return out;
 }
 
 template<>
 inline r_factors shallow_copy(const r_factors& x){
     r_vec<r_int> out = shallow_copy(x.value);
-    return r_factors(unwrap(out), false);
+    r_factors result(unwrap(out), false);
+    internal::share_levels_cache(result, x);
+    return result;
 }
 
 template<>
 inline r_df shallow_copy(const r_df& x){
-    return r_df(shallow_copy(x.value));
+    return r_df(shallow_copy(x.value), x.nrow(), internal::no_checks_tag{});
 }
 
 // Symbols can't be copied

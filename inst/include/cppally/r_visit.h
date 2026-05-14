@@ -131,6 +131,28 @@ switch (internal::CPPALLY_TYPEOF(x)) {
 }
 }
 
+// visit sexp and mutate underlying object in-place - for methods like free-function `fill()`
+template <class F>
+void mutate_sexp(r_sexp& x, F&& f) {
+switch (internal::CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
+    case LGLSXP:                          { auto v = r_vec<r_lgl>(static_cast<SEXP>(x), internal::view_tag{});              f(v); break; }
+    case INTSXP:                          { auto v = r_vec<r_int>(static_cast<SEXP>(x), internal::view_tag{});              f(v); break; }
+    case internal::CPPALLY_INT64SXP:      { auto v = r_vec<r_int64>(static_cast<SEXP>(x), internal::view_tag{});           f(v); break; }
+    case REALSXP:                         { auto v = r_vec<r_dbl>(static_cast<SEXP>(x), internal::view_tag{});              f(v); break; }
+    case STRSXP:                          { auto v = r_vec<r_str>(static_cast<SEXP>(x), internal::view_tag{});              f(v); break; }
+    case VECSXP:                          { auto v = r_vec<r_sexp>(static_cast<SEXP>(x), internal::view_tag{});             f(v); break; }
+    case CPLXSXP:                         { auto v = r_vec<r_cplx>(static_cast<SEXP>(x), internal::view_tag{});             f(v); break; }
+    case RAWSXP:                          { auto v = r_vec<r_raw>(static_cast<SEXP>(x), internal::view_tag{});              f(v); break; }
+    case NILSXP:                          { auto v = r_vec<r_sexp>(r_null, internal::view_tag{});                           f(v); break; }
+    case internal::CPPALLY_REALDATESXP:   { auto v = r_vec<r_date>(static_cast<SEXP>(x), internal::view_tag{});             f(v); break; }
+    case internal::CPPALLY_REALPSXTSXP:   { auto v = r_vec<r_psxct>(static_cast<SEXP>(x), internal::view_tag{});           f(v); break; }
+    case internal::CPPALLY_FCTSXP:        { auto v = r_factors(static_cast<SEXP>(x), internal::view_tag{});                 f(v); break; }
+    case SYMSXP:                          { auto v = r_sym(static_cast<SEXP>(x), internal::view_tag{});                     f(v); break; }
+    case internal::CPPALLY_DFSXP:         { auto v = r_df(static_cast<SEXP>(x), internal::view_tag{});                     f(v); break; }
+    default:                              { auto v = r_sexp(static_cast<SEXP>(x), internal::view_tag{});                   f(v); break; }
+}
+}
+
 // Helper that disambiguates r_sexp type via view_sexp and then calls the named function
 // If there is no defined specialisation or overload then this is caught in the last branch
 // If the visited type can't be disambiguated, this is caught in the first branch
