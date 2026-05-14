@@ -32,3 +32,7 @@ cpp_register(
 ## Value
 
 The paths to the generated R and C++ source files.
+
+## See also
+
+[cpp_source](https://nicchr.github.io/cppally/reference/cpp_source.md)

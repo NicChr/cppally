@@ -20,6 +20,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/protection.html">Automatic Protection</a></li>
+    <li><a class="dropdown-item" href="../articles/vector_name_hashing.html">Vector Names Hashing</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -48,6 +49,7 @@
 <h4 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h4>
 <ul><li><p><code>r_sexp.length()</code> has been deprecated, in favour of the free function <code><a href="https://rdrr.io/r/base/length.html" class="external-link">length()</a></code></p></li>
 <li><p><code>length(r_df)</code> now returns the number of rows instead of the number of cols, marking a shift in how cppally treats data frames. They are now seen as row-wise vectors</p></li>
+<li><p><code>r_factors</code> elements are now treated as <code>r_str</code> in member functions like <code><a href="https://rdrr.io/r/base/get.html" class="external-link">get()</a></code> and <code>set()</code></p></li>
 <li><p><code>visit_vector()</code> and <code>visit_sexp()</code> now visit <code>r_null</code> as <code>r_vec&lt;r_sexp&gt;(r_null)</code>, essentially treating <code>NULL</code> as an empty list but without changing the underlying data</p></li>
 </ul><p>For example, in the below pseudo-code, when x is <code>r_null</code> of type <code>r_sexp</code>, <code>visit_vector()</code> will disambiguate it as <code>r_vec&lt;r_sexp&gt;(r_null)</code>, preserving its data as R’s <code>NULL</code> but assigning its type as <code>r_vec&lt;r_sexp&gt;</code> (list).</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a> visit_vector<span class="op">(</span>x<span class="op">,</span> <span class="op">[&amp;](</span><span class="at">const</span> <span class="kw">auto</span><span class="op">&amp;</span> vec<span class="op">)</span> <span class="op">-&gt;</span> <span class="dt">bool</span> <span class="op">{</span></span>
@@ -72,8 +74,13 @@
 </div>
 <div class="section level4">
 <h4 id="improvements-development-version">Improvements<a class="anchor" aria-label="anchor" href="#improvements-development-version"></a></h4>
-<ul><li><p>When registering C++ functions, cppally.hpp is now included in the generated C++ code. Not including it caused issues when trying to compile functions that constructed factors</p></li>
+<ul><li><p>New alias of <code>r_vec</code>, <code>r_vector</code></p></li>
+<li><p>For named vectors, lookup by name has been improved in C++ by introducing a hashing approach. On second lookup, a hash map of names is created and cached, making subsequent lookups much faster. This also applies to factor levels.</p></li>
 <li><p>Named-vector subsetting is now supported</p></li>
+</ul></div>
+<div class="section level4">
+<h4 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h4>
+<ul><li>When registering C++ functions, cppally.hpp is now included in the generated C++ code. Not including it caused issues when trying to compile functions that constructed factors</li>
 </ul></div>
 </div>
     <div class="section level2">

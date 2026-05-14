@@ -24,6 +24,8 @@ cpp_source(
   quiet = TRUE,
   debug = FALSE,
   preserve_altrep = FALSE,
+  check_factors = FALSE,
+  check_data_frames = FALSE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20"),
   dir = tempfile()
 )
@@ -35,6 +37,8 @@ cpp_eval(
   quiet = TRUE,
   debug = FALSE,
   preserve_altrep = FALSE,
+  check_factors = FALSE,
+  check_data_frames = FALSE,
   simplify = TRUE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20")
 )
@@ -74,6 +78,18 @@ cpp_eval(
   Should ALTREP vectors be preserved by avoiding materialisation where
   possible? Default is `FALSE`.
 
+- check_factors:
+
+  Should factor levels be validated when using `r_factors` objects?
+  Default is `FALSE`. When `TRUE`, factor levels are checked once on
+  `r_factors` construction to ensure they are valid, reducing the chance
+  of R crashing when passing factors with invalid levels.
+
+- check_data_frames:
+
+  Should data frames be validated when constructing `r_df` objects from
+  `SEXP`? Default is `FALSE`.
+
 - cxx_std:
 
   C++ standard to use. Should be \>= C++20.
@@ -94,6 +110,10 @@ cpp_eval(
 `cpp_source()` invisibly compiles the C++ code and registers the
 `[[cppally::register]]` tagged functions to R.  
 `cpp_eval()` returns the results of the evaluated C++ expressions.
+
+## See also
+
+[cpp_register](https://nicchr.github.io/cppally/reference/cpp_register.md)
 
 ## Examples
 
@@ -218,13 +238,13 @@ mark(last_altrep_aware(1:10^5)) # No materialisation
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 3.74µs 4.95µs   200776.    3.18KB        0 10000     0     49.8ms
+#> 1 last_altrep… 3.84µs 5.08µs   193741.    3.18KB        0 10000     0     51.6ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 36.8µs 38.3µs    22635.     391KB     176.  3981    31      176ms
+#> 1 last_altrep… 36.9µs 38.6µs    22262.     391KB     179.  3737    30      168ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 # }

@@ -23,6 +23,16 @@
   [`devtools::load_all()`](https://devtools.r-lib.org/reference/load_all.html)
   specifically for cppally
 
+- [`use_check_data_frames()`](https://nicchr.github.io/cppally/reference/use_check_data_frames.md)
+  :
+
+  Adds the `CPPALLY_CHECK_DATA_FRAMES` flag to Makevars
+
+- [`use_check_factors()`](https://nicchr.github.io/cppally/reference/use_check_factors.md)
+  :
+
+  Adds the `CPPALLY_CHECK_FACTORS` flag to Makevars
+
 - [`use_cppally()`](https://nicchr.github.io/cppally/reference/use_cppally.md)
   : Helper for developing packages with cppally
 

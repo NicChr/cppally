@@ -5,6 +5,7 @@
 <url><loc>https://nicchr.github.io/cppally/articles/cppally.html</loc></url>
 <url><loc>https://nicchr.github.io/cppally/articles/index.html</loc></url>
 <url><loc>https://nicchr.github.io/cppally/articles/protection.html</loc></url>
+<url><loc>https://nicchr.github.io/cppally/articles/vector_name_hashing.html</loc></url>
 <url><loc>https://nicchr.github.io/cppally/authors.html</loc></url>
 <url><loc>https://nicchr.github.io/cppally/index.html</loc></url>
 <url><loc>https://nicchr.github.io/cppally/news/index.html</loc></url>
@@ -14,6 +15,8 @@
 <url><loc>https://nicchr.github.io/cppally/reference/document.html</loc></url>
 <url><loc>https://nicchr.github.io/cppally/reference/index.html</loc></url>
 <url><loc>https://nicchr.github.io/cppally/reference/load_all.html</loc></url>
+<url><loc>https://nicchr.github.io/cppally/reference/use_check_data_frames.html</loc></url>
+<url><loc>https://nicchr.github.io/cppally/reference/use_check_factors.html</loc></url>
 <url><loc>https://nicchr.github.io/cppally/reference/use_cppally.html</loc></url>
 <url><loc>https://nicchr.github.io/cppally/reference/use_preserve_altrep_flag.html</loc></url>
 </urlset>
