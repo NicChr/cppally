@@ -885,6 +885,14 @@ letter_fct |>
 
 ## Attributes
 
+**Note:** The use of `Rf_setAttrib` is dangerous and 
+highly discouraged in cppally. Since cppally caches vector names 
+in all `r_vec` objects, the use of
+`Rf_namesgets()` or `Rf_setAttrib(, R_NamesSymbol)` will invalidate the cache 
+and inevitably lead to incorrect results. Use `names()` and `set_names()` 
+member functions. The same goes for factor levels, use `levels()` and 
+`set_levels()` over `Rf_setAttrib(, R_LevelsSymbol)`. 
+
 Attributes can be manipulated via functions defined in the attr namespace.
 
 **Example:** Adding names to a list
