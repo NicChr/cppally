@@ -334,13 +334,9 @@ template <typename T>
 struct r_val_mapping : r_scalar_mapping<T> {};
 
 template<> struct r_val_mapping<r_sexp>                      { using type = r_sexp; };
-template<> struct r_val_mapping<SEXP>                      { using type = r_sexp; };
+template<> struct r_val_mapping<SEXP>                        { using type = r_sexp; };
 // R vectors & other containers
-template <RVector T>
-struct r_val_mapping<T> { using type = r_sexp; };
-template <RMetaVector T>
-struct r_val_mapping<T> { using type = r_sexp; };
-template <RDataFrame T>
+template <RComposite T>
 struct r_val_mapping<T> { using type = r_sexp; };
 
 }
@@ -363,6 +359,41 @@ template <typename T>
 concept CastableToRVal = requires {
     typename as_r_val_t<T>;
 };
+
+namespace internal {
+
+// Type -> RComposite
+template <typename T>
+struct as_r_composite_type_impl {
+    static_assert(always_false<T>, "as_r_composite_t: unsupported type");
+};
+
+template <RComposite T>
+struct as_r_composite_type_impl<T> {
+    using type = T;
+};
+template <RScalar T>
+struct as_r_composite_type_impl<T> {
+    using type = r_vec<T>;
+};
+template <RSexpType T>
+struct as_r_composite_type_impl<T> {
+    using type = r_vec<r_sexp>;
+};
+template <RSymbolType T>
+struct as_r_composite_type_impl<T> {
+    using type = r_vec<r_sexp>;
+};
+template <CastableToRScalar T>
+requires (!RScalar<T> && !RSexpType<T> && !RSymbolType<T> && CppScalar<T>)
+struct as_r_composite_type_impl<T> {
+    using type = r_vec<as_r_scalar_t<T>>;
+};
+
+}
+
+template <typename T>
+using as_r_composite_t = typename internal::as_r_composite_type_impl<std::remove_cvref_t<T>>::type;
 
 namespace internal {
 
@@ -491,14 +522,32 @@ struct common_r_type_impl<T, T> {
     using type = T;
 };
 
+// Variadic fold: reduces N types by pairwise application of common_r_type_impl.
+// Base case is 1 type (returns itself); recursive case peels two off the front,
+// computes their common type, and folds it back in with the rest.
+template <typename...>
+struct common_r_fold;
+
+template <typename T>
+struct common_r_fold<T> { using type = T; };
+
+template <typename T, typename U, typename... Rest>
+struct common_r_fold<T, U, Rest...> {
+    using type = typename common_r_fold<
+        typename common_r_type_impl<T, U>::type,
+        Rest...
+    >::type;
+};
+
+
 }
 
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>) // At least one RMathType
 using common_math_t = typename internal::common_r_math_impl<T, U>::type;
 
-template <typename T, typename U>
-using common_r_t = typename internal::common_r_type_impl<T, U>::type;
+template <typename... Ts>
+using common_r_t = typename internal::common_r_fold<Ts...>::type;
 
 
 }
