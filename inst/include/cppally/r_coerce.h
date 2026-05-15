@@ -18,16 +18,13 @@ struct is_std_vector<std::vector<T, A>> : std::true_type {};
 template <typename T>
 inline constexpr bool is_std_vector_v = is_std_vector<std::remove_cvref_t<T>>::value;
 
-// CHARSXP is always converted to STRSXP here, see `r_types.h` for info
-// to sexp is fairly simple but coercion from a sexp is more complicated
-// implementation for that is found in r_coerce.h
 template <typename T>
 inline r_sexp as_sexp(T const& x){
   if constexpr (RVector<T>){
     return x.sexp;
   } else if constexpr (RObject<T>){
     return r_sexp(static_cast<SEXP>(x));
-  } else if constexpr (RVal<T>){
+  } else if constexpr (RScalar<T>){
     return r_sexp(new_scalar_vec(x));
   } else if constexpr (CastableToRVal<T>) {
     return r_sexp(new_scalar_vec(as_r_val(x)));
