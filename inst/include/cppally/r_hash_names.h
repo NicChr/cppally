@@ -21,10 +21,7 @@ namespace cppally {
 // the table is built only on the first find(). Most wrappers never look
 // up by name, so both stages matter.
 
-// Knuth multiplicative — upper bits of the product distribute well even
-// when the input bits are correlated (e.g. aligned pointers). Returns
-// uint64_t (not size_t) so the >> shift in hash_() stays well-defined on
-// 32-bit platforms where size_t is 32-bit but shift amounts can reach ~60.
+// Knuth multiplicative hash
 inline std::uint64_t sexp_data_hash(SEXP p) noexcept {
     constexpr std::uint64_t phi = 0x9E3779B97F4A7C15ull;
     return static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(p)) * phi;
@@ -144,9 +141,6 @@ struct sexp_index_table {
     // It's overwritten the moment the table is sized.
     int shift_ = 63;
     std::size_t size_ = 0;
-
-    // Knuth multiplicative — upper bits of the product distribute well even
-    // when the input bits are correlated (e.g. aligned pointers).
     std::size_t hash_(SEXP p) const noexcept {
         return static_cast<std::size_t>(sexp_data_hash(p) >> shift_);
     }
