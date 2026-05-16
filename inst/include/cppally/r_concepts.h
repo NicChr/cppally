@@ -535,6 +535,7 @@ template <typename T>
 struct common_r_fold<T> { using type = T; };
 
 template <typename T, typename U, typename... Rest>
+    requires requires { typename common_r_type_impl<T, U>::type; }
 struct common_r_fold<T, U, Rest...> {
     using type = typename common_r_fold<
         typename common_r_type_impl<T, U>::type,
