@@ -3,11 +3,34 @@
 
 #include <cppally/r_coerce.h>
 #include <cppally/r_list_helpers.h>
+#include <cppally/sugar/r_subset.h>
 #include <cppally/sugar/r_make_vec.h>
 
 namespace cppally {
 
-template <RVector T>
+// inline void r_copy_n(r_factors& target, const r_factors& source, r_size_t target_offset, r_size_t n){
+//     r_vec<r_str_view> target_lvls = target.levels();
+//     r_vec<r_str_view> source_lvls = source.levels();
+//     // r_vec<r_int> target_codes = target.value;
+//     // r_vec<r_int> source_codes = source.value;
+
+//     // setdiff(new_levels, old_levels)
+//     r_vec<r_str_view> new_lvls = source_lvls.subset(source_lvls.find(target_lvls, /*invert = */ true));
+//     r_size_t n_new_lvls = new_lvls.length();
+    
+//     // Append new levels
+//     for (r_size_t i = 0; i < n_new_lvls; ++i){
+//         target.append_level(new_lvls.get(i));
+//     }
+
+//     // Replace categories
+//     for (r_size_t i = 0; i < n; ++i) {
+//         target.set(target_offset + i, source.view(i));
+//     }
+// }
+
+template <typename T>
+requires (RVector<T> || RFactor<T>)
 T flatten(const r_vec<r_sexp>& x) {
     
     r_size_t n = x.length();
