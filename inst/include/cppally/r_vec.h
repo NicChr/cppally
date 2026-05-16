@@ -17,8 +17,8 @@ namespace cppally {
 template <typename T, typename U>
 inline constexpr bool identical(const T& a, const U& b);
 
-template <RVal T>
-inline void r_copy_n(r_vec<T>& target, const r_vec<T>& source, r_size_t target_offset, r_size_t n);
+template <RVector T>
+inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_t n);
 
 // Defined in r_length.h
 inline r_size_t length(const r_sexp& x);
@@ -282,6 +282,10 @@ struct r_vec {
       report_no_match();
     }
     return na<r_int>();
+  }
+
+  r_int name_index(std::string_view name, bool abort_on_missing = true) const {
+    return name_index(r_str(name.data()), abort_on_missing);
   }
 
   // Get element (no bounds-check)
@@ -690,10 +694,12 @@ struct r_vec {
 template <RVal T>
 using r_vector = r_vec<T>;
 
-template <RVal T>
-inline void r_copy_n(r_vec<T>& target, const r_vec<T>& source, r_size_t target_offset, r_size_t n){
+template <RVector T>
+inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_t n){
+  
+  using data_t = typename T::data_type;
 
-  if constexpr (internal::RPtrWritableType<T>){
+  if constexpr (internal::RPtrWritableType<data_t>){
     auto* RESTRICT p_target = target.data();
     auto* RESTRICT p_source = source.data();
 
@@ -706,9 +712,9 @@ inline void r_copy_n(r_vec<T>& target, const r_vec<T>& source, r_size_t target_o
     } else {
       std::copy_n(p_source, n, p_target + target_offset);
     }
-  } else if constexpr (RStringType<T>){
+  } else if constexpr (RStringType<data_t>){
     // Cast const SEXP* to SEXP* and write directly
-    auto* p_target = const_cast<unwrap_t<T>*>(target.data());
+    auto* p_target = const_cast<unwrap_t<data_t>*>(target.data());
     std::copy_n(source.data(), n, p_target + target_offset);
   } else {
     for (r_size_t i = 0; i < n; ++i) {
@@ -724,6 +730,10 @@ namespace internal {
 // the existing hash is still valid and rebuilding would be wasteful at high
 // column counts. No-op if source has no populated cache or if target's names
 // attribute differs from source's cached names.
+//
+// Shares only the inner sexp_index_table, not the enclosing names_map. Each
+// wrapper keeps its own names_map so that a future set_names() (or any
+// invalidation path) on one cannot poison the other's view.
 template <typename V>
 inline void share_name_cache(V& target, const V& source) {
     if (!source.cached_names) return;
@@ -733,8 +743,8 @@ inline void share_name_cache(V& target, const V& source) {
         Rf_unprotect(1);
         return;
     }
-    target.cached_names = source.cached_names;
-    name_cache().store(target.sexp.value, target.cached_names);
+    target.ensure_names_cached();
+    target.cached_names->map = source.cached_names->map;
     Rf_unprotect(1);
 }
 

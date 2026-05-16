@@ -380,28 +380,26 @@ struct r_factors {
     r_copy_n(new_levels, levels(), 0, levels().length());
     new_levels.set(new_levels.length() - 1, level);
 
-    // Preserve the lazy hash across set_levels() (which resets it)
-    ensure_levels_cached();
-    auto previous_map = std::move(cached_levels->map);
-
+    // set_levels invalidates our cache. Since cached_levels is unique to this
+    // wrapper (share_levels_cache and remove() share only the inner table,
+    // not the names_map), invalidation does not affect sibling wrappers — and
+    // any shared inner table is dropped via the shared_ptr ref-count, leaving
+    // siblings with their own view intact. Hash is rebuilt lazily on next find.
     set_levels(new_levels, false);
-
-    if (previous_map){
-      previous_map->rebind_to_storage(new_levels.data());
-      if (previous_map->insert(static_cast<int>(previous_map->size()))){
-        ensure_levels_cached();
-        cached_levels->names.emplace(static_cast<r_sexp>(new_levels));
-        cached_levels->map = std::move(previous_map);
-      }
-    }
   }
 
 };
 
-
 namespace internal {
 
 // Same shape as share_name_cache, for the levels cache on r_factors.
+//
+// Shares only the inner sexp_index_table (via shared_ptr), not the enclosing
+// names_map. Each wrapper keeps its own names_map so that a future mutation
+// of one (e.g. append_level → set_levels → invalidate) cannot poison the
+// other's view. The inner table is still safe to share because both sides
+// have the same levels STRSXP at the point of sharing; any later mutation
+// goes through append_level's detach-when-shared path.
 inline void share_levels_cache(r_factors& target, const r_factors& source) {
     if (!source.cached_levels) return;
     if (!source.cached_levels->names.has_value()) return;
@@ -410,8 +408,8 @@ inline void share_levels_cache(r_factors& target, const r_factors& source) {
         Rf_unprotect(1);
         return;
     }
-    target.cached_levels = source.cached_levels;
-    levels_cache().store(target, target.cached_levels);
+    target.ensure_levels_cached();
+    target.cached_levels->map = source.cached_levels->map;
     Rf_unprotect(1);
 }
 

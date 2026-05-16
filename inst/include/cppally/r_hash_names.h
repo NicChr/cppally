@@ -22,10 +22,12 @@ namespace cppally {
 // up by name, so both stages matter.
 
 // Knuth multiplicative — upper bits of the product distribute well even
-// when the input bits are correlated (e.g. aligned pointers).
-inline std::size_t sexp_data_hash(SEXP p) noexcept {
-    constexpr auto phi = 0x9E3779B97F4A7C15ull;
-    return (reinterpret_cast<std::uintptr_t>(p) * phi);
+// when the input bits are correlated (e.g. aligned pointers). Returns
+// uint64_t (not size_t) so the >> shift in hash_() stays well-defined on
+// 32-bit platforms where size_t is 32-bit but shift amounts can reach ~60.
+inline std::uint64_t sexp_data_hash(SEXP p) noexcept {
+    constexpr std::uint64_t phi = 0x9E3779B97F4A7C15ull;
+    return static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(p)) * phi;
 }
 
 namespace internal {
@@ -53,8 +55,8 @@ struct sexp_index_table {
     sexp_index_table(sexp_index_table&&) noexcept = default;
     sexp_index_table& operator=(sexp_index_table&&) noexcept = default;
 
-    // Reserve room for at least n entries with ~33% headroom so a single
-    // post-build append (e.g. r_factors::append_level) cannot fill the table.
+    // Reserve room for at least n entries with ~33% headroom. Subsequent
+    // appends past this threshold are handled by grow().
     void reserve(std::size_t n, const SEXP* names_ptr) {
         std::size_t target = n + (n >> 1) + 1;
         std::size_t cap = std::bit_ceil(std::max<std::size_t>(target, 16));
@@ -73,9 +75,10 @@ struct sexp_index_table {
     void rebind_to_storage(const SEXP* names_ptr) noexcept { names_ptr_ = names_ptr; }
 
     // Insert `idx` into the table. The key is read from names_ptr_[idx].
-    // First-wins. Returns false only if the table is completely full.
-    bool insert(int idx) noexcept {
-        if (size_ >= capacity_) return false;
+    // First-wins. Grows the table if load factor would exceed 0.5, which
+    // bounds probe length and guarantees find() always terminates.
+    bool insert(int idx) {
+        if ((size_ + 1) * 2 > capacity_) grow();
         SEXP key = names_ptr_[idx];
         std::size_t pos = hash_(key);
         while (slots_[pos] != EMPTY_SLOT) {
@@ -103,17 +106,44 @@ struct sexp_index_table {
 
     private:
 
+    // Double capacity and rehash. Entries are unique by construction, so the
+    // inner loop only probes for an empty slot — no duplicate check needed.
+    void grow() {
+        std::size_t new_cap = capacity_ ? capacity_ * 2 : 16;
+        auto new_slots = std::make_unique<int[]>(new_cap);
+        std::size_t new_mask = new_cap - 1;
+        int new_shift = 64 - std::countr_zero(new_cap);
+
+        for (std::size_t i = 0; i < capacity_; ++i) {
+            int slot = slots_[i];
+            if (slot == EMPTY_SLOT) continue;
+            SEXP key = names_ptr_[from_slot(slot)];
+            std::size_t pos = static_cast<std::size_t>(sexp_data_hash(key) >> new_shift);
+            while (new_slots[pos] != EMPTY_SLOT) {
+                pos = (pos + 1) & new_mask;
+            }
+            new_slots[pos] = slot;
+        }
+
+        slots_ = std::move(new_slots);
+        capacity_ = new_cap;
+        mask_ = new_mask;
+        shift_ = new_shift;
+    }
+
     std::unique_ptr<int[]> slots_;
     const SEXP* names_ptr_ = nullptr;
     std::size_t capacity_ = 0;
     std::size_t mask_ = 0;
-    int shift_ = 64;
+    // Any value < 64 keeps hash_() well-defined before reserve/grow runs.
+    // It's overwritten the moment the table is sized.
+    int shift_ = 63;
     std::size_t size_ = 0;
 
     // Knuth multiplicative — upper bits of the product distribute well even
     // when the input bits are correlated (e.g. aligned pointers).
     std::size_t hash_(SEXP p) const noexcept {
-        return sexp_data_hash(p) >> shift_;
+        return static_cast<std::size_t>(sexp_data_hash(p) >> shift_);
     }
 };
 
@@ -141,9 +171,11 @@ struct names_map {
 
         map = std::make_shared<sexp_index_table>();
 
+        if (!names.has_value()) return;
         if (static_cast<SEXP>(*names) == R_NilValue) return;
 
         r_size_t n = Rf_xlength(*names);
+        if (n == 0) return;
         if (n > std::numeric_limits<int>::max()) [[unlikely]] {
             abort("Long vector name hashing is not supported");
         }
@@ -211,14 +243,15 @@ struct cache_registry {
     }
 
     std::shared_ptr<names_map> try_lookup(SEXP s) noexcept {
+        if ((++counter_ & (SWEEP_INTERVAL - 1)) == 0) sweep();
         auto it = storage_.find(s);
         return it != storage_.end() ? it->second.lock() : nullptr;
     }
 
     // Bind `sp` to `s` directly — used when sharing an already-built cache
-    // across sibling wrappers (see r_factors::remove).
+    // across sibling wrappers
     void store(SEXP s, std::shared_ptr<names_map> sp) {
-        storage_[s] = std::move(sp);
+        storage_.insert_or_assign(s, std::move(sp));
     }
 };
 
