@@ -264,7 +264,6 @@ cpp_source <- function(file, code = NULL, env = parent.frame(),
     error_messages <- gsub(tools::file_path_sans_ext(new_file_path),
                            tools::file_path_sans_ext(orig_file_path), error_messages,
                            fixed = TRUE)
-    cat(error_messages)
     stop("Compilation failed:\n", paste(error_messages, collapse = "\n"), call. = FALSE)
   }
   shared_lib <- file.path(dir, "src", paste0(tools::file_path_sans_ext(new_file_name),
