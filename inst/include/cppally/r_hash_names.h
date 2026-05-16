@@ -1,18 +1,16 @@
 #ifndef CPPALLY_R_HASH_NAMES_H
 #define CPPALLY_R_HASH_NAMES_H
 
+#include <cppally/r_setup.h>
 #include <ankerl/unordered_dense.h>
 #include <optional>
 #include <memory>
-#include <bit>
-#include <cstdint>
 
 namespace cppally {
 
-// Three layers for name → index lookups on R named vectors:
+// Two layers for name → index lookups on R named vectors:
 //
-//   sexp_index_table  raw open-addressing hash; slots store `index + 1`
-//   names_map         lazily builds a table from a STRSXP, owns the SEXP
+//   names_map         lazily builds a hash table from a STRSXP, owns the SEXP
 //   cache_registry    lets r_vec wrappers around the same SEXP share one
 //                     names_map, and lets attribute mutations invalidate
 //                     it by SEXP key
@@ -21,130 +19,10 @@ namespace cppally {
 // the table is built only on the first find(). Most wrappers never look
 // up by name, so both stages matter.
 
-// Knuth multiplicative hash
-inline std::uint64_t sexp_data_hash(SEXP p) noexcept {
-    constexpr std::uint64_t phi = 0x9E3779B97F4A7C15ull;
-    return static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(p)) * phi;
-}
-
 namespace internal {
 
-// Open-addressing hash from SEXP keys to indices into an external names
-// array. Keys aren't stored — comparison goes back through names_ptr_, so
-// the table only needs a single int[] of ~1.5x n ints (half ankerl's
-// footprint, one fewer cache line touched per insert).
-//
-// names_ptr_ is unowned. The owner (names_map) keeps the SEXP alive via
-// r_sexp; rebind_to_storage covers the edge case where the array is
-// replaced but stored indices are still valid.
-struct sexp_index_table {
-
-    // Slots store `index + 1`, so the value-initialised 0 means "empty".
-    // These helpers keep the encoding local to one place.
-    static constexpr int EMPTY_SLOT = 0;
-    static int to_slot(int idx)    noexcept { return idx + 1; }
-    static int from_slot(int slot) noexcept { return slot - 1; }
-
-    sexp_index_table() = default;
-
-    sexp_index_table(const sexp_index_table&) = delete;
-    sexp_index_table& operator=(const sexp_index_table&) = delete;
-    sexp_index_table(sexp_index_table&&) noexcept = default;
-    sexp_index_table& operator=(sexp_index_table&&) noexcept = default;
-
-    void set_capacity(std::size_t cap) noexcept {
-        capacity_ = cap;
-        mask_ = cap - 1;
-        shift_ = 64 - std::countr_zero(cap);
-    }
-
-    // Reserve room for at least n entries with ~33% headroom. Subsequent
-    // appends past this threshold are handled by grow().
-    void reserve(std::size_t n, const SEXP* names_ptr) {
-        std::size_t target = n + (n >> 1) + 1;
-        std::size_t cap = std::bit_ceil(std::max<std::size_t>(target, 16));
-        slots_ = std::make_unique<int[]>(cap); // value-init: all EMPTY_SLOT
-        set_capacity(cap);
-        size_ = 0;
-        names_ptr_ = names_ptr;
-    }
-
-    // Re-anchor the table to a new backing array. Use when the underlying
-    // names SEXP was replaced but stored indices are still valid — e.g.
-    // r_factors::append_level builds a strictly extended levels vector
-    // where every old index still points at the same CHARSXP.
-    void rebind_to_storage(const SEXP* names_ptr) noexcept { names_ptr_ = names_ptr; }
-
-    // Insert `idx` into the table. The key is read from names_ptr_[idx].
-    // First-wins. Grows the table if load factor would exceed 0.5, which
-    // bounds probe length and guarantees find() always terminates.
-    void insert(int idx) {
-        if ((size_ + 1) * 2 > capacity_){
-            grow();
-        }
-        SEXP key = names_ptr_[idx];
-        std::size_t pos = hash_(key);
-        while (slots_[pos] != EMPTY_SLOT) {
-            if (names_ptr_[from_slot(slots_[pos])] == key){
-                 return;
-            }
-            pos = (pos + 1) & mask_;
-        }
-        slots_[pos] = to_slot(idx);
-        ++size_;
-    }
-
-    int find(SEXP key) const noexcept {
-        if (capacity_ == 0) return -1;
-        std::size_t pos = hash_(key);
-        while (slots_[pos] != EMPTY_SLOT) {
-            int idx = from_slot(slots_[pos]);
-            if (names_ptr_[idx] == key) return idx;
-            pos = (pos + 1) & mask_;
-        }
-        return -1;
-    }
-
-    std::size_t size() const noexcept { return size_; }
-    bool empty() const noexcept { return size_ == 0; }
-
-    private:
-
-    // Double capacity and rehash. Entries are unique by construction, so the
-    // inner loop only probes for an empty slot — no duplicate check needed.
-    void grow() {
-        std::size_t new_cap = capacity_ ? capacity_ * 2 : 16;
-        auto new_slots = std::make_unique<int[]>(new_cap);
-        std::size_t new_mask = new_cap - 1;
-        int new_shift = 64 - std::countr_zero(new_cap);
-
-        for (std::size_t i = 0; i < capacity_; ++i) {
-            int slot = slots_[i];
-            if (slot == EMPTY_SLOT) continue;
-            SEXP key = names_ptr_[from_slot(slot)];
-            std::size_t pos = static_cast<std::size_t>(sexp_data_hash(key) >> new_shift);
-            while (new_slots[pos] != EMPTY_SLOT) {
-                pos = (pos + 1) & new_mask;
-            }
-            new_slots[pos] = slot;
-        }
- 
-        slots_ = std::move(new_slots);
-        set_capacity(new_cap);
-    }
-
-    std::unique_ptr<int[]> slots_;
-    const SEXP* names_ptr_ = nullptr;
-    std::size_t capacity_ = 0;
-    std::size_t mask_ = 0;
-    // Any value < 64 keeps hash_() well-defined before reserve/grow runs.
-    // It's overwritten the moment the table is sized.
-    int shift_ = 63;
-    std::size_t size_ = 0;
-    std::size_t hash_(SEXP p) const noexcept {
-        return static_cast<std::size_t>(sexp_data_hash(p) >> shift_);
-    }
-};
+// CHARSXP pointer → 0-based index into a STRSXP
+using sexp_index_table = ankerl::unordered_dense::map<SEXP, int>;
 
 // Lazily-built hash over a STRSXP for O(1) name → index lookup.
 // `names` is the protected STRSXP; nullopt = not yet captured from the parent.
@@ -181,10 +59,11 @@ struct names_map {
         }
 
         const SEXP* RESTRICT p_names = STRING_PTR_RO(nms);
-        map->reserve(static_cast<std::size_t>(n), p_names);
+        map->reserve(static_cast<std::size_t>(n));
         int n_ = static_cast<int>(n);
         for (int i = 0; i < n_; ++i){
-            map->insert(i);
+            // try_emplace = first-wins on duplicate names
+            map->try_emplace(p_names[i], i);
         }
     }
 
@@ -195,11 +74,11 @@ struct names_map {
     template <RStringType T>
     r_int find(const T& name, int offset = 0) const {
         lazy_build();
-        int idx = map->find(unwrap(name));
-        if (idx < 0) {
+        auto it = map->find(unwrap(name));
+        if (it == map->end()) {
             return na<r_int>();
         }
-        return r_int(idx + offset);
+        return r_int(it->second + offset);
     }
 };
 
