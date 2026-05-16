@@ -46,12 +46,35 @@ struct sexp_index_table {
     static int to_slot(int idx)    noexcept { return idx + 1; }
     static int from_slot(int slot) noexcept { return slot - 1; }
 
+    // Linear-probe step with wrap-around. `mask` must be `capacity - 1`
+    // for a power-of-two capacity, so the AND wraps `pos` back to 0
+    // after the last slot.
+    static std::size_t next_probe(std::size_t pos, std::size_t mask) noexcept {
+        return (pos + 1) & mask;
+    }
+
     sexp_index_table() = default;
 
     sexp_index_table(const sexp_index_table&) = delete;
     sexp_index_table& operator=(const sexp_index_table&) = delete;
     sexp_index_table(sexp_index_table&&) noexcept = default;
     sexp_index_table& operator=(sexp_index_table&&) noexcept = default;
+
+    std::unique_ptr<int[]> slots_;
+    const SEXP* names_ptr_ = nullptr;
+    std::size_t capacity_ = 0;
+    std::size_t mask_ = 0;
+    // Any value < 64 keeps hash_() well-defined before reserve/grow runs.
+    // It's overwritten the moment the table is sized.
+    int shift_ = 63;
+    std::size_t size_ = 0;
+
+    std::size_t size() const noexcept { return size_; }
+    bool empty() const noexcept { return size_ == 0; }
+    
+    std::size_t hash_(SEXP p) const noexcept {
+        return static_cast<std::size_t>(sexp_data_hash(p) >> shift_);
+    }
 
     void set_capacity(std::size_t cap) noexcept {
         capacity_ = cap;
@@ -76,38 +99,39 @@ struct sexp_index_table {
     // where every old index still points at the same CHARSXP.
     void rebind_to_storage(const SEXP* names_ptr) noexcept { names_ptr_ = names_ptr; }
 
+    // Walk the probe chain until we either find `key` or hit an empty slot.
+    // The returned position is either the match (slot non-empty, holds `key`)
+    // or the first empty slot in the chain. Caller checks which by reading
+    // slots_[pos]. Load factor ≤ 0.5 (enforced by insert) guarantees an
+    // empty slot exists, so this always terminates.
+    std::size_t probe_for(SEXP key) const noexcept {
+        std::size_t pos = hash_(key);
+        while (slots_[pos] != EMPTY_SLOT) {
+            if (names_ptr_[from_slot(slots_[pos])] == key) break;
+            pos = next_probe(pos, mask_);
+        }
+        return pos;
+    }
+
     // Insert `idx` into the table. The key is read from names_ptr_[idx].
-    // First-wins. Grows the table if load factor would exceed 0.5, which
-    // bounds probe length and guarantees find() always terminates.
+    // First-wins on duplicate keys. Grows the table if load factor would
+    // exceed 0.5, which bounds probe length and guarantees find() always
+    // terminates.
     void insert(int idx) {
         if ((size_ + 1) * 2 > capacity_){
             grow();
         }
-        SEXP key = names_ptr_[idx];
-        std::size_t pos = hash_(key);
-        while (slots_[pos] != EMPTY_SLOT) {
-            if (names_ptr_[from_slot(slots_[pos])] == key){
-                 return;
-            }
-            pos = (pos + 1) & mask_;
-        }
+        std::size_t pos = probe_for(names_ptr_[idx]);
+        if (slots_[pos] != EMPTY_SLOT) return;  // duplicate
         slots_[pos] = to_slot(idx);
         ++size_;
     }
 
     int find(SEXP key) const noexcept {
-        if (capacity_ == 0) return -1;
-        std::size_t pos = hash_(key);
-        while (slots_[pos] != EMPTY_SLOT) {
-            int idx = from_slot(slots_[pos]);
-            if (names_ptr_[idx] == key) return idx;
-            pos = (pos + 1) & mask_;
-        }
-        return -1;
+        if (empty()) return -1;
+        std::size_t pos = probe_for(key);
+        return slots_[pos] == EMPTY_SLOT ? -1 : from_slot(slots_[pos]);
     }
-
-    std::size_t size() const noexcept { return size_; }
-    bool empty() const noexcept { return size_ == 0; }
 
     private:
 
@@ -125,25 +149,13 @@ struct sexp_index_table {
             SEXP key = names_ptr_[from_slot(slot)];
             std::size_t pos = static_cast<std::size_t>(sexp_data_hash(key) >> new_shift);
             while (new_slots[pos] != EMPTY_SLOT) {
-                pos = (pos + 1) & new_mask;
+                pos = next_probe(pos, new_mask);
             }
             new_slots[pos] = slot;
         }
  
         slots_ = std::move(new_slots);
         set_capacity(new_cap);
-    }
-
-    std::unique_ptr<int[]> slots_;
-    const SEXP* names_ptr_ = nullptr;
-    std::size_t capacity_ = 0;
-    std::size_t mask_ = 0;
-    // Any value < 64 keeps hash_() well-defined before reserve/grow runs.
-    // It's overwritten the moment the table is sized.
-    int shift_ = 63;
-    std::size_t size_ = 0;
-    std::size_t hash_(SEXP p) const noexcept {
-        return static_cast<std::size_t>(sexp_data_hash(p) >> shift_);
     }
 };
 
