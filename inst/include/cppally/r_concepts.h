@@ -467,9 +467,8 @@ struct common_r_math_impl {
 template <typename T, typename U>
 struct common_r_type_impl {};
 
-template <typename T, typename U>
-requires (is<T, U>)
-struct common_r_type_impl<T, U> {
+template <typename T>
+struct common_r_type_impl<T, T> {
     using type = T;
 };
 
