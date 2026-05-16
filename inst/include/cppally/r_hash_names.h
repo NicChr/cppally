@@ -55,15 +55,19 @@ struct sexp_index_table {
     sexp_index_table(sexp_index_table&&) noexcept = default;
     sexp_index_table& operator=(sexp_index_table&&) noexcept = default;
 
+    void set_capacity(std::size_t cap) noexcept {
+        capacity_ = cap;
+        mask_ = cap - 1;
+        shift_ = 64 - std::countr_zero(cap);
+    }
+
     // Reserve room for at least n entries with ~33% headroom. Subsequent
     // appends past this threshold are handled by grow().
     void reserve(std::size_t n, const SEXP* names_ptr) {
         std::size_t target = n + (n >> 1) + 1;
         std::size_t cap = std::bit_ceil(std::max<std::size_t>(target, 16));
         slots_ = std::make_unique<int[]>(cap); // value-init: all EMPTY_SLOT
-        capacity_ = cap;
-        mask_ = cap - 1;
-        shift_ = 64 - std::countr_zero(cap);
+        set_capacity(cap);
         size_ = 0;
         names_ptr_ = names_ptr;
     }
@@ -77,17 +81,20 @@ struct sexp_index_table {
     // Insert `idx` into the table. The key is read from names_ptr_[idx].
     // First-wins. Grows the table if load factor would exceed 0.5, which
     // bounds probe length and guarantees find() always terminates.
-    bool insert(int idx) {
-        if ((size_ + 1) * 2 > capacity_) grow();
+    void insert(int idx) {
+        if ((size_ + 1) * 2 > capacity_){
+            grow();
+        }
         SEXP key = names_ptr_[idx];
         std::size_t pos = hash_(key);
         while (slots_[pos] != EMPTY_SLOT) {
-            if (names_ptr_[from_slot(slots_[pos])] == key) return true;
+            if (names_ptr_[from_slot(slots_[pos])] == key){
+                 return;
+            }
             pos = (pos + 1) & mask_;
         }
         slots_[pos] = to_slot(idx);
         ++size_;
-        return true;
     }
 
     int find(SEXP key) const noexcept {
@@ -124,11 +131,9 @@ struct sexp_index_table {
             }
             new_slots[pos] = slot;
         }
-
+ 
         slots_ = std::move(new_slots);
-        capacity_ = new_cap;
-        mask_ = new_mask;
-        shift_ = new_shift;
+        set_capacity(new_cap);
     }
 
     std::unique_ptr<int[]> slots_;
@@ -172,15 +177,16 @@ struct names_map {
         map = std::make_shared<sexp_index_table>();
 
         if (!names.has_value()) return;
-        if (static_cast<SEXP>(*names) == R_NilValue) return;
+        SEXP nms = *names;
+        if (nms == R_NilValue) return;
 
-        r_size_t n = Rf_xlength(*names);
+        r_size_t n = Rf_xlength(nms);
         if (n == 0) return;
         if (n > std::numeric_limits<int>::max()) [[unlikely]] {
             abort("Long vector name hashing is not supported");
         }
 
-        const SEXP* RESTRICT p_names = STRING_PTR_RO(*names);
+        const SEXP* RESTRICT p_names = STRING_PTR_RO(nms);
         map->reserve(static_cast<std::size_t>(n), p_names);
         int n_ = static_cast<int>(n);
         for (int i = 0; i < n_; ++i){
@@ -220,19 +226,20 @@ struct cache_registry {
     ankerl::unordered_dense::map<SEXP, std::weak_ptr<names_map>> storage_;
     std::size_t counter_ = 0;
 
-    void sweep() noexcept {
-        for (auto it = storage_.begin(); it != storage_.end(); ) {
-            if (it->second.expired()) it = storage_.erase(it);
-            else ++it;
+    void maybe_sweep() noexcept {
+        // Equivalent to (++counter_ % SWEEP_INTERVAL) == 0 — power-of-two interval lets us use &
+        if ((++counter_ & (SWEEP_INTERVAL - 1)) == 0){
+            for (auto it = storage_.begin(); it != storage_.end(); ) {
+                if (it->second.expired()) it = storage_.erase(it);
+                else ++it;
+            }
         }
     }
 
     public:
 
     std::shared_ptr<names_map> get_or_create(SEXP s) {
-        // Equivalent to (++counter_ % SWEEP_INTERVAL) == 0 — power-of-two interval lets us use &
-        if ((++counter_ & (SWEEP_INTERVAL - 1)) == 0) sweep();
-
+        maybe_sweep();
         auto [it, inserted] = storage_.try_emplace(s);
         if (!inserted) {
             if (auto sp = it->second.lock()) return sp;
@@ -243,7 +250,7 @@ struct cache_registry {
     }
 
     std::shared_ptr<names_map> try_lookup(SEXP s) noexcept {
-        if ((++counter_ & (SWEEP_INTERVAL - 1)) == 0) sweep();
+        maybe_sweep();
         auto it = storage_.find(s);
         return it != storage_.end() ? it->second.lock() : nullptr;
     }
