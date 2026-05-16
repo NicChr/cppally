@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_HASH_NAMES_H
 #define CPPALLY_R_HASH_NAMES_H
 
-#include <cppally/r_setup.h>
+#include <cppally/r_sexp.h>
 #include <ankerl/unordered_dense.h>
 #include <optional>
 #include <memory>
@@ -62,7 +62,7 @@ struct sexp_index_table {
     // Reserve room for at least n entries with ~33% headroom. Subsequent
     // appends past this threshold are handled by grow().
     void reserve(std::size_t n, const SEXP* names_ptr) {
-        std::size_t target = n + (n >> 1) + 1;
+        std::size_t target = 2 * (n + 1);
         std::size_t cap = std::bit_ceil(std::max<std::size_t>(target, 16));
         slots_ = std::make_unique<int[]>(cap); // value-init: all EMPTY_SLOT
         set_capacity(cap);
