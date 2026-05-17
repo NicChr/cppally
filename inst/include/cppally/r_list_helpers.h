@@ -8,10 +8,6 @@
 
 namespace cppally {
 
-inline r_vec<r_int> lengths(const r_vec<r_sexp>& x){
-    return x.lengths();
-}
-
 // Recycle helper functions
 
 namespace internal {
