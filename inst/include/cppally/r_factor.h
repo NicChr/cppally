@@ -112,7 +112,13 @@ struct r_factors {
     value = std::move(new_codes);
     cached_levels.reset();
     init_factor(lvls, false);
-}
+  }
+  
+  // Direct constructor from integer codes + string levels
+  template <RStringType T>
+  explicit r_factors(r_vec<r_int> codes, const r_vec<T>& levels, bool check_valid_levels = chk_fct_lvls_opt) : value(std::move(codes)){
+      init_factor(levels, check_valid_levels);
+  }
 
   private:
 
@@ -123,12 +129,6 @@ struct r_factors {
       // Set levels
       set_levels(levels, check_valid_levels);
   }
-
-  // Internal direct constructor
-  template <RStringType T>
-  explicit r_factors(r_vec<r_int>&& codes, const r_vec<T>& levels, bool check_valid_levels = chk_fct_lvls_opt) : value(std::move(codes)){
-      init_factor(levels, check_valid_levels);
-    }
     
   // For methods that just return a non-factor (like length())
   #define FORWARD_METHOD(NAME)                               \
@@ -146,6 +146,12 @@ struct r_factors {
           /* Wrap it in a new r_factors and pass our current levels */    \
           return r_factors(std::move(new_vec), this->levels(), false);    \
       }
+
+      // Levels but as a factor of its own levels
+      // r_factors levels_factor() const {
+      //   r_vec<r_int> lvls_fct_codes(levels().length());
+      //   return r_factors(std::move(lvls_fct_codes), levels());
+      // }
 
   public:
 
@@ -281,6 +287,22 @@ struct r_factors {
   template <RStringType U>
   void set(r_size_t index, const U& val) {
     value.set(index, get_code(val));
+  }
+
+  template <RStringType U>
+  r_factors recode(const r_vec<U>& new_levels) const {
+    // Empty codes — we only need the temp's levels for lookup
+    r_factors new_lvls_fct(r_vec<r_int>(), new_levels);
+    
+    // For each of this factor's levels, find its position in new_levels
+    r_vec<r_int> remap = new_lvls_fct.get_codes(levels());
+    r_size_t n = length();
+    r_vec<r_int> out(n);
+    for (r_size_t i = 0; i < n; ++i){
+      r_int c = value.get(i);
+      out.set(i, is_na(c) ? na<r_int>() : remap.get(unwrap(c) - 1));
+    }
+    return r_factors(std::move(out), new_levels); 
   }
 
   template <RStringType U>
