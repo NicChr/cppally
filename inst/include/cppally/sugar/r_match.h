@@ -13,7 +13,7 @@ namespace cppally {
 
 // match locations
 template <internal::RNumericSubscript U = r_int, RVal T>
-r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
+r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack, U no_match = na<U>()) {
 
   r_size_t n_needles = needles.length();
   r_size_t n_haystack = haystack.length();
@@ -41,7 +41,7 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
         return out;
       }
     }
-    out.set(0, na<U>());
+    out.set(0, no_match);
     return out;
   }
 
@@ -95,7 +95,7 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
           size_t idx = static_cast<size_t>(static_cast<int64_t>(val) - min_val);
           p_out[i] = p_table[idx];
         } else {
-          p_out[i] = unwrap(na<r_int>());
+          p_out[i] = unwrap(no_match);
         }
       }
       
@@ -114,7 +114,7 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack) {
   // Match needles
   for (r_size_t i = 0; i < n_needles; ++i) {
     auto it = lookup.find(p_needles[i]);
-    p_out[i] = (it != lookup.end() ? it->second : unwrap(na<U>()));
+    p_out[i] = (it != lookup.end() ? it->second : unwrap(no_match));
   }
 
   return out;
@@ -152,8 +152,13 @@ build_cross_col_eq_probes(const r_df& needles, const r_df& haystack) {
 
 }
 
+// Forward decl
+template <typename T, typename U>
+requires (is<T, r_sexp> || is<U, r_sexp>)
+inline r_vec<r_int> match(const T& x, const U& y, r_int no_match = na<r_int>());
+
 // match() for r_df: row-level match of needle rows against haystack rows
-inline r_vec<r_int> match(const r_df& needles, const r_df& haystack) {
+inline r_vec<r_int> match(const r_df& needles, const r_df& haystack, r_int no_match = na<r_int>()) {
     int n_ncol = needles.ncol();
     int h_ncol = haystack.ncol();
     
@@ -170,17 +175,7 @@ inline r_vec<r_int> match(const r_df& needles, const r_df& haystack) {
 
     // Use vector match
     if (n_ncol == 1) {
-        r_vec<r_int> out;
-        view_sexp(needles.value.view(0), [&]<typename NCol>(const NCol& nc) {
-            view_sexp(haystack.value.view(0), [&]<typename HCol>(const HCol& hc) {
-                if constexpr (is<NCol, HCol> && RVector<NCol>) {
-                    out = match<r_int>(nc, hc);
-                } else {
-                    abort("match(r_df, r_df): single-column type mismatch or unsupported");
-                }
-            });
-        });
-        return out;
+        return match(needles.value.view(0), haystack.value.view(0), no_match);
     }
 
     r_vec<r_int> out(n_needles);
@@ -207,7 +202,7 @@ inline r_vec<r_int> match(const r_df& needles, const r_df& haystack) {
 
     for (r_size_t i = 0; i < n_needles; ++i) {
         auto it = lookup.find(n_hashes[i]);
-        int found = unwrap(na<r_int>());
+        int found = unwrap(no_match);
         if (it != lookup.end()) {
             for (int j : it->second) {
                 if (rows_equal(static_cast<int>(i), j)) {
@@ -221,12 +216,18 @@ inline r_vec<r_int> match(const r_df& needles, const r_df& haystack) {
     return out;
 }
 
-inline r_vec<r_int> match(const r_factors& needles, const r_factors& haystack) {
+inline r_vec<r_int> match(const r_factors& needles, const r_factors& haystack, r_int no_match = na<r_int>()) {
   if (identical(needles.levels(), haystack.levels())){
-    return match(needles.value, haystack.value);
+    return match(needles.value, haystack.value, no_match);
   } else {
-    return match(as<r_vec<r_str_view>>(needles), as<r_vec<r_str_view>>(haystack));
+    return match(as<r_vec<r_str_view>>(needles), as<r_vec<r_str_view>>(haystack), no_match);
   }
+}
+
+template <typename T, typename U>
+requires (is<T, r_sexp> || is<U, r_sexp>)
+inline r_vec<r_int> match(const T& x, const U& y, r_int no_match) {
+  return CPPALLY_VIEW_PAIR_AND_APPLY(x, y, r_vec<r_int>, match, no_match);
 }
 
 template <RVal T>
@@ -246,12 +247,6 @@ r_factors::r_factors(const r_vec<T>& x, const r_vec<T>& levels) : value(match(x,
       }
   }
   init_factor(str_levels, false);
-}
-
-template <typename T, typename U>
-requires (is<T, r_sexp> || is<U, r_sexp>)
-inline r_vec<r_int> match(const T& x, const U& y) {
-  return CPPALLY_VIEW_PAIR_AND_APPLY(x, y, r_vec<r_int>, match);
 }
 
 }
