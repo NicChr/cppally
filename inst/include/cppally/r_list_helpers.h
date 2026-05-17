@@ -4,7 +4,7 @@
 #include <cppally/r_vec.h>
 #include <cppally/r_visit.h>
 #include <cppally/r_length.h>
-#include <cppally/r_rep.h>
+#include <cppally/sugar/r_rep.h>
 
 namespace cppally {
 
