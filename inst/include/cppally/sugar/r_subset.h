@@ -185,39 +185,6 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check, bool inver
 }
 }
 
-// r_vec<T> member functions
-
-template <RVal T>
-template <internal::RNumericSubscript V>
-r_vec<V> r_vec<T>::find(const r_vec<T>& values, bool invert) const {
-
-
-  if constexpr (is<V, r_int>){
-    if (is_long()){
-      abort("`x` is a long vector, please use `find<r_int64>` for 64-bit locations");
-    }
-  }
-
-  r_size_t n_values = values.length();
-
-  if (n_values == 0){
-    if (invert){
-      r_size_t n = length();
-      r_vec<V> out(n);
-      OMP_SIMD
-      for (r_size_t i = 0; i < n; ++i) out.set(i, V(static_cast<unwrap_t<V>>(i)));
-      return out;
-    } else {
-      return r_vec<V>();
-    }
-  } else if (n_values == 1){
-    // Just simple find loop
-    return find<V>(values.view(0), /*invert=*/ invert); 
-  }
-  r_vec<V> matches = match<V>(*this, values);
-  return matches.template find<V>(na<V>(), !invert);
-}
-
 template <RVal T>
 r_vec<T> r_vec<T>::remove(const r_vec<T>& values) const {
   if (is_long()){
