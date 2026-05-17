@@ -93,6 +93,11 @@ inline r_str cached_str() {
     return r_str(internal::lazy_str_impl<T>());
 }
 
+// Memory address
+inline r_str address(SEXP x) {
+    return r_sexp(x, internal::view_tag{}).address();
+}
+
 }
 
 #endif

@@ -105,6 +105,15 @@ inline const r_sexp r_null = r_sexp();
 // // Lazy loaded version
 // inline const r_sexp& r_null() { static const r_sexp s; return s; }
 
+// Equal to `r_null`?
+inline bool is_null(SEXP x) noexcept {
+    return x == R_NilValue;
+}
+
+inline bool is_altrep(SEXP x) noexcept {
+  return r_sexp(x, internal::view_tag{}).is_altrep();
+}
+
 }
 
 

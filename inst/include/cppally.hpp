@@ -30,7 +30,6 @@
 #include <cppally/r_coerce.h>
 #include <cppally/r_identical.h>
 #include <cppally/r_rep.h>
-#include <cppally/r_vec_sugar.h>
 #include <cppally/r_df_methods.h>
 #include <cppally/sugar/r_named_arg.h>
 #include <cppally/sugar/r_stats.h>
@@ -43,6 +42,7 @@
 #include <cppally/sugar/r_match.h>
 #include <cppally/sugar/r_unique.h>
 #include <cppally/sugar/r_subset.h>
+#include <cppally/sugar/r_count.h>
 #include <cppally/sugar/r_fill.h>
 #include <cppally/sugar/r_make_vec.h>
 #include <cppally/sugar/r_combine.h>

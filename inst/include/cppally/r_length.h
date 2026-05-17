@@ -27,6 +27,10 @@ inline r_size_t length(const r_sexp& x) {
     return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ r_size_t, /*fn = */ length);
 }
 
+inline bool is_long(SEXP x){
+    return length(r_sexp(x, internal::view_tag{})) > static_cast<r_size_t>(std::numeric_limits<int>::max());
+}
+
 // template <RVal T>
 // r_vec<r_int> r_vec<T>::lengths() const requires is<T, r_sexp> {
 //     r_size_t n = length();
