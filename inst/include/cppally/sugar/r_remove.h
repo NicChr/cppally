@@ -29,14 +29,26 @@ T remove(const T& x, const T& values) {
 
 template <RStringType U>
 r_factors remove(const r_factors& x, const r_vec<U>& values){
-
-    // r_vec<U> lvls = r_vec<U>(unwrap(x.levels()));
-
     // // Remove codes directly
-    // r_vec<r_int> codes_to_remove = match(values, lvls, r_int(-1));
-    // codes_to_remove += r_int(1);
     r_vec<r_int> codes_to_remove = x.get_codes(values, r_int(-1));
     r_vec<r_int> new_codes = x.value.remove(codes_to_remove);
+    r_factors out = x;
+    out.set_codes(new_codes);
+    return out;
+}
+
+inline r_factors remove(const r_factors& x, const r_factors& values){
+    r_vec<r_int> remap = x.get_codes(values.levels(), r_int(-1));
+
+    r_size_t n = values.length();
+    r_vec<r_int> translated(n);
+    r_vec<r_int> source_codes = values.value;
+
+    for (r_size_t i = 0; i < n; ++i){
+        r_int c = source_codes.get(i) - 1;
+        translated.set(i, is_na(c) ? na<r_int>() : remap.get(unwrap(c)));
+    }
+    r_vec<r_int> new_codes = x.value.remove(translated);
     r_factors out = x;
     out.set_codes(new_codes);
     return out;
