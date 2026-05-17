@@ -36,11 +36,11 @@ r_vec<V> r_vec<T>::find(const r_vec<T>& values, bool invert) const {
   return matches.template find<V>(na<V>(), !invert);
 }
 
-template <typename T, internal::RNumericSubscript V = r_int>
-requires requires(const T& a, const T& b, bool invert) { 
+template <typename T, typename U, internal::RNumericSubscript V = r_int>
+requires requires(const T& a, const U& b, bool invert) { 
   a.template find<V>(b, invert); 
 }
-r_vec<V> find(const T& x, const T& values, bool invert = false) {
+r_vec<V> find(const T& x, const U& values, bool invert = false) {
     return x.template find<V>(values, invert);
 }
 
