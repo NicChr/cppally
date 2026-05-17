@@ -158,7 +158,7 @@ switch (internal::CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
 // If the visited type can't be disambiguated, this is caught in the first branch
 #define CPPALLY_VIEW_AND_APPLY(x, ret, fn, ...)                                 \
     view_sexp(x, [&](const auto& x_) -> ret {                                   \
-        if constexpr (is<std::remove_cvref_t<decltype(x_)>, r_sexp>) {          \
+        if constexpr (is<decltype(x_), r_sexp>) {                               \
             abort("Unsupported SEXP type in `" #fn "()`");                      \
         } else if constexpr (requires { fn(x_ __VA_OPT__(,) __VA_ARGS__); }) {  \
             return fn(x_ __VA_OPT__(,) __VA_ARGS__);                            \
@@ -170,7 +170,7 @@ switch (internal::CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
 
 #define CPPALLY_VISIT_AND_APPLY(x, ret, fn, ...)                                 \
     visit_sexp(x, [&](const auto& x_) -> ret {                                   \
-        if constexpr (is<std::remove_cvref_t<decltype(x_)>, r_sexp>) {           \
+        if constexpr (is<decltype(x_), r_sexp>) {                                \
             abort("Unsupported SEXP type in `" #fn "()`");                       \
         } else if constexpr (requires { fn(x_ __VA_OPT__(,) __VA_ARGS__); }) {   \
             return fn(x_ __VA_OPT__(,) __VA_ARGS__);                             \
@@ -179,6 +179,62 @@ switch (internal::CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
                 internal::type_str<std::remove_cvref_t<decltype(x_)>>());        \
         }                                                                        \
     })
+
+    // Double dispatch — handles (r_sexp, r_sexp), (r_sexp, V), and (V, r_sexp).
+    #define CPPALLY_VIEW_PAIR_AND_APPLY(x, y, ret, fn, ...)                                             \
+        [&]() -> ret {                                                                                  \
+            using x_in_t = std::remove_cvref_t<decltype(x)>;                                            \
+            using y_in_t = std::remove_cvref_t<decltype(y)>;                                            \
+            static_assert(is<x_in_t, r_sexp> || is<y_in_t, r_sexp>,                                     \
+                          "CPPALLY_VIEW_PAIR_AND_APPLY: at least one of x, y must be r_sexp");          \
+            if constexpr (is<x_in_t, r_sexp> && is<y_in_t, r_sexp>) {                                   \
+                return view_sexp(x, [&](const auto& x_) -> ret {                                        \
+                    using x_t = std::remove_cvref_t<decltype(x_)>;                                      \
+                    if constexpr (is<x_t, r_sexp>) {                                                    \
+                        abort("Unsupported SEXP type in `" #fn "()`");                                  \
+                    } else {                                                                            \
+                        return view_sexp(y, [&](const auto& y_) -> ret {                                \
+                            using y_t = std::remove_cvref_t<decltype(y_)>;                              \
+                            if constexpr (is<y_t, r_sexp>) {                                            \
+                                abort("Unsupported SEXP type in `" #fn "()`");                          \
+                            } else if constexpr (requires { fn(x_, y_ __VA_OPT__(,) __VA_ARGS__); }) {  \
+                                return fn(x_, y_ __VA_OPT__(,) __VA_ARGS__);                            \
+                            } else {                                                                    \
+                                abort("No available method for types %s and %s in `" #fn "()`",         \
+                                    internal::type_str<x_t>(),                                          \
+                                    internal::type_str<y_t>());                                         \
+                            }                                                                           \
+                        });                                                                             \
+                    }                                                                                   \
+                });                                                                                     \
+            } else if constexpr (is<x_in_t, r_sexp>) {                                                  \
+                return view_sexp(x, [&](const auto& x_) -> ret {                                        \
+                    using x_t = std::remove_cvref_t<decltype(x_)>;                                      \
+                    if constexpr (is<x_t, r_sexp>) {                                                    \
+                        abort("Unsupported SEXP type in `" #fn "()`");                                  \
+                    } else if constexpr (requires { fn(x_, y __VA_OPT__(,) __VA_ARGS__); }) {           \
+                        return fn(x_, y __VA_OPT__(,) __VA_ARGS__);                                     \
+                    } else {                                                                            \
+                        abort("No available method for types %s and %s in `" #fn "()`",                 \
+                            internal::type_str<x_t>(),                                                  \
+                            internal::type_str<y_in_t>());                                              \
+                    }                                                                                   \
+                });                                                                                     \
+            } else {                                                                                    \
+                return view_sexp(y, [&](const auto& y_) -> ret {                                        \
+                    using y_t = std::remove_cvref_t<decltype(y_)>;                                      \
+                    if constexpr (is<y_t, r_sexp>) {                                                    \
+                        abort("Unsupported SEXP type in `" #fn "()`");                                  \
+                    } else if constexpr (requires { fn(x, y_ __VA_OPT__(,) __VA_ARGS__); }) {           \
+                        return fn(x, y_ __VA_OPT__(,) __VA_ARGS__);                                     \
+                    } else {                                                                            \
+                        abort("No available method for types %s and %s in `" #fn "()`",                 \
+                            internal::type_str<x_in_t>(),                                               \
+                            internal::type_str<y_t>());                                                 \
+                    }                                                                                   \
+                });                                                                                     \
+            }                                                                                           \
+        }()
 
 }
 

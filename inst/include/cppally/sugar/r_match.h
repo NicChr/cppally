@@ -248,23 +248,10 @@ r_factors::r_factors(const r_vec<T>& x, const r_vec<T>& levels) : value(match(x,
   init_factor(str_levels, false);
 }
 
-template <typename V>
-r_vec<r_int> match(const r_sexp& needles, const V& haystack) {
-  return view_sexp(needles, [&]<typename x_t>(const x_t& x_) -> r_vec<r_int> {
-    if constexpr (is<x_t, r_sexp>){
-        abort("Unsupported SEXP type in `match()`");
-    } else if constexpr (requires { match(x_, haystack); }){
-        return match(x_, haystack);
-    } else {
-        abort("No available method for types %s and %s in `match()`", internal::type_str<std::remove_cvref_t<x_t>>(), internal::type_str<std::remove_cvref_t<V>>());
-    }
-  });
-}
-
-inline r_vec<r_int> match(const r_sexp& needles, const r_sexp& haystack) {
-  return visit_sexp(haystack, [&](const auto& haystack_) -> r_vec<r_int> {
-    return match(needles, haystack_);
-  });
+template <typename T, typename U>
+requires (is<T, r_sexp> || is<U, r_sexp>)
+inline r_vec<r_int> match(const T& x, const U& y) {
+  return CPPALLY_VIEW_PAIR_AND_APPLY(x, y, r_vec<r_int>, match);
 }
 
 }
