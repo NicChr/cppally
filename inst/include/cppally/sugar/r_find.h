@@ -46,16 +46,11 @@ r_vec<V> find(const T& x, const U& values, bool invert = false) {
 
 template <RStringType U>
 r_vec<r_int> find(const r_factors& x, const r_vec<U>& values, bool invert = false){
-    // r_vec<U> lvls = r_vec<U>(unwrap(x.levels()));
-    // r_vec<r_int> matches = match(values, lvls, r_int(-1));
-    // matches += r_int(1);
     r_vec<r_int> codes = x.get_codes(values, r_int(-1));
     return x.value.find(codes, invert);
 }
 
 inline r_vec<r_int> find(const r_factors& x, const r_factors& values, bool invert = false){
-    // r_vec<r_int> remap = match(values.levels(), x.levels(), r_int(-1));
-    // remap += 1;
     r_vec<r_int> remap = x.get_codes(values.levels(), r_int(-1));
 
     r_size_t n = values.length();
