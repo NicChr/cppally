@@ -8,29 +8,27 @@
 
 namespace cppally {
 
-// inline void r_copy_n(r_factors& target, const r_factors& source, r_size_t target_offset, r_size_t n){
-//     r_vec<r_str_view> target_lvls = target.levels();
-//     r_vec<r_str_view> source_lvls = source.levels();
-//     // r_vec<r_int> target_codes = target.value;
-//     // r_vec<r_int> source_codes = source.value;
+// namespace internal {
+// inline r_vec<r_str_view> combine_levels(const r_vec<r_str_view>& x_lvls, const r_vec<r_str_view>& y_lvls){
 
-//     // setdiff(new_levels, old_levels)
-//     r_vec<r_str_view> new_lvls = source_lvls.subset(source_lvls.find(target_lvls, /*invert = */ true));
-//     r_size_t n_new_lvls = new_lvls.length();
+//     r_vec<r_str_view> new_lvls = y_lvls.subset(y_lvls.find(x_lvls, /*invert = */ true));
     
-//     // Append new levels
-//     for (r_size_t i = 0; i < n_new_lvls; ++i){
-//         target.append_level(new_lvls.get(i));
+//     if (new_lvls.length() == 0){
+//         return x_lvls;
 //     }
 
-//     // Replace categories
-//     for (r_size_t i = 0; i < n; ++i) {
-//         target.set(target_offset + i, source.view(i));
-//     }
+//     r_size_t n_lvls = x_lvls.length() + new_lvls.length();
+//     r_vec<r_str_view> out(n_lvls);
+//     r_copy_n(out, x_lvls, 0, x_lvls.length());
+//     r_copy_n(out, new_lvls, x_lvls.length(), new_lvls.length());
+//     return out;
+// }
 // }
 
 template <typename T>
-requires (RVector<T> || RFactor<T>)
+T flatten(const r_vec<r_sexp>& x) = delete;
+
+template <RVector T>
 T flatten(const r_vec<r_sexp>& x) {
     
     r_size_t n = x.length();
@@ -50,6 +48,29 @@ T flatten(const r_vec<r_sexp>& x) {
     }
     return out;
 }
+
+// template <>
+// inline r_factors flatten<r_factors>(const r_vec<r_sexp>& x) {
+    
+//     r_size_t n = x.length();
+//     r_size_t out_size = 0;
+//     for (r_size_t i = 0; i < n; ++i) {
+//         out_size += length(x.view(i));
+//     }
+
+//     r_vec<r_str_view> out(out_size);
+//     r_vec<r_str_view> all_levels{};
+//     r_size_t k = 0; 
+//     r_size_t m;
+
+//     for (r_size_t i = 0; i < n; k += m, ++i) {
+//         r_factors fct = as<r_factors>(x.view(i));
+//         all_levels = combine_levels(all_levels, fct.levels());
+//         m = length(fct);
+//         r_copy_n(out, as<r_vec<r_str_view>>(fct), k, m);
+//     }
+//     return r_factors(out, all_levels);
+// }
   
 template <typename... Args>
 auto combine(Args... args){
