@@ -206,16 +206,19 @@ struct r_factors {
   // Find factor code associated with factor string
   // Since levels are assumed to be unique, we find the first match
   template <RStringType U>
-  r_int get_code(const U& val) const {
+  r_int get_code(const U& val, r_int no_match = na<r_int>()) const {
+    
     // Hash path: cache already built by us or by a sibling wrapper.
     if (cached_levels && cached_levels->names.has_value()) {
-      return cached_levels->find(val, /*offset = */ 1);
+      r_int out = cached_levels->find(val, /*offset = */ 1);
+      return is_na(out) ? no_match : out;
     }
 
     // Second-or-later lookup without a built cache: build it.
     if (first_access) {
       ensure_levels_cached();
-      return cached_levels->find(val, /*offset = */ 1);
+      r_int out = cached_levels->find(val, /*offset = */ 1);
+      return is_na(out) ? no_match : out;
     }
 
     first_access = true;
@@ -223,7 +226,7 @@ struct r_factors {
     // First lookup: linear scan over the levels STRSXP.
     r_vec<r_str_view> levels_attr = levels();
     if (levels_attr.is_null()) [[unlikely]] {
-      return na<r_int>();
+      return no_match;
     }
     r_size_t n = levels_attr.length();
     auto key = unwrap(val);
@@ -233,7 +236,7 @@ struct r_factors {
         return r_int(static_cast<int>(i) + 1);
       }
     }
-    return na<r_int>();
+    return no_match;
   }
 
   r_int get_code(std::string_view val) const {
@@ -241,11 +244,12 @@ struct r_factors {
   }
 
   template <RStringType U>
-  r_vec<r_int> get_codes(const r_vec<U>& vals) const {
+  r_vec<r_int> get_codes(const r_vec<U>& vals, r_int no_match = na<r_int>()) const {
     int n = vals.length();
     r_vec<r_int> out(n);
     for (int i = 0; i < n; ++i){
-      out.set(i, get_code(vals.view(i)));
+      r_int code = get_code(vals.view(i), no_match);
+      out.set(i, code);
     }
     return out;
   }
