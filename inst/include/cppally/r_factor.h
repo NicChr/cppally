@@ -3,6 +3,7 @@
 
 #include <cppally/r_limits.h>
 #include <cppally/r_vec.h>
+#include <cppally/r_vec_methods.h>
 #include <cppally/r_hash_names.h>
 #include <cppally/r_attrs.h>
 
@@ -427,6 +428,34 @@ inline void share_levels_cache(r_factors& target, const r_factors& source) {
     Rf_unprotect(1);
 }
 
+}
+
+// r_factors vectorised operators
+
+inline r_vec<r_lgl> operator==(const r_factors& lhs, const r_factors& rhs) {
+  r_vec<r_int> fct_codes = lhs.value;
+  r_vec<r_int> comparable_codes = rhs.new_codes(lhs.levels(), r_int(-1));
+  return fct_codes == comparable_codes;
+}
+
+template <RStringType U>
+inline r_vec<r_lgl> operator==(const r_factors& lhs, const r_vec<U>& rhs) {
+  r_vec<r_int> fct_codes = lhs.value;
+  r_vec<r_int> comparable_codes = lhs.get_codes(rhs, r_int(-1));
+  return fct_codes == comparable_codes;
+}
+
+template <RStringType U>
+inline r_vec<r_lgl> operator==(const r_vec<U>& lhs, const r_factors& rhs) {
+  r_vec<r_int> comparable_codes = rhs.get_codes(lhs, r_int(-1));
+  r_vec<r_int> fct_codes = rhs.value;
+  return fct_codes == comparable_codes;
+}
+
+template <typename T, typename U>
+requires (RFactor<T> || RFactor<U>)
+inline r_vec<r_lgl> operator!=(const T& lhs, const U& rhs) {
+  return !(lhs == rhs);
 }
 
 }
