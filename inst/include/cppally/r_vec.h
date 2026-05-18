@@ -248,7 +248,7 @@ struct r_vec {
   template <RStringType U>
   r_int name_index(const U& name, bool abort_on_missing = true) const {
     auto report_no_match = [&]() {
-      abort("%s: There is no value named '%s'", __func__, name.c_str());
+      abort("%s: There is no element named '%s'", __func__, name.c_str());
     };
 
     // Second-or-later lookup - cache hash map
