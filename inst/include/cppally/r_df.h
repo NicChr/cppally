@@ -244,6 +244,9 @@ struct r_df {
     r_df view(r_size_t index) const {
         return get_row(index);
     }
+
+    // void set_row(r_size_t index, const r_df& row);
+
 };
 
 }

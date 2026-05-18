@@ -309,10 +309,21 @@ struct r_factors {
     return out;
   }
 
-  // Re-generate factor using new factor levels
+  // Re-generate factor using new factor levels in-place
   template <RStringType U>
-  r_factors recode(const r_vec<U>& new_levels) const {
-    return r_factors(std::move(new_codes(new_levels)), new_levels); 
+  void recode(const r_vec<U>& new_levels) {
+    // Empty codes — we only need the temp's levels for lookup
+    r_factors new_lvls_fct(r_vec<r_int>(), new_levels);
+    
+    // For each of this factor's levels, find its position in new_levels
+    r_vec<r_int> remap = new_lvls_fct.get_codes(levels(), na<r_int>());
+    r_size_t n = length();
+    for (r_size_t i = 0; i < n; ++i){
+      r_int c = value.get(i);
+      // Legit NA codes always stay NA — only unmapped levels use the sentinel
+      value.set(i, is_na(c) ? na<r_int>() : remap.get(unwrap(c) - 1));
+    }
+    set_levels(new_levels);
   }
 
   template <RStringType U>

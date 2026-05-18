@@ -105,6 +105,21 @@ inline r_df r_df::get_row(int index) const {
     return r_df(out, 1, internal::no_checks_tag{});
 }
 
+// void r_df::set_row(r_size_t index, const r_df& row){
+//     int ncols = ncol();
+    
+//     if (ncols != row.ncol()) [[unlikely]] {
+//         abort("%s: `ncol()` must match `row.ncol()`", __func__);
+//     }
+
+//     r_vec<r_str_view> nms = colnames();
+//     for (r_size_t i = 0; i < ncols; ++i){
+//         r_str_view colname = nms.view(i);
+//         int col_loc = col_index(colname);
+//         set_col(i, row.get_col(colname));
+//     }
+// }
+
 template <internal::RSubscript U>
 inline r_df r_df::select(const r_vec<U>& cols) const {
     return r_df(value.subset(cols), false, nrow());
