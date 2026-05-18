@@ -398,32 +398,56 @@ if constexpr (RVector<lhs_t> && RVector<rhs_t>){                                
 }
 
 template<typename T, typename U>
-requires (RVector<T> || RVector<U>)
+requires ( 
+    (RVector<T> && RVector<U>) ||
+    (RVector<T> && RScalar<U>) ||
+    (RScalar<T> && RVector<U>)
+)
 inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, ==, r_vec<r_lgl>)
 }
 template<typename T, typename U>
-requires (RVector<T> || RVector<U>)
+requires ( 
+    (RVector<T> && RVector<U>) ||
+    (RVector<T> && RScalar<U>) ||
+    (RScalar<T> && RVector<U>)
+)
 inline r_vec<r_lgl> operator!=(const T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, !=, r_vec<r_lgl>)
 }
 template<typename T, typename U>
-requires (RVector<T> || RVector<U>)
+requires ( 
+    (RVector<T> && RVector<U>) ||
+    (RVector<T> && RScalar<U>) ||
+    (RScalar<T> && RVector<U>)
+)
 inline r_vec<r_lgl> operator<=(const T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, <=, r_vec<r_lgl>)
 }
 template<typename T, typename U>
-requires (RVector<T> || RVector<U>)
+requires ( 
+    (RVector<T> && RVector<U>) ||
+    (RVector<T> && RScalar<U>) ||
+    (RScalar<T> && RVector<U>)
+)
 inline r_vec<r_lgl> operator<(const T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, <, r_vec<r_lgl>)
 }
 template<typename T, typename U>
-requires (RVector<T> || RVector<U>)
+requires ( 
+    (RVector<T> && RVector<U>) ||
+    (RVector<T> && RScalar<U>) ||
+    (RScalar<T> && RVector<U>)
+)
 inline r_vec<r_lgl> operator>=(const T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, >=, r_vec<r_lgl>)
 }
 template<typename T, typename U>
-requires (RVector<T> || RVector<U>)
+requires ( 
+    (RVector<T> && RVector<U>) ||
+    (RVector<T> && RScalar<U>) ||
+    (RScalar<T> && RVector<U>)
+)
 inline r_vec<r_lgl> operator>(const T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, >, r_vec<r_lgl>)
 }
@@ -463,7 +487,7 @@ inline r_vec<T> operator-(const r_vec<T>& x){
     r_vec<T> out(n);
     OMP_SIMD
     for (r_size_t i = 0; i < n; ++i){
-        out.set(i, -x.view(i));
+        out.set(i, -x.get(i));
     }
     return out;
 }
