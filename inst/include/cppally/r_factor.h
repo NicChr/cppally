@@ -253,6 +253,7 @@ struct r_factors {
     return value.get(index);
   }
 
+  // Find factor codes associated with character vector
   template <RStringType U>
   r_vec<r_int> get_codes(const r_vec<U>& vals, r_int no_match = na<r_int>()) const {
     int n = vals.length();
@@ -289,6 +290,7 @@ struct r_factors {
     value.set(index, get_code(val));
   }
 
+  // Generate new factor codes along x against new factor levels
   template <RStringType U>
   r_vec<r_int> new_codes(const r_vec<U>& new_levels, r_int no_match = na<r_int>()) const {
     // Empty codes — we only need the temp's levels for lookup
@@ -306,6 +308,7 @@ struct r_factors {
     return out;
   }
 
+  // Re-generate factor using new factor levels
   template <RStringType U>
   r_factors recode(const r_vec<U>& new_levels) const {
     return r_factors(std::move(new_codes(new_levels)), new_levels); 
@@ -397,32 +400,6 @@ struct r_factors {
     result.ensure_levels_cached();
     result.cached_levels->map = this->cached_levels->map;
     return result;
-  }
-
-  template <RStringType U>
-  void append_level(const U& level){
-    r_int existing_code = get_code(level);
-    // Level already exists
-    if (!is_na(existing_code)){
-      return;
-    }
-
-    // If new level is NA, existing factor NA values are replaced with corresponding code matching the newly added NA level
-    if (is_na(level)){
-      value.replace(na<r_int>(), r_int(static_cast<int>(levels().length() + 1)));
-    }
-
-    // Build new levels
-    r_vec<r_str_view> new_levels(levels().length() + 1);
-    r_copy_n(new_levels, levels(), 0, levels().length());
-    new_levels.set(new_levels.length() - 1, level);
-
-    // set_levels invalidates our cache. Since cached_levels is unique to this
-    // wrapper (share_levels_cache and remove() share only the inner table,
-    // not the names_map), invalidation does not affect sibling wrappers — and
-    // any shared inner table is dropped via the shared_ptr ref-count, leaving
-    // siblings with their own view intact. Hash is rebuilt lazily on next find.
-    set_levels(new_levels, false);
   }
 
 };
