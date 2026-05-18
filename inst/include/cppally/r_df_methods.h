@@ -159,6 +159,33 @@ inline r_df make_df(Args&&... args) {
     return r_df(make_vec<r_sexp>(std::forward<Args>(args)...), /*recycle = */ true);
 }
 
+// Dispatch on the i-th column's wrapped type, gated to RComposite.
+// Non-RComposite SEXP types (r_sym, fallback r_sexp) abort.
+template <typename index_t, class F>
+decltype(auto) r_df::with_col(const index_t& index, F&& f, bool view_only) const {
+    if (view_only){
+        return view_sexp(view_col(index),
+        [&]<typename T>(T&& x) -> decltype(f(std::declval<r_vec<r_lgl>>())) {
+          using U = std::remove_cvref_t<T>;
+          if constexpr (RComposite<U>) {
+              return f(std::forward<T>(x));
+          } else {
+              abort("col_apply: r_df can't handle column type: %s", internal::type_str<U>());
+          }
+        });
+    } else {
+        return visit_sexp(view_col(index),
+        [&]<typename T>(T&& x) -> decltype(f(std::declval<r_vec<r_lgl>>())) {
+          using U = std::remove_cvref_t<T>;
+          if constexpr (RComposite<U>) {
+            return f(std::forward<T>(x));
+          } else {
+            abort("col_apply: r_df can't handle column type: %s", internal::type_str<U>());
+          }
+        });
+    }
+}
+
 }
 
 #endif

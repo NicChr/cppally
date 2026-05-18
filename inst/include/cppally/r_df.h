@@ -184,6 +184,10 @@ struct r_df {
     // Undefine the macros so they don't leak out of the struct
     #undef FORWARD_METHOD
 
+    template <typename T>
+    int col_index(const T& name) const {
+        return static_cast<int>(unwrap(value.name_index(name, /*abort_on_missing = */ true)));
+    }
     
     r_vec<r_str> rownames() const;
     template <internal::RSubscript U>
@@ -216,7 +220,11 @@ struct r_df {
         return value.view(index);
     }
 
-    
+    // Visit the i-th column dispatched to its concrete RComposite type.
+    // Definition in r_df_methods.h (needs visit_sexp)
+    template <typename index_t, class F>
+    decltype(auto) with_col(const index_t& index, F&& f, bool view_only = false) const;
+
     template <RObject col_t>
     void set_col(int index, const col_t& col) {
         value.set(index, r_sexp(col, internal::view_tag{}));
@@ -230,10 +238,12 @@ struct r_df {
         set_col(r_str(colname.data()), col);
     }
 
-    // template <internal::RSubscript T, internal::RSubscript U>
-    // void fill(const r_vec<T>& row_indices, const r_vec<U>& col_indices, const r_df& replacement);
-    // template <internal::RSubscript T>
-    // void fill(const r_vec<T>& row_indices, const r_df& replacement);
+    r_df get(r_size_t index) const {
+        return get_row(index);
+    }
+    r_df view(r_size_t index) const {
+        return get_row(index);
+    }
 };
 
 }
