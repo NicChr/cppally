@@ -8,6 +8,9 @@
 
 - New variadic function `make_df()` to create in-line data frames
 
+- Various `r_df` members have been added to allow easier data frame
+  manipulation
+
 #### Breaking changes
 
 - `r_sexp.length()` has been deprecated, in favour of the free function
@@ -56,12 +59,25 @@ long as the element coercions are supported by `cppally::as`
 
 - New alias of `r_vec`, `r_vector`
 
-- For named vectors, lookup by name has been improved in C++ by
-  introducing a hashing approach. On second lookup, a hash map of names
-  is created and cached, making subsequent lookups much faster. This
-  also applies to factor levels.
+- For named vectors, lookup by name has been dramatically improved in
+  C++ by introducing a hashing approach. On second lookup, a hash map of
+  names is created and cached, making subsequent lookups much faster.
+  This also applies to factor levels.
 
 - Named-vector subsetting is now supported
+
+- New C++ functions `combine()` and `flatten()`. `combine()` is a
+  variadic function that allows for combining multiple vectors into one,
+  similar to [`base::c()`](https://rdrr.io/r/base/c.html) but always
+  casts vectors to the common type among them. `flatten()` allows one to
+  flatten a list of vectors into one vector of a specified type. Similar
+  to `unlist(recursive = FALSE)` but it differs in that only the return
+  type must be specified,
+  e.g. `flatten<r_vector<r_int>>(make_vec<r_sexp>(1, 2, 3))`
+
+- Many functions that were originally `r_vec` only members are now free
+  functions that also work on `r_sexp` as well as `RComposite` types,
+  allowing for easier manipulation of lists.
 
 #### Bug fixes
 
