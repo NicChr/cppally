@@ -5,6 +5,7 @@
 #include <cppally/r_vec.h>
 #include <cppally/r_visit.h>
 #include <cppally/r_sexp_types.h>
+#include <cppally/r_copy.h>
 #include <vector>
 
 namespace cppally {
@@ -123,7 +124,7 @@ inline std::remove_cvref_t<T> as(const U& x) {
     }
 
   } else if constexpr (RDataFrame<from_t>){ // from data frame
-    r_vec<r_sexp> lst(safe[Rf_shallow_duplicate](x.value));
+    r_vec<r_sexp> lst(shallow_copy(x.value));
     attr::clear_attrs(lst);
     // Keep names
     lst.set_names(x.colnames());
@@ -141,6 +142,10 @@ inline std::remove_cvref_t<T> as(const U& x) {
   } else if constexpr (RVector<to_t> && RVector<from_t>){ // From one vector to another
     using to_data_t = typename to_t::data_type;
     using from_data_t = typename from_t::data_type;
+
+    if (x.is_null()){
+      return to_t(r_null);
+    }
 
     // Special case: from r_vec<r_str> to r_vec<r_str_view> (or vice versa)
     // No need to actually loop here as they both are exactly the same character vector
