@@ -288,7 +288,7 @@ T gcd(const r_vec<T> &x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
       out = gcd(out, x.get(i), na_rm);
       if (!na_rm && is_na(out)){
           break;
-      } else if (out == 1){
+      } else if ( (out == 1).is_true() ){
           break;
       }
   }
@@ -312,7 +312,7 @@ T gcd(const r_vec<T> &x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
       if (!na_rm && is_na(out)){
           break;
       }
-      if (out > T(0.0) && out < (tol + tol)){
+      if ( (out > T(0.0) && out < (tol + tol)).is_true() ){
         out = tol;
         break;
       }
