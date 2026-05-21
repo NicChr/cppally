@@ -243,7 +243,7 @@ inline r_dbl signif(T x, U digits){
 }
 
 inline r_lgl is_whole_number(r_dbl x, r_dbl tolerance){
-  return is_na(x) || is_na(tolerance) ? na<r_lgl>() : abs(x - round(x)) <= tolerance;
+  return abs(x - round(x)) <= tolerance;
 }
 
 
