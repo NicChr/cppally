@@ -250,69 +250,75 @@ inline r_lgl is_whole_number(r_dbl x, r_dbl tolerance){
 // Greatest common divisor
 template <RMathType T>
 inline T gcd(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
-  if (is_na(x) || is_na(y)){
+
+  using unwrapped_t = unwrap_t<T>;
+
+  T ax = abs(x);
+  T ay = abs(y);
+
+  if (is_na(ax) || is_na(ay)){
     if (na_rm){ 
-      if (is_na(x)){
-        return abs(y);
+      if (is_na(ax)){
+        return ay;
       } else {
-        return abs(x);
+        return ax;
       }
     } else {
       return na<T>();
     }
   }
 
-  auto ax = std::abs(unwrap(x));
-  auto ay = std::abs(unwrap(y));
-  using unwrapped_t = decltype(ax);
+  unwrapped_t ax_ = unwrap(ax);
+  unwrapped_t ay_ = unwrap(ay);
+  unwrapped_t tol_ = unwrap(tol);
 
   if constexpr (RIntegerType<T>){
 
     // Taken from number theory lecture notes
 
     // GCD(0,0)=0
-    if (ax == 0 && ay == 0){
+    if (ax_ == 0 && ay_ == 0){
       return T(0);
     }
     // GCD(a,0)=a
-    if (ax == 0){
-      return T(ay);
+    if (ax_ == 0){
+      return ay;
     }
     // GCD(a,0)=a
-    if (ay == 0){
-      return T(ax);
+    if (ay_ == 0){
+      return ax;
     }
 
     unwrapped_t r;
 
-    while(ay != 0){
-      r = ax % ay;
-      ax = ay;
-      ay = r;
+    while(ay_ != 0){
+      r = ax_ % ay_;
+      ax_ = ay_;
+      ay_ = r;
     }
-    return T(ax);
+    return T(ax_);
   } else {
 
     // GCD(0,0)=0
-    if (ax <= tol && ay <= tol){
+    if (ax_ <= tol_ && ay_ <= tol_){
       return T(0.0);
     }
     // GCD(a,0)=a
-    if (ax <= tol){
-      return T(ay);
+    if (ax_ <= tol_){
+      return ay;
     }
     // GCD(a,0)=a
-    if (ay <= tol){
-      return T(ax);
+    if (ay_ <= tol_){
+      return ax;
     }
 
     unwrapped_t r;
-    while(ay > tol){
-      r = std::fmod(ax, ay);
-      ax = ay;
-      ay = r;
+    while(ay_ > tol_){
+      r = std::fmod(ax_, ay_);
+      ax_ = ay_;
+      ay_ = r;
     }
-    return T(ax);
+    return T(ax_);
   }
 }
 
