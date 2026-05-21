@@ -136,7 +136,7 @@ inline constexpr T trunc(T x){
 
 template <RMathType T>
 inline constexpr r_int sign(T x) {
-  return is_na(x) ? na<r_int>() : (T(0) < x) - (x < T(0));
+  return is_na(x) ? na<r_int>() : r_int( (unwrap(x) > 0) - (unwrap(x) < 0) );
 }
 
 template<RMathType T>
