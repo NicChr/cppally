@@ -83,7 +83,7 @@ inline bool parse(std::string_view s, double& out) {
 template <RScalar T>
 inline r_lgl as_bool(T const& x){
   if constexpr (is<unwrap_t<T>, int>){
-    return r_lgl(unwrap(x));
+    return unwrap(x) == 0 ? r_false : (is_na(x) ? r_na : r_true);
   } else if constexpr (RMathType<T>){
     return is_na(x) ? na<r_lgl>() : r_lgl(static_cast<bool>(unwrap(x)));
   } else if constexpr (RStringType<T>){
