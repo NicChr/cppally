@@ -32,10 +32,10 @@ inline constexpr uint64_t mix_u64(uint64_t x) noexcept {
     return x;
 }
 
-inline consteval uint64_t na_real_hash(){
+inline consteval uint64_t na_real_hash() noexcept {
     return mix_u64(na_real_bits());
 }
-inline consteval uint64_t nan_hash(){
+inline consteval uint64_t nan_hash() noexcept {
     return mix_u64(nan_bits());
 }
 

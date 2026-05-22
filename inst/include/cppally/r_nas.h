@@ -7,7 +7,7 @@
 #include <bit>
 
 namespace cppally {
-    
+
 // NAs
 
 namespace internal {
@@ -16,20 +16,21 @@ namespace internal {
 // Hex: 0x7ff00000 (Exp/Quiet) << 32 | 0x7a2 (Payload).
 // Uses std::bit_cast for portable interpretation of the 64-bit pattern
 // no manual endianness swapping required
-inline consteval double make_na_real() {
+inline consteval double make_na_real() noexcept {
   return std::bit_cast<double>(0x7ff00000000007a2ULL);
 }
 
-inline consteval uint64_t na_real_bits(){
+inline consteval uint64_t na_real_bits() noexcept {
   return std::bit_cast<uint64_t>(make_na_real());
 }
 
-inline constexpr bool is_na_real(double x){
+inline constexpr bool is_na_real(double x) noexcept {
   return std::bit_cast<uint64_t>(x) == na_real_bits();
 }
 
 // Different NaN have different bit representations, so use with care
-inline consteval uint64_t nan_bits(){
+// Mainly used to normalise NaN which may have different bit representations (excluding NA_real_)
+inline consteval uint64_t nan_bits() noexcept {
   return std::bit_cast<uint64_t>(std::numeric_limits<double>::quiet_NaN());
 }
 
@@ -38,67 +39,67 @@ inline consteval uint64_t nan_bits(){
 namespace internal {
 
 template <RVal T>
-inline constexpr T na_value_impl();
+inline constexpr T na_value_impl() noexcept;
 
 template<>
-inline constexpr r_lgl na_value_impl<r_lgl>(){
+inline constexpr r_lgl na_value_impl<r_lgl>() noexcept {
   return r_na;
 }
 
 template<>
-inline constexpr r_int na_value_impl<r_int>(){
+inline constexpr r_int na_value_impl<r_int>() noexcept {
   return r_int(std::numeric_limits<int>::min());
 }
 
 template<>
-inline constexpr r_dbl na_value_impl<r_dbl>(){
+inline constexpr r_dbl na_value_impl<r_dbl>() noexcept {
   return r_dbl(make_na_real());
 }
 
 template <RTimeType T>
-inline constexpr T na_value_impl(){
+inline constexpr T na_value_impl() noexcept {
   return T(na_value_impl<inherited_type_t<T>>());
 }
 
 template<>
-inline constexpr r_int64 na_value_impl<r_int64>(){
+inline constexpr r_int64 na_value_impl<r_int64>() noexcept {
   return r_int64(std::numeric_limits<int64_t>::min());
 }
 
 template<>
-inline constexpr r_cplx na_value_impl<r_cplx>(){
+inline constexpr r_cplx na_value_impl<r_cplx>() noexcept {
   return r_cplx(std::complex<double>{make_na_real(), make_na_real()});
 }
 
 template<>
-inline constexpr r_raw na_value_impl<r_raw>(){
+inline constexpr r_raw na_value_impl<r_raw>() noexcept {
   return r_raw{0};
 }
 
 template<>
-inline r_str_view na_value_impl<r_str_view>(){
+inline r_str_view na_value_impl<r_str_view>() noexcept {
   return na_str;
 }
 
 template<>
-inline r_str na_value_impl<r_str>(){
+inline r_str na_value_impl<r_str>() noexcept {
   return r_str(unwrap(na_str), internal::view_tag{});
 }
 
 template<>
-inline r_sexp na_value_impl<r_sexp>(){
+inline r_sexp na_value_impl<r_sexp>() noexcept {
   return r_null;
 }
 
 }
 
 template<typename T>
-inline constexpr auto na(){
+inline constexpr auto na() noexcept {
   return internal::na_value_impl<std::remove_cvref_t<T>>();
 }
 
 template<typename T>
-inline constexpr bool is_na(T const& x) {
+inline constexpr bool is_na(T const& x) noexcept {
   if constexpr (RScalar<T>){
     return unwrap(x) == unwrap(na<T>());
   } else if constexpr (CastableToRScalar<T>){
@@ -109,37 +110,37 @@ inline constexpr bool is_na(T const& x) {
 }
 
 template<>
-inline constexpr bool is_na(r_dbl const& x) {
+inline constexpr bool is_na(r_dbl const& x) noexcept {
   return unwrap(x) != unwrap(x);
 }
 
 template<>
-inline bool is_na(r_str_view const& x) {
+inline bool is_na(r_str_view const& x) noexcept {
   return unwrap(x) == unwrap(na_str);
 }
 
 template<>
-inline bool is_na(r_str const& x) {
+inline bool is_na(r_str const& x) noexcept {
   return unwrap(x) == unwrap(na_str);
 }
 
 template<>
-inline constexpr bool is_na(r_cplx const& x){
+inline constexpr bool is_na(r_cplx const& x) noexcept {
   return is_na(x.re()) || is_na(x.im());
 }
 
 template<>
-inline constexpr bool is_na(r_raw const& x){
+inline constexpr bool is_na(r_raw const& x) noexcept {
   return false;
 }
 
 template <typename T>
-inline constexpr bool is_nan(T const& x){
+inline constexpr bool is_nan(T const& x) noexcept {
   return false;
 }
 // NaN but not NA_REAL
 template <>
-inline constexpr bool is_nan(r_dbl const& x){
+inline constexpr bool is_nan(r_dbl const& x) noexcept {
   return is_na(x) && !internal::is_na_real(unwrap(x));
 }
 
