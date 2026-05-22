@@ -15,9 +15,9 @@ struct r_lgl {
   int value;
   using value_type = int;
   r_lgl() : value{0} {}
-  explicit constexpr r_lgl(int x) : value{x} {}
-  explicit constexpr r_lgl(bool x) : value{x} {}  
-  explicit constexpr operator int() const { return value; }
+  explicit constexpr r_lgl(int x) noexcept : value{x} {} 
+  explicit constexpr r_lgl(bool x) noexcept : value{x} {}
+  explicit constexpr operator int() const noexcept { return value; }
 
   explicit operator bool() const;
   constexpr bool is_true() const noexcept;
