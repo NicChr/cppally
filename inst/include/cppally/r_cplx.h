@@ -12,16 +12,16 @@ struct r_cplx {
     using value_type = std::complex<double>;
 
     // Constructors
-    constexpr r_cplx() : value{0.0, 0.0} {}
-    constexpr r_cplx(r_dbl r, r_dbl i) : value{r, i} {}
+    constexpr r_cplx() noexcept : value{0.0, 0.0} {}
+    constexpr r_cplx(r_dbl r, r_dbl i) noexcept : value{r, i} {}
     
     // Conversion handling
-    explicit constexpr r_cplx(std::complex<double> x) : value{x} {}
-    constexpr operator std::complex<double>() const { return value; }
+    explicit constexpr r_cplx(std::complex<double> x) noexcept : value{x} {}
+    constexpr operator std::complex<double>() const noexcept { return value; }
 
     // Get real and imaginary parts
-    constexpr r_dbl re() const { return r_dbl{value.real()}; }
-    constexpr r_dbl im() const { return r_dbl{value.imag()}; }
+    constexpr r_dbl re() const noexcept { return r_dbl{value.real()}; }
+    constexpr r_dbl im() const noexcept { return r_dbl{value.imag()}; }
 };
 
 }
