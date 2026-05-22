@@ -36,25 +36,12 @@ inline constexpr r_lgl operator||(r_lgl lhs, r_lgl rhs) {
 // otherwise return 1.
 // ---------------------------------------------------------
 
-// inline constexpr r_lgl operator&&(r_lgl lhs, r_lgl rhs) {
-//   int a = lhs.value;
-//   int b = rhs.value;
-//   int both_lsb  = a & b & 1;                  // 1 iff both TRUE
-//   int either_na = (a | b) & r_na.value;       // INT_MIN iff any NA
-//   int both_nz   = -((a != 0) & (b != 0));     // -1 iff both non-zero
-//   return r_lgl{(both_lsb | either_na) & both_nz};
-// }
-
 inline constexpr r_lgl operator&&(r_lgl lhs, r_lgl rhs) {
   int a = lhs.value;
   int b = rhs.value;
-  if (a == 0 || b == 0){
-    return r_false;
-  } else if (is_na(lhs) || is_na(rhs)){
-    return r_na;
-  } else {
-    return r_true;
-  }
+  int o = a | b;
+  int res = (a & b) | ((o & r_na.value) & -(o & 1));
+  return r_lgl{res};
 }
 
 // Operators for r_str_view
