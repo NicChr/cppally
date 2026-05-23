@@ -51,10 +51,10 @@ inline bool identical_impl(const r_sym& a, const r_sym& b) noexcept {
     return unwrap(a) == unwrap(b);
 }
 
+inline bool identical_impl(const r_sexp& a, const r_sexp& b);
+
 template <RComposite T>
 inline bool identical_impl(const T& a, const T& b);
-
-inline bool identical_impl(const r_sexp& a, const r_sexp& b);
 
 template <RVector T>
 inline bool identical_impl(const T& a, const T& b) {
@@ -106,30 +106,6 @@ inline bool identical_impl<r_df>(const r_df& a, const r_df& b) {
     return identical_impl(a.value, b.value);
 }
 
-inline bool identical_impl(const r_sexp& a, const r_sexp& b) {
-    SEXP x = unwrap(a);
-    SEXP y = unwrap(b);
-    if (x == y) return true; // same pointer
-    
-    // Visit both SEXP
-    return view_sexp(a, [&b](const auto& vec1) -> bool {
-        using vec1_t = decltype(vec1);
-
-        if constexpr (is<vec1_t, r_sexp>){
-            return R_compute_identical(vec1, b, 16);
-        } else {
-            return view_sexp(b, [&vec1](const auto& vec2) -> bool {
-                using vec2_t = decltype(vec2);
-
-                if constexpr (!is<vec1_t, vec2_t>){
-                    return false;
-                } else {
-                    return identical_impl(vec1, vec2);
-                }
-            });
-        }
-        });
-}
 
 inline bool identical_impl(SEXP a, SEXP b) {
     return identical_impl(r_sexp(a, view_tag{}), r_sexp(b, view_tag{}));

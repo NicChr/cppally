@@ -39,9 +39,7 @@ inline r_vec<r_lgl> duplicated(const r_df& x, bool all = false){
     return duplicated(make_groups(x, false).ids, all);
 }
 
-inline r_vec<r_lgl> duplicated(const r_sexp& x, bool all = false){
-    return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ r_vec<r_lgl>, /*fn = */ duplicated, /*rest of args = */ all);
-}
+inline r_vec<r_lgl> duplicated(const r_sexp& x, bool all = false);
 
 template <RVal T>
 r_factors::r_factors(const r_vec<T>& x) : r_factors(x, unique(x)) {}

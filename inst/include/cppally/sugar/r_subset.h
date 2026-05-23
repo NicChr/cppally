@@ -218,11 +218,6 @@ inline r_df subset(const r_df& x, const r_vec<r_int>& indices, bool check = true
   return r_df(out, false, length(out.view(0)));
 }
 
-template <internal::RSubscript U>
-inline r_sexp subset(const r_sexp& x, const r_vec<U>& indices, bool check, bool invert){
-  return r_sexp(CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ SEXP, /*fn = */ subset, /*rest of args = */ indices, check, invert));
-}
-
 }
 
 #endif

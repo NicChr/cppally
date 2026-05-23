@@ -63,16 +63,6 @@ inline r_sym deep_copy(const r_sym& x){
     return x;
 }
 
-template<>
-inline r_sexp deep_copy(const r_sexp& x){
-    return view_sexp(x, [](const auto& vec) -> r_sexp {
-        if constexpr (!is<decltype(vec), r_sexp>){
-            return r_sexp(static_cast<SEXP>(deep_copy(vec)));
-        } else {
-            return r_sexp(safe[Rf_duplicate](vec));
-        }
-    });
-}
 
 template <RVector T>
 T shallow_copy(const T& x){
@@ -106,16 +96,6 @@ inline r_sym shallow_copy(const r_sym& x){
     return x;
 }
 
-template<>
-inline r_sexp shallow_copy(const r_sexp& x){
-    return view_sexp(x, [](const auto& vec) -> r_sexp {
-        if constexpr (!is<decltype(vec), r_sexp>){
-            return r_sexp(static_cast<SEXP>(shallow_copy(vec)));
-        } else {
-            return r_sexp(safe[Rf_shallow_duplicate](vec));
-        }
-    });
-}
 
 }
 #endif

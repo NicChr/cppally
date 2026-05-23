@@ -451,9 +451,7 @@ inline groups make_groups(const r_df& x, bool ordered = false) {
     }
 }
 
-inline groups make_groups(const r_sexp& x, bool ordered){
-    return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ groups, /*fn = */ make_groups, /*rest of args = */ ordered);
-}
+inline groups make_groups(const r_sexp& x, bool ordered);
 
 }
 

@@ -82,25 +82,10 @@ void fill(r_factors& x, const r_vec<U>& where, const r_factors& with) {
 // }
 
 template <internal::RSubscript U, typename V>
-void fill(r_sexp& x, const r_vec<U>& where, const V& with) {
-  mutate_sexp(x, [&](auto& x_) {
-    using x_t = std::remove_cvref_t<decltype(x_)>;
-    if constexpr (is<x_t, r_sexp>){
-        abort("Unsupported SEXP type in `fill()`");
-    } else if constexpr (requires { fill(x_, where, with); }){
-        fill(x_, where, with);
-    } else {
-        abort("No available method for type %s in `fill()`", internal::type_str<std::remove_cvref_t<decltype(x_)>>());
-    }
-  });
-}
+void fill(r_sexp& x, const r_vec<U>& where, const V& with);
 
 template <internal::RSubscript U>
-void fill(r_sexp& x, const r_vec<U>& where, const r_sexp& with) {
-  visit_sexp(with, [&](const auto& with_) {
-    fill(x, where, with_);
-  });
-}
+void fill(r_sexp& x, const r_vec<U>& where, const r_sexp& with);
 
 }
 

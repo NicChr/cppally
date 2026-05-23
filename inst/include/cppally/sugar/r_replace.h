@@ -74,21 +74,6 @@ inline void replace(r_df& x, const r_df& old_values, const r_df& new_values){
 }
 
 
-template <typename U>
-inline void replace(r_sexp& x, const U& old_values, const U& new_values){
-  mutate_sexp(x, [&](auto& x_) {
-    using x_t = std::remove_cvref_t<decltype(x_)>;
-    x_t oldv = x_t(static_cast<SEXP>(old_values));
-    x_t newv = x_t(static_cast<SEXP>(new_values));
-    if constexpr (is<x_t, r_sexp>){
-        abort("Unsupported SEXP type in `replace()`");
-    } else if constexpr (requires { replace(x_, oldv, newv); }){
-      replace(x_, oldv, newv);
-    } else {
-      abort("No available method for type %s in `replace`", internal::type_str<x_t>());
-    }
-  });
-}
 
 }
 

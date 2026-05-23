@@ -119,11 +119,8 @@ inline uint64_t r_hash_impl(const r_factors& x) noexcept {
 };
 
 
-// Specialization for elements of lists
-template<>
-inline uint64_t r_hash_impl(const r_sexp& x) noexcept {
-    return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ uint64_t, /*fn = */ r_hash_impl);
-};
+// Overload for elements of lists — defined in sugar/r_sexp_methods.h
+inline uint64_t r_hash_impl(const r_sexp& x) noexcept;
 
 
 template <typename T>
