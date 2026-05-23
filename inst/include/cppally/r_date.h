@@ -37,9 +37,9 @@ struct r_date : r_dbl {
 
     public: 
 
-    r_date() : r_dbl{0.0} {}
+    constexpr r_date() noexcept : r_dbl{0.0} {}
 
-    explicit constexpr r_date(double days_since_epoch) : r_dbl{days_since_epoch} {}
+    explicit constexpr r_date(double days_since_epoch) noexcept : r_dbl{days_since_epoch} {}
 
     // Construct r_date year/month/day
     explicit r_date(int32_t year, uint32_t month, uint32_t day) : r_dbl(internal::get_days_since_epoch(year, month, day)) {}

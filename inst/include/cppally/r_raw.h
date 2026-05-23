@@ -11,7 +11,7 @@ struct r_raw {
     using value_type = unsigned char;
 
     // Constructors
-    constexpr r_raw() : value{static_cast<unsigned char>(0)} {}
+    constexpr r_raw() noexcept : value{static_cast<unsigned char>(0)} {}
 
     // Conversion handling
     explicit constexpr r_raw(unsigned char x) noexcept : value{x} {}

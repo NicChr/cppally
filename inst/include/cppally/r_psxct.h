@@ -27,8 +27,8 @@ struct r_psxct : r_dbl {
 
     using inherited_type = r_dbl;
 
-    r_psxct() : r_dbl{0.0} {}
-    explicit constexpr r_psxct(double seconds_since_epoch) : r_dbl{seconds_since_epoch} {}
+    constexpr r_psxct() noexcept : r_dbl{0.0} {}
+    explicit constexpr r_psxct(double seconds_since_epoch) noexcept : r_dbl{seconds_since_epoch} {}
 
     // Construct r_date year/month/day
     explicit r_psxct(

@@ -10,7 +10,7 @@ namespace cppally {
 struct r_int64 {
     int64_t value;
     using value_type = int64_t;
-    r_int64() noexcept : value{0} {}
+    constexpr r_int64() noexcept : value{0} {}
     template <CppMathType T>
     requires (internal::can_definitely_be_int64<T>())
     explicit constexpr r_int64(T x) noexcept : value{static_cast<int64_t>(x)} {}
