@@ -11,6 +11,7 @@
 #include <cppally/r_list_helpers.h>
 #include <cppally/sugar/r_subset.h>
 #include <cppally/sugar/r_make_vec.h>
+#include <cppally/sugar/r_sexp_methods.h>
 #include <string>
 
 namespace cppally {

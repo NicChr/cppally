@@ -34,9 +34,6 @@ inline r_df rep_len(const r_df& x, r_size_t n){
       return out;
 }
 
-inline r_sexp rep_len(const r_sexp& x, r_size_t n){
-    return r_sexp(CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ SEXP, /*fn = */ rep_len, n));
-}
 
 template <RVector T>
 T resize(const T& x, r_size_t n){
@@ -65,9 +62,6 @@ inline r_df resize(const r_df& x, r_size_t n){
     return out;
 }
 
-inline r_sexp resize(const r_sexp& x, r_size_t n){
-    return r_sexp(CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ SEXP, /*fn = */ resize, n));
-}
 
 template <RVector T>
 T rep(const T& x, const r_vec<r_int>& times){
@@ -113,9 +107,6 @@ inline r_df rep(const r_df& x, const r_vec<r_int>& times) {
     return out;
 }
 
-inline r_sexp rep(const r_sexp& x, const r_vec<r_int>& times) {
-    return r_sexp(CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ SEXP, /*fn = */ rep, times));
-}
 
 template <RVector T>
 T rep_each(const T& x, const r_vec<r_int>& each){
@@ -144,9 +135,6 @@ inline r_df rep_each(const r_df& x, const r_vec<r_int>& each) {
     return out;
 }
 
-inline r_sexp rep_each(const r_sexp& x, const r_vec<r_int>& each) {
-    return r_sexp(CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ SEXP, /*fn = */ rep_each, each));
-}
 
 }
 

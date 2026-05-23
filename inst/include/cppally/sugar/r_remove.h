@@ -44,9 +44,7 @@ inline r_factors remove(const r_factors& x, const r_factors& values){
 
 template <typename T, typename U>
 requires (is<T, r_sexp> || is<U, r_sexp>)
-inline T remove(const T& x, const U& values){
-  return as<T>(CPPALLY_VIEW_PAIR_AND_APPLY(x, values, SEXP, remove));
-}
+inline T remove(const T& x, const U& values);
 
 }
 

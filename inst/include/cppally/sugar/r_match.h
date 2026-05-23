@@ -224,12 +224,6 @@ inline r_vec<r_int> match(const r_factors& needles, const r_factors& haystack, r
   }
 }
 
-template <typename T, typename U>
-requires (is<T, r_sexp> || is<U, r_sexp>)
-inline r_vec<r_int> match(const T& x, const U& y, r_int no_match) {
-  return CPPALLY_VIEW_PAIR_AND_APPLY(x, y, r_vec<r_int>, match, no_match);
-}
-
 template <RVal T>
 r_factors::r_factors(const r_vec<T>& x, const r_vec<T>& levels) : value(match(x, levels)){
 

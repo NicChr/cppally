@@ -46,9 +46,7 @@ inline r_size_t n_unique(const r_df& x) {
   return make_groups(x, false).n_groups;
 }
 
-inline r_size_t n_unique(const r_sexp& x) {
-  return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ r_size_t, /*fn = */ n_unique);
-}
+inline r_size_t n_unique(const r_sexp& x);
 
 }
 

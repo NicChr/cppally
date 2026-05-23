@@ -53,5 +53,6 @@
 #include <cppally/sugar/r_recycle.h>
 #include <cppally/sugar/r_math.h>
 #include <cppally/sugar/r_seq.h>
+#include <cppally/sugar/r_sexp_methods.h>
 
 #endif

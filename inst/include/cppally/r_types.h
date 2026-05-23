@@ -25,16 +25,13 @@
 
 namespace cppally {
 
-// Recursively unwrap until we hit a primitive type
 template <typename T>
-inline constexpr auto unwrap(const T& x){
-if constexpr (RVal<T>){
-    return unwrap(x.value);
-  } else if constexpr (RObject<T>){
-    return static_cast<SEXP>(x);
-  } else {
-    return x;
-  }
+inline constexpr unwrap_t<T> unwrap(const T& x) noexcept {
+  // T must be convertible (implicitly or explicitly) to unwrap_t<T>
+  // unwrap_t<> is a well-defined trait which handles the mapping
+  // It also asserts that it is a non-throwable construction
+  static_assert(std::is_nothrow_constructible_v<unwrap_t<T>, const T&>);
+  return static_cast<unwrap_t<T>>(x);
 }
 
 // Coerce C/C++ types to RScalar

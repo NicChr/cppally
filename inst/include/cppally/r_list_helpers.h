@@ -2,8 +2,7 @@
 #define CPPALLY_R_LIST_HELPERS_H
 
 #include <cppally/r_vec.h>
-#include <cppally/r_visit.h>
-#include <cppally/r_length.h>
+#include <cppally/sugar/r_sexp_methods.h>
 #include <cppally/sugar/r_rep.h>
 
 namespace cppally {

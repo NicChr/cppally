@@ -23,9 +23,7 @@ inline r_size_t length(const r_sym& x) noexcept {
     return 1;
 }
 
-inline r_size_t length(const r_sexp& x) {
-    return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ r_size_t, /*fn = */ length);
-}
+inline r_size_t length(const r_sexp& x);
 
 inline bool is_long(SEXP x){
     return length(r_sexp(x, internal::view_tag{})) > static_cast<r_size_t>(std::numeric_limits<int>::max());

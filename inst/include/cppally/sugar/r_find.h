@@ -61,9 +61,7 @@ inline r_vec<r_int> find(const r_df& x, const r_df& rows, bool invert = false){
 
 template <typename T, typename U, internal::RNumericSubscript V = r_int>
 requires (is<T, r_sexp> || is<U, r_sexp>)
-inline r_vec<V> find(const T& x, const U& values, bool invert = false) {
-  return CPPALLY_VIEW_PAIR_AND_APPLY(x, values, r_vec<V>, find, invert);
-}
+inline r_vec<V> find(const T& x, const U& values, bool invert = false);
 
 }
 
