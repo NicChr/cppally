@@ -27,7 +27,7 @@ namespace cppally {
 
 // Recursively unwrap until we hit a primitive type
 template <typename T>
-inline constexpr auto unwrap(const T& x){
+inline constexpr unwrap_t<T> unwrap(const T& x) noexcept {
 if constexpr (RVal<T>){
     return unwrap(x.value);
   } else if constexpr (RObject<T>){
