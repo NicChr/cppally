@@ -119,16 +119,6 @@ requires (CppScalar<T>)
 inline constexpr uint16_t r_cpp_boundary_map_v<T> = r_cpp_boundary_map_v<as_r_scalar_t<T>>;
 
 
-// template <typename T>
-// inline void check_r_cpp_mapping(SEXP x){
-//     using data_t = std::remove_cvref_t<T>;
-//     if constexpr (is_sexp<data_t>) return;
-//     if (r_cpp_boundary_map_v<data_t> != CPPALLY_TYPEOF(x)){
-//         abort("Expected input type: %s", type_str<data_t>());
-//     }
-// }
-
-
 // ArgToTemplateMap maps argument positions to template parameter indices
 // e.g., {0, 0, 1} means args 0 and 1 share template param T, arg 2 uses U.
 // -1 means the argument is not templated (fixed type)
