@@ -246,8 +246,8 @@ struct r_factors {
     return no_match;
   }
 
-  r_int get_code(std::string_view val) const {
-    return get_code(r_str(val.data()));
+  r_int get_code(const char* val) const {
+    return get_code(r_str(val));
   }
 
   r_int get_code(r_size_t index) const {

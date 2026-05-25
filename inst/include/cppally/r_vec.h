@@ -284,8 +284,8 @@ struct r_vec {
     return na<r_int>();
   }
 
-  r_int name_index(std::string_view name, bool abort_on_missing = true) const {
-    return name_index(r_str(name.data()), abort_on_missing);
+  r_int name_index(const char* name, bool abort_on_missing = true) const {
+    return name_index(r_str(name), abort_on_missing);
   }
 
   // Get element (no bounds-check)
@@ -306,9 +306,11 @@ struct r_vec {
     return get(static_cast<r_size_t>(unwrap(name_index(name))));
   }
 
-  T get(std::string_view name) const {
-    return get(r_str(name.data()));
+  T get(const char* name) const {
+    return get(r_str(name));
   }
+
+  T get(int index) const { return get(static_cast<r_size_t>(index)); }
 
   // View element (like `get()` but elements must be short-lived)
   // Element must not outlive the parent vector
@@ -341,9 +343,11 @@ struct r_vec {
     return view(static_cast<r_size_t>(unwrap(name_index(name))));
   }
 
-  T view(std::string_view name) const {
-    return view(r_str(name.data()));
+  T view(const char* name) const {
+    return view(r_str(name));
   }
+
+  T view(int index) const { return view(static_cast<r_size_t>(index)); }
 
   // Set element (no bounds-check)
   void set(r_size_t index, const T& val) {
@@ -367,9 +371,13 @@ struct r_vec {
       set(static_cast<r_size_t>(unwrap(name_index(name))), val);
   }
   
-  void set(std::string_view name, const T& val) {
-      set(r_str(name.data()), val);
+  void set(const char* name, const T& val) {
+      set(r_str(name), val);
   }
+
+  void set(int index, const T& val) { set(static_cast<r_size_t>(index), val); }
+  template <typename U>
+  void set(int index, const U& val) { set(static_cast<r_size_t>(index), val); }
 
   template <internal::RSubscript U>
   r_vec<T> subset(const r_vec<U>& indices, bool check = true, bool invert = false) const;
