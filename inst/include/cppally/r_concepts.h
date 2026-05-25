@@ -127,6 +127,9 @@ template <typename T>
 concept NumericType = RNumericType<T> || CppNumericType<T>;
 
 template <typename T>
+concept CStringType = is<T, const char*>;
+
+template <typename T>
 concept RStringType = any<T, r_str, r_str_view>;
 
 template <typename T>

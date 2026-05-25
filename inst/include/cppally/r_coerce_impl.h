@@ -18,12 +18,7 @@ namespace cppally {
 
 // Forward declarations of main coercion template as<>
 template <typename T, typename U>
-requires is<T, U>
-inline std::remove_cvref_t<T> as(const U& x);
-
-template <typename T, typename U>
-inline std::remove_cvref_t<T> as(const U& x);
-
+std::remove_cvref_t<T> as(const U& x);
 
 namespace internal {
 
@@ -250,80 +245,80 @@ inline r_str_view as_r_string(T const& x){
 
 // R version of static_cast
 template <RScalar T, RScalar U>
-struct as_impl;
+struct as_scalar_impl;
 
 // Specializations for each target type
 
 template<RScalar U>
-struct as_impl<r_lgl, U> {
-  static constexpr r_lgl cast(U const& x) {
+struct as_scalar_impl<r_lgl, U> {
+  static constexpr r_lgl cast(U const& x) { 
     return as_bool(x);
   }
 };
 
 template<RScalar U>
-struct as_impl<r_int, U> {
+struct as_scalar_impl<r_int, U> {
   static constexpr r_int cast(U const& x) {
     return as_int(x);
   }
 };
 
 template<RScalar U>
-struct as_impl<r_int64, U> {
+struct as_scalar_impl<r_int64, U> {
   static constexpr r_int64 cast(U const& x) {
     return as_int64(x);
   }
 };
 
 template<RScalar U>
-struct as_impl<r_dbl, U> {
+struct as_scalar_impl<r_dbl, U> {
   static constexpr r_dbl cast(U const& x) {
     return as_double(x);
   }
 };
 
 template<RTimeType T, RScalar U>
-struct as_impl<T, U> {
+struct as_scalar_impl<T, U> {
   static constexpr T cast(U const& x) {
     using inherited_t = inherited_type_t<T>;
 
     if constexpr (RDateType<T> && RPsxctType<U>){
       double days = std::floor(static_cast<double>(unwrap(x)) / 86400.0);
-      return T(as_impl<inherited_t, r_dbl>::cast(r_dbl(days)));
+      return T(as_scalar_impl<inherited_t, r_dbl>::cast(r_dbl(days)));
     } else if constexpr (RPsxctType<T> && RDateType<U>){
       auto seconds = unwrap(x) * 86400;
-      return T(as_impl<inherited_t, as_r_scalar_t<decltype(seconds)>>::cast(as_r_scalar(seconds)));
+      return T(as_scalar_impl<inherited_t, as_r_scalar_t<decltype(seconds)>>::cast(as_r_scalar(seconds)));
     } else if constexpr (RTimeType<U>){
-      return T(as_impl<inherited_t, as_r_scalar_t<unwrap_t<U>>>::cast(as_r_scalar(unwrap(x))));
+      return T(as_scalar_impl<inherited_t, as_r_scalar_t<unwrap_t<U>>>::cast(as_r_scalar(unwrap(x))));
     } else {
-      return T(as_impl<inherited_t, U>::cast(x));
+      return T(as_scalar_impl<inherited_t, U>::cast(x));
     }
   }
 };
 
 template<RScalar U>
-struct as_impl<r_cplx, U> {
+struct as_scalar_impl<r_cplx, U> {
   static constexpr r_cplx cast(U const& x) {
     return as_complex(x);
   }
 };
 
 template<RScalar U>
-struct as_impl<r_raw, U> {
+struct as_scalar_impl<r_raw, U> {
   static constexpr r_raw cast(U const& x) {
     return as_raw(x);
   }
 };
 
 template<RScalar U>
-struct as_impl<r_str_view, U> {
+struct as_scalar_impl<r_str_view, U> {
   static r_str_view cast(U const& x) {
     return as_r_string(x);
   }
 };
 
 template<RScalar U>
-struct as_impl<r_str, U> {
+struct as_scalar_impl<r_str, U> {
   static r_str cast(U const& x) {
     r_str_view res = as_r_string(x);
     return r_str(unwrap(res));
@@ -331,12 +326,12 @@ struct as_impl<r_str, U> {
 };
 
 template <RScalar T, RScalar U>
-inline T as_scalar_impl(U const& x) {
+inline T as_scalar(const U& x) {
   if constexpr (is<U, T>){
     return x;
   } else {
     using r_t = std::remove_cvref_t<T>;
-    T out = internal::as_impl<r_t, U>::cast(x);
+    T out = internal::as_scalar_impl<r_t, U>::cast(x);
     if (is_na(out) && !is_na(x)) [[unlikely]] {
       abort(
         "Implicit NA coercion detected from %s to %s, please ensure data can be coerced without complete loss of information", 
