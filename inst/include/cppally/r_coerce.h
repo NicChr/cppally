@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_COERCE_H
 #define CPPALLY_R_COERCE_H
 
-#include <cppally/r_coerce_impl.h>
+#include <cppally/r_coerce_scalars.h>
 #include <cppally/r_vec.h>
 #include <cppally/r_visit.h>
 #include <cppally/r_sexp_types.h>
@@ -30,7 +30,7 @@ template <typename T>
 concept AnySexp = is_sexp<T>;
 
 // Powerful and flexible coercion function that can handle many types and convert to R-specific C++ types and R vectors
-// Note: forwards declarations exist in r_coerce_impl.h
+// Note: forwards declarations exist in r_coerce_scalars.h
 
 // -> SEXP
 template <AnySexp T, typename U>

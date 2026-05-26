@@ -1,5 +1,5 @@
-#ifndef CPPALLY_R_COERCE_IMPL_H
-#define CPPALLY_R_COERCE_IMPL_H
+#ifndef CPPALLY_R_COERCE_SCALARS_H
+#define CPPALLY_R_COERCE_SCALARS_H
 
 #include <cppally/r_setup.h>
 #include <cppally/r_utils.h>
@@ -23,13 +23,26 @@ std::remove_cvref_t<T> as(const U& x);
 namespace internal {
 
 // RScalar -> RVector
-// Everything else -> SEXP
+// Everything else -> r_sexp
 template <typename T>
-r_sexp cpp_to_r(const T& x) {
+r_sexp as_list_element(const T& x) {
     if constexpr (RScalar<T>){
       return r_vec<T>(1, x).value;
     } else {
       return as<r_sexp>(x);
+    }
+}
+
+// Bit of duplication here but is done to avoid unncecessary protections when dealing with e.g. r_str & r_str_view
+
+// RScalar -> RVector
+// Everything else -> SEXP
+template <typename T>
+SEXP cpp_to_r(const T& x) {
+    if constexpr (RScalar<T>){
+      return static_cast<SEXP>(r_vec<T>(1, x));
+    } else {
+      return as<SEXP>(x);
     }
 }
 

@@ -7,7 +7,7 @@
 #include <cppally/r_limits.h>
 #include <cppally/r_scalar_methods.h>
 #include <cppally/r_vec_utils.h>
-#include <cppally/r_coerce_impl.h>
+#include <cppally/r_coerce_scalars.h>
 #include <cppally/r_hash_names.h>
 #include <algorithm>
 
@@ -361,7 +361,7 @@ struct r_vec {
   void set(r_size_t index, const U& val) {
     // Lists must not hold RScalar, only RComposite (e.g. vectors) and other SEXP types
     if constexpr (is<T, r_sexp>) {
-      set(index, internal::cpp_to_r(val));
+      set(index, internal::as_list_element(val));
     } else {
       set(index, as<T>(val));
     }

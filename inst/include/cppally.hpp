@@ -17,7 +17,7 @@
 #include <cppally/r_nas.h>
 #include <cppally/r_scalar_methods.h>
 #include <cppally/r_vec_utils.h>
-#include <cppally/r_coerce_impl.h>
+#include <cppally/r_coerce_scalars.h>
 #include <cppally/r_vec.h>
 #include <cppally/r_vec_methods.h>
 #include <cppally/r_factor.h>
