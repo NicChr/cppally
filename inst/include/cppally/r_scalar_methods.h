@@ -47,7 +47,7 @@ inline constexpr r_lgl operator&&(r_lgl lhs, r_lgl rhs) noexcept {
 // Operators for r_str_view
 
 inline r_lgl operator<(r_str_view lhs, r_str_view rhs) noexcept {
-  if (is_na(lhs) || is_na(rhs)){
+  if (internal::either_na(lhs, rhs)){
     return r_na;
   } else if (unwrap(lhs) == unwrap(rhs)){
     return r_false;
@@ -56,7 +56,7 @@ inline r_lgl operator<(r_str_view lhs, r_str_view rhs) noexcept {
   }
 }
 inline r_lgl operator<=(r_str_view lhs, r_str_view rhs) noexcept {
-  if (is_na(lhs) || is_na(rhs)){
+  if (internal::either_na(lhs, rhs)){
     return r_na;
   } else if (unwrap(lhs) == unwrap(rhs)){
     return r_true;
@@ -65,7 +65,7 @@ inline r_lgl operator<=(r_str_view lhs, r_str_view rhs) noexcept {
   }
 }
 inline r_lgl operator>(r_str_view lhs, r_str_view rhs) noexcept {
-  if (is_na(lhs) || is_na(rhs)){
+  if (internal::either_na(lhs, rhs)){
     return r_na;
   } else if (unwrap(lhs) == unwrap(rhs)){
     return r_false;
@@ -74,7 +74,7 @@ inline r_lgl operator>(r_str_view lhs, r_str_view rhs) noexcept {
   }
 }
 inline r_lgl operator>=(r_str_view lhs, r_str_view rhs) noexcept {
-  if (is_na(lhs) || is_na(rhs)){
+  if (internal::either_na(lhs, rhs)){
     return r_na;
   } else if (unwrap(lhs) == unwrap(rhs)){
     return r_true;
@@ -99,7 +99,7 @@ inline r_lgl operator>=(const r_str& lhs, const r_str& rhs) noexcept {
 template <RStringType T, typename U>
 requires (RStringType<U> || is<U, const char*>)
 inline T operator+(const T& lhs, const U& rhs) {
-  if (is_na(lhs) || is_na(rhs)){
+  if (internal::either_na(lhs, rhs)){
     return na<T>();
   }
   std::string a(lhs.c_str());
@@ -116,19 +116,19 @@ inline r_lgl operator!=(r_sym lhs, r_sym rhs) noexcept {
 template <RScalar T, RScalar U>
 requires (requires (unwrap_t<T> a, unwrap_t<U> b) { a == b; })
 inline constexpr r_lgl operator==(const T& lhs, const U& rhs) noexcept {
-  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) == unwrap(rhs)};
+  return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) == unwrap(rhs)};
 }
 
 template <RScalar T, CppScalar U>
 requires (requires (unwrap_t<T> a, unwrap_t<U> b) { a == b; })
 inline constexpr r_lgl operator==(const T& lhs, const U& rhs) noexcept {
-  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) == unwrap(rhs)};
+  return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) == unwrap(rhs)};
 }
 
 template <CppScalar T, RScalar U>
 requires (requires (unwrap_t<T> a, unwrap_t<U> b) { a == b; })
 inline constexpr r_lgl operator==(const T& lhs, const U& rhs) noexcept {
-  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) == unwrap(rhs)};
+  return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) == unwrap(rhs)};
 }
 
 // Need to have 3 overloads otherwise compiler complains about lhs != rhs
@@ -136,40 +136,40 @@ inline constexpr r_lgl operator==(const T& lhs, const U& rhs) noexcept {
 template <RScalar T, RScalar U>
 requires (requires (unwrap_t<T> a, unwrap_t<U> b) { a != b; })
 inline constexpr r_lgl operator!=(const T &lhs, const U &rhs) noexcept {
-  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) != unwrap(rhs)};
+  return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) != unwrap(rhs)};
 }
 
 template <RScalar T, CppScalar U>
 requires (requires (unwrap_t<T> a, unwrap_t<U> b) { a != b; })
 inline constexpr r_lgl operator!=(const T &lhs, const U &rhs) noexcept {
-  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) != unwrap(rhs)};
+  return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) != unwrap(rhs)};
 }
 
 template <CppScalar T, RScalar U>
 requires (requires (unwrap_t<T> a, unwrap_t<U> b) { a != b; })
 inline constexpr r_lgl operator!=(const T &lhs, const U &rhs) noexcept {
-  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) != unwrap(rhs)};
+  return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) != unwrap(rhs)};
 }
 
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>)
 inline constexpr r_lgl operator<(T lhs, U rhs) noexcept {
-  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) < unwrap(rhs)};
+  return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) < unwrap(rhs)};
 }
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>)
 inline constexpr r_lgl operator<=(T lhs, U rhs) noexcept {
-  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) <= unwrap(rhs)};
+  return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) <= unwrap(rhs)};
 }
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>)
 inline constexpr r_lgl operator>(T lhs, U rhs) noexcept {
-  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) > unwrap(rhs)};
+  return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) > unwrap(rhs)};
 }
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>)
 inline constexpr r_lgl operator>=(T lhs, U rhs) noexcept {
-  return (is_na(lhs) || is_na(rhs)) ? r_na : r_lgl{unwrap(lhs) >= unwrap(rhs)};
+  return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) >= unwrap(rhs)};
 }
 
 template<NumericType T, NumericType U>
@@ -181,7 +181,7 @@ inline constexpr auto operator+(T lhs, U rhs) noexcept {
   if constexpr (is<common_t, r_dbl>){
     return r_dbl(static_cast<double>(unwrap(lhs)) + static_cast<double>(unwrap(rhs)));
   } else {
-    return ( is_na(lhs) || is_na(rhs) ) ? 
+    return ( internal::either_na(lhs, rhs) ) ? 
     na<common_t>() : 
     common_t(static_cast<unwrap_t<common_t>>(unwrap(lhs)) + static_cast<unwrap_t<common_t>>(unwrap(rhs)));
   }
@@ -196,7 +196,7 @@ inline constexpr auto operator-(T lhs, U rhs) noexcept {
   if constexpr (is<common_t, r_dbl>){
     return r_dbl(static_cast<double>(unwrap(lhs)) - static_cast<double>(unwrap(rhs)));
   } else {
-    return ( is_na(lhs) || is_na(rhs) ) ? 
+    return ( internal::either_na(lhs, rhs) ) ? 
     na<common_t>() : 
     common_t(static_cast<unwrap_t<common_t>>(unwrap(lhs)) - static_cast<unwrap_t<common_t>>(unwrap(rhs)));
   }
@@ -211,7 +211,7 @@ inline constexpr auto operator*(T lhs, U rhs) noexcept {
   if constexpr (is<common_t, r_dbl>){
     return r_dbl(static_cast<double>(unwrap(lhs)) * static_cast<double>(unwrap(rhs)));
   } else {
-    return ( is_na(lhs) || is_na(rhs) ) ? 
+    return ( internal::either_na(lhs, rhs) ) ? 
     na<common_t>() : 
     common_t(static_cast<unwrap_t<common_t>>(unwrap(lhs)) * static_cast<unwrap_t<common_t>>(unwrap(rhs)));
   }
@@ -220,7 +220,7 @@ inline constexpr auto operator*(T lhs, U rhs) noexcept {
 template<NumericType T, NumericType U>
   requires (RNumericType<T> || RNumericType<U>)
 inline constexpr r_dbl operator/(T lhs, U rhs) noexcept {
-  return ( is_na(lhs) || is_na(rhs) ) ? na<r_dbl>() : r_dbl(static_cast<double>(unwrap(lhs)) / static_cast<double>(unwrap(rhs)));
+  return ( internal::either_na(lhs, rhs) ) ? na<r_dbl>() : r_dbl(static_cast<double>(unwrap(lhs)) / static_cast<double>(unwrap(rhs)));
 }
 
 template<MathType T, MathType U>
@@ -228,7 +228,7 @@ template<MathType T, MathType U>
 inline constexpr r_dbl operator%(T lhs, U rhs) noexcept {
   if (unwrap(rhs) == 0){
     return r_dbl(R_NaN);
-  } else if (is_na(lhs) || is_na(rhs)){
+  } else if (internal::either_na(lhs, rhs)){
     return na<r_dbl>();
   } else {
     // Donald Knuth floor division
@@ -245,7 +245,7 @@ inline constexpr auto operator%(T lhs, U rhs) noexcept {
   using out_t = common_math_t<T, U>;
   using unwrapped_t = unwrap_t<out_t>;
 
-  if ( unwrap(rhs) == 0 || is_na(lhs) || is_na(rhs) ){
+  if ( unwrap(rhs) == 0 || internal::either_na(lhs, rhs) ){
     return na<out_t>();
   } else {
     unwrapped_t a = static_cast<unwrapped_t>(unwrap(lhs));
@@ -260,7 +260,7 @@ inline constexpr auto operator%(T lhs, U rhs) noexcept {
 
 template <RNumericType T, NumericType U>
 inline constexpr T& operator+=(T &lhs, U rhs) noexcept {
-  if (is_na(lhs) || is_na(rhs)) {
+  if (internal::either_na(lhs, rhs)) {
     lhs = na<T>();
   } else {
     lhs.value += unwrap(rhs);
@@ -277,7 +277,7 @@ inline constexpr r_dbl& operator+=(r_dbl &lhs, r_dbl rhs) noexcept {
 
 template <RNumericType T, NumericType U>
 inline constexpr T& operator-=(T &lhs, U rhs) noexcept {
-  if (is_na(lhs) || is_na(rhs)) {
+  if (internal::either_na(lhs, rhs)) {
     lhs = na<T>();
   } else {
     lhs.value -= unwrap(rhs);
@@ -293,7 +293,7 @@ inline constexpr r_dbl& operator-=(r_dbl &lhs, r_dbl rhs) noexcept {
 
 template <RNumericType T, NumericType U>
 inline constexpr T& operator*=(T &lhs, U rhs) noexcept {
-  if (is_na(lhs) || is_na(rhs)) {
+  if (internal::either_na(lhs, rhs)) {
     lhs = na<T>();
   } else {
     lhs.value *= unwrap(rhs);
@@ -308,7 +308,7 @@ inline constexpr r_dbl& operator*=(r_dbl &lhs, r_dbl rhs) noexcept {
 
 template <RNumericType T, NumericType U>
 inline constexpr T& operator/=(T &lhs, U rhs) {
-  if (is_na(lhs) || is_na(rhs)) {
+  if (internal::either_na(lhs, rhs)) {
     lhs = na<T>();
   } else {
     lhs.value /= unwrap(rhs);

@@ -30,7 +30,7 @@ inline constexpr common_r_t<T, U> min(T x, U y){
   
   using common_t = common_r_t<T, U>;
 
-  return ( is_na(x) || is_na(y) ) ? na<common_t>() : 
+  return internal::either_na(x, y) ? na<common_t>() : 
   common_t(std::min(
     static_cast<unwrap_t<common_t>>(unwrap(x)), 
     static_cast<unwrap_t<common_t>>(unwrap(y))
@@ -43,7 +43,7 @@ inline constexpr auto max(T x, U y){
   
   using common_t = common_r_t<T, U>;
 
-  return ( is_na(x) || is_na(y) ) ? na<common_t>() : 
+  return internal::either_na(x, y) ? na<common_t>() : 
   common_t(std::max(
     static_cast<unwrap_t<common_t>>(unwrap(x)), 
     static_cast<unwrap_t<common_t>>(unwrap(y))
