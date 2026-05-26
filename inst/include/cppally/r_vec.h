@@ -349,7 +349,7 @@ struct r_vec {
   void set(r_size_t index, const T& val) {
       if constexpr (RStringType<T>){
         SET_STRING_ELT(value, index, val);
-      } else if constexpr (RObject<T>){
+      } else if constexpr (is<T, r_sexp>){
         SET_VECTOR_ELT(value, index, val);
       } else {
         static_assert(!is_write_barrier_protected, "Can't write data directly here, data is R write-barrier protected");
@@ -359,7 +359,13 @@ struct r_vec {
 
   template <typename U>
   void set(r_size_t index, const U& val) {
-    set(index, as<T>(val));
+    
+    // Lists must not hold RScalar, only RComposite (e.g. vectors) and other SEXP types
+    if constexpr (is<T, r_sexp> && RScalar<U>) {
+      set(index, r_vec<U>(1, val).value);
+    } else {
+      set(index, as<T>(val));
+    }
   }
 
   template <RStringType U>

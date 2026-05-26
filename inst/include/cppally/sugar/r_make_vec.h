@@ -28,10 +28,10 @@ inline r_vec<T> make_vec(Args... args) {
     int i = 0;
     (([&]() {
       if constexpr (NamedArg<Args>) {
-        out.set(i, as<T>(args.value));
+        out.set(i, args.value);
         nms.set(i, as<r_str_view>(args.name));
       } else {
-        out.set(i, as<T>(args));
+        out.set(i, args);
       }
       ++i;
     }()), ...);
