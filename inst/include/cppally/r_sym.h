@@ -26,6 +26,18 @@ struct r_sym {
   explicit r_sym(const r_str_view& x) : value(x.value == NA_STRING ? internal::lazy_sym_impl<"NA">() : Rf_installChar(x.value)){}
   explicit r_sym(const r_str& x) : r_sym(r_str_view(x)){}
   operator SEXP() const noexcept { return value; }
+
+  // Coercion to r_str
+  r_str_view name() const {
+    return r_str_view(PRINTNAME(value)); 
+  }
+  explicit operator r_str_view() const {
+    return name();
+  }
+  explicit operator r_str() const {
+    return r_str(name());
+  }
+
 };
 
 template <internal::name T>

@@ -228,7 +228,7 @@ inline T as_impl(const U& x) {
 template <typename T, RSymbolType U>
 requires (RScalar<T> || RComposite<T>)
 inline T as_impl(const U& x) {
-  return as<T>(r_str_view(PRINTNAME(static_cast<SEXP>(x))));
+  return as<T>(x.name());
 }
 
 template <RSymbolType T, CStringType U>
