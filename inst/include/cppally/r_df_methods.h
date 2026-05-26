@@ -12,7 +12,6 @@
 #include <cppally/sugar/r_subset.h>
 #include <cppally/sugar/r_make_vec.h>
 #include <cppally/sugar/r_sexp_methods.h>
-#include <string>
 
 namespace cppally {
 
@@ -45,7 +44,7 @@ inline r_vec<r_sexp> new_df_impl(const r_vec<r_sexp>& cols, bool recycle, int nr
     if (names.is_null()){
         names = r_vec<r_str_view>(n);
         for (r_size_t i = 0; i < n; ++i){
-            r_str elem( (std::string("col_") + std::to_string(i + 1)).c_str() );
+            r_str elem = r_str("col_") + as<r_str>(i + 1);
             names.set(i, elem);
         } 
     }
