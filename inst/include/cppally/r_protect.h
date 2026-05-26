@@ -41,11 +41,8 @@ auto unwind_protect(Fun&& code) -> decltype(code()) {
         throw unwind_exception(token);
     }
 
-    // Capture the return type (SEXP or void)
+    // Capture the return type
     using ReturnType = decltype(code());
-
-    static_assert(std::is_same_v<ReturnType, SEXP> || std::is_same_v<ReturnType, void>,
-        "unwind_protect only supports returning SEXP or void");
     
     if constexpr (std::is_same_v<ReturnType, SEXP>) {
         SEXP res = R_UnwindProtect(
@@ -59,7 +56,7 @@ auto unwind_protect(Fun&& code) -> decltype(code()) {
             &jmpbuf, token);
         SETCAR(token, R_NilValue);
         return res;
-    } else {
+    } else if constexpr (std::is_same_v<ReturnType, void>) {
         R_UnwindProtect(
             [](void* data) -> SEXP {
                 (*static_cast<std::decay_t<Fun>*>(data))();
@@ -71,6 +68,12 @@ auto unwind_protect(Fun&& code) -> decltype(code()) {
             },
             &jmpbuf, token);
         SETCAR(token, R_NilValue);
+    } else {
+        ReturnType result{};
+        unwind_protect([&] {
+            result = code();
+        });
+        return result;
     }
 }
 
