@@ -73,7 +73,7 @@ r_vec<r_sexp> sequences(const r_vec<r_int>& size, const r_vec<T>& from, const r_
                 }
 
             }
-            out.set(i, curr_seq.sexp);
+            out.set(i, curr_seq.value);
         }
     }
     return out;

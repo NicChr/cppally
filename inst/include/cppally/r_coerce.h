@@ -36,7 +36,7 @@ concept AnySexp = is_sexp<T>;
 template <AnySexp T, typename U>
 inline T as_impl(const U& x) {
   if constexpr (RVector<U>){
-    return T(x.sexp);
+    return T(x.value);
   } else if constexpr (RObject<U>){
     return T(static_cast<SEXP>(x));
   } else if constexpr (RScalar<U>){
@@ -103,7 +103,7 @@ inline T as_impl(const U& x) {
   auto out = T(n);
   if constexpr (is<to_data_t, r_sexp> && !is<from_data_t, r_sexp>){
     for (r_size_t i = 0; i < n; ++i){
-      out.set(i, U(1, x.view(i)).sexp);
+      out.set(i, U(1, x.view(i)).value);
     }
   } else if constexpr (internal::RPtrWritableType<to_data_t> && internal::RPtrWritableType<from_data_t>){
     OMP_SIMD
