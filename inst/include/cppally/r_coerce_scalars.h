@@ -57,7 +57,7 @@ inline constexpr bool can_be_int(T const& x){
   } else if constexpr (MathType<T>){
     // This should be a 'practical' way to get the wider type of the 2
     using common_t = std::common_type_t<unwrap_t<T>, int>;
-    return internal::between_impl<common_t>(unwrap(x), min_int, max_int);
+    return between_impl<common_t>(unwrap(x), min_int, max_int);
   } else {
     return false;
   }
@@ -71,31 +71,32 @@ inline constexpr bool can_be_int64(T const& x){
     return true;
   } else if constexpr (MathType<T>){
     using common_t = std::common_type_t<unwrap_t<T>, int64_t>;
-    return internal::between_impl<common_t>(unwrap(x), min_int64, max_int64);
+    return between_impl<common_t>(unwrap(x), min_int64, max_int64);
   } else {
     return false;
   }
 }
 
-inline bool parse(std::string_view s, double& out) {
-#if defined(__cpp_lib_to_chars_floating_point) || \
+inline bool parse(const char* s, double& out) {
+  std::string_view x(s);
+  #if defined(__cpp_lib_to_chars_floating_point) || \
     (!defined(_LIBCPP_VERSION) && defined(__GLIBCXX__))
-    auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), out);
-    return ec == std::errc{} && ptr == s.data() + s.size();
-#else
+    auto [ptr, ec] = std::from_chars(x.data(), x.data() + x.size(), out);
+    return ec == std::errc{} && ptr == x.data() + x.size();
+  #else
     // libc++ < 17 does not implement std::from_chars for floating-point types.
     // Use strtod with the "C" locale to match from_chars locale-independence.
     const char* saved = std::setlocale(LC_NUMERIC, nullptr);
     std::string saved_locale(saved ? saved : "C");
     std::setlocale(LC_NUMERIC, "C");
     errno = 0;
-    const char* begin = s.data();
+    const char* begin = x.data();
     char* end = nullptr;
     out = std::strtod(begin, &end);
-    bool ok = end == begin + s.size() && errno != ERANGE;
+    bool ok = end == begin + x.size() && errno != ERANGE;
     std::setlocale(LC_NUMERIC, saved_locale.c_str());
     return ok;
-#endif
+  #endif
 }
 
 // Coerce functions that account for NA
@@ -113,7 +114,7 @@ inline r_lgl as_bool(T const& x){
       return r_false;
     } else {
       double res;
-      if (!parse(x.cpp_str(), res)){
+      if (!parse(x.c_str(), res)){
         return na<r_lgl>();
       }
       return r_lgl(static_cast<bool>(res));
@@ -127,10 +128,10 @@ inline r_int as_int(T const& x){
   if constexpr (is<unwrap_t<T>, int>){
     return r_int(unwrap(x));
   } else if constexpr (RMathType<T>){
-    return is_na(x) || !internal::can_be_int(x) ? na<r_int>() : r_int(static_cast<int>(unwrap(x)));
+    return is_na(x) || !can_be_int(x) ? na<r_int>() : r_int(static_cast<int>(unwrap(x)));
   } else if constexpr (RStringType<T>){
     double res;
-    if (!parse(x.cpp_str(), res)){
+    if (!parse(x.c_str(), res)){
       return na<r_int>();
     } else if (can_be_int(res)){
       return r_int(static_cast<int>(res));
@@ -146,10 +147,10 @@ inline r_int64 as_int64(T const& x){
   if constexpr (is<unwrap_t<T>, int64_t>){
     return r_int64(unwrap(x));
   } else if constexpr (RMathType<T>){
-    return is_na(x) || !internal::can_be_int64(x) ? na<r_int64>() : r_int64(static_cast<int64_t>(unwrap(x)));
+    return is_na(x) || !can_be_int64(x) ? na<r_int64>() : r_int64(static_cast<int64_t>(unwrap(x)));
   } else if constexpr (RStringType<T>){
     double res;
-    if (!parse(x.cpp_str(), res)){
+    if (!parse(x.c_str(), res)){
       return na<r_int64>();
     } else if (can_be_int64(res)){
       return r_int64(static_cast<int64_t>(res));
@@ -168,7 +169,7 @@ inline r_dbl as_double(T const& x){
     return is_na(x) ? na<r_dbl>() : r_dbl(static_cast<double>(unwrap(x)));
   } else if constexpr (RStringType<T>){
     double res;
-    if (!parse(x.cpp_str(), res)){
+    if (!parse(x.c_str(), res)){
       return na<r_dbl>();
     }
     return r_dbl(res);
@@ -192,7 +193,7 @@ inline r_raw as_raw(T const& x){
     return r_raw(unwrap(x));
   } else if constexpr (RMathType<T>){
     using r_t = unwrap_t<T>;
-    return is_na(x) || !internal::between_impl(unwrap(x), r_t(0), r_t(255)) ? na<r_raw>() : r_raw(static_cast<unsigned char>(unwrap(x)));
+    return is_na(x) || !between_impl(unwrap(x), r_t(0), r_t(255)) ? na<r_raw>() : r_raw(static_cast<unsigned char>(unwrap(x)));
   } else {
     return na<r_raw>();
   }
@@ -265,101 +266,53 @@ inline r_str_view as_r_string(T const& x){
   }
 }
 
-// R version of static_cast
 template <RScalar T, RScalar U>
-struct as_scalar_impl;
-
-// Specializations for each target type
-
-template<RScalar U>
-struct as_scalar_impl<r_lgl, U> {
-  static constexpr r_lgl cast(U const& x) { 
+inline T scalar_coerce_impl(const U& x) {
+  if constexpr (is<T, r_lgl>){
     return as_bool(x);
-  }
-};
-
-template<RScalar U>
-struct as_scalar_impl<r_int, U> {
-  static constexpr r_int cast(U const& x) {
+  } else if constexpr (is<T, r_int>){
     return as_int(x);
-  }
-};
-
-template<RScalar U>
-struct as_scalar_impl<r_int64, U> {
-  static constexpr r_int64 cast(U const& x) {
+  } else if constexpr (is<T, r_int64>){
     return as_int64(x);
-  }
-};
-
-template<RScalar U>
-struct as_scalar_impl<r_dbl, U> {
-  static constexpr r_dbl cast(U const& x) {
+  } else if constexpr (is<T, r_dbl>){
     return as_double(x);
-  }
-};
-
-template<RTimeType T, RScalar U>
-struct as_scalar_impl<T, U> {
-  static constexpr T cast(U const& x) {
+  } else if constexpr (is<T, r_cplx>){
+    return as_complex(x);
+  } else if constexpr (RStringType<T>){
+    return T(as_r_string(x));
+  } else if constexpr (is<T, r_raw>){
+    return as_raw(x);
+  } else if constexpr (RTimeType<T>){
     using inherited_t = inherited_type_t<T>;
-
     if constexpr (RDateType<T> && RPsxctType<U>){
       double days = std::floor(static_cast<double>(unwrap(x)) / 86400.0);
-      return T(as_scalar_impl<inherited_t, r_dbl>::cast(r_dbl(days)));
+      return T(scalar_coerce_impl<inherited_t, r_dbl>(r_dbl(days)));
     } else if constexpr (RPsxctType<T> && RDateType<U>){
       auto seconds = unwrap(x) * 86400;
       using scalar_t = as_r_scalar_t<decltype(seconds)>;
-      return T(as_scalar_impl<inherited_t, scalar_t>::cast(scalar_t(seconds)));
+      return T(scalar_coerce_impl<inherited_t, scalar_t>(scalar_t(seconds)));
     } else if constexpr (RTimeType<U>){
       using scalar_t = as_r_scalar_t<unwrap_t<U>>;
-      return T(as_scalar_impl<inherited_t, scalar_t>::cast(scalar_t(unwrap(x))));
+      return T(scalar_coerce_impl<inherited_t, scalar_t>(scalar_t(unwrap(x))));
     } else {
-      return T(as_scalar_impl<inherited_t, U>::cast(x));
+      return T(scalar_coerce_impl<inherited_t, U>(x));
     }
+  } else {
+    static_assert(always_false<T>);
+    return T();
   }
-};
-
-template<RScalar U>
-struct as_scalar_impl<r_cplx, U> {
-  static constexpr r_cplx cast(U const& x) {
-    return as_complex(x);
-  }
-};
-
-template<RScalar U>
-struct as_scalar_impl<r_raw, U> {
-  static constexpr r_raw cast(U const& x) {
-    return as_raw(x);
-  }
-};
-
-template<RScalar U>
-struct as_scalar_impl<r_str_view, U> {
-  static r_str_view cast(U const& x) {
-    return as_r_string(x);
-  }
-};
-
-template<RScalar U>
-struct as_scalar_impl<r_str, U> {
-  static r_str cast(U const& x) {
-    r_str_view res = as_r_string(x);
-    return r_str(unwrap(res));
-  }
-};
+}
 
 template <RScalar T, RScalar U>
 inline T scalar_coerce(const U& x) {
   if constexpr (is<U, T>){
     return x;
   } else {
-    using r_t = std::remove_cvref_t<T>;
-    T out = internal::as_scalar_impl<r_t, U>::cast(x);
+    T out = scalar_coerce_impl<T, U>(x);
     if (is_na(out) && !is_na(x)) [[unlikely]] {
       abort(
         "Implicit NA coercion detected from %s to %s, please ensure data can be coerced without complete loss of information", 
-        internal::type_str<U>(), internal::type_str<T>()
+        type_str<U>(), type_str<T>()
       );
     }
     return out;
