@@ -162,7 +162,7 @@ function(x) {
 r_vector<r_int> foo(r_vector<r_int> x);
 extern "C" SEXP _cppally_foo(SEXP x) {
   BEGIN_CPPALLY
-  return cpp_to_sexp(::foo(as<r_vector<r_int>>(x)));
+  return cpp_to_r(::foo(as<r_vector<r_int>>(x)));
   END_CPPALLY
 }
 ```
@@ -180,7 +180,7 @@ destructors on error.
 Looking at the innermost function, we can see the expression
 `as<r_vector<r_int>>(x)` - this converts the input `SEXP` from R into a
 fresh cppally integer vector. The C++ function `foo()` is then called
-with that vector, which is then passed to `cpp_to_sexp()` - a function
+with that vector, which is then passed to `cpp_to_r()` - a function
 that converts C/C++ objects back to `SEXP`.
 
 The conversions look like this:

@@ -641,14 +641,14 @@ You may get a cryptic compiler error like this
 
 ```cpp
 error: no matching function for call to 'foo()'
-[]<typename T>() -> decltype(cpp_to_sexp(::foo())) {
+[]<typename T>() -> decltype(cpp_to_r(::foo())) {
 ```
 
 along with an equally cryptic note
 
 ```cpp
 note:   couldn't deduce template parameter 'T'
-[]<typename T>() -> decltype(cpp_to_sexp(::foo())) {
+[]<typename T>() -> decltype(cpp_to_r(::foo())) {
 ```
 
 This is because the parameter `T` cannot be automatically deduced from any

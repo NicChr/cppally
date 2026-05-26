@@ -22,6 +22,17 @@ std::remove_cvref_t<T> as(const U& x);
 
 namespace internal {
 
+// RScalar -> RVector
+// Everything else -> SEXP
+template <typename T>
+r_sexp cpp_to_r(const T& x) {
+    if constexpr (RScalar<T>){
+      return r_vec<T>(1, x).value;
+    } else {
+      return as<r_sexp>(x);
+    }
+}
+
 // Assumes no NAs at all
 template<typename T>
 inline constexpr bool can_be_int(T const& x){

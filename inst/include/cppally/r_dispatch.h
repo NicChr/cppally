@@ -66,17 +66,6 @@ struct fn_traits<Ret(*)(Args...)> {
     static constexpr size_t arity = sizeof...(Args);
 };
 
-// Special case - never return CHARSXP
-template <typename T>
-SEXP cpp_to_sexp(const T& x) {
-    if constexpr (RStringType<T>){
-        return unwrap(as<r_vec<r_str>>(x));
-    } else {
-        return as<SEXP>(x);
-    }
-}
-
-
 using r_types = std::tuple<
     r_lgl, 
     r_int, 
@@ -403,7 +392,7 @@ SEXP invoke_impl(SEXP* sexp_args, std::index_sequence<Is...>) {
         Fn(as<Args>(sexp_args[Is])...);
         return R_NilValue;
     } else {
-        return cpp_to_sexp(Fn(as<Args>(sexp_args[Is])...));
+        return cpp_to_r(Fn(as<Args>(sexp_args[Is])...));
     }
 }
 

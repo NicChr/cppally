@@ -359,10 +359,9 @@ struct r_vec {
 
   template <typename U>
   void set(r_size_t index, const U& val) {
-    
     // Lists must not hold RScalar, only RComposite (e.g. vectors) and other SEXP types
-    if constexpr (is<T, r_sexp> && RScalar<U>) {
-      set(index, r_vec<U>(1, val).value);
+    if constexpr (is<T, r_sexp>) {
+      set(index, internal::cpp_to_r(val));
     } else {
       set(index, as<T>(val));
     }
