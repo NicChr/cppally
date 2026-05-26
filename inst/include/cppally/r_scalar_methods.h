@@ -106,55 +106,6 @@ inline T operator+(const T& lhs, const U& rhs) {
   return T( internal::c_str_to_r_str_view((a + static_cast<const char*>(rhs)).c_str()) );
 }
 
-// template <RStringType T, RStringType U>
-// inline T operator+(const T& lhs, const U& rhs) {
-//   if (is_na(lhs) || is_na(rhs)){
-//     return na<T>();
-//   }
-//   const char* a = lhs.c_str();
-//   const char* b = rhs.c_str();
-//   std::size_t la = std::strlen(a);
-//   std::size_t lb = std::strlen(b);
-//   char* buf = static_cast<char*>(std::malloc(la + lb + 1));
-//   if (!buf){
-//     abort("Internal error: out of memory");
-//   }
-//   std::memcpy(buf, a, la);
-//   std::memcpy(buf + la, b, lb + 1);
-//   T result(buf);
-//   std::free(buf);
-//   return result;
-// }
-
-// template <RStringType T>
-// inline T operator+(const T& lhs, const char* rhs) {
-//   if (is_na(lhs)) return na<T>();
-//   const char* a = lhs.c_str();
-//   std::size_t la = std::strlen(a);
-//   std::size_t lb = std::strlen(rhs);
-//   char* buf = static_cast<char*>(std::malloc(la + lb + 1));
-//   if (!buf) abort("Internal error: out of memory");
-//   std::memcpy(buf, a, la);
-//   std::memcpy(buf + la, rhs, lb + 1);
-//   T result(buf);
-//   std::free(buf);
-//   return result;
-// }
-
-// // In-place: RStringType rhs
-// template <RStringType T, RStringType U>
-// inline T& operator+=(T& lhs, const U& rhs) {
-//   lhs = lhs + rhs;
-//   return lhs;
-// }
-
-// // In-place: const char* rhs
-// template <RStringType T>
-// inline T& operator+=(T& lhs, const char* rhs) {
-//   lhs = lhs + rhs;
-//   return lhs;
-// }
-
 inline r_lgl operator==(r_sym lhs, r_sym rhs) noexcept {
   return r_lgl{unwrap(lhs) == unwrap(rhs)};
 }
