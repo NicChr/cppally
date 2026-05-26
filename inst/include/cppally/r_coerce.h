@@ -222,7 +222,6 @@ inline T as_impl(const U& x) {
 
 template <RComposite T, RScalar U>
 inline T as_impl(const U& x) {
-  // If T is RVector, create vector directly
   if constexpr (RVector<T>){
     using data_t = typename T::data_type;
     return r_vec<data_t>(1, as<data_t>(x)); 
@@ -259,7 +258,7 @@ template <typename T>
 inline auto as_vector(const T& x){
   if constexpr (RVector<T>){
     return x;
-  } else if constexpr (RComposite<T>){
+  } else if constexpr (RFactor<T>){
     return x.value;
   } else if constexpr (is_sexp<T>){
     static_assert(always_false<T>, "Can't convert `SEXP/r_sexp` to `r_vec<>`, please use `as_impl<>` to convert");
