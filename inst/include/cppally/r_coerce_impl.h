@@ -326,7 +326,7 @@ struct as_scalar_impl<r_str, U> {
 };
 
 template <RScalar T, RScalar U>
-inline T as_scalar(const U& x) {
+inline T scalar_coerce(const U& x) {
   if constexpr (is<U, T>){
     return x;
   } else {

@@ -77,7 +77,7 @@ inline T as_impl(const U& x) {
 
 template <RScalar T, RScalar U>
 inline T as_impl(const U& x) {
-  return internal::as_scalar<T>(x);
+  return internal::scalar_coerce<T>(x);
 }
 
 // ----- Vectors -----
@@ -267,6 +267,18 @@ inline auto as_vector(const T& x){
   } else {
     auto rt_val = as_r_val(x);
     return r_vec<decltype(rt_val)>(1, rt_val);
+  }
+}
+
+template <typename T>
+requires (CastableToRScalar<T> || RAtomicVector<T> || RFactor<T>)
+inline auto as_scalar(const T& x){
+  if constexpr (CastableToRScalar<T>){
+    return as_r_scalar_t<T>(x);
+  } else if constexpr (RAtomicVector<T>){
+    return as<typename T::data_type>(x);
+  } else {
+    return as<r_str>(x);
   }
 }
 

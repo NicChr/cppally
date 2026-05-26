@@ -333,6 +333,11 @@ struct r_scalar_mapping<T> {
 >;
 };
 
+// template <RAtomicVector T>
+// struct r_scalar_mapping<T> { using type = typename T::data_type; };
+// template <RFactor T>
+// struct r_scalar_mapping<T> { using type = r_str; };
+
 template <typename T>
 struct r_val_mapping : r_scalar_mapping<T> {};
 
