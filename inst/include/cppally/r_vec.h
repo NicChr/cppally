@@ -543,7 +543,7 @@ struct r_vec {
       r_vec<V> out(out_size);
       while (whichi < out_size){
           out.set(whichi, V(i));
-          whichi += static_cast<int_t>(!identical(view(i++), val));
+          whichi += static_cast<int_t>(!identical(view(static_cast<r_size_t>(i++)), val));
       }
       return out;
     } else {
@@ -551,7 +551,7 @@ struct r_vec {
       r_vec<V> out(out_size);
       while (whichi < out_size){
         out.set(whichi, V(i));
-        whichi += static_cast<int_t>(identical(view(i++), val));
+        whichi += static_cast<int_t>(identical(view(static_cast<r_size_t>(i++)), val));
     }
     return out;
     }
