@@ -99,7 +99,7 @@ inline bool parse(const char* s, double& out) {
   #endif
 }
 
-r_dbl parse_double(const char* x){
+inline r_dbl parse_double(const char* x){
   double out;
   if (!parse(x, out)){
     return na<r_dbl>();
