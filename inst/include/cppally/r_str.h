@@ -38,13 +38,13 @@ struct r_str {
     return CHAR(value);
   }
 
-  std::string_view cpp_str() const {
+  std::string_view cpp_str() const noexcept {
     return std::string_view{c_str()};
   }
   
   // Explicit conversions
   explicit operator const char*() const noexcept { return c_str(); }
-  explicit operator std::string_view() const { return cpp_str(); }
+  explicit operator std::string_view() const noexcept { return cpp_str(); }
 };
 
 inline r_str r_sexp::address() const {
@@ -74,13 +74,13 @@ struct r_str_view {
   // Implicit r_str -> r_str_view
   r_str_view(const r_str& x) : value(static_cast<SEXP>(x)) {}
   
-  const char* c_str() const { return CHAR(value); }
+  const char* c_str() const noexcept { return CHAR(value); }
   std::string_view cpp_str() const noexcept { return std::string_view{c_str()}; }
 
 
   // Explicit conversions
-  explicit operator const char*() const { return c_str(); }
-  explicit operator std::string_view() const { return cpp_str(); }
+  explicit operator const char*() const noexcept { return c_str(); }
+  explicit operator std::string_view() const noexcept { return cpp_str(); }
 };
 
 inline r_str::r_str(r_str_view x) : value(static_cast<SEXP>(x)) {}
