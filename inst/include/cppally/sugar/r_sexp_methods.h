@@ -140,9 +140,7 @@ inline r_sexp shallow_copy(const r_sexp& x) {
     });
 }
 
-} // namespace cppally
-
-namespace cppally::internal {
+namespace internal {
 
 inline bool identical_impl(const r_sexp& a, const r_sexp& b) {
     SEXP x = unwrap(a);
@@ -169,6 +167,8 @@ inline uint64_t r_hash_impl(const r_sexp& x) noexcept {
     return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ uint64_t, /*fn = */ r_hash_impl);
 }
 
-} // namespace cppally::internal
+}
+
+} 
 
 #endif
