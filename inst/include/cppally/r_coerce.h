@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_COERCE_H
 #define CPPALLY_R_COERCE_H
 
-#include <cppally/r_coerce_impl.h>
+#include <cppally/r_coerce_scalars.h>
 #include <cppally/r_vec.h>
 #include <cppally/r_visit.h>
 #include <cppally/r_sexp_types.h>
@@ -12,6 +12,7 @@ namespace cppally {
 
 namespace internal {
 
+
 template <typename T>
 struct is_std_vector : std::false_type {};
 template <typename T, typename A>
@@ -20,260 +21,255 @@ template <typename T>
 inline constexpr bool is_std_vector_v = is_std_vector<std::remove_cvref_t<T>>::value;
 
 template <typename T>
-inline r_sexp as_sexp(T const& x){
-  if constexpr (RVector<T>){
-    return x.sexp;
-  } else if constexpr (RObject<T>){
-    return r_sexp(static_cast<SEXP>(x));
-  } else if constexpr (RScalar<T>){
-    return r_sexp(new_scalar_vec(x));
-  } else if constexpr (CastableToRVal<T>) {
-    return r_sexp(new_scalar_vec(as_r_val(x)));
-  } else {
-    return new_scalar_vec(as_r_val(x)); 
-  }
-}
-template<>
-inline r_sexp as_sexp<r_sym>(r_sym const& x){
-  return r_sexp(x.value, internal::view_tag{});
-}
+concept CppVector = is_std_vector_v<T>;
 
-}
+// any cppally type that isn't SEXP or r_sexp
+template <typename T>
+concept NotSexp = CppallyType<T> && !is_sexp<T>;
+template <typename T>
+concept AnySexp = is_sexp<T>;
 
 // Powerful and flexible coercion function that can handle many types and convert to R-specific C++ types and R vectors
-// Note: forwards declarations exist in r_coerce_impl.h
-template <typename T, typename U>
-requires is<T, U>
-inline std::remove_cvref_t<T> as(const U& x) {
-  return x;
-}
+// Note: forwards declarations exist in r_coerce_scalars.h
 
-template <typename T, typename U>
-inline std::remove_cvref_t<T> as(const U& x) {
-
-  using to_t = std::remove_cvref_t<T>;
-  using from_t = std::remove_cvref_t<U>;
-  
-  if constexpr (is<to_t, SEXP>){ // To C-level plain SEXP
-    // Special case for SEXP
-    // While it's not an RVal or a type that is generally explicitly supported in cppally, it's needed for
-    // registering C++ functions in R
-    // So we want to avoid going through r_sexp and its protection management if we can
-    if constexpr (RObject<from_t>){ // Is implicitly convertible to SEXP
-      return static_cast<SEXP>(x);
-    } else {
-      // If it isn't implicitly convertible to SEXP, then rely on as<r_sexp> conversion
-      return static_cast<SEXP>(as<r_sexp>(x));
-    }
-  } else if constexpr (is<to_t, r_sexp>){ // To r_sexp (to SEXP is handled above)
-    return internal::as_sexp(x);
-  } else if constexpr (is_sexp<from_t> && !is_sexp<to_t>){ // From SEXP to non-SEXP, use visit_sexp to disambiguate the type
-    return visit_sexp(x, [](const auto& xvec) -> to_t {
-      if constexpr (is<decltype(xvec), r_sexp>){ // Couldn't disambiguate if r_sexp is the return type
-        abort("Don't know how to visit this r_sexp");
-      } else {
-        return as<to_t>(xvec);
-      }
-    });
-  } else if constexpr (RDataFrame<to_t>){ // To data frame
-    return r_df(x);
-  } else if constexpr (RFactor<to_t>){ // To factor
-    return r_factors(x);
-  } else if constexpr (is<r_sym, to_t>){ // To symbol
-    if constexpr (is<from_t, const char*> || RStringType<from_t>){
-      return r_sym(x);
-    } else {
-      return r_sym(as<r_str_view>(x));
-    }
-    
-  } else if constexpr (is<r_sym, from_t>){ // From symbol - just convert to r_str_view first and then coerce
-    return as<to_t>(r_str_view(PRINTNAME(static_cast<SEXP>(x))));
-
-  } else if constexpr (RFactor<from_t>){ // From factor to vector
-
-    using levels_t = std::conditional_t<RVector<to_t>, to_t, r_vec<r_str_view>>;
-    levels_t coerced_levels = as<levels_t>(x.levels());
-    r_size_t n_levels = coerced_levels.length();
-    r_size_t n = x.length();
-    levels_t out(n);
-  
-    unsigned int na_val = unwrap(na<r_int>());
-    unsigned int j;
-
-    using data_t = typename levels_t::data_type;
-  
-    for (r_size_t i = 0; i < n; ++i){
-      j = unwrap(x.value.get(i));
-      if (j == na_val){
-        out.set(i, na<data_t>());  
-      } else if (j > na_val) [[unlikely]] {
-        abort("Negative factor code detected in `r_factors.as_character()`");
-      } else if (j == 0U) [[unlikely]] {
-        abort("Invalid factor code of value 0 detected in `r_factors.as_character()`");
-      } else if (static_cast<r_size_t>(j) > n_levels) [[unlikely]] {
-        abort("Invalid factor code of value %lld detected", static_cast<long long int>(j));
-      } else {
-        out.set(i, coerced_levels.view(static_cast<r_size_t>(j) - r_size_t(1)));
-      }
-    }
-
-    if constexpr (RVector<to_t>){
-      return out;
-    } else {
-      return as<to_t>(out);
-    }
-
-  } else if constexpr (RDataFrame<from_t>){ // from data frame
-    if (x.ncol() != 1){
-      abort("r_df must be a 1-column data frame to convert to %s", internal::type_str<to_t>());
-    }
-    return as<to_t>(x.get_col(0));
-  } else if constexpr (RScalar<to_t> && RVector<from_t>){ // From vector to scalar
-    if (x.length() != 1){
-      abort("Vector must be length-1 to be coerced to requested scalar type");
-    }
-    return as<to_t>(x.get(0));
-
-  } else if constexpr (RVector<to_t> && RVal<from_t>){ // From scalar to vector
-    using data_t = typename to_t::data_type;
-    return r_vec<data_t>(1, as<data_t>(x));
-
-  } else if constexpr (RVector<to_t> && RVector<from_t>){ // From one vector to another
-    using to_data_t = typename to_t::data_type;
-    using from_data_t = typename from_t::data_type;
-
-    if (x.is_null()){
-      return to_t(r_null);
-    }
-
-    // Special case: from r_vec<r_str> to r_vec<r_str_view> (or vice versa)
-    // No need to actually loop here as they both are exactly the same character vector
-    // Only thing that changes is the ownership semantics associated with the element type
-    if constexpr (RStringType<to_data_t> && RStringType<from_data_t>){
-      return to_t(static_cast<SEXP>(x));
-    }
-
-    // Special case: If converting to character vector, we can safely bypass overhead of using r_str by using r_str_view
-    // The vector already is protecting the elements
-    if constexpr (is<to_data_t, r_str>){
-      return to_t(as<r_vec<r_str_view>>(x));
-    }
-
-    r_size_t n = x.length();
-    auto out = to_t(n);
-    // Lists sometimes can't be converted to atomic vectors so we can't run the coercion under an SIMD clause
-    if constexpr (is<to_data_t, r_sexp> && !is<from_data_t, r_sexp>){
-      for (r_size_t i = 0; i < n; ++i){
-        out.set(i, from_t(1, x.view(i)).sexp);
-      }
-    } else if constexpr (internal::RPtrWritableType<to_data_t> && internal::RPtrWritableType<from_data_t>){
-      OMP_SIMD
-      for (r_size_t i = 0; i < n; ++i){
-        out.set(i, as<to_data_t>(x.view(i)));
-      }
-    } else {
-      for (r_size_t i = 0; i < n; ++i){
-        out.set(i, as<to_data_t>(x.view(i)));
-      }
-    }
-    out.set_names(x.names());
-    return out;
-  } else if constexpr (RScalar<to_t> && RScalar<from_t>) {
-    return internal::as_scalar_impl<to_t>(x);
-    // From C++ scalar that is RVal constructible
-  } else if constexpr (CastableToRScalar<from_t> && RScalar<to_t>){
-    return as<to_t>(as_r_scalar(x));
-    // To C++ scalar that is RVal constructible
-  } else if constexpr (CastableToRScalar<to_t>){
-    return static_cast<to_t>(as<as_r_scalar_t<to_t>>(x));
-  } else if constexpr (internal::is_std_vector_v<from_t> && internal::is_std_vector_v<to_t>) {
-    r_size_t n = x.size();
-    to_t out(n);
-    for (r_size_t i = 0; i < n; ++i){
-      out[i] = as<typename to_t::value_type>(x[i]);
-    }
-    return out;
-  } else if constexpr (internal::is_std_vector_v<to_t>) {
-    static_assert(RVector<from_t>, "Can only convert RVector to std::vector");
-    r_size_t n = x.length();
-    to_t out(n);
-    for (r_size_t i = 0; i < n; ++i){
-      out[i] = as<typename to_t::value_type>(x.get(i));
-    }
-    return out;
-  } else if constexpr (internal::is_std_vector_v<from_t>) {
-    static_assert(RVector<to_t>, "Can only convert std::vector to RVector");
-    r_size_t n = x.size();
-    to_t out(n);
-    for (r_size_t i = 0; i < n; ++i){
-      out.set(i, x[i]);
-    }
-    return out;
+// -> SEXP
+template <AnySexp T, typename U>
+inline T as_impl(const U& x) {
+  if constexpr (RVector<U>){
+    return T(x.value);
+  } else if constexpr (RObject<U>){
+    return T(static_cast<SEXP>(x));
   } else {
-    static_assert(always_false<to_t>, "Unsupported type for `as`");
+    return T(new_scalar_vec(as_r_scalar_t<U>(x)));
   }
 }
 
-// template <RScalar T, RScalar U>
-// requires (!is<T, U>)
-// inline std::remove_cvref_t<T> as(const U& x) {
-//   return internal::as_scalar_impl<T>(x);
-// }
+// SEXP -> !SEXP
+// Always visit the SEXP and then convert using the disambiguated type
+template <NotSexp T, AnySexp U>
+inline T as_impl(const U& x) {
+  return visit_sexp(x, []<typename x_t>(const x_t& xvec) -> T {
+    if constexpr (is<x_t, r_sexp>){
+      abort("Don't know how to visit this r_sexp");
+    } else {
+      return as<T>(xvec);
+    }
+  });
+}
 
+// ----- Scalars -----
 
-// // as_scalar_impl<> can handle -> r_sexp 
-// template <typename T, typename U>
-// requires (is<T, r_sexp> && !is<U, r_sexp>)
-// inline r_sexp as(const U& x) {
-//   return internal::as_scalar_impl<r_sexp>(x);
-// }
+template <RScalar T, CastableToRScalar U>
+requires (CppType<U>)
+inline T as_impl(const U& x) {
+  return as<T>(as_r_scalar_t<U>(x));
+}
 
-// template <RVector T, RVector U>
-// requires (!is<T, U>)
-// inline std::remove_cvref_t<T> as(const U& x) {
-//   using to_data_t = typename T::data_type;
-//   using from_data_t = typename U::data_type;
+template <CastableToRScalar T, typename U>
+requires (CppType<T>)
+inline T as_impl(const U& x) {
+  return static_cast<T>(as<as_r_scalar_t<T>>(x));
+}
+
+template <RScalar T, RScalar U>
+inline T as_impl(const U& x) {
+  return internal::scalar_coerce<T>(x);
+}
+
+// ----- Vectors -----
+
+template <RVector T, RVector U>
+inline T as_impl(const U& x) {
+  using to_data_t = typename T::data_type;
+  using from_data_t = typename U::data_type;
   
-//   // Special case: from r_vec<r_str> to r_vec<r_str_view> (or vice versa)
-//   // No need to actually loop here as they both are exactly the same character vector
-//   // Only thing that changes is the ownership semantics associated with the element type
-//   if constexpr (RStringType<to_data_t> && RStringType<from_data_t>){
-//     return T(static_cast<SEXP>(x));
-//   }
+  if (x.is_null()){
+    return T(r_null);
+  }
 
-//   // Special case: If converting to character vector, we can safely bypass overhead of using r_str by using r_str_view
-//   // The vector already is protecting the elements
-//   if constexpr (is<to_data_t, r_str>){
-//     return T(as<r_vec<r_str_view>>(x));
-//   }
-  
-//   r_size_t n = x.length();
-//   T out(n);
-//   // Lists sometimes can't be converted to atomic vectors so we can't run the coercion under an SIMD clause
-//   if constexpr (internal::RPtrWritableType<to_data_t> && internal::RPtrWritableType<from_data_t>){
-//     OMP_SIMD
-//     for (r_size_t i = 0; i < n; ++i){
-//       out.set(i, as<to_data_t>(x.view(i)));
-//     }
-//   } else {
-//     for (r_size_t i = 0; i < n; ++i){
-//       out.set(i, as<to_data_t>(x.view(i)));
-//     }
-//   }
-//   return out;
-// }
+  if constexpr (RStringType<to_data_t> && RStringType<from_data_t>){
+    return T(static_cast<SEXP>(x));
+  }
+
+  if constexpr (is<to_data_t, r_str>){
+    return T(as<r_vec<r_str_view>>(x));
+  }
+
+  r_size_t n = x.length();
+  T out(n);
+  if constexpr (internal::RPtrWritableType<to_data_t> && internal::RPtrWritableType<from_data_t>){
+    OMP_SIMD
+    for (r_size_t i = 0; i < n; ++i){
+      out.set(i, x.view(i));
+    }
+  } else {
+    for (r_size_t i = 0; i < n; ++i){
+      out.set(i, x.view(i));
+    }
+  }
+  out.set_names(x.names());
+  return out;
+}
+
+template <RScalar T, RVector U>
+inline T as_impl(const U& x) {
+  if (x.length() != 1) [[unlikely]] {
+    abort("Vector must be length-1 to be coerced to requested scalar type");
+  }
+  return as<T>(x.get(0));
+}
+
+template <CppVector T, CppVector U>
+inline T as_impl(const U& x) {
+  r_size_t n = x.size();
+  T out(n);
+  using data_t = typename T::value_type;
+  for (r_size_t i = 0; i < n; ++i){
+    out[i] = as<data_t>(x[i]);
+  }
+  return out;
+}
+
+template <CppVector T, RVector U>
+inline T as_impl(const U& x) {
+  r_size_t n = x.length();
+  T out(n);
+  using data_t = typename T::value_type;
+  for (r_size_t i = 0; i < n; ++i){
+    out[i] = as<data_t>(x.get(i));
+  }
+  return out;
+}
+
+template <RVector T, CppVector U>
+inline T as_impl(const U& x) {
+  r_size_t n = x.size();
+  T out(n);
+  for (r_size_t i = 0; i < n; ++i) out.set(i, x[i]);
+  return out;
+}
+
+
+// ----- Factors -----
+
+template <RScalar T, RFactor U>
+inline T as_impl(const U& x) {
+  if (x.length() != 1) [[unlikely]] {
+    abort("Factor must be length-1 to be coerced to requested scalar type");
+  }
+  return as<T>(x.get(0));
+}
+
+template <RVector T, RFactor U>
+inline T as_impl(const U& x) {
+  T coerced_levels = as<T>(x.levels());
+  r_size_t n = x.length();
+  T out(n);
+  using data_t = typename T::data_type;
+  for (r_size_t i = 0; i < n; ++i) {
+    r_int code = x.get_code(i);
+    if (is_na(code)) {
+      out.set(i, na<data_t>());
+    } else {
+      out.set(i, coerced_levels.view(static_cast<r_size_t>(unwrap(code)) - 1));
+    }
+  }
+  return out;
+}
+
+template <RFactor T, RVector U>
+inline T as_impl(const U& x) {
+  return r_factors(x);
+}
+
+// ----- Data Frames -----
+
+template <typename T, RDataFrame U>
+requires (RScalar<T> || RVector<T> || RFactor<T>)
+inline T as_impl(const U& x) {
+  if (x.ncol() != 1) [[unlikely]] {
+    abort("r_df must be a 1-column data frame to convert to %s", internal::type_str<T>());
+  }
+  return as<T>(x.get_col(0));
+}
+
+template <RDataFrame T, RVector U>
+inline T as_impl(const U& x) {
+  return r_df(x);
+}
+
+template <RDataFrame T, RFactor U>
+inline T as_impl(const U& x) {
+  return r_df(x);
+}
+
+template <RComposite T, RScalar U>
+inline T as_impl(const U& x) {
+  if constexpr (RVector<T>){
+    using data_t = typename T::data_type;
+    return r_vec<data_t>(1, as<data_t>(x)); 
+  } else {
+    return as<T>(r_vec<U>(1, x));
+  }
+}
+
+// ----- R Symbols -----
+
+// Route through r_str where possible
+
+template <typename T, RSymbolType U>
+requires (RScalar<T> || RComposite<T>)
+inline T as_impl(const U& x) {
+  return as<T>(x.name());
+}
+
+template <RSymbolType T, CStringType U>
+inline T as_impl(const U& x) {
+  return r_sym(x);
+}
+
+template <RSymbolType T, typename U>
+requires (RScalar<U> || RComposite<U>)
+inline T as_impl(const U& x) {
+  return r_sym(as<r_str_view>(x));
+}
+
+}
 
 // Convert any obj to an r_vec<>
 template <typename T>
 inline auto as_vector(const T& x){
   if constexpr (RVector<T>){
     return x;
-  } else if constexpr (is_sexp<T>){
-    static_assert(always_false<T>, "Can't convert `SEXP/r_sexp` to `r_vec<>`, please use `as<>` to convert");
-    return T();
+  } else if constexpr (RFactor<T>){
+    return x.value;
+  } else if constexpr (CastableToRScalar<T>){
+    using scalar_t = as_r_scalar_t<T>;
+    return r_vec<scalar_t>(1, scalar_t(x));
   } else {
-    auto rt_val = as_r_val(x);
-    return r_vec<decltype(rt_val)>(1, rt_val);
+    static_assert(always_false<T>, "Can't convert `x` to vector, please use `as<>`");
+    return T();
+  }
+}
+
+template <typename T>
+requires (CastableToRScalar<T> || RAtomicVector<T> || RFactor<T>)
+inline auto as_scalar(const T& x){
+  if constexpr (CastableToRScalar<T>){
+    return as_r_scalar_t<T>(x);
+  } else if constexpr (RAtomicVector<T>){
+    return as<typename T::data_type>(x);
+  } else if constexpr (RFactor<T>) {
+    return as<r_str>(x);
+  }
+}
+
+template <typename T, typename U>
+std::remove_cvref_t<T> as(const U& x) {
+  if constexpr (is<T, U>){
+    return x;
+  } else {
+    return internal::as_impl<std::remove_cvref_t<T>>(x);
   }
 }
 

@@ -273,7 +273,7 @@ wrap_call <- function(name, return_type, args, is_template, template_params) {
   if (type_is_void(return_type)){
     unclass(glue::glue("{call};\n  return R_NilValue;", .trim = FALSE))
   } else {
-    unclass(glue::glue("return cpp_to_sexp({call});"))
+    unclass(glue::glue("return cpp_to_r({call});"))
   }
 }
 
@@ -325,7 +325,7 @@ wrap_call_template <- function(name, return_type, args, template_params) {
       );
     ')
   } else {
-    full_expr <- glue::glue("cpp_to_sexp({call_str})")
+    full_expr <- glue::glue("cpp_to_r({call_str})")
 
     result <- glue::glue('
     return dispatch_template_impl<{num_template_params}, {num_args}, std::array<int, {num_args}>{map_str}>(
@@ -529,7 +529,7 @@ cpp_register <- function(path = ".", quiet = !is_interactive(), extension = c(".
       {user_includes}
 
       using namespace cppally;
-      using internal::cpp_to_sexp;
+      using internal::cpp_to_r;
       using internal::dispatch_template_impl;
 
       {cpp_functions_definitions}

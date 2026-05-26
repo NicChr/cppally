@@ -123,7 +123,7 @@ r_dbl scalar4(T x, U y){
 template <RVector T>
 [[cppally::register]]
 SEXP test_sexp(T x){
-  return x.sexp;
+  return x.value;
 }
 
 template <typename T>

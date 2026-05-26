@@ -7,7 +7,7 @@
 #include <cppally/r_limits.h>
 #include <cppally/r_scalar_methods.h>
 #include <cppally/r_vec_utils.h>
-#include <cppally/r_coerce_impl.h>
+#include <cppally/r_coerce_scalars.h>
 #include <cppally/r_hash_names.h>
 #include <algorithm>
 
@@ -39,15 +39,15 @@ concept RNumericSubscript = any<T, r_int, r_int64>;
 template<RVal T>
 struct r_vec {
 
-  r_sexp sexp = r_null;
+  r_sexp value = r_null;
   using data_type = std::remove_cvref_t<T>;
 
   bool is_null() const noexcept {
-    return sexp.is_null();
+    return value.is_null();
   }
 
   bool is_altrep() const noexcept {
-    return sexp.is_altrep();
+    return value.is_altrep();
   }
 
   private:
@@ -72,9 +72,9 @@ struct r_vec {
     if (is_altrep()) return;
 #endif
     if constexpr (is_write_barrier_protected){
-      m_ptr = internal::vector_ptr_ro<T>(sexp);
+      m_ptr = internal::vector_ptr_ro<T>(value);
     } else {
-      m_ptr = internal::vector_ptr<T>(sexp);
+      m_ptr = internal::vector_ptr<T>(value);
     }
   }
 
@@ -88,12 +88,12 @@ struct r_vec {
 
   void ensure_names_cached() const {
     if (!cached_names) {
-      cached_names = internal::name_cache().get_or_create(sexp.value);
+      cached_names = internal::name_cache().get_or_create(value.value);
     }
     if (!cached_names->names.has_value()) {
       // Construct via r_vec<r_str_view> so the SEXP type is validated before
       // we ever call STRING_PTR_RO on it inside lazy_build()
-      r_vec<r_str_view> validated(Rf_getAttrib(sexp, symbol::names_sym));
+      r_vec<r_str_view> validated(Rf_getAttrib(value, symbol::names_sym));
       cached_names->names.emplace(static_cast<r_sexp>(validated));
     }
   }
@@ -131,7 +131,7 @@ struct r_vec {
 
   // Constructor that wraps new_vec_impl<T>
   explicit r_vec(r_size_t n)
-    : sexp(internal::new_vec_impl<data_type>(n))
+    : value(internal::new_vec_impl<data_type>(n))
   {
     initialise_ptr();
   }
@@ -147,18 +147,18 @@ struct r_vec {
   }
 
   // Constructors from existing r_sexp/SEXP
-  explicit r_vec(r_sexp s) : sexp(std::move(s)) {
+  explicit r_vec(r_sexp s) : value(std::move(s)) {
     if (!is_null()) {
-      internal::check_valid_construction<r_vec<T>>(sexp);
-      validate_attrs<T>(sexp.value);
+      internal::check_valid_construction<r_vec<T>>(value);
+      validate_attrs<T>(value.value);
       initialise_ptr();
     }
   }
 
-  explicit r_vec(const r_sexp& s, internal::view_tag) : sexp(s.value, internal::view_tag{}){
+  explicit r_vec(const r_sexp& s, internal::view_tag) : value(s.value, internal::view_tag{}){
     if (!is_null()){
-      internal::check_valid_construction<r_vec<T>>(sexp);
-      validate_attrs<T>(sexp.value);
+      internal::check_valid_construction<r_vec<T>>(value);
+      validate_attrs<T>(value.value);
       initialise_ptr();
     }
   }
@@ -168,12 +168,12 @@ struct r_vec {
 
   // Implicit conversion to SEXP
   operator SEXP() const noexcept {
-    return sexp.value;
+    return value.value;
   }
 
   // Explicit conversion to r_sexp
   explicit operator r_sexp() const noexcept {
-    return sexp;
+    return value;
   }
 
   // Direct pointer access - materialises ALTREP when CPPALLY_PRESERVE_ALTREP is on
@@ -181,9 +181,9 @@ struct r_vec {
 #ifdef CPPALLY_PRESERVE_ALTREP
     if (!m_ptr) [[unlikely]] {
       if constexpr (is_write_barrier_protected) {
-        m_ptr = internal::vector_ptr_ro<T>(sexp);
+        m_ptr = internal::vector_ptr_ro<T>(value);
       } else {
-        m_ptr = internal::vector_ptr<T>(sexp);
+        m_ptr = internal::vector_ptr<T>(value);
       }
     }
 #endif
@@ -208,7 +208,7 @@ struct r_vec {
   }
 
   r_size_t length() const noexcept {
-    return Rf_xlength(sexp);
+    return Rf_xlength(value);
   }
 
   bool is_long() const noexcept {
@@ -216,7 +216,7 @@ struct r_vec {
   }
 
   r_str address() const {
-    return sexp.address();
+    return value.address();
   }
 
   r_vec<r_str_view> names() const {
@@ -231,14 +231,14 @@ struct r_vec {
         if (Rf_getAttrib(*this, symbol::names_sym) == R_NilValue){
           return;
         }
-        Rf_setAttrib(sexp, symbol::names_sym, r_null);
+        Rf_setAttrib(value, symbol::names_sym, r_null);
       } else if (names.length() != length()) [[unlikely]] {
           abort("`length(names)` must equal `length(x)`");
       } else {
-          Rf_namesgets(sexp, names);
+          Rf_namesgets(value, names);
       }
       if (!cached_names) {
-        cached_names = internal::name_cache().get_or_create(sexp);
+        cached_names = internal::name_cache().get_or_create(value);
       }
       cached_names->invalidate();
   }
@@ -284,8 +284,8 @@ struct r_vec {
     return na<r_int>();
   }
 
-  r_int name_index(std::string_view name, bool abort_on_missing = true) const {
-    return name_index(r_str(name.data()), abort_on_missing);
+  r_int name_index(const char* name, bool abort_on_missing = true) const {
+    return name_index(r_str(name), abort_on_missing);
   }
 
   // Get element (no bounds-check)
@@ -294,7 +294,7 @@ struct r_vec {
     if (m_ptr) [[likely]] {
       return T(m_ptr[index]);
     } else {
-      return T(internal::elt<T>(sexp, index));
+      return T(internal::elt<T>(value, index));
     }
     #else
     return T(m_ptr[index]);
@@ -306,8 +306,8 @@ struct r_vec {
     return get(static_cast<r_size_t>(unwrap(name_index(name))));
   }
 
-  T get(std::string_view name) const {
-    return get(r_str(name.data()));
+  T get(const char* name) const {
+    return get(r_str(name));
   }
 
   // View element (like `get()` but elements must be short-lived)
@@ -318,7 +318,7 @@ struct r_vec {
       if (m_ptr) [[likely]] {
         return T(m_ptr[index], internal::view_tag{});
       } else {
-        return T(internal::elt<T>(sexp, index), internal::view_tag{});
+        return T(internal::elt<T>(value, index), internal::view_tag{});
       }
       #else
       return T(m_ptr[index], internal::view_tag{});
@@ -328,7 +328,7 @@ struct r_vec {
       if (m_ptr) [[likely]] {
         return T(m_ptr[index]);
       } else {
-        return T(internal::elt<T>(sexp, index));
+        return T(internal::elt<T>(value, index));
       }
       #else
       return T(m_ptr[index]);
@@ -341,16 +341,16 @@ struct r_vec {
     return view(static_cast<r_size_t>(unwrap(name_index(name))));
   }
 
-  T view(std::string_view name) const {
-    return view(r_str(name.data()));
+  T view(const char* name) const {
+    return view(r_str(name));
   }
 
   // Set element (no bounds-check)
   void set(r_size_t index, const T& val) {
       if constexpr (RStringType<T>){
-        SET_STRING_ELT(sexp, index, val);
-      } else if constexpr (RObject<T>){
-        SET_VECTOR_ELT(sexp, index, val);
+        SET_STRING_ELT(value, index, val);
+      } else if constexpr (is<T, r_sexp>){
+        SET_VECTOR_ELT(value, index, val);
       } else {
         static_assert(!is_write_barrier_protected, "Can't write data directly here, data is R write-barrier protected");
         data()[index] = unwrap(val);
@@ -359,7 +359,12 @@ struct r_vec {
 
   template <typename U>
   void set(r_size_t index, const U& val) {
-    set(index, as<T>(val));
+    // Lists must not hold RScalar, only RComposite (e.g. vectors) and other SEXP types
+    if constexpr (is<T, r_sexp>) {
+      set(index, internal::as_list_element(val));
+    } else {
+      set(index, as<T>(val));
+    }
   }
 
   template <RStringType U>
@@ -367,8 +372,20 @@ struct r_vec {
       set(static_cast<r_size_t>(unwrap(name_index(name))), val);
   }
   
-  void set(std::string_view name, const T& val) {
-      set(r_str(name.data()), val);
+  void set(const char* name, const T& val) {
+      set(r_str(name), val);
+  }
+
+  // These overloads exist purely to avoid ambiguity between nullptr (int=0) and const char*
+  template <typename U>
+  void set(int index, const U& val) {
+    set(static_cast<r_size_t>(index), val); 
+  }
+  T get(int index) const {
+    return get(static_cast<r_size_t>(index)); 
+  }
+  T view(int index) const { 
+    return view(static_cast<r_size_t>(index)); 
   }
 
   template <internal::RSubscript U>
@@ -526,7 +543,7 @@ struct r_vec {
       r_vec<V> out(out_size);
       while (whichi < out_size){
           out.set(whichi, V(i));
-          whichi += static_cast<int_t>(!identical(view(i++), val));
+          whichi += static_cast<int_t>(!identical(view(static_cast<r_size_t>(i++)), val));
       }
       return out;
     } else {
@@ -534,7 +551,7 @@ struct r_vec {
       r_vec<V> out(out_size);
       while (whichi < out_size){
         out.set(whichi, V(i));
-        whichi += static_cast<int_t>(identical(view(i++), val));
+        whichi += static_cast<int_t>(identical(view(static_cast<r_size_t>(i++)), val));
     }
     return out;
     }
@@ -655,7 +672,7 @@ struct r_vec {
 
   // POSIXct-only members
   r_str tzone() const requires RPsxctType<T> {
-    auto tz = r_vec<r_str_view>(Rf_getAttrib(sexp, cached_sym<"tzone">()));
+    auto tz = r_vec<r_str_view>(Rf_getAttrib(value, cached_sym<"tzone">()));
     
     if (tz.length() == 0){
       abort("`r_vec<r_psxct_t>` vector must have a valid tzone attribute");
@@ -669,7 +686,7 @@ struct r_vec {
   }
 
   void set_tzone(const char* tz) requires RPsxctType<T> {
-    Rf_setAttrib(sexp, cached_sym<"tzone">(), r_vec<r_str>(1, r_str(tz)));
+    Rf_setAttrib(value, cached_sym<"tzone">(), r_vec<r_str>(1, r_str(tz)));
   }
 
   // list-only members

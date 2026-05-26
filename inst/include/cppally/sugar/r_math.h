@@ -228,7 +228,7 @@ inline constexpr T round(T x){
 template<MathType T, MathType U>
 requires (AtLeastOneRMathType<T, U>)
 inline r_dbl signif(T x, U digits){
-  auto new_digits = max(as_r_val(U(1)), as_r_val(digits));
+  auto new_digits = max(as_r_scalar_t<U>(U(1)), as_r_scalar_t<U>(digits));
   if (is_na(x)){
     return as<r_dbl>(x);
   } else if (is_na(new_digits)){

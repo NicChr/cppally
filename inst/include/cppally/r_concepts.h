@@ -127,6 +127,9 @@ template <typename T>
 concept NumericType = RNumericType<T> || CppNumericType<T>;
 
 template <typename T>
+concept CStringType = is<T, const char*>;
+
+template <typename T>
 concept RStringType = any<T, r_str, r_str_view>;
 
 template <typename T>
@@ -329,6 +332,11 @@ struct r_scalar_mapping<T> {
     >
 >;
 };
+
+// template <RAtomicVector T>
+// struct r_scalar_mapping<T> { using type = typename T::data_type; };
+// template <RFactor T>
+// struct r_scalar_mapping<T> { using type = r_str; };
 
 template <typename T>
 struct r_val_mapping : r_scalar_mapping<T> {};
