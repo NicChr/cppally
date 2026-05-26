@@ -173,7 +173,7 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check, bool inver
       }
     } else {
       for (r_size_t i = 0; i < n; ++i){
-        out.set(i, view(indices.data()[i]));
+        out.set(i, view(static_cast<r_size_t>(indices.data()[i])));
     }
   }
   r_vec<r_str_view> nms = names();
