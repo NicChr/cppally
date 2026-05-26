@@ -78,25 +78,33 @@ inline constexpr bool can_be_int64(T const& x){
 }
 
 inline bool parse(const char* s, double& out) {
-  std::string_view x(s);
+  const char* end = s + std::strlen(s);
   #if defined(__cpp_lib_to_chars_floating_point) || \
     (!defined(_LIBCPP_VERSION) && defined(__GLIBCXX__))
-    auto [ptr, ec] = std::from_chars(x.data(), x.data() + x.size(), out);
-    return ec == std::errc{} && ptr == x.data() + x.size();
+    auto [ptr, ec] = std::from_chars(s, end, out);
+    return ec == std::errc{} && ptr == end;
   #else
     // libc++ < 17 does not implement std::from_chars for floating-point types.
     // Use strtod with the "C" locale to match from_chars locale-independence.
+    char saved_locale[64];
     const char* saved = std::setlocale(LC_NUMERIC, nullptr);
-    std::string saved_locale(saved ? saved : "C");
+    std::snprintf(saved_locale, sizeof(saved_locale), "%s", saved ? saved : "C");
     std::setlocale(LC_NUMERIC, "C");
     errno = 0;
-    const char* begin = x.data();
-    char* end = nullptr;
-    out = std::strtod(begin, &end);
-    bool ok = end == begin + x.size() && errno != ERANGE;
-    std::setlocale(LC_NUMERIC, saved_locale.c_str());
+    char* p = nullptr;
+    out = std::strtod(s, &p);
+    bool ok = p == end && !(errno == ERANGE && std::isinf(out));
+    std::setlocale(LC_NUMERIC, saved_locale);
     return ok;
   #endif
+}
+
+r_dbl parse_double(const char* x){
+  double out;
+  if (!parse(x, out)){
+    return na<r_dbl>();
+  }
+  return r_dbl(out);
 }
 
 // Coerce functions that account for NA
@@ -113,11 +121,7 @@ inline r_lgl as_bool(T const& x){
     } else if ( std::strcmp(str, "FALSE") == 0){
       return r_false;
     } else {
-      double res;
-      if (!parse(x.c_str(), res)){
-        return na<r_lgl>();
-      }
-      return r_lgl(static_cast<bool>(res));
+      return as_bool(parse_double(x.c_str()));
     }
   } else {
     return na<r_lgl>();
@@ -130,14 +134,7 @@ inline r_int as_int(T const& x){
   } else if constexpr (RMathType<T>){
     return is_na(x) || !can_be_int(x) ? na<r_int>() : r_int(static_cast<int>(unwrap(x)));
   } else if constexpr (RStringType<T>){
-    double res;
-    if (!parse(x.c_str(), res)){
-      return na<r_int>();
-    } else if (can_be_int(res)){
-      return r_int(static_cast<int>(res));
-    } else {
-      return na<r_int>();
-    }
+    return as_int(parse_double(x.c_str()));
   } else {
     return na<r_int>();
   }
@@ -149,14 +146,7 @@ inline r_int64 as_int64(T const& x){
   } else if constexpr (RMathType<T>){
     return is_na(x) || !can_be_int64(x) ? na<r_int64>() : r_int64(static_cast<int64_t>(unwrap(x)));
   } else if constexpr (RStringType<T>){
-    double res;
-    if (!parse(x.c_str(), res)){
-      return na<r_int64>();
-    } else if (can_be_int64(res)){
-      return r_int64(static_cast<int64_t>(res));
-    } else {
-      return na<r_int64>();
-    }
+    return as_int64(parse_double(x.c_str()));
   } else {
     return na<r_int64>();
   }
@@ -168,11 +158,7 @@ inline r_dbl as_double(T const& x){
   } else if constexpr (RMathType<T>){
     return is_na(x) ? na<r_dbl>() : r_dbl(static_cast<double>(unwrap(x)));
   } else if constexpr (RStringType<T>){
-    double res;
-    if (!parse(x.c_str(), res)){
-      return na<r_dbl>();
-    }
-    return r_dbl(res);
+    return parse_double(x.c_str());
   } else {
     return na<r_dbl>();
   }
