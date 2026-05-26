@@ -41,7 +41,7 @@ inline T as_impl(const U& x) {
     return T(static_cast<SEXP>(x));
   } else if constexpr (RScalar<U>){
     return T(new_scalar_vec(x));
-  } else if constexpr (CastableToRScalar<T>) {
+  } else if constexpr (CastableToRScalar<U>) {
     return T(new_scalar_vec(as_r_scalar(x)));
   } else {
     return T(new_scalar_vec(as_r_val(x)));
