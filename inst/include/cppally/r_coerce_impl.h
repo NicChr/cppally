@@ -298,9 +298,11 @@ struct as_scalar_impl<T, U> {
       return T(as_scalar_impl<inherited_t, r_dbl>::cast(r_dbl(days)));
     } else if constexpr (RPsxctType<T> && RDateType<U>){
       auto seconds = unwrap(x) * 86400;
-      return T(as_scalar_impl<inherited_t, as_r_scalar_t<decltype(seconds)>>::cast(as_r_scalar(seconds)));
+      using scalar_t = as_r_scalar_t<decltype(seconds)>;
+      return T(as_scalar_impl<inherited_t, scalar_t>::cast(scalar_t(seconds)));
     } else if constexpr (RTimeType<U>){
-      return T(as_scalar_impl<inherited_t, as_r_scalar_t<unwrap_t<U>>>::cast(as_r_scalar(unwrap(x))));
+      using scalar_t = as_r_scalar_t<unwrap_t<U>>;
+      return T(as_scalar_impl<inherited_t, scalar_t>::cast(scalar_t(unwrap(x))));
     } else {
       return T(as_scalar_impl<inherited_t, U>::cast(x));
     }

@@ -34,39 +34,6 @@ inline constexpr unwrap_t<T> unwrap(const T& x) noexcept {
   return static_cast<unwrap_t<T>>(x);
 }
 
-// Coerce C/C++ types to RScalar
-template <typename T>
-inline constexpr auto as_r_scalar(T const& x) { 
-  if constexpr (RScalar<T>){
-    return x;
-  } else if constexpr (CastableToRScalar<T>){
-    return as_r_scalar_t<T>(x);
-  } else {
-    static_assert(
-      always_false<T>,
-      "Unsupported type for `as_r_scalar`"
-    );
-    return r_null;
-  } 
-}
-
-// Coerce to an RVal type (like as_r_scalar but it can also coerce to `r_sexp`)
-// It also coerces objects like `r_vec<T>` to the RVal `r_sexp` 
-template <typename T>
-inline constexpr auto as_r_val(T const& x) { 
-  if constexpr (RVal<T>){
-    return x;
-  } else if constexpr (CastableToRVal<T>){
-    return static_cast<as_r_val_t<T>>(x);
-  } else {
-    static_assert(
-      always_false<T>,
-      "Unsupported type for `as_r_val`"
-    );
-    return r_null;
-  } 
-}
-
 }
 
 #endif

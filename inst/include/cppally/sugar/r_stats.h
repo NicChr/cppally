@@ -59,11 +59,11 @@ r_int64 sum_int(const r_vec<T> &x, bool na_rm = false){
     if (na_rm){
         OMP_SIMD_REDUCTION1(+:out_)
         for (r_size_t i = 0; i < n; ++i){
-            out_ += (is_na(as_r_val(p_x[i]))) ? int64_t(0) : p_x[i];
+            out_ += (is_na(p_x[i])) ? int64_t(0) : p_x[i];
         }
     } else {
         for (r_size_t i = 0; i < n; ++i){
-            if (is_na(as_r_val(p_x[i]))){
+            if (is_na(p_x[i])){
                 return na<r_int64>();
             }
             out_ += p_x[i];

@@ -94,7 +94,7 @@ inline r_sexp na_value_impl<r_sexp>() noexcept {
 }
 
 template<typename T>
-inline constexpr auto na() noexcept {
+inline constexpr T na() noexcept {
   return internal::na_value_impl<std::remove_cvref_t<T>>();
 }
 
@@ -103,7 +103,7 @@ inline constexpr bool is_na(T const& x) noexcept {
   if constexpr (RScalar<T>){
     return unwrap(x) == unwrap(na<T>());
   } else if constexpr (CastableToRScalar<T>){
-    return is_na(as_r_scalar(x));
+    return is_na(as_r_scalar_t<T>(x));
   } else {
     return false;
   }

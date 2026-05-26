@@ -39,12 +39,8 @@ inline T as_impl(const U& x) {
     return T(x.value);
   } else if constexpr (RObject<U>){
     return T(static_cast<SEXP>(x));
-  } else if constexpr (RScalar<U>){
-    return T(new_scalar_vec(x));
-  } else if constexpr (CastableToRScalar<U>) {
-    return T(new_scalar_vec(as_r_scalar(x)));
   } else {
-    return T(new_scalar_vec(as_r_val(x)));
+    return T(new_scalar_vec(as_r_scalar_t<U>(x)));
   }
 }
 
@@ -66,7 +62,7 @@ inline T as_impl(const U& x) {
 template <RScalar T, CastableToRScalar U>
 requires (CppType<U>)
 inline T as_impl(const U& x) {
-  return as<T>(as_r_scalar(x));
+  return as<T>(as_r_scalar_t<U>(x));
 }
 
 template <CastableToRScalar T, typename U>
@@ -247,12 +243,12 @@ inline auto as_vector(const T& x){
     return x;
   } else if constexpr (RFactor<T>){
     return x.value;
-  } else if constexpr (is_sexp<T>){
-    static_assert(always_false<T>, "Can't convert `SEXP/r_sexp` to `r_vec<>`, please use `as_impl<>` to convert");
-    return T();
+  } else if constexpr (CastableToRScalar<T>){
+    using scalar_t = as_r_scalar_t<T>;
+    return r_vec<scalar_t>(1, scalar_t(x));
   } else {
-    auto rt_val = as_r_val(x);
-    return r_vec<decltype(rt_val)>(1, rt_val);
+    static_assert(always_false<T>, "Can't convert `x` to vector, please use `as<>`");
+    return T();
   }
 }
 
@@ -263,7 +259,7 @@ inline auto as_scalar(const T& x){
     return as_r_scalar_t<T>(x);
   } else if constexpr (RAtomicVector<T>){
     return as<typename T::data_type>(x);
-  } else {
+  } else if constexpr (RFactor<T>) {
     return as<r_str>(x);
   }
 }
