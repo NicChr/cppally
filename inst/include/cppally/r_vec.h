@@ -310,8 +310,6 @@ struct r_vec {
     return get(r_str(name));
   }
 
-  T get(int index) const { return get(static_cast<r_size_t>(index)); }
-
   // View element (like `get()` but elements must be short-lived)
   // Element must not outlive the parent vector
   T view(r_size_t index) const {
@@ -347,8 +345,6 @@ struct r_vec {
     return view(r_str(name));
   }
 
-  T view(int index) const { return view(static_cast<r_size_t>(index)); }
-
   // Set element (no bounds-check)
   void set(r_size_t index, const T& val) {
       if constexpr (RStringType<T>){
@@ -375,9 +371,17 @@ struct r_vec {
       set(r_str(name), val);
   }
 
-  void set(int index, const T& val) { set(static_cast<r_size_t>(index), val); }
+  // These overloads exist purely to avoid ambiguity between nullptr (int=0) and const char*
   template <typename U>
-  void set(int index, const U& val) { set(static_cast<r_size_t>(index), val); }
+  void set(int index, const U& val) {
+    set(static_cast<r_size_t>(index), val); 
+  }
+  T get(int index) const {
+    return get(static_cast<r_size_t>(index)); 
+  }
+  T view(int index) const { 
+    return view(static_cast<r_size_t>(index)); 
+  }
 
   template <internal::RSubscript U>
   r_vec<T> subset(const r_vec<U>& indices, bool check = true, bool invert = false) const;
