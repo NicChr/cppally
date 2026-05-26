@@ -190,8 +190,6 @@ template <RScalar T>
 inline r_raw as_raw(T const& x){
   if constexpr (is<unwrap_t<T>, unsigned char>){
     return r_raw(unwrap(x));
-  } else if constexpr (RIntegerType<T> && sizeof(T) <= sizeof(int8_t)){
-    return is_na(x) || x < 0 ? na<r_raw>() : r_raw(static_cast<unsigned char>(unwrap(x)));
   } else if constexpr (RMathType<T>){
     using r_t = unwrap_t<T>;
     return is_na(x) || !internal::between_impl(unwrap(x), r_t(0), r_t(255)) ? na<r_raw>() : r_raw(static_cast<unsigned char>(unwrap(x)));
