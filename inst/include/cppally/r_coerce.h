@@ -171,24 +171,15 @@ inline T as_impl(const U& x) {
 template <RVector T, RFactor U>
 inline T as_impl(const U& x) {
   T coerced_levels = as<T>(x.levels());
-  r_size_t n_levels = coerced_levels.length();
   r_size_t n = x.length();
   T out(n);
-  unsigned int na_val = unwrap(na<r_int>());
-  unsigned int j;
   using data_t = typename T::data_type;
   for (r_size_t i = 0; i < n; ++i) {
-    j = unwrap(x.value.get(i));
-    if (j == na_val) {
+    r_int code = x.get_code(i);
+    if (is_na(code)) {
       out.set(i, na<data_t>());
-    } else if (j > na_val) [[unlikely]] {
-      abort("Negative factor code detected in `r_factors.as_character()`");
-    } else if (j == 0U) [[unlikely]] {
-      abort("Invalid factor code of value 0 detected in `r_factors.as_character()`");
-    } else if (static_cast<r_size_t>(j) > n_levels) [[unlikely]] {
-      abort("Invalid factor code of value %lld detected", static_cast<long long int>(j));
     } else {
-      out.set(i, coerced_levels.view(static_cast<r_size_t>(j) - r_size_t(1)));
+      out.set(i, coerced_levels.view(static_cast<r_size_t>(unwrap(code)) - 1));
     }
   }
   return out;
