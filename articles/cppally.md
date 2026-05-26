@@ -450,14 +450,14 @@ You may get a cryptic compiler error like this
 
 ``` cpp
 error: no matching function for call to 'foo()'
-[]<typename T>() -> decltype(cpp_to_sexp(::foo())) {
+[]<typename T>() -> decltype(cpp_to_r(::foo())) {
 ```
 
 along with an equally cryptic note
 
 ``` cpp
 note:   couldn't deduce template parameter 'T'
-[]<typename T>() -> decltype(cpp_to_sexp(::foo())) {
+[]<typename T>() -> decltype(cpp_to_r(::foo())) {
 ```
 
 This is because the parameter `T` cannot be automatically deduced from
@@ -899,8 +899,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique       768µs    788µs     1193.    1.38MB     33.8
-#> 2 cppally_n_unique    302µs    303µs     3241.        0B      0
+#> 1 base_n_unique       765µs    787µs     1202.    1.38MB     33.9
+#> 2 cppally_n_unique    307µs    309µs     3191.        0B      0
 ```
 
 More useful sugar functions
