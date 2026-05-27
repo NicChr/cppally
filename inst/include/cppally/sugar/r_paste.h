@@ -13,7 +13,7 @@ namespace cppally {
 namespace internal {
 
 // Concatenate all character vectors of a list together
-r_vec<r_str> str_paste_list(const r_vec<r_sexp>& x, const char* sep = ""){
+inline r_vec<r_str> str_paste_list(const r_vec<r_sexp>& x, const char* sep = ""){
     
     r_vec<r_sexp> characters = x.remove(r_null);
     r_size_t n_vecs = characters.length();
@@ -61,7 +61,7 @@ template <typename... Args>
 r_vec<r_str> str_paste(Args... args){
     return internal::str_paste_list(make_vec<r_sexp>(args...));
 }
-r_str str_collapse(const r_vec<r_str>& x, const char* sep = ""){
+inline r_str str_collapse(const r_vec<r_str>& x, const char* sep = ""){
     r_size_t n = x.length();
 
     std::string res = "";
