@@ -35,12 +35,22 @@ concept AnySexp = is_sexp<T>;
 // -> SEXP
 template <AnySexp T, typename U>
 inline T as_impl(const U& x) {
-  if constexpr (RVector<U>){
-    return T(x.value);
-  } else if constexpr (RObject<U>){
-    return T(static_cast<SEXP>(x));
+  if constexpr (is<T, SEXP>){
+    if constexpr (RObject<U>){
+      return static_cast<SEXP>(x);
+    } else {
+      return static_cast<SEXP>(new_scalar_vec(as_r_scalar_t<U>(x)));
+    }
   } else {
-    return T(new_scalar_vec(as_r_scalar_t<U>(x)));
+    if constexpr (RVector<U>){
+      return x.value;
+    } else if constexpr (RComposite<U>){
+      return x.value.value;
+    } else if constexpr (RObject<U>){
+      return T(static_cast<SEXP>(x));
+    } else {
+      return new_scalar_vec(as_r_scalar_t<U>(x));
+    }
   }
 }
 
