@@ -60,7 +60,9 @@ T flatten(const r_vec<r_sexp>& x) = delete;
 template <RComposite T>
 T flatten(const r_vec<r_sexp>& x) {
 
-    r_size_t n = x.length();
+    r_vec<r_sexp> vectors = x.remove(r_null);
+
+    r_size_t n = vectors.length();
     
     if (n == 0){
         return T();
@@ -68,18 +70,18 @@ T flatten(const r_vec<r_sexp>& x) {
 
     r_size_t out_size = 0;
     for (r_size_t i = 0; i < n; ++i) {
-        out_size += length(x.view(i));
+        out_size += length(vectors.view(i));
     }
 
     // Grab first vector from list and resize it to final size
-    T first_vec = as<T>(x.get(0));
+    T first_vec = as<T>(vectors.get(0));
     // resize is best here as it resizes, doesn't initialise extra memory
     // and preserves attributes
     T out = resize(first_vec, out_size);
 
     r_size_t k = length(first_vec), m;
     for (r_size_t i = 1; i < n; k += m, ++i) {
-        T vec = as<T>(x.view(i));
+        T vec = as<T>(vectors.view(i));
         m = length(vec);
         r_copy_n(out, vec, k, m);
     }
@@ -90,7 +92,9 @@ T flatten(const r_vec<r_sexp>& x) {
 // vector, factor or data frame
 inline r_sexp flatten(const r_vec<r_sexp>& x) {
 
-    r_size_t n = x.length();
+    r_vec<r_sexp> vectors = x.remove(r_null);
+
+    r_size_t n = vectors.length();
 
     if (n == 0){
         return r_null;
@@ -98,17 +102,17 @@ inline r_sexp flatten(const r_vec<r_sexp>& x) {
 
     r_size_t out_size = 0;
     for (r_size_t i = 0; i < n; ++i) {
-        out_size += length(x.view(i));
+        out_size += length(vectors.view(i));
     }
 
     // Grab first vector from list and resize it to final size
     // resize is best here as it resizes, doesn't initialise extra memory
     // and preserves attributes
-    r_sexp out = resize(x.get(0), out_size);
+    r_sexp out = resize(vectors.get(0), out_size);
 
-    r_size_t k = length(x.view(0)), m;
+    r_size_t k = length(vectors.view(0)), m;
     for (r_size_t i = 1; i < n; k += m, ++i){
-        r_sexp next = x.view(i);
+        r_sexp next = vectors.view(i);
         m = length(next);
         // Rolling common type
         out = visit_sexp(out, [&]<typename out_t>(out_t&& out_vec) -> r_sexp {
@@ -122,7 +126,7 @@ inline r_sexp flatten(const r_vec<r_sexp>& x) {
                         // Promote out to common type, then write
                         common_t out_promoted = as<common_t>(out_vec);
                         r_copy_n(out_promoted, next_vec, k, m);
-                        return r_sexp(static_cast<SEXP>(out_promoted));
+                        return as<r_sexp>(out_promoted);
                     }
                 } else {
                     abort("flatten: unsupported element type %s", internal::type_str<next_t>());
