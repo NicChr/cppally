@@ -147,6 +147,7 @@ inline bool identical_impl(const r_sexp& a, const r_sexp& b) {
     SEXP x = unwrap(a);
     SEXP y = unwrap(b);
     if (x == y) return true;
+    if (a.is_null() || b.is_null()) return false; // If true it would have been caught by above ptr comparison
     return view_sexp(a, [&b](const auto& vec1) -> bool {
         using vec1_t = decltype(vec1);
         if constexpr (is<vec1_t, r_sexp>){
