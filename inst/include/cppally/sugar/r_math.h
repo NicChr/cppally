@@ -140,11 +140,6 @@ inline constexpr r_int sign(T x) {
 }
 
 template<RMathType T>
-inline constexpr T negate(T x){
-  return -x;
-}
-
-template<RMathType T>
 inline r_dbl sqrt(T x){
   return r_dbl(std::sqrt(as<r_dbl>(x).value));
 }
@@ -152,18 +147,22 @@ inline r_dbl sqrt(T x){
 template<MathType T, MathType U>
   requires (AtLeastOneRMathType<T, U>)
 inline r_dbl pow(T x, U y){
-  if (y == 0) return r_dbl(1.0);
-  if (x == 1) return r_dbl(1.0);
-  if (y == 2){
+  if ((y == r_dbl(0.0)).is_true()){
+     return r_dbl(1.0);
+  }
+  if ((x == r_dbl(1.0)).is_true()){
+    return r_dbl(1.0);
+  }
+  if ((y == r_dbl(2.0)).is_true()){
     r_dbl left = as<r_dbl>(x);
     return left * left;
   }
-  return r_dbl(std::pow(as<r_dbl>(x), as<r_dbl>(y)));
+  return r_dbl(std::pow(unwrap(as<r_dbl>(x)), unwrap(as<r_dbl>(y))));
 }
 
 template<RMathType T>
 inline r_dbl log10(T x){
-  return r_dbl(std::log10(as<r_dbl>(x).value));
+  return r_dbl(std::log10(unwrap(as<r_dbl>(x))));
 }
 
 template<RMathType T>
@@ -228,7 +227,7 @@ inline constexpr T round(T x){
 template<MathType T, MathType U>
 requires (AtLeastOneRMathType<T, U>)
 inline r_dbl signif(T x, U digits){
-  auto new_digits = max(as_r_scalar_t<U>(U(1)), as_r_scalar_t<U>(digits));
+  as_r_scalar_t<U> new_digits = max(as_r_scalar_t<U>(1), as<as_r_scalar_t<U>>(digits));
   if (is_na(x)){
     return as<r_dbl>(x);
   } else if (is_na(new_digits)){
