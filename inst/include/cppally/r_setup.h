@@ -67,10 +67,11 @@
 #define OMP_PARALLEL(n_threads) OMP_PRAGMA(omp parallel if ((n_threads) > 1) num_threads((n_threads)))
 #define OMP_FOR_SIMD OMP_PRAGMA(omp for simd)
 #define OMP_SIMD OMP_PRAGMA(omp simd)
-#define OMP_PARALLEL_FOR_SIMD(n_threads) OMP_PRAGMA(omp parallel for simd if ((n_threads) > 1) num_threads((n_threads)))
+#define OMP_PARALLEL_FOR_SIMD(n_threads) OMP_PRAGMA(omp parallel for simd if(parallel: (n_threads) > 1) num_threads((n_threads)))
 #define OMP_SIMD_REDUCTION1(OP) OMP_PRAGMA(omp simd reduction(OP))
 #define OMP_SIMD_REDUCTION2(OP1, OP2) OMP_PRAGMA(omp simd reduction(OP1) reduction(OP2))
-#define OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, OP) OMP_PRAGMA(omp parallel for simd num_threads(n_threads) reduction(OP))
+#define OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, OP) OMP_PRAGMA(omp parallel for simd if(parallel: (n_threads) > 1) num_threads((n_threads)) reduction(OP))
+#define OMP_PARALLEL_FOR_SIMD_REDUCTION2(n_threads, OP1, OP2) OMP_PRAGMA(omp parallel for simd if(parallel: (n_threads) > 1) num_threads((n_threads)) reduction(OP1) reduction(OP2))
 #else
 #define OMP_PRAGMA(x)
 #define OMP_NUM_PROCS 1
@@ -83,6 +84,7 @@
 #define OMP_SIMD_REDUCTION1(OP1)
 #define OMP_SIMD_REDUCTION2(OP1, OP2)
 #define OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, OP)
+#define OMP_PARALLEL_FOR_SIMD_REDUCTION2(n_threads, OP1, OP2)
 #endif
 
 #define OMP_DO_NOTHING // Placeholder for no OMP operations
