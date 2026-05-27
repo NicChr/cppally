@@ -22,7 +22,7 @@ r_vec<r_sexp> sequences(const r_vec<r_int>& size, const r_vec<T>& from, const r_
         abort("from and by must both have length > 0");
     }
     
-    r_int min_size = min(size, /*na_rm=*/ false);
+    r_int min_size = range(size, /*na_rm=*/ false).get(0);
 
     if (is_na(min_size)){
         abort("size must not contain NA values");

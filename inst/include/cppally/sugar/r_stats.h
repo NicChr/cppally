@@ -191,35 +191,6 @@ r_vec<T> range(const r_vec<T> &x, bool na_rm = false){
     return out;
 }
 
-template <RSortableType T>
-T min(const r_vec<T> &x, bool na_rm = false){
-    return range(x, na_rm).get(0);
-}
-template <RSortableType T>
-T max(const r_vec<T> &x, bool na_rm = false){
-    return range(x, na_rm).get(1);
-}
-
-template <RMathType T>
-r_vec<T> abs(const r_vec<T> &x){
-    r_size_t n = x.length();
-    r_vec<T> out(n);
-    int n_threads = internal::calc_threads(n);
-    if (n_threads > 1) {
-        OMP_PARALLEL_FOR_SIMD(n_threads)
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, abs(x.get(i)));
-        }
-    } else {
-        OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, abs(x.get(i)));
-        }
-    }
-    return out;
-}
-
-
 template <RMathType T>
 r_dbl mean(const r_vec<T> &x, bool na_rm = false){
     r_dbl total = sum(x, na_rm);
@@ -283,7 +254,7 @@ T gcd(const r_vec<T> &x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
     return na<T>();
   }
 
-  auto out = x.get(0);
+  T out = x.get(0);
   for (r_size_t i = 1; i < n; ++i) {
       out = gcd(out, x.get(i), na_rm);
       if (!na_rm && is_na(out)){
@@ -306,16 +277,16 @@ T gcd(const r_vec<T> &x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
     return na<T>();
   }
 
-  auto out = x.get(0);
+  T out = x.get(0);
   for (r_size_t i = 1; i < n; ++i) {
-      out = gcd(out, x.get(i), na_rm);
-      if (!na_rm && is_na(out)){
-          break;
-      }
-      if ( (out > T(0.0) && out < (tol + tol)).is_true() ){
-        out = tol;
+    out = gcd(out, x.get(i), na_rm);
+    if (!na_rm && is_na(out)){
         break;
-      }
+    }
+    if ( (out > T(0.0) && out < (tol + tol)).is_true() ){
+      out = tol;
+      break;
+    }
   }
   return out;
 }
@@ -323,7 +294,7 @@ T gcd(const r_vec<T> &x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
 template<RMathType T>
 T lcm(const r_vec<T> &x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
     if (tol < 0 || tol >= 1){
-      abort("tol must be >= 0 and < 1");
+        abort("tol must be >= 0 and < 1");
     }
     r_size_t n = x.length();
     if (n == 0){
@@ -342,83 +313,7 @@ T lcm(const r_vec<T> &x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
     out = lcm(out, x.get(i), na_rm, tol);
     }
     return out;
-  }
-
-
-// r_lgl not bool because bool can't be NA
-// template <RVal T>
-// inline r_lgl all_whole_numbers(r_vec<T> x, bool na_rm = false, r_dbl tol = r_limits<r_dbl>::tolerance()){
-
-//     if constexpr (RIntegerType<T>){
-//         return r_true;
-//     } else if constexpr (RFloatType<T>){
-
-//         r_size_t n = x.length();
-
-//         r_lgl out = r_true;
-//         r_size_t na_count = 0;
-
-//         for (r_size_t i = 0; i < n; ++i) {
-//             out = is_whole_number(x.get(i), tol);
-//             na_count += is_na(out);
-//             if (out == r_false){
-//                 break;
-//             }
-//         }
-//         if (out == r_true && !na_rm && na_count > 0){
-//             out = r_na;
-//         } else if (na_rm && na_count == n){
-//             out = r_true;
-//         }
-//         return out;
-//     } else {
-//         return r_false;
-//     }
-// }
-
-// template<RVector T, typename U>
-// inline r_vec<r_lgl> between(const T& x, const U& lo, const U& hi) {
-
-//     r_size_t x_size = x.length();
-
-//     if constexpr (RVector<U>){
-//         r_size_t lo_size = lo.length();
-//         r_size_t hi_size = hi.length();
-        
-//         if (lo_size == 1 && hi_size == 1){
-//             return between(x, unwrap(lo.get(0)), unwrap(hi.get(0)));
-//         } else if (x_size == lo_size && lo_size == hi_size){
-//             r_vec<r_lgl> out(x_size);
-//             OMP_SIMD
-//             for (r_size_t i = 0; i < x_size; ++i){
-//                 out.set(i, between(x.get(i), unwrap(lo.get(i)), unwrap(hi.get(i))));
-//             }
-//             return out;
-//         } else {
-//             // Slower recycling approach
-//             r_size_t n = std::max(std::max(x_size, lo_size), hi_size);
-//             if (x_size == 0 || lo_size == 0 || hi_size == 0){
-//                 n = 0;
-//             }
-//             r_vec<r_lgl> out(n);
-//             for (r_size_t i = 0, xi = 0, loi = 0, hii = 0; i < n;
-//                 recycle_index(xi, x_size),
-//                 recycle_index(loi, lo_size),
-//                 recycle_index(hii, hi_size),
-//                 ++i){
-//                 out.set(i, between(x.get(xi), unwrap(lo.get(loi)), unwrap(hi.get(hii))));
-//             }
-//             return out;
-//         }
-//     } else {
-//         r_vec<r_lgl> out(x_size);
-//         OMP_SIMD
-//         for (r_size_t i = 0; i < x_size; ++i){
-//             out.set(i, between(x.get(i), unwrap(lo), unwrap(hi)));
-//         }
-//         return out;
-//     }
-// }
+}
 
 } 
 
