@@ -5,8 +5,34 @@
 
 namespace cppally {
     
+// Very fast integer sum
 template <RMathType T> 
-r_dbl sum(const r_vec<T> &x, bool na_rm = false){
+requires (is<unwrap_t<T>, int>)
+r_dbl sum(const r_vec<T>& x, bool na_rm = false){
+    r_size_t n = x.length();
+
+    // Use int64_t since (2^31-1)^2 < INT64_MAX
+    int_fast64_t res = 0;
+    const auto* RESTRICT p_x = x.data();
+
+    if (na_rm){
+        OMP_SIMD_REDUCTION1(+:res)
+        for (r_size_t i = 0; i < n; ++i){
+            res += is_na(p_x[i]) ? 0 : static_cast<int_fast64_t>(p_x[i]);
+        }
+    } else {
+        for (r_size_t i = 0; i < n; ++i){
+            if (is_na(p_x[i])){
+                return na<r_dbl>();
+            }
+            res += static_cast<int_fast64_t>(p_x[i]);
+        }
+    }
+    return r_dbl(static_cast<double>(res));
+}
+
+template <RMathType T> 
+r_dbl sum(const r_vec<T>& x, bool na_rm = false){
     r_size_t n = x.length();
     double out_ = 0;
     const auto* RESTRICT p_x = x.data();
@@ -29,7 +55,7 @@ r_dbl sum(const r_vec<T> &x, bool na_rm = false){
 
 // Optimisation for r_dbl
 template <>
-inline r_dbl sum(const r_vec<r_dbl> &x, bool na_rm){
+inline r_dbl sum(const r_vec<r_dbl>& x, bool na_rm){
     r_size_t n = x.length();
     double out_ = 0;
     const auto* RESTRICT p_x = x.data();
@@ -47,29 +73,6 @@ inline r_dbl sum(const r_vec<r_dbl> &x, bool na_rm){
         
     }
     return r_dbl(out_);
-}
-
-// Integer specific sum (user must accept there may be overflow)
-template <RIntegerType T>
-r_int64 sum_int(const r_vec<T> &x, bool na_rm = false){
-    r_size_t n = x.length();
-    int64_t out_ = 0;
-    const auto* RESTRICT p_x = x.data();
-
-    if (na_rm){
-        OMP_SIMD_REDUCTION1(+:out_)
-        for (r_size_t i = 0; i < n; ++i){
-            out_ += (is_na(p_x[i])) ? int64_t(0) : p_x[i];
-        }
-    } else {
-        for (r_size_t i = 0; i < n; ++i){
-            if (is_na(p_x[i])){
-                return na<r_int64>();
-            }
-            out_ += p_x[i];
-        }
-    }
-    return r_int64(out_);
 }
 
 template <RSortableType T>
