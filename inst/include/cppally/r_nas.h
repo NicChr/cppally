@@ -146,19 +146,19 @@ inline constexpr bool is_nan(r_dbl const& x) noexcept {
 
 namespace internal {
 template <typename T, typename U>
-bool either_na(const T& x, const U& y) noexcept {
+bool constexpr either_na(const T& x, const U& y) noexcept {
   return is_na(x) || is_na(y);
 } 
-inline bool either_na(r_dbl x, r_dbl y) noexcept {
+inline constexpr bool either_na(r_dbl x, r_dbl y) noexcept {
   return is_na(r_dbl(unwrap(x) + unwrap(y)));
 }
-inline bool either_na(r_lgl x, r_lgl y) noexcept {
+inline constexpr bool either_na(r_lgl x, r_lgl y) noexcept {
   return std::min(unwrap(x), unwrap(y)) == unwrap(na<r_lgl>());
 }
-inline bool either_na(r_int x, r_int y) noexcept {
+inline constexpr bool either_na(r_int x, r_int y) noexcept {
   return std::min(unwrap(x), unwrap(y)) == unwrap(na<r_int>());
 }
-inline bool either_na(r_int64 x, r_int64 y) noexcept {
+inline constexpr bool either_na(r_int64 x, r_int64 y) noexcept {
   return std::min(unwrap(x), unwrap(y)) == unwrap(na<r_int64>());
 }
 
