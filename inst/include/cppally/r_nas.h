@@ -146,7 +146,7 @@ inline constexpr bool is_nan(r_dbl const& x) noexcept {
 
 namespace internal {
 template <typename T, typename U>
-bool constexpr either_na(const T& x, const U& y) noexcept {
+constexpr bool either_na(const T& x, const U& y) noexcept {
   return is_na(x) || is_na(y);
 } 
 inline constexpr bool either_na(r_dbl x, r_dbl y) noexcept {
