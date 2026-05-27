@@ -51,6 +51,7 @@
 #include <cppally/sugar/r_make_vec.h>
 #include <cppally/sugar/r_combine.h>
 #include <cppally/sugar/r_recycle.h>
+#include <cppally/sugar/r_paste.h>
 #include <cppally/sugar/r_math.h>
 #include <cppally/sugar/r_seq.h>
 #include <cppally/sugar/r_sexp_methods.h>
