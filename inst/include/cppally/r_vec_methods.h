@@ -22,9 +22,17 @@ inline auto operator+(const T& lhs, const U& rhs) {
         } else if (lhs_size == rhs_size){
             using common_t = common_math_t<typename T::data_type, typename U::data_type>;
             r_vec<common_t> out(lhs_size);
-            OMP_SIMD
-            for (r_size_t i = 0; i < lhs_size; ++i){
-                out.set(i, lhs.get(i) + rhs.get(i));
+            int n_threads = internal::calc_threads(lhs_size);
+            if (n_threads > 1){
+                OMP_PARALLEL_FOR_SIMD(n_threads)
+                for (r_size_t i = 0; i < lhs_size; ++i){
+                    out.set(i, lhs.get(i) + rhs.get(i));
+                }
+            } else {
+                OMP_SIMD
+                for (r_size_t i = 0; i < lhs_size; ++i){
+                    out.set(i, lhs.get(i) + rhs.get(i));
+                }
             }
             return out;
         } else {
@@ -47,18 +55,34 @@ inline auto operator+(const T& lhs, const U& rhs) {
         using common_t = common_math_t<typename T::data_type, U>;
         r_size_t n = lhs.length();
         r_vec<common_t> out(n);
-        OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, lhs.get(i) + rhs);
+        int n_threads = internal::calc_threads(n);
+        if (n_threads > 1){
+            OMP_PARALLEL_FOR_SIMD(n_threads)
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, lhs.get(i) + rhs);
+            }
+        } else {
+            OMP_SIMD
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, lhs.get(i) + rhs);
+            }
         }
         return out;
     } else {
         using common_t = common_math_t<T, typename U::data_type>;
         r_size_t n = rhs.length();
         r_vec<common_t> out(n);
-        OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, rhs.get(i) + lhs);
+        int n_threads = internal::calc_threads(n);
+        if (n_threads > 1){
+            OMP_PARALLEL_FOR_SIMD(n_threads)
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, rhs.get(i) + lhs);
+            }
+        } else {
+            OMP_SIMD
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, rhs.get(i) + lhs);
+            }
         }
         return out;
     }
@@ -77,9 +101,17 @@ inline auto operator-(const T& lhs, const U& rhs) {
         } else if (lhs_size == rhs_size){
             using common_t = common_math_t<typename T::data_type, typename U::data_type>;
             r_vec<common_t> out(lhs_size);
-            OMP_SIMD
-            for (r_size_t i = 0; i < lhs_size; ++i){
-                out.set(i, lhs.get(i) - rhs.get(i));
+            int n_threads = internal::calc_threads(lhs_size);
+            if (n_threads > 1){
+                OMP_PARALLEL_FOR_SIMD(n_threads)
+                for (r_size_t i = 0; i < lhs_size; ++i){
+                    out.set(i, lhs.get(i) - rhs.get(i));
+                }
+            } else {
+                OMP_SIMD
+                for (r_size_t i = 0; i < lhs_size; ++i){
+                    out.set(i, lhs.get(i) - rhs.get(i));
+                }
             }
             return out;
         } else {
@@ -102,18 +134,34 @@ inline auto operator-(const T& lhs, const U& rhs) {
         using common_t = common_math_t<typename T::data_type, U>;
         r_size_t n = lhs.length();
         r_vec<common_t> out(n);
-        OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, lhs.get(i) - rhs);
+        int n_threads = internal::calc_threads(n);
+        if (n_threads > 1){
+            OMP_PARALLEL_FOR_SIMD(n_threads)
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, lhs.get(i) - rhs);
+            }
+        } else {
+            OMP_SIMD
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, lhs.get(i) - rhs);
+            }
         }
         return out;
     } else {
         using common_t = common_math_t<T, typename U::data_type>;
         r_size_t n = rhs.length();
         r_vec<common_t> out(n);
-        OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, rhs.get(i) - lhs);
+        int n_threads = internal::calc_threads(n);
+        if (n_threads > 1){
+            OMP_PARALLEL_FOR_SIMD(n_threads)
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, rhs.get(i) - lhs);
+            }
+        } else {
+            OMP_SIMD
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, rhs.get(i) - lhs);
+            }
         }
         return out;
     }
@@ -132,9 +180,17 @@ inline auto operator*(const T& lhs, const U& rhs) {
         } else if (lhs_size == rhs_size){
             using common_t = common_math_t<typename T::data_type, typename U::data_type>;
             r_vec<common_t> out(lhs_size);
-            OMP_SIMD
-            for (r_size_t i = 0; i < lhs_size; ++i){
-                out.set(i, lhs.get(i) * rhs.get(i));
+            int n_threads = internal::calc_threads(lhs_size);
+            if (n_threads > 1){
+                OMP_PARALLEL_FOR_SIMD(n_threads)
+                for (r_size_t i = 0; i < lhs_size; ++i){
+                    out.set(i, lhs.get(i) * rhs.get(i));
+                }
+            } else {
+                OMP_SIMD
+                for (r_size_t i = 0; i < lhs_size; ++i){
+                    out.set(i, lhs.get(i) * rhs.get(i));
+                }
             }
             return out;
         } else {
@@ -157,18 +213,34 @@ inline auto operator*(const T& lhs, const U& rhs) {
         using common_t = common_math_t<typename T::data_type, U>;
         r_size_t n = lhs.length();
         r_vec<common_t> out(n);
-        OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, lhs.get(i) * rhs);
+        int n_threads = internal::calc_threads(n);
+        if (n_threads > 1){
+            OMP_PARALLEL_FOR_SIMD(n_threads)
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, lhs.get(i) * rhs);
+            }
+        } else {
+            OMP_SIMD
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, lhs.get(i) * rhs);
+            }
         }
         return out;
     } else {
         using common_t = common_math_t<T, typename U::data_type>;
         r_size_t n = rhs.length();
         r_vec<common_t> out(n);
-        OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, rhs.get(i) * lhs);
+        int n_threads = internal::calc_threads(n);
+        if (n_threads > 1){
+            OMP_PARALLEL_FOR_SIMD(n_threads)
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, rhs.get(i) * lhs);
+            }
+        } else {
+            OMP_SIMD
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, rhs.get(i) * lhs);
+            }
         }
         return out;
     }
@@ -188,9 +260,17 @@ inline r_vec<r_dbl> operator/(const T& lhs, const U& rhs) {
             return lhs / rhs.get(0);
         } else if (lhs_size == rhs_size){
             r_vec<r_dbl> out(lhs_size);
-            OMP_SIMD
-            for (r_size_t i = 0; i < lhs_size; ++i){
-                out.set(i, lhs.get(i) / rhs.get(i));
+            int n_threads = internal::calc_threads(lhs_size);
+            if (n_threads > 1){
+                OMP_PARALLEL_FOR_SIMD(n_threads)
+                for (r_size_t i = 0; i < lhs_size; ++i){
+                    out.set(i, lhs.get(i) / rhs.get(i));
+                }
+            } else {
+                OMP_SIMD
+                for (r_size_t i = 0; i < lhs_size; ++i){
+                    out.set(i, lhs.get(i) / rhs.get(i));
+                }
             }
             return out;
         } else {
@@ -211,17 +291,33 @@ inline r_vec<r_dbl> operator/(const T& lhs, const U& rhs) {
     } else if constexpr (RVector<T>){
         r_size_t n = lhs.length();
         r_vec<r_dbl> out(n);
-        OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, lhs.get(i) / rhs);
+        int n_threads = internal::calc_threads(n);
+        if (n_threads > 1){
+            OMP_PARALLEL_FOR_SIMD(n_threads)
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, lhs.get(i) / rhs);
+            }
+        } else {
+            OMP_SIMD
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, lhs.get(i) / rhs);
+            }
         }
         return out;
     } else {
         r_size_t n = rhs.length();
         r_vec<r_dbl> out(n);
-        OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, rhs.get(i) / lhs);
+        int n_threads = internal::calc_threads(n);
+        if (n_threads > 1){
+            OMP_PARALLEL_FOR_SIMD(n_threads)
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, rhs.get(i) / lhs);
+            }
+        } else {
+            OMP_SIMD
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, rhs.get(i) / lhs);
+            }
         }
         return out;
     }
@@ -240,9 +336,17 @@ inline auto operator%(const T& lhs, const U& rhs) {
         } else if (lhs_size == rhs_size){
             using common_t = common_math_t<typename T::data_type, typename U::data_type>;
             r_vec<common_t> out(lhs_size);
-            OMP_SIMD
-            for (r_size_t i = 0; i < lhs_size; ++i){
-                out.set(i, lhs.get(i) % rhs.get(i));
+            int n_threads = internal::calc_threads(lhs_size);
+            if (n_threads > 1){
+                OMP_PARALLEL_FOR_SIMD(n_threads)
+                for (r_size_t i = 0; i < lhs_size; ++i){
+                    out.set(i, lhs.get(i) % rhs.get(i));
+                }
+            } else {
+                OMP_SIMD
+                for (r_size_t i = 0; i < lhs_size; ++i){
+                    out.set(i, lhs.get(i) % rhs.get(i));
+                }
             }
             return out;
         } else {
@@ -265,51 +369,85 @@ inline auto operator%(const T& lhs, const U& rhs) {
         using common_t = common_math_t<typename T::data_type, U>;
         r_size_t n = lhs.length();
         r_vec<common_t> out(n);
-        OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, lhs.get(i) % rhs);
+        int n_threads = internal::calc_threads(n);
+        if (n_threads > 1){
+            OMP_PARALLEL_FOR_SIMD(n_threads)
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, lhs.get(i) % rhs);
+            }
+        } else {
+            OMP_SIMD
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, lhs.get(i) % rhs);
+            }
         }
         return out;
     } else {
         using common_t = common_math_t<T, typename U::data_type>;
         r_size_t n = rhs.length();
         r_vec<common_t> out(n);
-        OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, rhs.get(i) % lhs);
+        int n_threads = internal::calc_threads(n);
+        if (n_threads > 1){
+            OMP_PARALLEL_FOR_SIMD(n_threads)
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, rhs.get(i) % lhs);
+            }
+        } else {
+            OMP_SIMD
+            for (r_size_t i = 0; i < n; ++i){
+                out.set(i, rhs.get(i) % lhs);
+            }
         }
         return out;
     }
 }
 
-#define CPPALLY_BINARY_OP_IN_PLACE(OP)                  \
-r_size_t lhs_size = lhs.length();                     \
-if constexpr (RVector<U>){                            \
-  r_size_t rhs_size = rhs.length();                   \
-  if (rhs_size == 1){                                 \
-    return lhs OP##= rhs.get(0);                      \
-  } else if (lhs_size == rhs_size){                   \
-    OMP_SIMD                                          \
-    for (r_size_t i = 0; i < lhs_size; ++i){          \
-      lhs.set(i, lhs.get(i) OP rhs.get(i));           \
-    }                                                 \
-    return lhs;                                       \
-  } else {                                            \
-    r_size_t n = lhs_size;                            \
-    for (r_size_t i = 0, rhsi = 0; i < n;             \
-    recycle_index(rhsi, rhs_size),                    \
-    ++i){                                             \
-      lhs.set(i, lhs.get(i) OP rhs.get(rhsi));        \
-    }                                                 \
-    return lhs;                                       \
-  }                                                   \
-} else {                                              \
-  r_size_t n = lhs_size;                              \
-  OMP_SIMD                                            \
-  for (r_size_t i = 0; i < n; ++i){                   \
-    lhs.set(i, lhs.get(i) OP rhs);                    \
-  }                                                   \
-  return lhs;                                         \
+#define CPPALLY_BINARY_OP_IN_PLACE(OP)                        \
+r_size_t lhs_size = lhs.length();                             \
+if constexpr (RVector<U>){                                    \
+  r_size_t rhs_size = rhs.length();                           \
+  if (rhs_size == 1){                                         \
+    return lhs OP##= rhs.get(0);                              \
+  } else if (lhs_size == rhs_size){                           \
+    {                                                         \
+      int n_threads = internal::calc_threads(lhs_size);       \
+      if (n_threads > 1){                                     \
+        OMP_PARALLEL_FOR_SIMD(n_threads)                      \
+        for (r_size_t i = 0; i < lhs_size; ++i){              \
+          lhs.set(i, lhs.get(i) OP rhs.get(i));               \
+        }                                                     \
+      } else {                                                \
+        OMP_SIMD                                              \
+        for (r_size_t i = 0; i < lhs_size; ++i){              \
+          lhs.set(i, lhs.get(i) OP rhs.get(i));               \
+        }                                                     \
+      }                                                       \
+    }                                                         \
+    return lhs;                                               \
+  } else {                                                    \
+    r_size_t n = lhs_size;                                    \
+    for (r_size_t i = 0, rhsi = 0; i < n;                     \
+    recycle_index(rhsi, rhs_size),                            \
+    ++i){                                                     \
+      lhs.set(i, lhs.get(i) OP rhs.get(rhsi));                \
+    }                                                         \
+    return lhs;                                               \
+  }                                                           \
+} else {                                                      \
+  r_size_t n = lhs_size;                                      \
+  int n_threads = internal::calc_threads(n);                  \
+  if (n_threads > 1){                                         \
+    OMP_PARALLEL_FOR_SIMD(n_threads)                          \
+    for (r_size_t i = 0; i < n; ++i){                         \
+      lhs.set(i, lhs.get(i) OP rhs);                          \
+    }                                                         \
+  } else {                                                    \
+    OMP_SIMD                                                  \
+    for (r_size_t i = 0; i < n; ++i){                         \
+      lhs.set(i, lhs.get(i) OP rhs);                          \
+    }                                                         \
+  }                                                           \
+  return lhs;                                                 \
 }
 
 template<RVector T, typename U>
@@ -345,27 +483,49 @@ if constexpr (RVector<lhs_t> && RVector<rhs_t>){                                
   r_size_t n2 = rhs.length();                                                                      \
   r_size_t n = std::max(n1, n2);                                                                   \
   if (n1 == 0 || n2 == 0) return res_t();                                                          \
+  int n_threads = internal::calc_threads(n);                                                       \
   if (n2 == 1){                                                                                    \
     res_t out(n);                                                                                  \
     auto val = rhs.view(0);                                                                        \
-    OMP_SIMD                                                                                       \
-    for (r_size_t i = 0; i < n; ++i){                                                              \
-      out.set(i, lhs.view(i) OP val);                                                              \
+    if (n_threads > 1){                                                                            \
+      OMP_PARALLEL_FOR_SIMD(n_threads)                                                             \
+      for (r_size_t i = 0; i < n; ++i){                                                            \
+        out.set(i, lhs.view(i) OP val);                                                            \
+      }                                                                                            \
+    } else {                                                                                       \
+      OMP_SIMD                                                                                     \
+      for (r_size_t i = 0; i < n; ++i){                                                            \
+        out.set(i, lhs.view(i) OP val);                                                            \
+      }                                                                                            \
     }                                                                                              \
     return out;                                                                                    \
   } else if (n1 == 1){                                                                             \
     res_t out(n);                                                                                  \
     auto val = lhs.view(0);                                                                        \
-    OMP_SIMD                                                                                       \
-    for (r_size_t i = 0; i < n; ++i){                                                              \
-      out.set(i, val OP rhs.view(i));                                                              \
+    if (n_threads > 1){                                                                            \
+      OMP_PARALLEL_FOR_SIMD(n_threads)                                                             \
+      for (r_size_t i = 0; i < n; ++i){                                                            \
+        out.set(i, val OP rhs.view(i));                                                            \
+      }                                                                                            \
+    } else {                                                                                       \
+      OMP_SIMD                                                                                     \
+      for (r_size_t i = 0; i < n; ++i){                                                            \
+        out.set(i, val OP rhs.view(i));                                                            \
+      }                                                                                            \
     }                                                                                              \
     return out;                                                                                    \
   } else if (n1 == n2){                                                                            \
     res_t out(n);                                                                                  \
-    OMP_SIMD                                                                                       \
-    for (r_size_t i = 0; i < n; ++i){                                                              \
-      out.set(i, lhs.view(i) OP rhs.view(i));                                                      \
+    if (n_threads > 1){                                                                            \
+      OMP_PARALLEL_FOR_SIMD(n_threads)                                                             \
+      for (r_size_t i = 0; i < n; ++i){                                                            \
+        out.set(i, lhs.view(i) OP rhs.view(i));                                                    \
+      }                                                                                            \
+    } else {                                                                                       \
+      OMP_SIMD                                                                                     \
+      for (r_size_t i = 0; i < n; ++i){                                                            \
+        out.set(i, lhs.view(i) OP rhs.view(i));                                                    \
+      }                                                                                            \
     }                                                                                              \
     return out;                                                                                    \
   } else {                                                                                         \
@@ -382,23 +542,39 @@ if constexpr (RVector<lhs_t> && RVector<rhs_t>){                                
 } else if constexpr (RVector<lhs_t>) {                                                             \
   r_size_t n = lhs.length();                                                                       \
   res_t out(n);                                                                                    \
-  OMP_SIMD                                                                                         \
-  for (r_size_t i = 0; i < n; ++i){                                                                \
-    out.set(i, lhs.view(i) OP rhs);                                                                \
+  int n_threads = internal::calc_threads(n);                                                       \
+  if (n_threads > 1){                                                                              \
+    OMP_PARALLEL_FOR_SIMD(n_threads)                                                               \
+    for (r_size_t i = 0; i < n; ++i){                                                              \
+      out.set(i, lhs.view(i) OP rhs);                                                              \
+    }                                                                                              \
+  } else {                                                                                         \
+    OMP_SIMD                                                                                       \
+    for (r_size_t i = 0; i < n; ++i){                                                              \
+      out.set(i, lhs.view(i) OP rhs);                                                              \
+    }                                                                                              \
   }                                                                                                \
   return out;                                                                                      \
 } else {                                                                                           \
   r_size_t n = rhs.length();                                                                       \
   res_t out(n);                                                                                    \
-  OMP_SIMD                                                                                         \
-  for (r_size_t i = 0; i < n; ++i){                                                                \
-    out.set(i, lhs OP rhs.view(i));                                                                \
+  int n_threads = internal::calc_threads(n);                                                       \
+  if (n_threads > 1){                                                                              \
+    OMP_PARALLEL_FOR_SIMD(n_threads)                                                               \
+    for (r_size_t i = 0; i < n; ++i){                                                              \
+      out.set(i, lhs OP rhs.view(i));                                                              \
+    }                                                                                              \
+  } else {                                                                                         \
+    OMP_SIMD                                                                                       \
+    for (r_size_t i = 0; i < n; ++i){                                                              \
+      out.set(i, lhs OP rhs.view(i));                                                              \
+    }                                                                                              \
   }                                                                                                \
   return out;                                                                                      \
 }
 
 template<typename T, typename U>
-requires ( 
+requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
     (RAtomicVector<T> && RScalar<U>) ||
     (RScalar<T> && RAtomicVector<U>)
@@ -407,7 +583,7 @@ inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, ==, r_vec<r_lgl>)
 }
 template<typename T, typename U>
-requires ( 
+requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
     (RAtomicVector<T> && RScalar<U>) ||
     (RScalar<T> && RAtomicVector<U>)
@@ -416,7 +592,7 @@ inline r_vec<r_lgl> operator!=(const T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, !=, r_vec<r_lgl>)
 }
 template<typename T, typename U>
-requires ( 
+requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
     (RAtomicVector<T> && RScalar<U>) ||
     (RScalar<T> && RAtomicVector<U>)
@@ -425,7 +601,7 @@ inline r_vec<r_lgl> operator<=(const T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, <=, r_vec<r_lgl>)
 }
 template<typename T, typename U>
-requires ( 
+requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
     (RAtomicVector<T> && RScalar<U>) ||
     (RScalar<T> && RAtomicVector<U>)
@@ -434,7 +610,7 @@ inline r_vec<r_lgl> operator<(const T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, <, r_vec<r_lgl>)
 }
 template<typename T, typename U>
-requires ( 
+requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
     (RAtomicVector<T> && RScalar<U>) ||
     (RScalar<T> && RAtomicVector<U>)
@@ -443,7 +619,7 @@ inline r_vec<r_lgl> operator>=(const T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, >=, r_vec<r_lgl>)
 }
 template<typename T, typename U>
-requires ( 
+requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
     (RAtomicVector<T> && RScalar<U>) ||
     (RScalar<T> && RAtomicVector<U>)
@@ -474,9 +650,17 @@ inline r_vec<r_lgl> operator&(const T& lhs, const U& rhs) {
 inline r_vec<r_lgl> operator!(const r_vec<r_lgl>& x){
     r_size_t n = x.length();
     r_vec<r_lgl> out(n);
-    OMP_SIMD
-    for (r_size_t i = 0; i < n; ++i){
-        out.set(i, !x.get(i));
+    int n_threads = internal::calc_threads(n);
+    if (n_threads > 1){
+        OMP_PARALLEL_FOR_SIMD(n_threads)
+        for (r_size_t i = 0; i < n; ++i){
+            out.set(i, !x.get(i));
+        }
+    } else {
+        OMP_SIMD
+        for (r_size_t i = 0; i < n; ++i){
+            out.set(i, !x.get(i));
+        }
     }
     return out;
 }
@@ -485,9 +669,17 @@ template <RMathType T>
 inline r_vec<T> operator-(const r_vec<T>& x){
     r_size_t n = x.length();
     r_vec<T> out(n);
-    OMP_SIMD
-    for (r_size_t i = 0; i < n; ++i){
-        out.set(i, -x.get(i));
+    int n_threads = internal::calc_threads(n);
+    if (n_threads > 1){
+        OMP_PARALLEL_FOR_SIMD(n_threads)
+        for (r_size_t i = 0; i < n; ++i){
+            out.set(i, -x.get(i));
+        }
+    } else {
+        OMP_SIMD
+        for (r_size_t i = 0; i < n; ++i){
+            out.set(i, -x.get(i));
+        }
     }
     return out;
 }
@@ -499,9 +691,17 @@ template <typename T, typename U>
 inline r_vec<r_lgl> not_equal(const T& lhs, const U& rhs){
     r_vec<r_lgl> eq = lhs == rhs;
     r_size_t n = eq.length();
-    OMP_SIMD
-    for (r_size_t i = 0; i < n; ++i){
-        eq.set(i, !eq.get(i));
+    int n_threads = internal::calc_threads(n);
+    if (n_threads > 1){
+        OMP_PARALLEL_FOR_SIMD(n_threads)
+        for (r_size_t i = 0; i < n; ++i){
+            eq.set(i, !eq.get(i));
+        }
+    } else {
+        OMP_SIMD
+        for (r_size_t i = 0; i < n; ++i){
+            eq.set(i, !eq.get(i));
+        }
     }
     return eq;
 }
