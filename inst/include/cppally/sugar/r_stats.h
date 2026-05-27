@@ -16,7 +16,7 @@ r_dbl sum(const r_vec<T>& x, bool na_rm = false){
     const auto* RESTRICT p_x = x.data();
 
     if (na_rm){
-        OMP_PARALLEL_FOR_SIMD_REDUCTION1(internal::calc_threads(n), +:res)
+        OMP_SIMD_REDUCTION1(+:res)
         for (r_size_t i = 0; i < n; ++i){
             res += is_na(p_x[i]) ? 0 : static_cast<int_fast64_t>(p_x[i]);
         }
@@ -38,7 +38,7 @@ r_dbl sum(const r_vec<T>& x, bool na_rm = false){
     const auto* RESTRICT p_x = x.data();
 
     if (na_rm){
-        OMP_PARALLEL_FOR_SIMD_REDUCTION1(internal::calc_threads(n), +:out_)
+        OMP_SIMD_REDUCTION1(+:out_)
         for (r_size_t i = 0; i < n; ++i){
             out_ += (is_na(T(p_x[i]))) ? 0 : p_x[i];
         }
@@ -61,12 +61,12 @@ inline r_dbl sum(const r_vec<r_dbl>& x, bool na_rm){
     const auto* RESTRICT p_x = x.data();
 
     if (na_rm){
-        OMP_PARALLEL_FOR_SIMD_REDUCTION1(internal::calc_threads(n), +:out_)
+        OMP_SIMD_REDUCTION1(+:out_)
         for (r_size_t i = 0; i < n; ++i){
             out_ += is_na(r_dbl(p_x[i])) ? 0 : p_x[i];
         }
     } else {
-        OMP_PARALLEL_FOR_SIMD_REDUCTION1(internal::calc_threads(n), +:out_)
+        OMP_SIMD_REDUCTION1(+:out_)
         for (r_size_t i = 0; i < n; ++i){
             out_ += p_x[i];
         }

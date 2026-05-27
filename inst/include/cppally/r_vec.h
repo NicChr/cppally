@@ -401,9 +401,16 @@ struct r_vec {
 
     if constexpr (!is_write_barrier_protected){
       int n_threads = internal::calc_threads(n);
-      OMP_PARALLEL_FOR_SIMD(n_threads)
-      for (r_size_t i = 0; i < n; ++i){
-        out.set(i, r_lgl(cppally::is_na(view(i))));
+      if (n_threads > 1){
+        OMP_PARALLEL_FOR_SIMD(n_threads)
+        for (r_size_t i = 0; i < n; ++i){
+          out.set(i, r_lgl(cppally::is_na(view(i))));
+        }
+      } else {
+        OMP_SIMD
+        for (r_size_t i = 0; i < n; ++i){
+          out.set(i, r_lgl(cppally::is_na(view(i))));
+        }
       }
     } else {
       for (r_size_t i = 0; i < n; ++i){
@@ -421,9 +428,17 @@ struct r_vec {
 
     if constexpr (!is_write_barrier_protected){
       int n_threads = internal::calc_threads(n);
-      OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:out)
-      for (r_size_t i = 0; i < n; ++i){
-        out += cppally::is_na(view(i));
+
+      if (n_threads > 1){
+        OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:out)
+        for (r_size_t i = 0; i < n; ++i){
+          out += cppally::is_na(view(i));
+        }
+      } else {
+        OMP_SIMD_REDUCTION1(+:out)
+        for (r_size_t i = 0; i < n; ++i){
+          out += cppally::is_na(view(i));
+        }
       }
     } else {
       for (r_size_t i = 0; i < n; ++i){
