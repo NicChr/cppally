@@ -88,7 +88,7 @@ inline T as_impl(const U& x) {
   }
 
   if constexpr (RStringType<to_data_t> && RStringType<from_data_t>){
-    return T(static_cast<SEXP>(x));
+    return T(x.value);
   }
 
   if constexpr (is<to_data_t, r_str>){
