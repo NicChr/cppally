@@ -82,6 +82,22 @@ struct r_vec {
     }
   }
 
+  void ensure_exclusive() noexcept {
+    if (!is_exclusive()) [[unlikely]] {
+      r_size_t n = length();
+      r_vec<T> new_vec(n);
+      r_copy_n(new_vec, *this, 0, n);
+      safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
+      *this = std::move(new_vec);
+    }
+  }
+
+  void make_exclusive_if_copy_on_modify() noexcept {
+    #ifdef CPPALLY_COPY_ON_MODIFY
+    ensure_exclusive();
+    #endif
+  }
+
   // Shared cache: any two r_vec wrappers around the same SEXP point to the same
   // names_map via the registry, so set_names() propagates to all of them
   mutable std::shared_ptr<internal::names_map> cached_names;
@@ -245,16 +261,6 @@ struct r_vec {
         cached_names = internal::name_cache().get_or_create(value);
       }
       cached_names->invalidate();
-  }
-
-  void ensure_exclusive() noexcept {
-    if (!is_exclusive()) [[unlikely]] {
-      r_size_t n = length();
-      r_vec<T> new_vec(n);
-      r_copy_n(new_vec, *this, 0, n);
-      safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
-      *this = std::move(new_vec);
-    }
   }
 
   // For named vectors: find first index of name
@@ -501,15 +507,12 @@ struct r_vec {
   r_size_t count(T const& val) const {
     r_size_t out = 0;
     r_size_t n = length();
-
-    if constexpr (RIntegerType<T>){
-      // SIMD vectorisation isn't working with identical function (sad)
-      OMP_SIMD_REDUCTION1(+:out)
+    if constexpr (is_write_barrier_protected){
       for (r_size_t i = 0; i < n; ++i){
-        out += (unwrap(get(i)) == unwrap(val));
+        out += identical(view(i), val);
       }
     } else {
-      // Fall-back
+      OMP_SIMD_REDUCTION1(+:out)
       for (r_size_t i = 0; i < n; ++i){
         out += identical(view(i), val);
       }
@@ -575,18 +578,22 @@ struct r_vec {
   }
 
   // Sequential fill
-  void fill(r_size_t start, r_size_t n, T const& val){
+  void fill(r_size_t start, r_size_t n, const T& val){
+    
     if constexpr (!is_write_barrier_protected){
+      
+      make_exclusive_if_copy_on_modify();
+
       int n_threads = internal::calc_threads(n);
-      // data() materialises ALTREP on first call
       auto* RESTRICT p_target = data();
+      unwrap_t<T> v = unwrap(val);
       if (n_threads > 1) {
         OMP_PARALLEL_FOR_SIMD(n_threads)
         for (r_size_t i = 0; i < n; ++i) {
-          p_target[start + i] = unwrap(val);
+          p_target[start + i] = v;
         }
       } else {
-        std::fill_n(p_target + start, n, unwrap(val));
+        std::fill_n(p_target + start, n, v);
       }
     } else {
       for (r_size_t i = 0; i < n; ++i) {
@@ -750,7 +757,10 @@ inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_
   
   using data_t = typename T::data_type;
 
-  if constexpr (internal::RPtrWritableType<data_t>){
+  if constexpr (!RObject<data_t>){
+    
+    // make_exclusive_if_copy_on_modify();
+
     auto* RESTRICT p_target = target.data();
     auto* RESTRICT p_source = source.data();
 
@@ -764,6 +774,9 @@ inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_
       std::copy_n(p_source, n, p_target + target_offset);
     }
   } else if constexpr (RStringType<data_t>){
+
+    // make_exclusive_if_copy_on_modify();
+
     // Cast const SEXP* to SEXP* and write directly
     auto* p_target = const_cast<unwrap_t<data_t>*>(target.data());
     std::copy_n(source.data(), n, p_target + target_offset);
