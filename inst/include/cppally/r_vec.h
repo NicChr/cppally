@@ -684,6 +684,9 @@ struct r_vec {
   }
 
   void rev() {
+    if (is_null()){
+      return;
+    }
     r_size_t n = length();
     r_size_t n1 = n / 2;
     r_size_t n2 = n - 1;
@@ -694,10 +697,8 @@ struct r_vec {
       set(k, left);
     }
     r_vec<r_str_view> nms = names();
-    if (!nms.is_null()){
-      nms.rev();
-      set_names(nms);
-    }
+    nms.rev();
+    set_names(nms);
   }
 
   void iota(T init = T(0)) requires (any<T, r_int, r_int64>) {
