@@ -9,77 +9,120 @@
 
 namespace cppally {
 
-#define CPPALLY_BINARY_OP_IN_PLACE(OP)                        \
-r_size_t lhs_size = lhs.length();                             \
-if constexpr (RVector<U>){                                    \
-  r_size_t rhs_size = rhs.length();                           \
-  if (rhs_size == 1){                                         \
-    return lhs OP##= rhs.get(0);                              \
-  } else if (lhs_size == rhs_size){                           \
-    {                                                         \
-      int n_threads = internal::calc_threads(lhs_size);       \
-      if (n_threads > 1){                                     \
-        OMP_PARALLEL_FOR_SIMD(n_threads)                      \
-        for (r_size_t i = 0; i < lhs_size; ++i){              \
-          lhs.set(i, lhs.get(i) OP rhs.get(i));               \
-        }                                                     \
-      } else {                                                \
-        OMP_SIMD                                              \
-        for (r_size_t i = 0; i < lhs_size; ++i){              \
-          lhs.set(i, lhs.get(i) OP rhs.get(i));               \
-        }                                                     \
-      }                                                       \
-    }                                                         \
-    return lhs;                                               \
-  } else {                                                    \
-    r_size_t n = lhs_size;                                    \
-    for (r_size_t i = 0, rhsi = 0; i < n;                     \
-    recycle_index(rhsi, rhs_size),                            \
-    ++i){                                                     \
-      lhs.set(i, lhs.get(i) OP rhs.get(rhsi));                \
-    }                                                         \
-    return lhs;                                               \
-  }                                                           \
-} else {                                                      \
-  r_size_t n = lhs_size;                                      \
-  int n_threads = internal::calc_threads(n);                  \
-  if (n_threads > 1){                                         \
-    OMP_PARALLEL_FOR_SIMD(n_threads)                          \
-    for (r_size_t i = 0; i < n; ++i){                         \
-      lhs.set(i, lhs.get(i) OP rhs);                          \
-    }                                                         \
-  } else {                                                    \
-    OMP_SIMD                                                  \
-    for (r_size_t i = 0; i < n; ++i){                         \
-      lhs.set(i, lhs.get(i) OP rhs);                          \
-    }                                                         \
-  }                                                           \
-  return lhs;                                                 \
+#define CPPALLY_UNARY_OP_IN_PLACE(OP, X)  \
+r_size_t n = X.length();                  \
+int n_threads = internal::calc_threads(n);\
+if (n_threads > 1){                       \
+  OMP_PARALLEL_FOR_SIMD(n_threads)        \
+  for (r_size_t i = 0; i < n; ++i){       \
+    X.set(i, OP X.view(i));               \
+  }                                       \
+} else {                                  \
+  OMP_SIMD                                \
+  for (r_size_t i = 0; i < n; ++i){       \
+    X.set(i, OP X.view(i));               \
+  }                                       \
+}
+
+#define CPPALLY_UNARY_OP(OP, X)                \
+r_size_t n = X.length();                       \
+using out_t = std::remove_cvref_t<decltype(X)>;\
+out_t out(n);                                  \
+int n_threads = internal::calc_threads(n);     \
+if (n_threads > 1){                            \
+  OMP_PARALLEL_FOR_SIMD(n_threads)             \
+  for (r_size_t i = 0; i < n; ++i){            \
+    out.set(i, OP X.view(i));                  \
+  }                                            \
+} else {                                       \
+  OMP_SIMD                                     \
+  for (r_size_t i = 0; i < n; ++i){            \
+    out.set(i, OP X.view(i));                  \
+  }                                            \
+}                                              \
+return out;
+
+#define CPPALLY_BINARY_OP_IN_PLACE(OP)                                            \
+r_size_t lhs_size = lhs.length();                                                 \
+if constexpr (RVector<U>){                                                        \
+  r_size_t rhs_size = rhs.length();                                               \
+  if (rhs_size == 1){                                                             \
+      auto val = rhs.view(0);                                                     \
+      int n_threads = internal::calc_threads(lhs_size);                           \
+      if (n_threads > 1){                                                         \
+        OMP_PARALLEL_FOR_SIMD(n_threads)                                          \
+        for (r_size_t i = 0; i < lhs_size; ++i){ lhs.set(i, lhs.view(i) OP val); }\
+      } else {                                                                    \
+        OMP_SIMD                                                                  \
+        for (r_size_t i = 0; i < lhs_size; ++i){ lhs.set(i, lhs.view(i) OP val); }\
+      }                                                                           \
+  } else if (lhs_size == rhs_size){                                               \
+    {                                                                             \
+      int n_threads = internal::calc_threads(lhs_size);                           \
+      if (n_threads > 1){                                                         \
+        OMP_PARALLEL_FOR_SIMD(n_threads)                                          \
+        for (r_size_t i = 0; i < lhs_size; ++i){                                  \
+          lhs.set(i, lhs.get(i) OP rhs.get(i));                                   \
+        }                                                                         \
+      } else {                                                                    \
+        OMP_SIMD                                                                  \
+        for (r_size_t i = 0; i < lhs_size; ++i){                                  \
+          lhs.set(i, lhs.get(i) OP rhs.get(i));                                   \
+        }                                                                         \
+      }                                                                           \
+    }                                                                             \
+  } else {                                                                        \
+    r_size_t n = lhs_size;                                                        \
+    for (r_size_t i = 0, rhsi = 0; i < n;                                         \
+    recycle_index(rhsi, rhs_size),                                                \
+    ++i){                                                                         \
+      lhs.set(i, lhs.get(i) OP rhs.get(rhsi));                                    \
+    }                                                                             \
+  }                                                                               \
+} else {                                                                          \
+  r_size_t n = lhs_size;                                                          \
+  int n_threads = internal::calc_threads(n);                                      \
+  if (n_threads > 1){                                                             \
+    OMP_PARALLEL_FOR_SIMD(n_threads)                                              \
+    for (r_size_t i = 0; i < n; ++i){                                             \
+      lhs.set(i, lhs.get(i) OP rhs);                                              \
+    }                                                                             \
+  } else {                                                                        \
+    OMP_SIMD                                                                      \
+    for (r_size_t i = 0; i < n; ++i){                                             \
+      lhs.set(i, lhs.get(i) OP rhs);                                              \
+    }                                                                             \
+  }                                                                               \
 }
 
 template<RVector T, typename U>
 inline T& operator+=(T& lhs, const U& rhs) {
-    CPPALLY_BINARY_OP_IN_PLACE(+);
+    CPPALLY_BINARY_OP_IN_PLACE(+)
+    return lhs;
 }
 
 template<RVector T, typename U>
 inline T& operator-=(T& lhs, const U& rhs) {
-    CPPALLY_BINARY_OP_IN_PLACE(-);
+    CPPALLY_BINARY_OP_IN_PLACE(-)
+    return lhs;
 }
 
 template<RVector T, typename U>
 inline T& operator*=(T& lhs, const U& rhs) {
-    CPPALLY_BINARY_OP_IN_PLACE(*);
+    CPPALLY_BINARY_OP_IN_PLACE(*)
+    return lhs;
 }
 
 template<RVector T, typename U>
 inline T& operator/=(T& lhs, const U& rhs) {
-    CPPALLY_BINARY_OP_IN_PLACE(/);
+    CPPALLY_BINARY_OP_IN_PLACE(/)
+    return lhs;
 }
 
 template<RVector T, typename U>
 inline T& operator%=(T& lhs, const U& rhs) {
-    CPPALLY_BINARY_OP_IN_PLACE(%);
+    CPPALLY_BINARY_OP_IN_PLACE(%)
+    return lhs;
 }
 
 #define CPPALLY_BINARY_OP(lhs, rhs, OP, res_t)                                                       \
@@ -268,7 +311,13 @@ requires (
     (RAtomicVector<T> && RScalar<U>) ||
     (RScalar<T> && RAtomicVector<U>)
 )
-inline r_vec<r_lgl> operator!=(const T& lhs, const U& rhs) {
+inline r_vec<r_lgl> operator!=(T&& lhs, const U& rhs) {
+    if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
+        if (internal::use_in_place_ops(lhs, rhs)){
+            CPPALLY_BINARY_OP_IN_PLACE(!=)
+            return std::move(lhs);
+        }
+    }
     CPPALLY_BINARY_OP(lhs, rhs, !=, r_vec<r_lgl>)
 }
 template<typename T, typename U>
@@ -277,7 +326,13 @@ requires (
     (RAtomicVector<T> && RScalar<U>) ||
     (RScalar<T> && RAtomicVector<U>)
 )
-inline r_vec<r_lgl> operator<=(const T& lhs, const U& rhs) {
+inline r_vec<r_lgl> operator<=(T&& lhs, const U& rhs) {
+    if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
+        if (internal::use_in_place_ops(lhs, rhs)){
+            CPPALLY_BINARY_OP_IN_PLACE(<=)
+            return std::move(lhs);
+        }
+    }
     CPPALLY_BINARY_OP(lhs, rhs, <=, r_vec<r_lgl>)
 }
 template<typename T, typename U>
@@ -286,7 +341,13 @@ requires (
     (RAtomicVector<T> && RScalar<U>) ||
     (RScalar<T> && RAtomicVector<U>)
 )
-inline r_vec<r_lgl> operator<(const T& lhs, const U& rhs) {
+inline r_vec<r_lgl> operator<(T&& lhs, const U& rhs) {
+    if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
+        if (internal::use_in_place_ops(lhs, rhs)){
+            CPPALLY_BINARY_OP_IN_PLACE(<)
+            return std::move(lhs);
+        }
+    }
     CPPALLY_BINARY_OP(lhs, rhs, <, r_vec<r_lgl>)
 }
 template<typename T, typename U>
@@ -295,7 +356,13 @@ requires (
     (RAtomicVector<T> && RScalar<U>) ||
     (RScalar<T> && RAtomicVector<U>)
 )
-inline r_vec<r_lgl> operator>=(const T& lhs, const U& rhs) {
+inline r_vec<r_lgl> operator>=(T&& lhs, const U& rhs) {
+    if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
+        if (internal::use_in_place_ops(lhs, rhs)){
+            CPPALLY_BINARY_OP_IN_PLACE(>=)
+            return std::move(lhs);
+        }
+    }
     CPPALLY_BINARY_OP(lhs, rhs, >=, r_vec<r_lgl>)
 }
 template<typename T, typename U>
@@ -304,7 +371,13 @@ requires (
     (RAtomicVector<T> && RScalar<U>) ||
     (RScalar<T> && RAtomicVector<U>)
 )
-inline r_vec<r_lgl> operator>(const T& lhs, const U& rhs) {
+inline r_vec<r_lgl> operator>(T&& lhs, const U& rhs) {
+    if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
+        if (internal::use_in_place_ops(lhs, rhs)){
+            CPPALLY_BINARY_OP_IN_PLACE(>)
+            return std::move(lhs);
+        }
+    }
     CPPALLY_BINARY_OP(lhs, rhs, >, r_vec<r_lgl>)
 }
 
@@ -314,7 +387,13 @@ requires (
     (is<T, r_vec<r_lgl>> && is<U, r_lgl>) ||
     (is<T, r_lgl> && is<U, r_vec<r_lgl>>)
 )
-inline r_vec<r_lgl> operator|(const T& lhs, const U& rhs) {
+inline r_vec<r_lgl> operator|(T&& lhs, const U& rhs) {
+    if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
+        if (internal::use_in_place_ops(lhs, rhs)){
+            CPPALLY_BINARY_OP_IN_PLACE(||)
+            return std::move(lhs);
+        }
+    }
     CPPALLY_BINARY_OP(lhs, rhs, ||, r_vec<r_lgl>)
 }
 template <typename T, typename U>
@@ -323,45 +402,33 @@ requires (
     (is<T, r_vec<r_lgl>> && is<U, r_lgl>) ||
     (is<T, r_lgl> && is<U, r_vec<r_lgl>>)
 )
-inline r_vec<r_lgl> operator&(const T& lhs, const U& rhs) {
+inline r_vec<r_lgl> operator&(T&& lhs, const U& rhs) {
+    if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
+        if (internal::use_in_place_ops(lhs, rhs)){
+            CPPALLY_BINARY_OP_IN_PLACE(&&)
+            return std::move(lhs);
+        }
+    }
     CPPALLY_BINARY_OP(lhs, rhs, &&, r_vec<r_lgl>)
 }
 
-inline r_vec<r_lgl> operator!(const r_vec<r_lgl>& x){
-    r_size_t n = x.length();
-    r_vec<r_lgl> out(n);
-    int n_threads = internal::calc_threads(n);
-    if (n_threads > 1){
-        OMP_PARALLEL_FOR_SIMD(n_threads)
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, !x.get(i));
-        }
+inline r_vec<r_lgl> operator!(r_vec<r_lgl>&& x){
+    if (x.value.is_exclusive()){
+        CPPALLY_UNARY_OP_IN_PLACE(!, x)
+        return std::move(x);
     } else {
-        OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, !x.get(i));
-        }
+        CPPALLY_UNARY_OP(!, x)
     }
-    return out;
 }
 
 template <RMathType T>
-inline r_vec<T> operator-(const r_vec<T>& x){
-    r_size_t n = x.length();
-    r_vec<T> out(n);
-    int n_threads = internal::calc_threads(n);
-    if (n_threads > 1){
-        OMP_PARALLEL_FOR_SIMD(n_threads)
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, -x.get(i));
-        }
+inline r_vec<T> operator-(r_vec<T>&& x){
+    if (x.value.is_exclusive()){
+        CPPALLY_UNARY_OP_IN_PLACE(-, x)
+        return std::move(x);
     } else {
-        OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-            out.set(i, -x.get(i));
-        }
+        CPPALLY_UNARY_OP(-, x)
     }
-    return out;
 }
 
 namespace internal {
@@ -370,19 +437,7 @@ namespace internal {
 template <typename T, typename U>
 inline r_vec<r_lgl> not_equal(const T& lhs, const U& rhs){
     r_vec<r_lgl> eq = lhs == rhs;
-    r_size_t n = eq.length();
-    int n_threads = internal::calc_threads(n);
-    if (n_threads > 1){
-        OMP_PARALLEL_FOR_SIMD(n_threads)
-        for (r_size_t i = 0; i < n; ++i){
-            eq.set(i, !eq.get(i));
-        }
-    } else {
-        OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-            eq.set(i, !eq.get(i));
-        }
-    }
+    CPPALLY_UNARY_OP_IN_PLACE(!, eq)
     return eq;
 }
 
