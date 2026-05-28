@@ -6,7 +6,6 @@
 #include <cppally/r_types.h>
 #include <cppally/r_nas.h>
 #include <cstring> // For strcmp
-#include <string>
 
 namespace cppally {
 
@@ -101,16 +100,6 @@ inline r_lgl operator>(const r_str& lhs, const r_str& rhs) noexcept {
 }
 inline r_lgl operator>=(const r_str& lhs, const r_str& rhs) noexcept {
   return static_cast<r_str_view>(lhs) >= static_cast<r_str_view>(rhs);
-}
-
-template <RStringType T, typename U>
-requires (RStringType<U> || is<U, const char*>)
-inline T operator+(const T& lhs, const U& rhs) {
-  if (internal::either_na(lhs, rhs)){
-    return na<T>();
-  }
-  std::string a(lhs.c_str());
-  return T( internal::c_str_to_r_str_view((a + static_cast<const char*>(rhs)).c_str()) );
 }
 
 inline r_lgl operator==(r_sym lhs, r_sym rhs) noexcept {

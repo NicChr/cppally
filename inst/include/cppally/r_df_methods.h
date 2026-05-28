@@ -43,10 +43,12 @@ inline r_vec<r_sexp> new_df_impl(const r_vec<r_sexp>& cols, bool recycle, int nr
     r_vec<r_str_view> names = cols.names();
     if (names.is_null()){
         names = r_vec<r_str_view>(n);
+        std::string col_str = "col_";
         for (r_size_t i = 0; i < n; ++i){
-            r_str elem = r_str("col_") + as<r_str>(i + 1);
-            names.set(i, elem);
-        } 
+            col_str += std::to_string(i + 1);
+            names.set(i, r_str(col_str.c_str()));
+            col_str.assign("col_");
+        }
     }
     out.set_names(names); 
 
