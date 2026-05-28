@@ -663,6 +663,23 @@ struct r_vec {
     return out;
   }
 
+  void rev() {
+    r_size_t n = length();
+    r_size_t n1 = n / 2;
+    r_size_t n2 = n - 1;
+    for (r_size_t i = 0; i < n1; ++i){
+      r_size_t k = n2 - i;
+      T left = view(i);
+      set(i, view(k));
+      set(k, left);
+    }
+    r_vec<r_str_view> nms = names();
+    if (!nms.is_null()){
+      nms.rev();
+      set_names(nms);
+    }
+  }
+
   void iota(T init = T(0)) requires (any<T, r_int, r_int64>) {
     r_size_t n = length();
     OMP_SIMD
