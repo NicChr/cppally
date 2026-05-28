@@ -6,7 +6,7 @@
 
 // Vectorised binary operators: +,-,*,/,&,|,+=,-=,*=,/=,==,<=,<,>=,>
 // Vectorised unary operators: !,-,
-// All operators are only for R vectors containing elements of RScalar
+// All operators are only for R vectors containing elements of Scalar
 
 namespace cppally {
 
@@ -279,8 +279,8 @@ bool use_in_place_ops(const T& lhs, const U& rhs) noexcept {
 template<typename T, typename U>
 requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && RScalar<U>) ||
-    (RScalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && Scalar<U>) ||
+    (Scalar<T> && RAtomicVector<U>)
 )
 inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator+(T&& lhs, const U& rhs) {
     using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
@@ -296,8 +296,8 @@ inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator+(T&& lhs, c
 template<typename T, typename U>
 requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && RScalar<U>) ||
-    (RScalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && Scalar<U>) ||
+    (Scalar<T> && RAtomicVector<U>)
 )
 inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator-(T&& lhs, const U& rhs) {
     using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
@@ -312,8 +312,8 @@ inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator-(T&& lhs, c
 template<typename T, typename U>
 requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && RScalar<U>) ||
-    (RScalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && Scalar<U>) ||
+    (Scalar<T> && RAtomicVector<U>)
 )
 inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator*(T&& lhs, const U& rhs) {
     using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
@@ -328,8 +328,8 @@ inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator*(T&& lhs, c
 template<typename T, typename U>
 requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && RScalar<U>) ||
-    (RScalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && Scalar<U>) ||
+    (Scalar<T> && RAtomicVector<U>)
 )
 inline r_vec<r_dbl> operator/(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_dbl>>){
@@ -343,8 +343,8 @@ inline r_vec<r_dbl> operator/(T&& lhs, const U& rhs) {
 template<typename T, typename U>
 requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && RScalar<U>) ||
-    (RScalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && Scalar<U>) ||
+    (Scalar<T> && RAtomicVector<U>)
 )
 inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator%(T&& lhs, const U& rhs) {
     using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
@@ -360,8 +360,8 @@ inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator%(T&& lhs, c
 template<typename T, typename U>
 requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && RScalar<U>) ||
-    (RScalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && Scalar<U>) ||
+    (Scalar<T> && RAtomicVector<U>)
 )
 inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, ==, r_vec<r_lgl>)
@@ -369,8 +369,8 @@ inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) {
 template<typename T, typename U>
 requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && RScalar<U>) ||
-    (RScalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && Scalar<U>) ||
+    (Scalar<T> && RAtomicVector<U>)
 )
 inline r_vec<r_lgl> operator!=(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
@@ -384,8 +384,8 @@ inline r_vec<r_lgl> operator!=(T&& lhs, const U& rhs) {
 template<typename T, typename U>
 requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && RScalar<U>) ||
-    (RScalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && Scalar<U>) ||
+    (Scalar<T> && RAtomicVector<U>)
 )
 inline r_vec<r_lgl> operator<=(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
@@ -399,8 +399,8 @@ inline r_vec<r_lgl> operator<=(T&& lhs, const U& rhs) {
 template<typename T, typename U>
 requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && RScalar<U>) ||
-    (RScalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && Scalar<U>) ||
+    (Scalar<T> && RAtomicVector<U>)
 )
 inline r_vec<r_lgl> operator<(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
@@ -414,8 +414,8 @@ inline r_vec<r_lgl> operator<(T&& lhs, const U& rhs) {
 template<typename T, typename U>
 requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && RScalar<U>) ||
-    (RScalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && Scalar<U>) ||
+    (Scalar<T> && RAtomicVector<U>)
 )
 inline r_vec<r_lgl> operator>=(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
@@ -429,8 +429,8 @@ inline r_vec<r_lgl> operator>=(T&& lhs, const U& rhs) {
 template<typename T, typename U>
 requires (
     (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && RScalar<U>) ||
-    (RScalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && Scalar<U>) ||
+    (Scalar<T> && RAtomicVector<U>)
 )
 inline r_vec<r_lgl> operator>(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
