@@ -9,320 +9,6 @@
 
 namespace cppally {
 
-template<typename T, typename U>
-requires (RVector<T> || RVector<U>)
-inline auto operator-(const T& lhs, const U& rhs) {
-    if constexpr (RVector<T> && RVector<U>){
-        r_size_t lhs_size = lhs.length();
-        r_size_t rhs_size = rhs.length();
-        if (lhs_size == 1){
-            return lhs.get(0) - rhs;
-        } else if (rhs_size == 1){
-            return lhs - rhs.get(0);
-        } else if (lhs_size == rhs_size){
-            using common_t = common_math_t<typename T::data_type, typename U::data_type>;
-            r_vec<common_t> out(lhs_size);
-            int n_threads = internal::calc_threads(lhs_size);
-            if (n_threads > 1){
-                OMP_PARALLEL_FOR_SIMD(n_threads)
-                for (r_size_t i = 0; i < lhs_size; ++i){
-                    out.set(i, lhs.get(i) - rhs.get(i));
-                }
-            } else {
-                OMP_SIMD
-                for (r_size_t i = 0; i < lhs_size; ++i){
-                    out.set(i, lhs.get(i) - rhs.get(i));
-                }
-            }
-            return out;
-        } else {
-            // Slower recycling approach
-            r_size_t n = std::max(lhs_size, rhs_size);
-            if (lhs_size == 0 || rhs_size == 0){
-                n = 0;
-            }
-            using common_t = common_math_t<typename T::data_type, typename U::data_type>;
-            r_vec<common_t> out(n);
-            for (r_size_t i = 0, lhsi = 0, rhsi = 0; i < n;
-                recycle_index(lhsi, lhs_size),
-                recycle_index(rhsi, rhs_size),
-                ++i){
-                out.set(i, lhs.get(lhsi) - rhs.get(rhsi));
-            }
-            return out;
-        }
-    } else if constexpr (RVector<T>){
-        using common_t = common_math_t<typename T::data_type, U>;
-        r_size_t n = lhs.length();
-        r_vec<common_t> out(n);
-        int n_threads = internal::calc_threads(n);
-        if (n_threads > 1){
-            OMP_PARALLEL_FOR_SIMD(n_threads)
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, lhs.get(i) - rhs);
-            }
-        } else {
-            OMP_SIMD
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, lhs.get(i) - rhs);
-            }
-        }
-        return out;
-    } else {
-        using common_t = common_math_t<T, typename U::data_type>;
-        r_size_t n = rhs.length();
-        r_vec<common_t> out(n);
-        int n_threads = internal::calc_threads(n);
-        if (n_threads > 1){
-            OMP_PARALLEL_FOR_SIMD(n_threads)
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, rhs.get(i) - lhs);
-            }
-        } else {
-            OMP_SIMD
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, rhs.get(i) - lhs);
-            }
-        }
-        return out;
-    }
-}
-
-template<typename T, typename U>
-requires (RVector<T> || RVector<U>)
-inline auto operator*(const T& lhs, const U& rhs) {
-    if constexpr (RVector<T> && RVector<U>){
-        r_size_t lhs_size = lhs.length();
-        r_size_t rhs_size = rhs.length();
-        if (lhs_size == 1){
-            return lhs.get(0) * rhs;
-        } else if (rhs_size == 1){
-            return lhs * rhs.get(0);
-        } else if (lhs_size == rhs_size){
-            using common_t = common_math_t<typename T::data_type, typename U::data_type>;
-            r_vec<common_t> out(lhs_size);
-            int n_threads = internal::calc_threads(lhs_size);
-            if (n_threads > 1){
-                OMP_PARALLEL_FOR_SIMD(n_threads)
-                for (r_size_t i = 0; i < lhs_size; ++i){
-                    out.set(i, lhs.get(i) * rhs.get(i));
-                }
-            } else {
-                OMP_SIMD
-                for (r_size_t i = 0; i < lhs_size; ++i){
-                    out.set(i, lhs.get(i) * rhs.get(i));
-                }
-            }
-            return out;
-        } else {
-            // Slower recycling approach
-            r_size_t n = std::max(lhs_size, rhs_size);
-            if (lhs_size == 0 || rhs_size == 0){
-                n = 0;
-            }
-            using common_t = common_math_t<typename T::data_type, typename U::data_type>;
-            r_vec<common_t> out(n);
-            for (r_size_t i = 0, lhsi = 0, rhsi = 0; i < n;
-                recycle_index(lhsi, lhs_size),
-                recycle_index(rhsi, rhs_size),
-                ++i){
-                out.set(i, lhs.get(lhsi) * rhs.get(rhsi));
-            }
-            return out;
-        }
-    } else if constexpr (RVector<T>){
-        using common_t = common_math_t<typename T::data_type, U>;
-        r_size_t n = lhs.length();
-        r_vec<common_t> out(n);
-        int n_threads = internal::calc_threads(n);
-        if (n_threads > 1){
-            OMP_PARALLEL_FOR_SIMD(n_threads)
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, lhs.get(i) * rhs);
-            }
-        } else {
-            OMP_SIMD
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, lhs.get(i) * rhs);
-            }
-        }
-        return out;
-    } else {
-        using common_t = common_math_t<T, typename U::data_type>;
-        r_size_t n = rhs.length();
-        r_vec<common_t> out(n);
-        int n_threads = internal::calc_threads(n);
-        if (n_threads > 1){
-            OMP_PARALLEL_FOR_SIMD(n_threads)
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, rhs.get(i) * lhs);
-            }
-        } else {
-            OMP_SIMD
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, rhs.get(i) * lhs);
-            }
-        }
-        return out;
-    }
-}
-
-template<typename T, typename U>
-requires (RVector<T> || RVector<U>)
-inline r_vec<r_dbl> operator/(const T& lhs, const U& rhs) {
-
-    if constexpr (RVector<T> && RVector<U>){
-        r_size_t lhs_size = lhs.length();
-        r_size_t rhs_size = rhs.length();
-
-        if (lhs_size == 1){
-            return lhs.get(0) / rhs;
-        } else if (rhs_size == 1){
-            return lhs / rhs.get(0);
-        } else if (lhs_size == rhs_size){
-            r_vec<r_dbl> out(lhs_size);
-            int n_threads = internal::calc_threads(lhs_size);
-            if (n_threads > 1){
-                OMP_PARALLEL_FOR_SIMD(n_threads)
-                for (r_size_t i = 0; i < lhs_size; ++i){
-                    out.set(i, lhs.get(i) / rhs.get(i));
-                }
-            } else {
-                OMP_SIMD
-                for (r_size_t i = 0; i < lhs_size; ++i){
-                    out.set(i, lhs.get(i) / rhs.get(i));
-                }
-            }
-            return out;
-        } else {
-            // Slower recycling approach
-            r_size_t n = std::max(lhs_size, rhs_size);
-            if (lhs_size == 0 || rhs_size == 0){
-                n = 0;
-            }
-            r_vec<r_dbl> out(n);
-            for (r_size_t i = 0, lhsi = 0, rhsi = 0; i < n;
-                recycle_index(lhsi, lhs_size),
-                recycle_index(rhsi, rhs_size),
-                ++i){
-                out.set(i, lhs.get(lhsi) / rhs.get(rhsi));
-            }
-            return out;
-        }
-    } else if constexpr (RVector<T>){
-        r_size_t n = lhs.length();
-        r_vec<r_dbl> out(n);
-        int n_threads = internal::calc_threads(n);
-        if (n_threads > 1){
-            OMP_PARALLEL_FOR_SIMD(n_threads)
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, lhs.get(i) / rhs);
-            }
-        } else {
-            OMP_SIMD
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, lhs.get(i) / rhs);
-            }
-        }
-        return out;
-    } else {
-        r_size_t n = rhs.length();
-        r_vec<r_dbl> out(n);
-        int n_threads = internal::calc_threads(n);
-        if (n_threads > 1){
-            OMP_PARALLEL_FOR_SIMD(n_threads)
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, rhs.get(i) / lhs);
-            }
-        } else {
-            OMP_SIMD
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, rhs.get(i) / lhs);
-            }
-        }
-        return out;
-    }
-}
-
-template<typename T, typename U>
-requires (RVector<T> || RVector<U>)
-inline auto operator%(const T& lhs, const U& rhs) {
-    if constexpr (RVector<T> && RVector<U>){
-        r_size_t lhs_size = lhs.length();
-        r_size_t rhs_size = rhs.length();
-        if (lhs_size == 1){
-            return lhs.get(0) % rhs;
-        } else if (rhs_size == 1){
-            return lhs % rhs.get(0);
-        } else if (lhs_size == rhs_size){
-            using common_t = common_math_t<typename T::data_type, typename U::data_type>;
-            r_vec<common_t> out(lhs_size);
-            int n_threads = internal::calc_threads(lhs_size);
-            if (n_threads > 1){
-                OMP_PARALLEL_FOR_SIMD(n_threads)
-                for (r_size_t i = 0; i < lhs_size; ++i){
-                    out.set(i, lhs.get(i) % rhs.get(i));
-                }
-            } else {
-                OMP_SIMD
-                for (r_size_t i = 0; i < lhs_size; ++i){
-                    out.set(i, lhs.get(i) % rhs.get(i));
-                }
-            }
-            return out;
-        } else {
-            // Slower recycling approach
-            r_size_t n = std::max(lhs_size, rhs_size);
-            if (lhs_size == 0 || rhs_size == 0){
-                n = 0;
-            }
-            using common_t = common_math_t<typename T::data_type, typename U::data_type>;
-            r_vec<common_t> out(n);
-            for (r_size_t i = 0, lhsi = 0, rhsi = 0; i < n;
-                recycle_index(lhsi, lhs_size),
-                recycle_index(rhsi, rhs_size),
-                ++i){
-                out.set(i, lhs.get(lhsi) % rhs.get(rhsi));
-            }
-            return out;
-        }
-    } else if constexpr (RVector<T>){
-        using common_t = common_math_t<typename T::data_type, U>;
-        r_size_t n = lhs.length();
-        r_vec<common_t> out(n);
-        int n_threads = internal::calc_threads(n);
-        if (n_threads > 1){
-            OMP_PARALLEL_FOR_SIMD(n_threads)
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, lhs.get(i) % rhs);
-            }
-        } else {
-            OMP_SIMD
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, lhs.get(i) % rhs);
-            }
-        }
-        return out;
-    } else {
-        using common_t = common_math_t<T, typename U::data_type>;
-        r_size_t n = rhs.length();
-        r_vec<common_t> out(n);
-        int n_threads = internal::calc_threads(n);
-        if (n_threads > 1){
-            OMP_PARALLEL_FOR_SIMD(n_threads)
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, rhs.get(i) % lhs);
-            }
-        } else {
-            OMP_SIMD
-            for (r_size_t i = 0; i < n; ++i){
-                out.set(i, rhs.get(i) % lhs);
-            }
-        }
-        return out;
-    }
-}
-
 #define CPPALLY_BINARY_OP_IN_PLACE(OP)                        \
 r_size_t lhs_size = lhs.length();                             \
 if constexpr (RVector<U>){                                    \
@@ -494,12 +180,25 @@ if constexpr (RVector<lhs_t> && RVector<rhs_t>){                                
   return out;                                                                                      \
 }
 
+namespace internal {
+template <RVector T, typename U>
+bool use_in_place_ops(const T& lhs, const U& rhs) noexcept {
+    if (!lhs.value.is_exclusive()){
+        return false;
+   }
+    if constexpr (RVector<U>){
+        return lhs.length() >= rhs.length();
+    }
+    return true;
+}
+}
+
 template<typename T, typename U>
 requires (RVector<T> || RVector<U>)
 inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator+(T&& lhs, const U& rhs) {
     using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
     if constexpr (std::is_same_v<T, out_t>){
-        if (lhs.value.is_exclusive() && (!RVector<U> || (RVector<U> && lhs.length() >= rhs.length()))){
+        if (internal::use_in_place_ops(lhs, rhs)){
             lhs += rhs;
             return std::move(lhs);
         }
@@ -511,7 +210,7 @@ requires (RVector<T> || RVector<U>)
 inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator-(T&& lhs, const U& rhs) {
     using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
     if constexpr (std::is_same_v<T, out_t>){
-        if (lhs.value.is_exclusive() && (!RVector<U> || (RVector<U> && lhs.length() >= rhs.length()))){
+        if (internal::use_in_place_ops(lhs, rhs)){
             lhs -= rhs;
             return std::move(lhs);
         }
@@ -523,7 +222,7 @@ requires (RVector<T> || RVector<U>)
 inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator*(T&& lhs, const U& rhs) {
     using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
     if constexpr (std::is_same_v<T, out_t>){
-        if (lhs.value.is_exclusive() && (!RVector<U> || (RVector<U> && lhs.length() >= rhs.length()))){
+        if (internal::use_in_place_ops(lhs, rhs)){
             lhs *= rhs;
             return std::move(lhs);
         }
@@ -534,12 +233,24 @@ template<typename T, typename U>
 requires (RVector<T> || RVector<U>)
 inline r_vec<r_dbl> operator/(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_dbl>>){
-        if (lhs.value.is_exclusive() && (!RVector<U> || (RVector<U> && lhs.length() >= rhs.length()))){
+        if (internal::use_in_place_ops(lhs, rhs)){
             lhs /= rhs;
             return std::move(lhs);
         }
     }
     CPPALLY_BINARY_OP(lhs, rhs, /, r_vec<r_dbl>)
+}
+template<typename T, typename U>
+requires (RVector<T> || RVector<U>)
+inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator%(T&& lhs, const U& rhs) {
+    using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
+    if constexpr (std::is_same_v<T, out_t>){
+        if (internal::use_in_place_ops(lhs, rhs)){
+            lhs %= rhs;
+            return std::move(lhs);
+        }
+    }
+    CPPALLY_BINARY_OP(lhs, rhs, %, out_t)
 }
 
 template<typename T, typename U>
