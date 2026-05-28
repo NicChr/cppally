@@ -18,12 +18,6 @@ inline constexpr r_dbl round_to_even(r_dbl x){
 
 }
 
-template <SortableType T, SortableType U>
-requires (RSortableType<T> || RSortableType<U>)
-inline constexpr r_lgl between(T x, U lo, U hi){
-  return x >= lo && x <= hi;
-}
-
 template <NumericType T, NumericType U>
 requires (RNumericType<T> || RNumericType<U>)
 inline constexpr common_r_t<T, U> min(T x, U y){
