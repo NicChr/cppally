@@ -176,6 +176,7 @@ struct r_df {
     // Inherit standard methods from r_vec<>
 
     FORWARD_METHOD(is_null)
+    FORWARD_METHOD(is_exclusive)
     FORWARD_METHOD(data)
     FORWARD_METHOD(address)
     FORWARD_METHOD(names)

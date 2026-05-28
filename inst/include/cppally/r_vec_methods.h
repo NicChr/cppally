@@ -266,7 +266,7 @@ namespace internal {
 
 template <RVector T, typename U>
 bool use_in_place_ops(const T& lhs, const U& rhs) noexcept {
-    if (!lhs.value.is_exclusive()){
+    if (!lhs.is_exclusive()){
         return false;
    }
     if constexpr (RVector<U>){
@@ -474,7 +474,7 @@ inline r_vec<r_lgl> operator&(T&& lhs, const U& rhs) {
 }
 
 inline r_vec<r_lgl> operator!(r_vec<r_lgl>&& x){
-    if (x.value.is_exclusive()){
+    if (x.is_exclusive()){
         CPPALLY_UNARY_OP_IN_PLACE(!, x)
         return std::move(x);
     } else {
@@ -484,7 +484,7 @@ inline r_vec<r_lgl> operator!(r_vec<r_lgl>&& x){
 
 template <RMathType T>
 inline r_vec<T> operator-(r_vec<T>&& x){
-    if (x.value.is_exclusive()){
+    if (x.is_exclusive()){
         CPPALLY_UNARY_OP_IN_PLACE(-, x)
         return std::move(x);
     } else {

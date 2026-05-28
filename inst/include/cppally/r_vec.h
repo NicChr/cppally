@@ -50,6 +50,10 @@ struct r_vec {
     return value.is_altrep();
   }
 
+  bool is_exclusive() const noexcept {
+    return value.is_exclusive();
+  }
+
   private:
 
   // Initialise read-only ptr to:
