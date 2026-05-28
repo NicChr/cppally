@@ -44,6 +44,13 @@ inline constexpr r_lgl operator&&(r_lgl lhs, r_lgl rhs) noexcept {
   return r_lgl{res};
 }
 
+inline constexpr r_lgl operator|(r_lgl lhs, r_lgl rhs) noexcept {
+  return lhs || rhs;
+}
+inline constexpr r_lgl operator&(r_lgl lhs, r_lgl rhs) noexcept {
+  return lhs && rhs;
+}
+
 // Operators for r_str_view
 
 inline r_lgl operator<(r_str_view lhs, r_str_view rhs) noexcept {
