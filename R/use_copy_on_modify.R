@@ -9,6 +9,15 @@
 #' no checks to shared or referenced objects. This default behaviour is
 #' generally much faster.
 #'
+#' ### Parallelisation
+#'
+#' Adding this global flag effectively kills most parallelisation.
+#' To achieve copy-on-modify we have to check whether the `r_sexp`
+#' object being modified is referenced anywhere else at each and every
+#' call to `set()`. This check (via `r_sexp::is_exclusive()`) is not thread-safe
+#' and therefore most cppally parallelisation is disabled
+#' once CPPALLY_COPY_ON_MODIFY is set.
+#'
 #' @returns
 #' Invisibly adds the `CPPALLY_COPY_ON_MODIFY` flag to Makevars.
 #'

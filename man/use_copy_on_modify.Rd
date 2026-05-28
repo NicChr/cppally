@@ -17,4 +17,13 @@ This ensures you can never modify object B's data by modifying object A
 The default behaviour is that \code{r_vec::set()} always modifies-in-place with
 no checks to shared or referenced objects. This default behaviour is
 generally much faster.
+\subsection{Parallelisation}{
+
+Adding this global flag effectively kills most parallelisation.
+To achieve copy-on-modify we have to check whether the \code{r_sexp}
+object being modified is referenced anywhere else at each and every
+call to \code{set()}. This check (via \code{r_sexp::is_exclusive()}) is not thread-safe
+and therefore most cppally parallelisation is disabled
+once CPPALLY_COPY_ON_MODIFY is set.
+}
 }
