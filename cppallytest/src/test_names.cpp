@@ -1,4 +1,5 @@
 #include <cppally.hpp>
+#include <string>
 
 using namespace cppally;
 
@@ -48,7 +49,7 @@ r_lgl test_names_growing() {
     constexpr int N = 200;
     r_vec<r_str> names_vec(N);
     for (int i = 0; i < N; ++i) {
-        names_vec.set(i, r_str("name") + as<r_str>(i));
+        names_vec.set(i, r_str(("name" + std::to_string(i)).c_str()));
     }
     r_vec<r_int> v(N);
     v.set_names(names_vec);
@@ -57,7 +58,7 @@ r_lgl test_names_growing() {
     (void) v.name_index("name0");      // build hash
 
     for (int i = 0; i < N; ++i) {
-        r_int idx = v.name_index(r_str("name") + as<r_str>(i), false);
+        r_int idx = v.name_index(r_str(("name" + std::to_string(i)).c_str()), false);
         if (is_na(idx) || unwrap(idx) != i) return r_lgl(false);
     }
 
@@ -126,7 +127,7 @@ r_lgl test_names_roundtrip_after_grow() {
     constexpr int N = 64;
     r_vec<r_str> names_vec(N);
     for (int i = 0; i < N; ++i) {
-        names_vec.set(i, r_str("k") + as<r_str>(i));
+        names_vec.set(i, r_str(("k" + std::to_string(i)).c_str()));
     }
     r_vec<r_int> v(N);
     v.set_names(names_vec);
@@ -138,7 +139,7 @@ r_lgl test_names_roundtrip_after_grow() {
     // any further mutation.
     for (int pass = 0; pass < 2; ++pass) {
         for (int i = 0; i < N; ++i) {
-            r_int idx = v.name_index(r_str("k") + as<r_str>(i), false);
+            r_int idx = v.name_index(r_str(("k" + std::to_string(i)).c_str()), false);
             if (is_na(idx) || unwrap(idx) != i) return r_lgl(false);
         }
     }
