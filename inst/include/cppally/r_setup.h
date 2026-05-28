@@ -90,10 +90,6 @@
 
 #define OMP_DO_NOTHING // Placeholder for no OMP operations
 
-#if defined(CPPALLY_COPY_ON_MODIFY) && defined(_OPENMP)
-#pragma message("CPPALLY_COPY_ON_MODIFY is enabled — OpenMP parallelism with cppally::r_vec::set() is unsafe and unsupported")
-#endif
-
 namespace cppally {
 
 using r_size_t = R_xlen_t;
