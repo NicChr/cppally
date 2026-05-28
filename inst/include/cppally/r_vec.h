@@ -247,6 +247,16 @@ struct r_vec {
       cached_names->invalidate();
   }
 
+  void ensure_exclusive() noexcept {
+    if (!is_exclusive()) [[unlikely]] {
+      r_size_t n = length();
+      r_vec<T> new_vec(n);
+      r_copy_n(new_vec, *this, 0, n);
+      safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
+      *this = std::move(new_vec);
+    }
+  }
+
   // For named vectors: find first index of name
   // `abort_on_missing` - When supplied name doesn't exist, abort, otherwise return `NA`
   template <RStringType U>
@@ -351,6 +361,9 @@ struct r_vec {
 
   // Set element (no bounds-check)
   void set(r_size_t index, const T& val) {
+    #ifdef CPPALLY_COPY_ON_MODIFY
+    ensure_exclusive();
+    #endif
       if constexpr (RStringType<T>){
         SET_STRING_ELT(value, index, val);
       } else if constexpr (is<T, r_sexp>){

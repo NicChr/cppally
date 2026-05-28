@@ -8,7 +8,7 @@ is_windows <- function(){
 
 generate_makevars <- function (
     includes, cxx_std, debug,
-    preserve_altrep, check_factors, check_data_frames
+    preserve_altrep, check_factors, check_data_frames, copy_on_modify
 ){
   out <- c(
     sprintf("CXX_STD=%s", cxx_std),
@@ -18,10 +18,13 @@ generate_makevars <- function (
     out[2] <- paste(out[2], "-DCPPALLY_PRESERVE_ALTREP")
   }
   if (check_factors){
-   out[2]  <- paste(out[2], "-DCPPALLY_CHECK_FACTORS")
+   out[2] <- paste(out[2], "-DCPPALLY_CHECK_FACTORS")
   }
   if (check_data_frames){
-    out[2]  <- paste(out[2], "-DCPPALLY_CHECK_DATA_FRAMES")
+    out[2] <- paste(out[2], "-DCPPALLY_CHECK_DATA_FRAMES")
+  }
+  if (copy_on_modify){
+    out[2] <- paste(out[2], "-DCPPALLY_COPY_ON_MODIFY")
   }
   if (debug) {
     out <- c(out, "override CXXFLAGS += -O0")
@@ -101,6 +104,8 @@ curr_env <- function(){
 #' the chance of R crashing when passing factors with invalid levels.
 #' @param check_data_frames Should data frames be validated when constructing
 #' `r_df` objects from `SEXP`? Default is `FALSE`.
+#' @param copy_on_modify Should copy-on-modify be used everywhere? Default is
+#' `FALSE`.
 #' @param dir Directory to store the source files.
 #' The default is a temporary directory via `tempfile()` which is removed when
 #' `clean = TRUE`.
@@ -201,6 +206,7 @@ cpp_source <- function(file, code = NULL, env = parent.frame(),
                        preserve_altrep = FALSE,
                        check_factors = FALSE,
                        check_data_frames = FALSE,
+                       copy_on_modify = FALSE,
                        cxx_std = Sys.getenv("CXX_STD", "CXX20"),
                        dir = tempfile()){
   stop_unless_installed(
@@ -253,7 +259,7 @@ cpp_source <- function(file, code = NULL, env = parent.frame(),
                                       use_package = TRUE)
   makevars_content <- generate_makevars(
     includes, cxx_std, debug,
-    preserve_altrep, check_factors, check_data_frames
+    preserve_altrep, check_factors, check_data_frames, copy_on_modify
     )
   brio::write_lines(makevars_content, file.path(new_dir, "Makevars"))
   shared_lib_name <- paste0(tools::file_path_sans_ext(new_file_name), .Platform$dynlib.ext)
@@ -278,6 +284,7 @@ source_single_exprs <- function(exprs, env = parent.frame(), clean = TRUE,
                                 preserve_altrep = FALSE,
                                 check_factors = FALSE,
                                 check_data_frames = FALSE,
+                                copy_on_modify = FALSE,
                                 cxx_std = Sys.getenv("CXX_STD", "CXX20")){
   if (length(exprs) == 0){
     cli::cli_abort("{.arg exprs} is length 0, please supply a valid input")
@@ -324,7 +331,8 @@ source_single_exprs <- function(exprs, env = parent.frame(), clean = TRUE,
     debug = debug, cxx_std = cxx_std,
     preserve_altrep = preserve_altrep,
     check_factors = check_factors,
-    check_data_frames = check_data_frames
+    check_data_frames = check_data_frames,
+    copy_on_modify = copy_on_modify,
   )
 }
 #' @rdname cpp_source
@@ -334,6 +342,7 @@ cpp_eval <- function(code, env = curr_env(), clean = TRUE,
                      preserve_altrep = FALSE,
                      check_factors = FALSE,
                      check_data_frames = FALSE,
+                     copy_on_modify = FALSE,
                      simplify = TRUE,
                      cxx_std = Sys.getenv("CXX_STD", "CXX20")){
   curr_objs <- names(env)
@@ -343,6 +352,7 @@ cpp_eval <- function(code, env = curr_env(), clean = TRUE,
     preserve_altrep = preserve_altrep,
     check_factors = check_factors,
     check_data_frames = check_data_frames,
+    copy_on_modify = copy_on_modify,
     cxx_std = cxx_std
   )
   fn_names <- paste0("f", seq_along(code))

@@ -15,6 +15,7 @@ cpp_source(
   preserve_altrep = FALSE,
   check_factors = FALSE,
   check_data_frames = FALSE,
+  copy_on_modify = FALSE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20"),
   dir = tempfile()
 )
@@ -28,6 +29,7 @@ cpp_eval(
   preserve_altrep = FALSE,
   check_factors = FALSE,
   check_data_frames = FALSE,
+  copy_on_modify = FALSE,
   simplify = TRUE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20")
 )
@@ -60,6 +62,9 @@ the chance of R crashing when passing factors with invalid levels.}
 
 \item{check_data_frames}{Should data frames be validated when constructing
 \code{r_df} objects from \code{SEXP}? Default is \code{FALSE}.}
+
+\item{copy_on_modify}{Should copy-on-modify be used everywhere? Default is
+\code{FALSE}.}
 
 \item{cxx_std}{C++ standard to use. Should be >= C++20.}
 
