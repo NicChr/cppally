@@ -759,8 +759,13 @@ inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_
   using data_t = typename T::data_type;
 
   if constexpr (!RObject<data_t>){
-    
-    // make_exclusive_if_copy_on_modify();
+
+    if (!target.is_exclusive()){
+      for (r_size_t i = 0; i < n; ++i) {
+        target.set(target_offset + i, source.view(i));
+      }
+      return;
+    }
 
     auto* RESTRICT p_target = target.data();
     auto* RESTRICT p_source = source.data();
@@ -776,7 +781,12 @@ inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_
     }
   } else if constexpr (RStringType<data_t>){
 
-    // make_exclusive_if_copy_on_modify();
+    if (!target.is_exclusive()){
+      for (r_size_t i = 0; i < n; ++i) {
+        target.set(target_offset + i, source.view(i));
+      }
+      return;
+    }
 
     // Cast const SEXP* to SEXP* and write directly
     auto* p_target = const_cast<unwrap_t<data_t>*>(target.data());
