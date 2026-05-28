@@ -6,13 +6,18 @@
 
 // Vectorised binary operators: +,-,*,/,&,|,+=,-=,*=,/=,==,<=,<,>=,>
 // Vectorised unary operators: !,-,
+// All operators are only for R vectors containing elements of RScalar
 
 namespace cppally {
 
 #define CPPALLY_UNARY_OP_IN_PLACE(OP, X)  \
 r_size_t n = X.length();                  \
 int n_threads = internal::calc_threads(n);\
-if (n_threads > 1){                       \
+if constexpr (RObject<typename std::remove_cvref_t<decltype(X)>::data_type>){ \
+  for (r_size_t i = 0; i < n; ++i){       \
+    X.set(i, OP X.view(i));               \
+  }                                       \
+} else if (n_threads > 1){                \
   OMP_PARALLEL_FOR_SIMD(n_threads)        \
   for (r_size_t i = 0; i < n; ++i){       \
     X.set(i, OP X.view(i));               \
@@ -29,7 +34,11 @@ r_size_t n = X.length();                       \
 using out_t = std::remove_cvref_t<decltype(X)>;\
 out_t out(n);                                  \
 int n_threads = internal::calc_threads(n);     \
-if (n_threads > 1){                            \
+if constexpr (RObject<typename std::remove_cvref_t<decltype(out)>::data_type>){ \
+  for (r_size_t i = 0; i < n; ++i){            \
+    out.set(i, OP X.view(i));                  \
+  }                                            \
+} else if (n_threads > 1){                     \
   OMP_PARALLEL_FOR_SIMD(n_threads)             \
   for (r_size_t i = 0; i < n; ++i){            \
     out.set(i, OP X.view(i));                  \
@@ -49,7 +58,9 @@ if constexpr (RVector<U>){                                                      
   if (rhs_size == 1){                                                             \
       auto val = rhs.view(0);                                                     \
       int n_threads = internal::calc_threads(lhs_size);                           \
-      if (n_threads > 1){                                                         \
+      if constexpr (RObject<typename std::remove_cvref_t<decltype(lhs)>::data_type>){                 \
+        for (r_size_t i = 0; i < lhs_size; ++i){ lhs.set(i, lhs.view(i) OP val); }\
+      } else if (n_threads > 1){                                                  \
         OMP_PARALLEL_FOR_SIMD(n_threads)                                          \
         for (r_size_t i = 0; i < lhs_size; ++i){ lhs.set(i, lhs.view(i) OP val); }\
       } else {                                                                    \
@@ -59,7 +70,11 @@ if constexpr (RVector<U>){                                                      
   } else if (lhs_size == rhs_size){                                               \
     {                                                                             \
       int n_threads = internal::calc_threads(lhs_size);                           \
-      if (n_threads > 1){                                                         \
+      if constexpr (RObject<typename std::remove_cvref_t<decltype(lhs)>::data_type>){                 \
+        for (r_size_t i = 0; i < lhs_size; ++i){                                  \
+          lhs.set(i, lhs.get(i) OP rhs.get(i));                                   \
+        }                                                                         \
+      } else if (n_threads > 1){                                                  \
         OMP_PARALLEL_FOR_SIMD(n_threads)                                          \
         for (r_size_t i = 0; i < lhs_size; ++i){                                  \
           lhs.set(i, lhs.get(i) OP rhs.get(i));                                   \
@@ -82,7 +97,11 @@ if constexpr (RVector<U>){                                                      
 } else {                                                                          \
   r_size_t n = lhs_size;                                                          \
   int n_threads = internal::calc_threads(n);                                      \
-  if (n_threads > 1){                                                             \
+  if constexpr (RObject<typename std::remove_cvref_t<decltype(lhs)>::data_type>){                     \
+    for (r_size_t i = 0; i < n; ++i){                                             \
+      lhs.set(i, lhs.get(i) OP rhs);                                              \
+    }                                                                             \
+  } else if (n_threads > 1){                                                      \
     OMP_PARALLEL_FOR_SIMD(n_threads)                                              \
     for (r_size_t i = 0; i < n; ++i){                                             \
       lhs.set(i, lhs.get(i) OP rhs);                                              \
@@ -137,7 +156,11 @@ if constexpr (RVector<lhs_t> && RVector<rhs_t>){                                
   if (n2 == 1){                                                                                    \
     res_t out(n);                                                                                  \
     auto val = rhs.view(0);                                                                        \
-    if (n_threads > 1){                                                                            \
+    if constexpr (RObject<typename std::remove_cvref_t<decltype(out)>::data_type>){                                    \
+      for (r_size_t i = 0; i < n; ++i){                                                            \
+        out.set(i, lhs.view(i) OP val);                                                            \
+      }                                                                                            \
+    } else if (n_threads > 1){                                                                     \
       OMP_PARALLEL_FOR_SIMD(n_threads)                                                             \
       for (r_size_t i = 0; i < n; ++i){                                                            \
         out.set(i, lhs.view(i) OP val);                                                            \
@@ -152,7 +175,11 @@ if constexpr (RVector<lhs_t> && RVector<rhs_t>){                                
   } else if (n1 == 1){                                                                             \
     res_t out(n);                                                                                  \
     auto val = lhs.view(0);                                                                        \
-    if (n_threads > 1){                                                                            \
+    if constexpr (RObject<typename std::remove_cvref_t<decltype(out)>::data_type>){                                    \
+      for (r_size_t i = 0; i < n; ++i){                                                            \
+        out.set(i, val OP rhs.view(i));                                                            \
+      }                                                                                            \
+    } else if (n_threads > 1){                                                                     \
       OMP_PARALLEL_FOR_SIMD(n_threads)                                                             \
       for (r_size_t i = 0; i < n; ++i){                                                            \
         out.set(i, val OP rhs.view(i));                                                            \
@@ -166,7 +193,11 @@ if constexpr (RVector<lhs_t> && RVector<rhs_t>){                                
     return out;                                                                                    \
   } else if (n1 == n2){                                                                            \
     res_t out(n);                                                                                  \
-    if (n_threads > 1){                                                                            \
+    if constexpr (RObject<typename std::remove_cvref_t<decltype(out)>::data_type>){                                    \
+      for (r_size_t i = 0; i < n; ++i){                                                            \
+        out.set(i, lhs.view(i) OP rhs.view(i));                                                    \
+      }                                                                                            \
+    } else if (n_threads > 1){                                                                     \
       OMP_PARALLEL_FOR_SIMD(n_threads)                                                             \
       for (r_size_t i = 0; i < n; ++i){                                                            \
         out.set(i, lhs.view(i) OP rhs.view(i));                                                    \
@@ -193,7 +224,11 @@ if constexpr (RVector<lhs_t> && RVector<rhs_t>){                                
   r_size_t n = lhs.length();                                                                       \
   res_t out(n);                                                                                    \
   int n_threads = internal::calc_threads(n);                                                       \
-  if (n_threads > 1){                                                                              \
+  if constexpr (RObject<typename std::remove_cvref_t<decltype(out)>::data_type>){                                      \
+    for (r_size_t i = 0; i < n; ++i){                                                              \
+      out.set(i, lhs.view(i) OP rhs);                                                              \
+    }                                                                                              \
+  } else if (n_threads > 1){                                                                       \
     OMP_PARALLEL_FOR_SIMD(n_threads)                                                               \
     for (r_size_t i = 0; i < n; ++i){                                                              \
       out.set(i, lhs.view(i) OP rhs);                                                              \
@@ -209,7 +244,11 @@ if constexpr (RVector<lhs_t> && RVector<rhs_t>){                                
   r_size_t n = rhs.length();                                                                       \
   res_t out(n);                                                                                    \
   int n_threads = internal::calc_threads(n);                                                       \
-  if (n_threads > 1){                                                                              \
+  if constexpr (RObject<typename std::remove_cvref_t<decltype(out)>::data_type>){                                      \
+    for (r_size_t i = 0; i < n; ++i){                                                              \
+      out.set(i, lhs OP rhs.view(i));                                                              \
+    }                                                                                              \
+  } else if (n_threads > 1){                                                                       \
     OMP_PARALLEL_FOR_SIMD(n_threads)                                                               \
     for (r_size_t i = 0; i < n; ++i){                                                              \
       out.set(i, lhs OP rhs.view(i));                                                              \
@@ -224,6 +263,7 @@ if constexpr (RVector<lhs_t> && RVector<rhs_t>){                                
 }
 
 namespace internal {
+
 template <RVector T, typename U>
 bool use_in_place_ops(const T& lhs, const U& rhs) noexcept {
     if (!lhs.value.is_exclusive()){
@@ -237,7 +277,11 @@ bool use_in_place_ops(const T& lhs, const U& rhs) noexcept {
 }
 
 template<typename T, typename U>
-requires (RVector<T> || RVector<U>)
+requires (
+    (RAtomicVector<T> && RAtomicVector<U>) ||
+    (RAtomicVector<T> && RScalar<U>) ||
+    (RScalar<T> && RAtomicVector<U>)
+)
 inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator+(T&& lhs, const U& rhs) {
     using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
     if constexpr (std::is_same_v<T, out_t>){
@@ -248,8 +292,13 @@ inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator+(T&& lhs, c
     }
     CPPALLY_BINARY_OP(lhs, rhs, +, out_t)
 }
+
 template<typename T, typename U>
-requires (RVector<T> || RVector<U>)
+requires (
+    (RAtomicVector<T> && RAtomicVector<U>) ||
+    (RAtomicVector<T> && RScalar<U>) ||
+    (RScalar<T> && RAtomicVector<U>)
+)
 inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator-(T&& lhs, const U& rhs) {
     using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
     if constexpr (std::is_same_v<T, out_t>){
@@ -261,7 +310,11 @@ inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator-(T&& lhs, c
     CPPALLY_BINARY_OP(lhs, rhs, -, out_t)
 }
 template<typename T, typename U>
-requires (RVector<T> || RVector<U>)
+requires (
+    (RAtomicVector<T> && RAtomicVector<U>) ||
+    (RAtomicVector<T> && RScalar<U>) ||
+    (RScalar<T> && RAtomicVector<U>)
+)
 inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator*(T&& lhs, const U& rhs) {
     using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
     if constexpr (std::is_same_v<T, out_t>){
@@ -273,7 +326,11 @@ inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator*(T&& lhs, c
     CPPALLY_BINARY_OP(lhs, rhs, *, out_t)
 }
 template<typename T, typename U>
-requires (RVector<T> || RVector<U>)
+requires (
+    (RAtomicVector<T> && RAtomicVector<U>) ||
+    (RAtomicVector<T> && RScalar<U>) ||
+    (RScalar<T> && RAtomicVector<U>)
+)
 inline r_vec<r_dbl> operator/(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_dbl>>){
         if (internal::use_in_place_ops(lhs, rhs)){
@@ -284,7 +341,11 @@ inline r_vec<r_dbl> operator/(T&& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, /, r_vec<r_dbl>)
 }
 template<typename T, typename U>
-requires (RVector<T> || RVector<U>)
+requires (
+    (RAtomicVector<T> && RAtomicVector<U>) ||
+    (RAtomicVector<T> && RScalar<U>) ||
+    (RScalar<T> && RAtomicVector<U>)
+)
 inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator%(T&& lhs, const U& rhs) {
     using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
     if constexpr (std::is_same_v<T, out_t>){
