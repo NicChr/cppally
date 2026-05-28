@@ -75,7 +75,6 @@ struct r_sexp {
 
   // Implicit conversion to SEXP
   operator SEXP() const noexcept { return value; }
-  constexpr SEXP data() const noexcept { return value; }
 
   // convert SEXP -> r_sexp directly without extra protection
   explicit r_sexp(SEXP s, internal::view_tag) noexcept : value(s), ctl_(nullptr) {}
