@@ -27,6 +27,9 @@ struct r_str {
   explicit r_str(r_sexp x) : value(std::move(x)) {
     internal::check_valid_construction<r_str>(value);
   }
+  explicit r_str(SEXP x, internal::no_checks_tag) : value{x} {}
+  explicit r_str(SEXP x, internal::view_tag, internal::no_checks_tag) : value(x) {}
+
   explicit r_str(const char *x) : value(Rf_mkCharCE(x, CE_UTF8)) {}
   // Implicit r_str -> SEXP 
   operator SEXP() const noexcept { return value; }
@@ -67,6 +70,8 @@ struct r_str_view {
   explicit r_str_view(SEXP x, internal::view_tag) : value(x) {
     internal::check_valid_construction<r_str_view>(value);
   }
+  explicit r_str_view(SEXP x, internal::no_checks_tag) : value{x} {}
+  explicit r_str_view(SEXP x, internal::view_tag, internal::no_checks_tag) : value(x) {}
   // explicit r_str_view(const char *x) : value(Rf_mkCharCE(x, CE_UTF8)) {}
   // Implicit r_str_view -> SEXP
   operator SEXP() const noexcept { return value; }

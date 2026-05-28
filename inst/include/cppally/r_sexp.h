@@ -7,11 +7,6 @@
 
 namespace cppally {
 
-namespace internal {
-// Helper struct to allow for overloading SEXP-based constructors without re-protecting them
-struct view_tag {};
-}
-
 // General SEXP, automatic protection handled via cppally-managed vector list
 //
 // The SEXP protection mechanism here is inspired by cpp11::sexp

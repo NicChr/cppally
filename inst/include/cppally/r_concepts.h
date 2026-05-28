@@ -30,7 +30,8 @@ inline constexpr bool any = (is<T, Args> || ...);
 // Forward declare R types
 
 namespace internal {
-struct view_tag;
+struct view_tag {};
+struct no_checks_tag {};
 }
 
 struct r_lgl;

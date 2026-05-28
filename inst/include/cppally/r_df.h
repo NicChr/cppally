@@ -9,8 +9,6 @@ namespace cppally {
 
 namespace internal {
 
-struct no_checks_tag {};
-
 // Lazily cache data frame class for re-use
 inline r_vec<r_str_view> data_frame_class(){
     static r_vec<r_str_view> df_cls = r_vec<r_str_view>(1, r_str_view(cached_str<"data.frame">()));

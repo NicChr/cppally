@@ -312,7 +312,7 @@ struct r_vec {
   }
 
   // Get element (no bounds-check)
-  T get(r_size_t index) const {
+  T get(r_size_t index) const requires (!RStringType<T>) {
     #ifdef CPPALLY_PRESERVE_ALTREP
     if (m_ptr) [[likely]] {
       return T(m_ptr[index]);
@@ -321,6 +321,23 @@ struct r_vec {
     }
     #else
     return T(m_ptr[index]);
+    #endif
+  }
+
+  // Split get into two constrained members - r_str/r_str_view are special cases where 
+  // their SEXP type is verified on construction
+  // Since r_vec<r_str> has been verified on construction as a valid STRSXP already, 
+  // this means all its elements will be valid CHARSXP and hence we can avoid re-checking on element access
+
+  T get(r_size_t index) const requires (RStringType<T>) {
+    #ifdef CPPALLY_PRESERVE_ALTREP
+    if (m_ptr) [[likely]] {
+      return T(m_ptr[index], internal::no_checks_tag{});
+    } else {
+      return T(internal::elt<T>(value, index), internal::no_checks_tag{});
+    }
+    #else
+    return T(m_ptr[index], internal::no_checks_tag{});
     #endif
   }
   
@@ -335,7 +352,7 @@ struct r_vec {
 
   // View element (like `get()` but elements must be short-lived)
   // Element must not outlive the parent vector
-  T view(r_size_t index) const {
+  T view(r_size_t index) const requires (!RStringType<T>) {
     if constexpr (std::is_constructible_v<data_type, unwrap_t<data_type>, internal::view_tag>) {
       #ifdef CPPALLY_PRESERVE_ALTREP
       if (m_ptr) [[likely]] {
@@ -357,6 +374,17 @@ struct r_vec {
       return T(m_ptr[index]);
       #endif
     }
+  }
+  T view(r_size_t index) const requires (RStringType<T>) {
+    #ifdef CPPALLY_PRESERVE_ALTREP
+    if (m_ptr) [[likely]] {
+      return T(m_ptr[index], internal::view_tag{}, internal::no_checks_tag{});
+    } else {
+      return T(internal::elt<T>(value, index), internal::view_tag{}, internal::no_checks_tag{});
+    }
+    #else
+    return T(m_ptr[index], internal::view_tag{}, internal::no_checks_tag{});
+    #endif
   }
 
   template <RStringType U>
