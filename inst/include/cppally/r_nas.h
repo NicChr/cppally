@@ -115,16 +115,6 @@ inline constexpr bool is_na(r_dbl const& x) noexcept {
 }
 
 template<>
-inline bool is_na(r_str_view const& x) noexcept {
-  return unwrap(x) == unwrap(na_str);
-}
-
-template<>
-inline bool is_na(r_str const& x) noexcept {
-  return unwrap(x) == unwrap(na_str);
-}
-
-template<>
 inline constexpr bool is_na(r_cplx const& x) noexcept {
   return is_na(x.re()) || is_na(x.im());
 }
