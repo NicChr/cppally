@@ -87,7 +87,15 @@ struct r_sexp {
   bool is_altrep() const noexcept {
     return static_cast<bool>(ALTREP(value));
   }
-  
+
+  // Is this r_sexp the only owner? Checks cppally's refcount (how many objects share the same protect_cell)
+  // and R's C refcount (via NOT_SHARED = REFCNT <= 1)
+  // Both conditions must be true
+  // Useful for conditional in-place manipulation (e.g. in vector math ops)
+  bool is_exclusive() const noexcept {
+    return ctl_ != nullptr && ctl_->refs == 1 && NOT_SHARED(value);
+  }
+
   r_size_t length() const {
     static bool warned = false;
     if (!warned) {
