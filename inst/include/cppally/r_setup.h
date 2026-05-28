@@ -58,7 +58,8 @@
 #define OBJSXP S4SXP
 #endif
 
-#ifdef _OPENMP
+// Disable custom OMP macros when copy-on-modify behaviour is specified
+#if defined(_OPENMP) && !defined(CPPALLY_COPY_ON_MODIFY)
 #include <omp.h>
 #define OMP_PRAGMA(x) _Pragma(#x)
 #define OMP_NUM_PROCS omp_get_num_procs()
@@ -88,6 +89,10 @@
 #endif
 
 #define OMP_DO_NOTHING // Placeholder for no OMP operations
+
+#if defined(CPPALLY_COPY_ON_MODIFY) && defined(_OPENMP)
+#pragma message("CPPALLY_COPY_ON_MODIFY is enabled — OpenMP parallelism with cppally::r_vec::set() is unsafe and unsupported")
+#endif
 
 namespace cppally {
 
