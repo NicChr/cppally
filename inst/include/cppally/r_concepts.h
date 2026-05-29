@@ -288,11 +288,9 @@ inline consteval bool can_definitely_be_int64(){
     return false;
 }
 
-// C/C++ -> RVal typenames
-// While these aren't the only ways of constructing RVals, they are many-to-one and non-ambiguous
+// C/C++ -> RScalar mappings
+// RScalar maps to RScalar (identity)
 
-// This is essentially a map of defined non-RVal to RVal conversion operators
-// Allowing any of these to be cast to an RVal via static_cast<>
 template <typename T>
 struct r_scalar_mapping {};
 
@@ -317,28 +315,11 @@ struct r_scalar_mapping<T> {
 >;
 };
 
-// template <RAtomicVector T>
-// struct r_scalar_mapping<T> { using type = typename T::data_type; };
-// template <RFactor T>
-// struct r_scalar_mapping<T> { using type = r_str; };
-
-template <typename T>
-struct r_val_mapping : r_scalar_mapping<T> {};
-
-template<> struct r_val_mapping<r_sexp>                      { using type = r_sexp; };
-template<> struct r_val_mapping<SEXP>                        { using type = r_sexp; };
-// R vectors & other containers
-template <RComposite T>
-struct r_val_mapping<T> { using type = r_sexp; };
-
 }
-// C++ Scalar -> R Scalar
+
+// -> R Scalar
 template <typename T>
 using as_r_scalar_t = typename internal::r_scalar_mapping<std::remove_cvref_t<T>>::type;
-// Type -> RVal type
-template <typename T>
-using as_r_val_t = typename internal::r_val_mapping<std::remove_cvref_t<T>>::type;
-
 
 // Can type be constructed/static_cast to RScalar type?
 template <typename T>
@@ -346,46 +327,53 @@ concept CastableToRScalar = requires {
     typename as_r_scalar_t<T>;
 };
 
-// Can type be constructed/static_cast to RVal type?
-template <typename T>
-concept CastableToRVal = requires {
-    typename as_r_val_t<T>;
-};
-
 namespace internal {
+
+// Type -> RVector
+template <typename T>
+struct r_vector_mapping {};
+
+template <CastableToRScalar T>
+struct r_vector_mapping<T> {
+    using type = r_vec<as_r_scalar_t<T>>; 
+};
+template <RSexpType T>
+struct r_vector_mapping<T> { 
+    using type = r_vec<r_sexp>; 
+};
+template <RVector T>
+struct r_vector_mapping<T> { 
+    using type = T; 
+};
 
 // Type -> RComposite
 template <typename T>
-struct as_r_composite_type_impl {
-    static_assert(always_false<T>, "as_r_composite_t: unsupported type");
-};
+struct r_composite_mapping;
 
-template <RComposite T>
-struct as_r_composite_type_impl<T> {
-    using type = T;
-};
-template <RScalar T>
-struct as_r_composite_type_impl<T> {
-    using type = r_vec<T>;
+template <CastableToRScalar T>
+struct r_composite_mapping<T> {
+    using type = r_vec<as_r_scalar_t<T>>;
 };
 template <RSexpType T>
-struct as_r_composite_type_impl<T> {
+struct r_composite_mapping<T> {
     using type = r_vec<r_sexp>;
 };
-template <RSymbolType T>
-struct as_r_composite_type_impl<T> {
-    using type = r_vec<r_sexp>;
-};
-template <CastableToRScalar T>
-requires (!RScalar<T> && !RSexpType<T> && !RSymbolType<T> && CppScalar<T>)
-struct as_r_composite_type_impl<T> {
-    using type = r_vec<as_r_scalar_t<T>>;
+template <RComposite T>
+struct r_composite_mapping<T> {
+    using type = T;
 };
 
 }
 
+// r_sexp is treated as a list element in all cases
+// Therefore it gets promoted to r_vec<r_sexp> in as_r_vector_t/as_r_composite_t
+
+// -> R Vector
 template <typename T>
-using as_r_composite_t = typename internal::as_r_composite_type_impl<std::remove_cvref_t<T>>::type;
+using as_r_vector_t = typename internal::r_vector_mapping<std::remove_cvref_t<T>>::type;
+// -> RVector or RFactor or RDataFrame
+template <typename T>
+using as_r_composite_t = typename internal::r_composite_mapping<std::remove_cvref_t<T>>::type;
 
 namespace internal {
 
@@ -393,13 +381,13 @@ template <typename T>
 struct inherited_type_impl { 
     using type = T; 
 };
-template <typename T>
+template <RScalar T>
 requires requires { typename std::remove_cvref_t<T>::inherited_type; }
 struct inherited_type_impl<T> { 
     using type = typename std::remove_cvref_t<T>::inherited_type; 
 };
 
-template <RVal T>
+template <RScalar T>
 using inherited_type_t = typename internal::inherited_type_impl<std::remove_cvref_t<T>>::type;
 
 template <typename T>
@@ -448,8 +436,8 @@ consteval uint8_t r_type_rank() {
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>) // At least one RMathType
 struct common_r_math_impl {
-    using lhs_math_t = as_r_val_t<T>;
-    using rhs_math_t = as_r_val_t<U>;
+    using lhs_math_t = as_r_scalar_t<T>;
+    using rhs_math_t = as_r_scalar_t<U>;
 
     static constexpr uint8_t rank_t = r_type_rank<lhs_math_t>();
     static constexpr uint8_t rank_u = r_type_rank<rhs_math_t>();
@@ -543,7 +531,6 @@ using common_math_t = typename internal::common_r_math_impl<T, U>::type;
 
 template <typename... Ts>
 using common_r_t = typename internal::common_r_fold<Ts...>::type;
-
 
 }
 

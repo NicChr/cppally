@@ -264,6 +264,9 @@ if constexpr (RAtomicVector<lhs_t> && RAtomicVector<rhs_t>){                    
 
 namespace internal {
 
+template <typename T>
+concept RMathVector = RVector<T> && RMathType<typename std::remove_cvref_t<T>::data_type>;
+
 template <RAtomicVector T, typename U>
 bool use_in_place_ops(const T& lhs, const U& rhs) noexcept {
     if (!lhs.is_exclusive()){
@@ -276,14 +279,22 @@ bool use_in_place_ops(const T& lhs, const U& rhs) noexcept {
 }
 }
 
+template <typename T, typename U>
+requires (
+    (internal::RMathVector<T> && internal::RMathVector<U>) ||
+    (internal::RMathVector<T> && MathType<U>) ||
+    (MathType<T> && internal::RMathVector<U>)
+)
+using common_math_vec_t = r_vec<common_math_t<typename as_r_vector_t<T>::data_type, typename as_r_vector_t<U>::data_type>>;
+
 template<typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && Scalar<U>) ||
-    (Scalar<T> && RAtomicVector<U>)
+    (internal::RMathVector<T> && internal::RMathVector<U>) ||
+    (internal::RMathVector<T> && MathType<U>) ||
+    (MathType<T> && internal::RMathVector<U>)
 )
-inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator+(T&& lhs, const U& rhs) {
-    using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
+inline common_math_vec_t<T, U> operator+(T&& lhs, const U& rhs) {
+    using out_t = common_math_vec_t<T, U>;
     if constexpr (std::is_same_v<T, out_t>){
         if (internal::use_in_place_ops(lhs, rhs)){
             lhs += rhs;
@@ -295,12 +306,12 @@ inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator+(T&& lhs, c
 
 template<typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && Scalar<U>) ||
-    (Scalar<T> && RAtomicVector<U>)
+    (internal::RMathVector<T> && internal::RMathVector<U>) ||
+    (internal::RMathVector<T> && MathType<U>) ||
+    (MathType<T> && internal::RMathVector<U>)
 )
-inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator-(T&& lhs, const U& rhs) {
-    using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
+inline common_math_vec_t<T, U> operator-(T&& lhs, const U& rhs) {
+    using out_t = common_math_vec_t<T, U>;
     if constexpr (std::is_same_v<T, out_t>){
         if (internal::use_in_place_ops(lhs, rhs)){
             lhs -= rhs;
@@ -311,12 +322,12 @@ inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator-(T&& lhs, c
 }
 template<typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && Scalar<U>) ||
-    (Scalar<T> && RAtomicVector<U>)
+    (internal::RMathVector<T> && internal::RMathVector<U>) ||
+    (internal::RMathVector<T> && MathType<U>) ||
+    (MathType<T> && internal::RMathVector<U>)
 )
-inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator*(T&& lhs, const U& rhs) {
-    using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
+inline common_math_vec_t<T, U> operator*(T&& lhs, const U& rhs) {
+    using out_t = common_math_vec_t<T, U>;
     if constexpr (std::is_same_v<T, out_t>){
         if (internal::use_in_place_ops(lhs, rhs)){
             lhs *= rhs;
@@ -327,9 +338,9 @@ inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator*(T&& lhs, c
 }
 template<typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && Scalar<U>) ||
-    (Scalar<T> && RAtomicVector<U>)
+    (internal::RMathVector<T> && internal::RMathVector<U>) ||
+    (internal::RMathVector<T> && MathType<U>) ||
+    (MathType<T> && internal::RMathVector<U>)
 )
 inline r_vec<r_dbl> operator/(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_dbl>>){
@@ -342,12 +353,12 @@ inline r_vec<r_dbl> operator/(T&& lhs, const U& rhs) {
 }
 template<typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && Scalar<U>) ||
-    (Scalar<T> && RAtomicVector<U>)
+    (internal::RMathVector<T> && internal::RMathVector<U>) ||
+    (internal::RMathVector<T> && MathType<U>) ||
+    (MathType<T> && internal::RMathVector<U>)
 )
-inline common_r_t<as_r_composite_t<T>, as_r_composite_t<U>> operator%(T&& lhs, const U& rhs) {
-    using out_t = common_r_t<as_r_composite_t<T>, as_r_composite_t<U>>;
+inline common_math_vec_t<T, U> operator%(T&& lhs, const U& rhs) {
+    using out_t = common_math_vec_t<T, U>;
     if constexpr (std::is_same_v<T, out_t>){
         if (internal::use_in_place_ops(lhs, rhs)){
             lhs %= rhs;
