@@ -53,7 +53,7 @@ return out;
 
 #define CPPALLY_BINARY_OP_IN_PLACE(OP)                                            \
 r_size_t lhs_size = lhs.length();                                                 \
-if constexpr (RVector<U>){                                                        \
+if constexpr (RAtomicVector<U>){                                                        \
   r_size_t rhs_size = rhs.length();                                               \
   if (rhs_size == 1){                                                             \
       auto val = rhs.view(0);                                                     \
@@ -114,31 +114,31 @@ if constexpr (RVector<U>){                                                      
   }                                                                               \
 }
 
-template<RVector T, typename U>
+template<RAtomicVector T, typename U>
 inline T& operator+=(T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP_IN_PLACE(+)
     return lhs;
 }
 
-template<RVector T, typename U>
+template<RAtomicVector T, typename U>
 inline T& operator-=(T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP_IN_PLACE(-)
     return lhs;
 }
 
-template<RVector T, typename U>
+template<RAtomicVector T, typename U>
 inline T& operator*=(T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP_IN_PLACE(*)
     return lhs;
 }
 
-template<RVector T, typename U>
+template<RAtomicVector T, typename U>
 inline T& operator/=(T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP_IN_PLACE(/)
     return lhs;
 }
 
-template<RVector T, typename U>
+template<RAtomicVector T, typename U>
 inline T& operator%=(T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP_IN_PLACE(%)
     return lhs;
@@ -147,7 +147,7 @@ inline T& operator%=(T& lhs, const U& rhs) {
 #define CPPALLY_BINARY_OP(lhs, rhs, OP, res_t)                                                       \
 using lhs_t = decltype(lhs);                                                                       \
 using rhs_t = decltype(rhs);                                                                       \
-if constexpr (RVector<lhs_t> && RVector<rhs_t>){                                                   \
+if constexpr (RAtomicVector<lhs_t> && RAtomicVector<rhs_t>){                                                   \
   r_size_t n1 = lhs.length();                                                                      \
   r_size_t n2 = rhs.length();                                                                      \
   r_size_t n = std::max(n1, n2);                                                                   \
@@ -220,7 +220,7 @@ if constexpr (RVector<lhs_t> && RVector<rhs_t>){                                
     return out;                                                                                    \
   }                                                                                                \
   /*Cases where one is a scalar*/                                                                  \
-} else if constexpr (RVector<lhs_t>) {                                                             \
+} else if constexpr (RAtomicVector<lhs_t>) {                                                             \
   r_size_t n = lhs.length();                                                                       \
   res_t out(n);                                                                                    \
   int n_threads = internal::calc_threads(n);                                                       \
@@ -264,12 +264,12 @@ if constexpr (RVector<lhs_t> && RVector<rhs_t>){                                
 
 namespace internal {
 
-template <RVector T, typename U>
+template <RAtomicVector T, typename U>
 bool use_in_place_ops(const T& lhs, const U& rhs) noexcept {
     if (!lhs.is_exclusive()){
         return false;
    }
-    if constexpr (RVector<U>){
+    if constexpr (RAtomicVector<U>){
         return lhs.length() >= rhs.length();
     }
     return true;
