@@ -395,16 +395,17 @@ struct unwrapped_type {
     using type = T;
 };
 
-template <RVal T>
-struct unwrapped_type<T> {
-    // Recursively call unwrapped_type on the inner type
-    using type = typename unwrapped_type<typename T::value_type>::type;
-};
-template <typename T>
-requires (RObject<T> && !RVal<T>)
+template <RObject T>
 struct unwrapped_type<T> {
     // All R vectors + other R objects contain SEXP
     using type = SEXP;
+};
+
+template <RScalar T>
+requires (!RObject<T>)
+struct unwrapped_type<T> {
+    // Recursively call unwrapped_type on the inner type
+    using type = typename unwrapped_type<typename T::value_type>::type;
 };
 
 }
@@ -512,6 +513,10 @@ struct common_r_fold;
 
 template <typename T>
 struct common_r_fold<T> { using type = T; };
+
+template <typename T, typename U>
+    requires requires { typename common_r_type_impl<T, U>::type; }
+struct common_r_fold<T, U> { using type = typename common_r_type_impl<T, U>::type; };
 
 template <typename T, typename U, typename... Rest>
     requires requires { typename common_r_type_impl<T, U>::type; }
