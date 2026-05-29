@@ -28,7 +28,7 @@ struct r_str {
     internal::check_valid_construction<r_str>(value);
   }
   explicit r_str(SEXP x, internal::no_checks_tag) : value{x} {}
-  explicit r_str(SEXP x, internal::view_tag, internal::no_checks_tag) : value(x) {}
+  explicit r_str(SEXP x, internal::view_tag, internal::no_checks_tag) : value(x, internal::view_tag{}) {}
 
   explicit r_str(const char *x) : value(Rf_mkCharCE(x, CE_UTF8)) {}
   // Implicit r_str -> SEXP 
