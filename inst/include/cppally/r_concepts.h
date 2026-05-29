@@ -179,13 +179,13 @@ inline constexpr bool is_r_vector_v = is_r_vector<std::remove_cvref_t<T>>::value
 }
 
 template <typename T>
-concept RVector = internal::is_r_vector_v<T>;
+concept RAtomicVector = internal::is_r_vector_v<T> && RScalar<typename std::remove_cvref_t<T>::data_type>;
 
 template <typename T>
-concept RAtomicVector = RVector<T> && RScalar<typename std::remove_cvref_t<T>::data_type>;
+concept RListVector = internal::is_r_vector_v<T> && (is<typename std::remove_cvref_t<T>::data_type, r_sexp>);
 
 template <typename T>
-concept RListVector = RVector<T> && (is<typename std::remove_cvref_t<T>::data_type, r_sexp>);
+concept RVector = RAtomicVector<T> || RListVector<T>;
 
 template <typename T>
 concept RFactor = is<T, r_factors>;
