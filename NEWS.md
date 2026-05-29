@@ -50,7 +50,7 @@ The following `std::vector` coercion directions are supported:
 Any coercion between `std::vector` and `cppally::r_vec` 
 is possible so long as the element coercions are supported by `cppally::as`
 
-### Improvements
+### Improvements and New Features
 
 * New alias of `r_vec`, `r_vector`
 
@@ -58,6 +58,16 @@ is possible so long as the element coercions are supported by `cppally::as`
 by introducing a hashing approach. On second lookup, a hash map of names 
 is created and cached, making subsequent lookups much faster. This also 
 applies to factor levels.
+
+* cppally now supports copy-on-modify as an opt-in feature. This feature 
+prevents accidentally overwriting data between shared objects, just like R. 
+To opt-in, run `cppally::use_copy_on_modify()` or set the `copy_on_modify` 
+to `TRUE` in `cpp_source()`. The major downside of this feature is 
+significantly slower element setting as every set must verify the object is 
+not referenced by another object. This check is single-threaded and thus 
+nearly all parallel cppally code is disabled as a safety precaution. If using 
+copy-on-modify, it is recommended to avoid writing cppally registered R 
+functions that rely on in-place modification.
 
 * Named-vector subsetting is now supported
 
