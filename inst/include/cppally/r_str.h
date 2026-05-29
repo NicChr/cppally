@@ -77,7 +77,7 @@ struct r_str_view {
   operator SEXP() const noexcept { return value; }
   
   // Implicit r_str -> r_str_view
-  r_str_view(const r_str& x) : value(static_cast<SEXP>(x)) {}
+  r_str_view(const r_str& x) noexcept : value(static_cast<SEXP>(x)) {}
   
   const char* c_str() const noexcept { return CHAR(value); }
   std::string_view cpp_str() const noexcept { return std::string_view{c_str()}; }
@@ -91,7 +91,7 @@ struct r_str_view {
 inline r_str::r_str(r_str_view x) : value(static_cast<SEXP>(x)) {}
 
 // NA
-inline const r_str_view na_str = r_str_view(NA_STRING);
+inline const r_str na_str = r_str(NA_STRING);
 
 template <internal::name T>
 inline r_str cached_str() {

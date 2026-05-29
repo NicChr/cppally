@@ -78,12 +78,12 @@ inline constexpr r_raw na_value_impl<r_raw>() noexcept {
 
 template<>
 inline r_str_view na_value_impl<r_str_view>() noexcept {
-  return na_str;
+  return r_str_view(na_str);
 }
 
 template<>
 inline r_str na_value_impl<r_str>() noexcept {
-  return r_str(unwrap(na_str), internal::view_tag{});
+  return na_str;
 }
 
 template<>
