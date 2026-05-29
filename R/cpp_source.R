@@ -197,6 +197,56 @@ curr_env <- function(){
 #' mark(last_altrep_aware(1:10^5)) # No materialisation
 #' mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 #'
+#' ### Copy-on-modify ###
+#'
+#' # cppally supports copy-on-modify as an opt-in feature
+#' # It is disabled by default because it incurs a major performance penalty
+#' # and has been deemed not worth it even for the safety benefits
+#' # That being said, if you prefer absolute safety over speed then you can
+#' # enable it globally via `cppally::use_copy_on_modify()` or
+#' # via the arg `copy_on_modify` if  using `cpp_source()`
+#'
+#' cpp_source(
+#'   code = '
+#'   #include <cppally.hpp>
+#'   using namespace cppally;
+#'
+#'   [[cppally::register]]
+#'   r_vec<r_int> reverse(r_vec<r_int> x){
+#'     x.rev(); // in-place reverse
+#'     return x;
+#'   }
+#' ', copy_on_modify = TRUE
+#' )
+#'
+#' x <- c(1L, 2L, 3L)
+#' reverse(x)
+#' x # x was preserved and not updated by reference (as expected)
+#'
+#' x <- sample.int(10^5)
+#' mark(reverse(x)) # Memory allocated, therefore x was copied before reversing
+#'
+#' # The cppally preferred approach is to allocate a fresh vector or copy the
+#' # existing vector
+#' cpp_source(
+#'   code = '
+#'   #include <cppally.hpp>
+#'   using namespace cppally;
+#'
+#'   [[cppally::register]]
+#'   r_vec<r_int> cppally_reverse(r_vec<r_int> x){
+#'     r_vec<r_int> out = shallow_copy(x);
+#'     out.rev();
+#'     return out;
+#'   }
+#' ', copy_on_modify = FALSE
+#' )
+#'
+#' mark(
+#'   r_reverse = rev(x),
+#'   cppally_copy_on_modify_reverse = reverse(x),
+#'   cppally_no_copy_on_modify_reverse = cppally_reverse(x)
+#' )
 #' }
 #'
 #' @rdname cpp_source
