@@ -176,33 +176,16 @@ struct is_r_vector<r_vec<T>> : std::true_type {};
 template <typename T>
 inline constexpr bool is_r_vector_v = is_r_vector<std::remove_cvref_t<T>>::value;
 
-template <typename T>
-struct is_atomic_r_vector : std::false_type {};
-
-template <RScalar T>
-struct is_atomic_r_vector<r_vec<T>> : std::true_type {};
-
-template <typename T>
-inline constexpr bool is_atomic_r_vector_v = is_atomic_r_vector<std::remove_cvref_t<T>>::value;
-template <typename T>
-struct is_time_vector_impl : std::false_type {};
-    
-template <RTimeType T>
-struct is_time_vector_impl<r_vec<T>> : std::true_type {};
-
-template <typename T>
-inline constexpr bool is_time_vector_v = is_time_vector_impl<std::remove_cvref_t<T>>::value;
-
 }
-
-template <typename T>
-concept RAtomicVector = internal::is_atomic_r_vector_v<T> || internal::is_time_vector_v<T>;
 
 template <typename T>
 concept RVector = internal::is_r_vector_v<T>;
 
 template <typename T>
-concept RListVector = RVector<T> && (is<typename T::data_type, r_sexp>);
+concept RAtomicVector = RVector<T> && RScalar<typename std::remove_cvref_t<T>::data_type>;
+
+template <typename T>
+concept RListVector = RVector<T> && (is<typename std::remove_cvref_t<T>::data_type, r_sexp>);
 
 template <typename T>
 concept RFactor = is<T, r_factors>;
@@ -214,7 +197,7 @@ template <typename T>
 concept RMetaVector = RFactor<T>;
 
 template <typename T>
-concept RSortableVector = RVector<T> && RSortableType<typename T::data_type>;
+concept RSortableVector = RVector<T> && RSortableType<typename std::remove_cvref_t<T>::data_type>;
 
 // RObject is any object that can be represented in R
 // All cppally classes that contain SEXP will be implicitly convertible to SEXP
@@ -411,9 +394,9 @@ struct inherited_type_impl {
     using type = T; 
 };
 template <typename T>
-requires requires { typename T::inherited_type; }
+requires requires { typename std::remove_cvref_t<T>::inherited_type; }
 struct inherited_type_impl<T> { 
-    using type = typename T::inherited_type; 
+    using type = typename std::remove_cvref_t<T>::inherited_type; 
 };
 
 template <RVal T>
