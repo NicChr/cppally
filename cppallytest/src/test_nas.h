@@ -8,9 +8,9 @@ template <RVector T>
 r_vec<r_sexp> test_nas(T const& x){
    return make_vec<r_sexp>(
     arg("is_na") = x.is_na(), 
-    arg("na_count") = as<r_int>(x.na_count()),
-    arg("any_na") = x.any_na(), 
-    arg("all_na") = x.all_na()
+    arg("na_count") = as<r_int>(x.count(na<typename T::data_type>()));
+    arg("any_na") = x.any_val(na<typename T::data_type>());
+    arg("all_na") = x.all_val(na<typename T::data_type>());
 );
 }
 

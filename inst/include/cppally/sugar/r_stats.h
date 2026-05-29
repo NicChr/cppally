@@ -76,7 +76,7 @@ inline r_dbl sum(const r_vec<r_dbl>& x, bool na_rm){
 }
 
 template <RSortableType T>
-r_vec<T> range(const r_vec<T> &x, bool na_rm = false){
+r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
     
     r_size_t n = x.length();
 
@@ -108,7 +108,7 @@ r_vec<T> range(const r_vec<T> &x, bool na_rm = false){
 }
 
 template <RStringType T>
-r_vec<T> range(const r_vec<T> &x, bool na_rm = false){
+r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
     r_size_t n = x.length();
 
     r_str_view lo = na<r_str_view>();
@@ -137,7 +137,7 @@ r_vec<T> range(const r_vec<T> &x, bool na_rm = false){
 
 // SIMD optimisation for integer types
 template <RIntegerType T>
-r_vec<T> range(const r_vec<T> &x, bool na_rm = false){
+r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
     
     r_size_t n = x.length();
 
@@ -165,7 +165,7 @@ r_vec<T> range(const r_vec<T> &x, bool na_rm = false){
 
         // If lo/hi are still the same values as when initialised, this either means the vector was full of NAs, or the range really is max/min int
         // Either way, we check in this rare case
-        if (lo == max_val && hi == min_val && x.all_na()){
+        if (lo == max_val && hi == min_val && x.all_val(na<T>())){
             lo = na<T>();
             hi = na<T>();
         }
@@ -195,10 +195,10 @@ r_vec<T> range(const r_vec<T> &x, bool na_rm = false){
 }
 
 template <RMathType T>
-r_dbl mean(const r_vec<T> &x, bool na_rm = false){
+r_dbl mean(const r_vec<T>& x, bool na_rm = false){
     r_dbl total = sum(x, na_rm);
     if (na_rm){
-        return total / (x.length() - x.na_count());
+        return total / (x.length() - x.count(na<typename T::data_type>()));
     } else {
         return total / x.length();
     }
@@ -206,12 +206,12 @@ r_dbl mean(const r_vec<T> &x, bool na_rm = false){
 
 
 template <RMathType T>
-r_dbl var(const r_vec<T> &x, bool na_rm = false){
+r_dbl var(const r_vec<T>& x, bool na_rm = false){
 
     r_size_t N;
 
     if (na_rm){
-        N = x.length() - x.na_count();
+        N = x.length() - x.count(na<typename T::data_type>());
     } else {
         N = x.length();
     }
@@ -242,12 +242,12 @@ r_dbl var(const r_vec<T> &x, bool na_rm = false){
 }
 
 template <RMathType T>
-r_dbl sd(const r_vec<T> &x, bool na_rm = false){
+r_dbl sd(const r_vec<T>& x, bool na_rm = false){
     return sqrt(var(x, na_rm));
 }
 
 template<RIntegerType T>
-T gcd(const r_vec<T> &x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
+T gcd(const r_vec<T>& x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
   if (tol < 0 || tol >= 1){
     abort("`tol` must be >= 0 and < 1");
   }
@@ -270,7 +270,7 @@ T gcd(const r_vec<T> &x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
 }
 
 template<RMathType T>
-T gcd(const r_vec<T> &x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
+T gcd(const r_vec<T>& x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
   if (tol < 0 || tol >= 1){
     abort("`tol` must be >= 0 and < 1");
   }
@@ -295,7 +295,7 @@ T gcd(const r_vec<T> &x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
 }
 
 template<RMathType T>
-T lcm(const r_vec<T> &x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
+T lcm(const r_vec<T>& x, bool na_rm = false, T tol = r_limits<T>::tolerance()){
     if (tol < 0 || tol >= 1){
         abort("tol must be >= 0 and < 1");
     }

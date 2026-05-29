@@ -76,7 +76,7 @@ struct r_factors {
 
     // If max is still the same value as when initialised, this either means the vector was full of NAs, or the max really is max int
     // Either way, we check in this rare case
-    if (max_code == unwrap(r_limits<r_int>::min()) && codes.all_na()){
+    if (max_code == unwrap(r_limits<r_int>::min()) && codes.all_val(na<r_int>())){
         max_code = unwrap(na<r_int>());
     }
 
@@ -194,10 +194,6 @@ struct r_factors {
   FORWARD_METHOD(begin)
   FORWARD_METHOD(end)
   FORWARD_METHOD(address)
-  // FORWARD_METHOD(is_na)
-  FORWARD_METHOD(na_count)
-  FORWARD_METHOD(any_na)
-  FORWARD_METHOD(all_na)
   FORWARD_METHOD(names)
   FORWARD_METHOD(set_names)
   FORWARD_METHOD(name_index)
@@ -330,7 +326,7 @@ struct r_factors {
   template <RStringType U>
   r_size_t count(const U& val) const {
     if (is_na(val)){
-      return value.na_count();
+      return value.count(na<r_int>());
     } else {
       r_int code = get_code(val);
       if (is_na(code)){

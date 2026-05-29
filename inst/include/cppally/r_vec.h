@@ -471,55 +471,10 @@ struct r_vec {
         out.set(i, r_lgl(cppally::is_na(view(i))));
       }
     }
-
     return out;
   }
 
-  r_size_t na_count() const {
-    
-    r_size_t n = length();
-    r_size_t out(0);
-
-    if constexpr (!is_write_barrier_protected){
-      int n_threads = internal::calc_threads(n);
-
-      if (n_threads > 1){
-        OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:out)
-        for (r_size_t i = 0; i < n; ++i){
-          out += cppally::is_na(view(i));
-        }
-      } else {
-        OMP_SIMD_REDUCTION1(+:out)
-        for (r_size_t i = 0; i < n; ++i){
-          out += cppally::is_na(view(i));
-        }
-      }
-    } else {
-      for (r_size_t i = 0; i < n; ++i){
-        out += cppally::is_na(view(i));
-      }
-    }
-
-    return out;
-  }
-
-  bool any_na() const {
-    r_size_t n = length();
-    for (r_size_t i = 0; i < n; ++i){
-      if (cppally::is_na(view(i))) return true;
-    }
-    return false;
-  }
-
-  bool all_na() const {
-    r_size_t n = length();
-    for (r_size_t i = 0; i < n; ++i){
-      if (!cppally::is_na(view(i))) return false;
-    }
-    return true;
-  }
-
-  bool any_eq(const T& val) const {
+  bool any_val(const T& val) const {
     r_size_t n = length();
     for (r_size_t i = 0; i < n; ++i){
       if (identical(view(i), val)) return true;
@@ -527,7 +482,7 @@ struct r_vec {
     return false;
   }
 
-  bool all_eq(const T& val) const {
+  bool all_val(const T& val) const {
     r_size_t n = length();
     for (r_size_t i = 0; i < n; ++i){
       if (!identical(view(i), val)) return false;
