@@ -178,11 +178,10 @@ inline void clear_attrs(T& x){
 namespace internal {
 
 template <RObject T>
-inline void modify_attrs_impl(const T& x, const r_vec<r_sexp>& attrs) {
+requires requires(T& x) { x.maybe_ensure_exclusive(); }
+inline void modify_attrs_impl(T& x, const r_vec<r_sexp>& attrs) {
 
-  r_sexp x_ = r_sexp(x, internal::view_tag{});
-
-  if (x_.is_null()) [[unlikely]] {
+  if (x.is_null()) [[unlikely]] {
     abort("Cannot add attributes to `NULL`");
   }
 
@@ -203,7 +202,7 @@ inline void modify_attrs_impl(const T& x, const r_vec<r_sexp>& attrs) {
   for (int i = 0; i < n; ++i){
     if ( (names.view(i) != cached_str<"">()).is_true() ) {
       attr_nm = r_sym(names.view(i));
-      attr::set_attr(x_, attr_nm, attrs.view(i));
+      attr::set_attr(x, attr_nm, attrs.view(i));
     }
   }
 }
@@ -213,6 +212,7 @@ inline void modify_attrs_impl(const T& x, const r_vec<r_sexp>& attrs) {
 namespace attr {
 
 template <RObject T>
+requires requires(T& x) { x.maybe_ensure_exclusive(); }
 inline void set_attrs(T& x, const r_vec<r_sexp>& attrs){
   clear_attrs(x);
   internal::modify_attrs_impl(x, attrs);
