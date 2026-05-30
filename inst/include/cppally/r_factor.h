@@ -27,6 +27,30 @@ struct r_factors {
   static constexpr bool chk_fct_lvls_opt = false;
   #endif
 
+  // For methods that just return a non-factor (like length())
+  #define FORWARD_METHOD(NAME)                               \
+      template <typename... Args>                            \
+      decltype(auto) NAME(Args&&... args) const {            \
+          return value.NAME(std::forward<Args>(args)...);    \
+      }
+
+  #define FORWARD_MUTATING_METHOD(NAME)                  \
+  template <typename... Args>                            \
+  decltype(auto) NAME(Args&&... args) {                  \
+      return value.NAME(std::forward<Args>(args)...);    \
+  }
+
+  // For methods that return a factor
+  #define FORWARD_FACTOR_METHOD(NAME)                                     \
+      template <typename... Args>                                         \
+      r_factors NAME(Args&&... args) const {                              \
+          /* Call the method on the underlying r_vec<r_int> */            \
+          auto new_vec = value.NAME(std::forward<Args>(args)...);         \
+          /* Wrap it in a new r_factors and pass our current levels */    \
+          return r_factors(std::move(new_vec), this->levels(), false);    \
+      }
+
+
   // Shared cache for levels — see r_vec::cached_names for the design
   mutable std::shared_ptr<internal::names_map> cached_levels;
   // Counts get_code calls on this wrapper. First lookup is a linear scan over
@@ -47,6 +71,30 @@ struct r_factors {
   }
 
   public:
+
+  // Inherit standard methods from r_vec<>
+
+  FORWARD_METHOD(length)
+  FORWARD_METHOD(is_null)
+  FORWARD_METHOD(is_exclusive)
+  FORWARD_MUTATING_METHOD(maybe_ensure_exclusive)
+  FORWARD_METHOD(data)
+  FORWARD_METHOD(begin)
+  FORWARD_METHOD(end)
+  FORWARD_METHOD(address)
+  FORWARD_METHOD(names)
+  FORWARD_MUTATING_METHOD(set_names)
+  FORWARD_METHOD(name_index)
+
+  // Methods that return factors
+  FORWARD_FACTOR_METHOD(subset)
+  FORWARD_FACTOR_METHOD(rep_len)
+  FORWARD_FACTOR_METHOD(resize)
+
+  // Undefine the macros so they don't leak out of the struct
+  #undef FORWARD_METHOD
+  #undef FORWARD_MUTATING_METHOD
+  #undef FORWARD_FACTOR_METHOD
 
   r_vec<r_str_view> levels() const {
     ensure_levels_cached();
@@ -101,10 +149,9 @@ struct r_factors {
     if (check_valid_levels){
       validate_levels(value, levels);
     }
+    maybe_ensure_exclusive();
     safe[Rf_setAttrib](value, symbol::levels_sym, levels);
-    if (!cached_levels) {
-      cached_levels = internal::levels_cache().get_or_create(static_cast<SEXP>(value));
-    }
+    cached_levels = internal::levels_cache().get_or_create(static_cast<SEXP>(value));
     cached_levels->invalidate();
   }
 
@@ -130,30 +177,7 @@ struct r_factors {
       // Set levels
       set_levels(levels, check_valid_levels);
   }
-    
-  // For methods that just return a non-factor (like length())
-  #define FORWARD_METHOD(NAME)                               \
-      template <typename... Args>                            \
-      decltype(auto) NAME(Args&&... args) const {            \
-          return value.NAME(std::forward<Args>(args)...);    \
-      }
-
-  // For methods that return a factor
-  #define FORWARD_FACTOR_METHOD(NAME)                                     \
-      template <typename... Args>                                         \
-      r_factors NAME(Args&&... args) const {                              \
-          /* Call the method on the underlying r_vec<r_int> */            \
-          auto new_vec = value.NAME(std::forward<Args>(args)...);         \
-          /* Wrap it in a new r_factors and pass our current levels */    \
-          return r_factors(std::move(new_vec), this->levels(), false);    \
-      }
-
-      // Levels but as a factor of its own levels
-      // r_factors levels_factor() const {
-      //   r_vec<r_int> lvls_fct_codes(levels().length());
-      //   return r_factors(std::move(lvls_fct_codes), levels());
-      // }
-
+  
   public:
 
   // Constructors
@@ -184,29 +208,6 @@ struct r_factors {
   explicit r_factors(const r_vec<T>& x);
 
   operator SEXP() const noexcept { return static_cast<SEXP>(value); }
-
-  // Inherit standard methods from r_vec<>
-
-  FORWARD_METHOD(length)
-  FORWARD_METHOD(is_null)
-  FORWARD_METHOD(is_exclusive)
-  FORWARD_METHOD(maybe_ensure_exclusive)
-  FORWARD_METHOD(data)
-  FORWARD_METHOD(begin)
-  FORWARD_METHOD(end)
-  FORWARD_METHOD(address)
-  FORWARD_METHOD(names)
-  FORWARD_METHOD(set_names)
-  FORWARD_METHOD(name_index)
-
-  // Methods that return factors
-  FORWARD_FACTOR_METHOD(subset)
-  FORWARD_FACTOR_METHOD(rep_len)
-  FORWARD_FACTOR_METHOD(resize)
-
-  // Undefine the macros so they don't leak out of the struct
-  #undef FORWARD_METHOD
-  #undef FORWARD_FACTOR_METHOD
 
   // Find factor code associated with factor string
   // Since levels are assumed to be unique, we find the first match

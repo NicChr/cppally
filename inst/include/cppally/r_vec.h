@@ -264,9 +264,7 @@ struct r_vec {
       } else {
         Rf_namesgets(value, names);
       }
-      if (!cached_names) {
-        cached_names = internal::name_cache().get_or_create(value);
-      }
+      cached_names = internal::name_cache().get_or_create(value);
       cached_names->invalidate();
   }
 

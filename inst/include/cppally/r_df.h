@@ -169,20 +169,27 @@ struct r_df {
             return value.NAME(std::forward<Args>(args)...);    \
         }
 
+    #define FORWARD_MUTATING_METHOD(NAME)                      \
+        template <typename... Args>                            \
+        decltype(auto) NAME(Args&&... args) {                  \
+            return value.NAME(std::forward<Args>(args)...);    \
+        }
+
     public: 
 
     // Inherit standard methods from r_vec<>
 
     FORWARD_METHOD(is_null)
     FORWARD_METHOD(is_exclusive)
-    FORWARD_METHOD(maybe_ensure_exclusive)
+    FORWARD_MUTATING_METHOD(maybe_ensure_exclusive)
     FORWARD_METHOD(data)
     FORWARD_METHOD(address)
     FORWARD_METHOD(names)
-    FORWARD_METHOD(set_names)
+    FORWARD_MUTATING_METHOD(set_names)
   
     // Undefine the macros so they don't leak out of the struct
     #undef FORWARD_METHOD
+    #undef FORWARD_MUTATING_METHOD
 
     template <typename T>
     int col_index(const T& name) const {
