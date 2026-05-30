@@ -91,12 +91,12 @@ struct r_sexp {
   }
 
   // Not recommended for general usage - currently needed for attribute manipulation
-  void ensure_exclusive() noexcept {
+  void ensure_exclusive() {
     if (!is_exclusive()) [[unlikely]] {
       *this = r_sexp(safe[Rf_shallow_duplicate](value));
     }
   }
-  void maybe_ensure_exclusive() noexcept {
+  void maybe_ensure_exclusive() {
     #ifdef CPPALLY_COPY_ON_MODIFY
     ensure_exclusive();
     #endif

@@ -153,17 +153,18 @@ struct r_vec {
     initialise_ptr();
   }
 
-  void ensure_exclusive() noexcept {
+  void ensure_exclusive() {
     if (!is_exclusive()) [[unlikely]] {
       r_size_t n = length();
       r_vec<T> new_vec(n);
       r_copy_n(new_vec, *this, 0, n);
       safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
+      // internal::share_name_cache(new_vec, *this); // Maybe include this
       *this = std::move(new_vec);
     }
   }
 
-  void maybe_ensure_exclusive() noexcept {
+  void maybe_ensure_exclusive() {
     #ifdef CPPALLY_COPY_ON_MODIFY
     ensure_exclusive();
     #endif
@@ -249,16 +250,19 @@ struct r_vec {
 
   template <RStringType U>
   void set_names(const r_vec<U>& names){
-      if (names.is_null()){
-        // Removing names from an unnamed vector - return early
-        if (Rf_getAttrib(*this, symbol::names_sym) == R_NilValue){
-          return;
-        }
+      bool removing = names.is_null();
+      if (!removing && names.length() != length()) [[unlikely]] {
+        abort("`length(names)` must equal `length(x)`");
+      }
+      // Removing names from an unnamed vector - return early, no copy needed
+      if (removing && Rf_getAttrib(*this, symbol::names_sym) == R_NilValue){
+        return;
+      }
+      maybe_ensure_exclusive();
+      if (removing){
         Rf_setAttrib(value, symbol::names_sym, r_null);
-      } else if (names.length() != length()) [[unlikely]] {
-          abort("`length(names)` must equal `length(x)`");
       } else {
-          Rf_namesgets(value, names);
+        Rf_namesgets(value, names);
       }
       if (!cached_names) {
         cached_names = internal::name_cache().get_or_create(value);
