@@ -76,9 +76,9 @@ struct r_vec {
     if (is_altrep()) return;
 #endif
     if constexpr (is_write_barrier_protected){
-      m_ptr = internal::vector_ptr_ro<T>(value);
+      m_ptr = is_altrep() ? safe[internal::vector_ptr_ro<T>](value) : internal::vector_ptr_ro<T>(value);
     } else {
-      m_ptr = internal::vector_ptr<T>(value);
+      m_ptr = is_altrep() ? safe[internal::vector_ptr<T>](value) : internal::vector_ptr<T>(value);
     }
   }
 
@@ -205,9 +205,9 @@ struct r_vec {
 #ifdef CPPALLY_PRESERVE_ALTREP
     if (!m_ptr) [[unlikely]] {
       if constexpr (is_write_barrier_protected) {
-        m_ptr = internal::vector_ptr_ro<T>(value);
+        m_ptr = safe[internal::vector_ptr_ro<T>](value);
       } else {
-        m_ptr = internal::vector_ptr<T>(value);
+        m_ptr = safe[internal::vector_ptr<T>](value);
       }
     }
 #endif
