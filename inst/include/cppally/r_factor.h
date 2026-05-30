@@ -190,6 +190,11 @@ struct r_factors {
       validate_factor(check_valid_levels);
     }
   }
+  explicit r_factors(r_sexp x, bool check_valid_levels = chk_fct_lvls_opt) : value(std::move(x)) {
+    if (!value.is_null()){
+      validate_factor(check_valid_levels);
+    }
+  }
 
   explicit r_factors(SEXP x, internal::view_tag, bool check_valid_levels = chk_fct_lvls_opt) : value(x, internal::view_tag{}) {
     if (!value.is_null()){
@@ -208,6 +213,7 @@ struct r_factors {
   explicit r_factors(const r_vec<T>& x);
 
   operator SEXP() const noexcept { return static_cast<SEXP>(value); }
+  explicit operator r_sexp() const noexcept { return static_cast<r_sexp>(value); }
 
   // Find factor code associated with factor string
   // Since levels are assumed to be unique, we find the first match

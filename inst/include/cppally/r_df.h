@@ -133,7 +133,7 @@ struct r_df {
     explicit r_df(SEXP s, internal::view_tag) : value(s, internal::view_tag{}) {
         init_df();
     }
-    explicit r_df(const r_sexp& s) : value(s) {
+    explicit r_df(r_sexp s) : value(std::move(s)) {
         init_df();
     }
     explicit r_df(const r_sexp& s, internal::view_tag) : value(s, internal::view_tag{}) {
@@ -159,7 +159,8 @@ struct r_df {
     explicit r_df(const r_factors& col);
 
     // Implicit conversion to SEXP
-    operator SEXP() const noexcept { return unwrap(value); }
+    operator SEXP() const noexcept { return static_cast<SEXP>(value); }
+    explicit operator r_sexp() const noexcept { return static_cast<r_sexp>(value); }
 
     private: 
 
