@@ -296,10 +296,10 @@ struct r_vec {
       abort("%s: vector has no names", __func__);
     }
     SEXP key = unwrap(name);
-    r_size_t n = names_attr.length();
+    int n = names_attr.length();
     const auto* RESTRICT p = names_attr.data();
-    for (r_size_t i = 0; i < n; ++i) {
-      if (p[i] == key) return r_int(static_cast<int>(i));
+    for (int i = 0; i < n; ++i) {
+      if (p[i] == key) return r_int(i);
     }
     if (abort_on_missing){
       report_no_match();
