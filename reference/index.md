@@ -33,6 +33,11 @@
 
   Adds the `CPPALLY_CHECK_FACTORS` flag to Makevars
 
+- [`use_copy_on_modify()`](https://nicchr.github.io/cppally/reference/use_copy_on_modify.md)
+  :
+
+  Adds the `CPPALLY_COPY_ON_MODIFY` flag to Makevars
+
 - [`use_cppally()`](https://nicchr.github.io/cppally/reference/use_cppally.md)
   : Helper for developing packages with cppally
 

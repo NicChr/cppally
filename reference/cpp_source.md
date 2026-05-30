@@ -26,6 +26,7 @@ cpp_source(
   preserve_altrep = FALSE,
   check_factors = FALSE,
   check_data_frames = FALSE,
+  copy_on_modify = FALSE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20"),
   dir = tempfile()
 )
@@ -39,6 +40,7 @@ cpp_eval(
   preserve_altrep = FALSE,
   check_factors = FALSE,
   check_data_frames = FALSE,
+  copy_on_modify = FALSE,
   simplify = TRUE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20")
 )
@@ -89,6 +91,10 @@ cpp_eval(
 
   Should data frames be validated when constructing `r_df` objects from
   `SEXP`? Default is `FALSE`.
+
+- copy_on_modify:
+
+  Should copy-on-modify be used everywhere? Default is `FALSE`.
 
 - cxx_std:
 
@@ -237,14 +243,78 @@ mark(last_altrep_aware(1:10^5)) # No materialisation
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 3.78µs 5.49µs   183105.    3.18KB        0 10000     0     54.6ms
+#> 1 last_altrep… 4.02µs 5.33µs   186413.    3.18KB        0 10000     0     53.6ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 39.8µs 40.6µs    20336.     391KB     163.  3737    30      184ms
+#> 1 last_altrep… 37.8µs 39.8µs    17826.     391KB     143.  3737    30      210ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
+### Copy-on-modify ###
+
+# cppally supports copy-on-modify as an opt-in feature
+# It is disabled by default because it incurs a major performance penalty
+# and has been deemed not worth it even for the safety benefits
+# That being said, if you prefer absolute safety over speed then you can
+# enable it globally via `cppally::use_copy_on_modify()` or
+# via the arg `copy_on_modify` if  using `cpp_source()`
+
+cpp_source(
+  code = '
+  #include <cppally.hpp>
+  using namespace cppally;
+
+  [[cppally::register]]
+  r_vec<r_int> reverse(r_vec<r_int> x){
+    x.rev(); // in-place reverse
+    return x;
+  }
+', copy_on_modify = TRUE
+)
+
+x <- c(1L, 2L, 3L)
+reverse(x)
+#> [1] 3 2 1
+x # x was preserved and not updated by reference (as expected)
+#> [1] 1 2 3
+
+x <- sample.int(10^5)
+mark(reverse(x)) # Memory allocated, therefore x was copied before reversing
+#> # A tibble: 1 × 13
+#>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
+#>   <bch:expr> <bch:tm> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 reverse(x)    487µs  503µs     1944.     391KB     14.7   923     7      475ms
+#> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
+
+# The cppally preferred approach is to allocate a fresh vector or copy the
+# existing vector
+cpp_source(
+  code = '
+  #include <cppally.hpp>
+  using namespace cppally;
+
+  [[cppally::register]]
+  r_vec<r_int> cppally_reverse(r_vec<r_int> x){
+    r_vec<r_int> out = shallow_copy(x);
+    out.rev();
+    return out;
+  }
+', copy_on_modify = FALSE
+)
+
+mark(
+  r_reverse = rev(x),
+  cppally_copy_on_modify_reverse = reverse(x),
+  cppally_no_copy_on_modify_reverse = cppally_reverse(x)
+)
+#> # A tibble: 3 × 13
+#>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
+#>   <bch:expr>  <bch:t> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 r_reverse     238µs  240µs     3983.     781KB     64.7  1354    22      340ms
+#> 2 cppally_co… 486.3µs  503µs     1857.     391KB     12.7   876     6      472ms
+#> 3 cppally_no…  65.6µs  208µs     6018.     391KB     47.8  2391    19      397ms
+#> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 # }
 ```
