@@ -44,8 +44,8 @@ inline r_vec<T> make_vec(Args... args) {
 namespace attr {
 
 template <typename... Args>
-inline void modify_attrs(r_sexp x, Args&&... args) {
-  auto attrs = make_vec<r_sexp>(std::forward<Args>(args)...);
+inline void modify_attrs(r_sexp& x, Args&&... args) {
+  r_vec<r_sexp> attrs = make_vec<r_sexp>(std::forward<Args>(args)...);
   internal::modify_attrs_impl(x, attrs);
 }
 
