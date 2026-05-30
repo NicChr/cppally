@@ -625,7 +625,7 @@ struct r_vec {
     if (n == vec_size){
       return *this;
     } else {
-      auto resized_vec = r_vec<T>(n);
+      r_vec<T> resized_vec(n);
       r_size_t n_to_copy = std::min(n, vec_size);
 
       if constexpr (!is_write_barrier_protected){
@@ -704,7 +704,7 @@ struct r_vec {
 
   // POSIXct-only members
   r_str tzone() const requires RPsxctType<T> {
-    auto tz = r_vec<r_str_view>(Rf_getAttrib(value, cached_sym<"tzone">()));
+    r_vec<r_str_view> tz(Rf_getAttrib(value, cached_sym<"tzone">()));
     
     if (tz.length() == 0){
       abort("`r_vec<r_psxct_t>` vector must have a valid tzone attribute");
@@ -718,7 +718,8 @@ struct r_vec {
   }
 
   void set_tzone(const char* tz) requires RPsxctType<T> {
-    Rf_setAttrib(value, cached_sym<"tzone">(), r_vec<r_str>(1, r_str(tz)));
+    maybe_ensure_exclusive();
+    safe[Rf_setAttrib](value, cached_sym<"tzone">(), r_vec<r_str>(1, r_str(tz)));
   }
 
   // list-only members
