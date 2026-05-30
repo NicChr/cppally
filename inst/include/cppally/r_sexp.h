@@ -90,6 +90,18 @@ struct r_sexp {
     return ctl_ != nullptr && ctl_->refs == 1 && NOT_SHARED(value);
   }
 
+  // Not recommended for general usage - currently needed for attribute manipulation
+  void ensure_exclusive() noexcept {
+    if (!is_exclusive()) [[unlikely]] {
+      *this = r_sexp(safe[Rf_shallow_duplicate](value));
+    }
+  }
+  void maybe_ensure_exclusive() noexcept {
+    #ifdef CPPALLY_COPY_ON_MODIFY
+    ensure_exclusive();
+    #endif
+  }
+
   r_size_t length() const {
     static bool warned = false;
     if (!warned) {

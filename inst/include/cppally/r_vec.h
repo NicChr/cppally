@@ -82,22 +82,6 @@ struct r_vec {
     }
   }
 
-  void ensure_exclusive() noexcept {
-    if (!is_exclusive()) [[unlikely]] {
-      r_size_t n = length();
-      r_vec<T> new_vec(n);
-      r_copy_n(new_vec, *this, 0, n);
-      safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
-      *this = std::move(new_vec);
-    }
-  }
-
-  void make_exclusive_if_copy_on_modify() noexcept {
-    #ifdef CPPALLY_COPY_ON_MODIFY
-    ensure_exclusive();
-    #endif
-  }
-
   // Shared cache: any two r_vec wrappers around the same SEXP point to the same
   // names_map via the registry, so set_names() propagates to all of them
   mutable std::shared_ptr<internal::names_map> cached_names;
@@ -167,6 +151,22 @@ struct r_vec {
   
   r_vec(): r_vec(r_size_t(0)){
     initialise_ptr();
+  }
+
+  void ensure_exclusive() noexcept {
+    if (!is_exclusive()) [[unlikely]] {
+      r_size_t n = length();
+      r_vec<T> new_vec(n);
+      r_copy_n(new_vec, *this, 0, n);
+      safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
+      *this = std::move(new_vec);
+    }
+  }
+
+  void maybe_ensure_exclusive() noexcept {
+    #ifdef CPPALLY_COPY_ON_MODIFY
+    ensure_exclusive();
+    #endif
   }
 
   // Constructors from existing r_sexp/SEXP
@@ -568,7 +568,7 @@ struct r_vec {
     
     if constexpr (!is_write_barrier_protected){
       
-      make_exclusive_if_copy_on_modify();
+      maybe_ensure_exclusive();
 
       int n_threads = internal::calc_threads(n);
       auto* RESTRICT p_target = data();
@@ -744,7 +744,7 @@ inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_
 
   using data_t = typename T::data_type;
 
-  target.make_exclusive_if_copy_on_modify();
+  target.maybe_ensure_exclusive();
 
   if constexpr (!RObject<data_t>){
 
