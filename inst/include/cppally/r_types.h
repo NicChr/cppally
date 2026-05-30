@@ -15,7 +15,7 @@
 #include <cppally/r_sym.h>
 
 // R-based C++ types that closely align with their R equivalents
-// Further methods (e.g. operators) are defined in r_scalar_methods.h
+// Further methods (e.g. operators) are defined in r_scalar_ops.h
 // constructing R types via e.g. r_dbl() r_int() does not account for NAs
 // For any and all `NA` safe conversions, use the `as<>` template defined in r_coerce.h
 // For example - to construct an `r_int` from an integer `x`, simply write `r_int(x)`. 

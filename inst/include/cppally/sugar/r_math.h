@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_MATH_H
 #define CPPALLY_R_MATH_H
 
-#include <cppally/r_scalar_methods.h>
+#include <cppally/r_scalar_ops.h>
 #include <cppally/r_limits.h>
 #include <cppally/r_coerce.h>
 #include <algorithm>

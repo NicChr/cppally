@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_UNIQUE_H
 #define CPPALLY_R_UNIQUE_H
 
-#include <cppally/r_vec_methods.h>
+#include <cppally/r_vec_ops.h>
 #include <cppally/sugar/r_sort.h>
 #include <cppally/sugar/r_groups.h>
 #include <cppally/sugar/r_subset.h>

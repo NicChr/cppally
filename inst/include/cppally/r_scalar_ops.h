@@ -1,5 +1,5 @@
-#ifndef CPPALLY_R_SCALAR_METHODS_H
-#define CPPALLY_R_SCALAR_METHODS_H
+#ifndef CPPALLY_R_SCALAR_OPS_H
+#define CPPALLY_R_SCALAR_OPS_H
 
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>

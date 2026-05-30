@@ -3,7 +3,7 @@
 
 #include <cppally/r_limits.h>
 #include <cppally/r_vec.h>
-#include <cppally/r_vec_methods.h>
+#include <cppally/r_vec_ops.h>
 #include <cppally/r_hash_names.h>
 #include <cppally/r_attrs.h>
 

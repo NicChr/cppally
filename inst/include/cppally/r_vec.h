@@ -5,7 +5,7 @@
 #include <cppally/r_concepts.h>
 #include <cppally/r_utils.h>
 #include <cppally/r_limits.h>
-#include <cppally/r_scalar_methods.h>
+#include <cppally/r_scalar_ops.h>
 #include <cppally/r_vec_utils.h>
 #include <cppally/r_coerce_scalars.h>
 #include <cppally/r_hash_names.h>
