@@ -7,9 +7,9 @@
 #include <cppally/r_length.h>
 #include <cppally/r_identical.h>
 #include <cppally/r_df_methods.h>
+#include <cppally/sugar/r_sexp_methods.h>
 
 namespace cppally {
-
 
 // Equality operator for lists
 // list-comparison becomes element-wise `identical()` comparison
