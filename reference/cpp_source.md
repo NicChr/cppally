@@ -243,13 +243,13 @@ mark(last_altrep_aware(1:10^5)) # No materialisation
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 4.02µs 5.33µs   186413.    3.18KB        0 10000     0     53.6ms
+#> 1 last_altrep… 4.07µs 5.38µs   185322.    3.18KB        0 10000     0       54ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
-#>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 37.8µs 39.8µs    17826.     391KB     143.  3737    30      210ms
+#>   <bch:expr>    <bch> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 last_altrep_…  37µs 38.6µs    20235.     391KB     162.  3737    30      185ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 ### Copy-on-modify ###
@@ -285,7 +285,7 @@ mark(reverse(x)) # Memory allocated, therefore x was copied before reversing
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr> <bch:tm> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 reverse(x)    487µs  503µs     1944.     391KB     14.7   923     7      475ms
+#> 1 reverse(x)    492µs  505µs     1942.     391KB     14.7   922     7      475ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 # The cppally preferred approach is to allocate a fresh vector or copy the
@@ -311,10 +311,10 @@ mark(
 )
 #> # A tibble: 3 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
-#>   <bch:expr>  <bch:t> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 r_reverse     238µs  240µs     3983.     781KB     64.7  1354    22      340ms
-#> 2 cppally_co… 486.3µs  503µs     1857.     391KB     12.7   876     6      472ms
-#> 3 cppally_no…  65.6µs  208µs     6018.     391KB     47.8  2391    19      397ms
+#>   <bch:expr>    <bch> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 r_reverse     238µs  241µs     3981.     781KB     61.9  1350    21      339ms
+#> 2 cppally_copy… 488µs  503µs     1963.     391KB     15.1   781     6      398ms
+#> 3 cppally_no_c…  66µs  208µs     6126.     391KB     47.5  2450    19      400ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 # }
 ```
