@@ -17,6 +17,11 @@ of the free function `length()`
 marking a shift in how cppally treats data frames. They are now seen as row-wise 
 vectors
 
+* Setting attributes on plain `SEXP` is now unsupported, 
+e.g. via `cppally::attr::set_attr()`. Use cppally types such as 
+`r_vector`, `r_factors`, `r_df` and in some cases `r_sexp` for attribute 
+manipulation.
+
 * `r_factors` elements are now treated as `r_str` in member 
 functions like `get()` and `set()`
 
