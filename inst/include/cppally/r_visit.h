@@ -131,25 +131,42 @@ switch (internal::CPPALLY_TYPEOF(x)) {
 }
 }
 
+// In-place mutation helper for `mutate_sexp`.
+//
+// We *move* `x` into the typed wrapper rather than viewing it: the move carries
+// x's ref without bumping the count, so the wrapper is sole owner exactly when x
+// was. Necessary when copy-on-modify is enabled.
+
+namespace internal {
+
+template <class V, class F>
+inline void mutate_as(r_sexp& x, F&& f) {
+    V v(std::move(x)); // v will go out of scope at function end
+    f(v);
+    x = r_sexp(v);
+}
+
+}
+
 // visit sexp and mutate underlying object in-place - for methods like free-function `fill()`
 template <class F>
 void mutate_sexp(r_sexp& x, F&& f) {
 switch (internal::CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
-    case LGLSXP:                          { auto v = r_vec<r_lgl>(static_cast<SEXP>(x), internal::view_tag{});              f(v); break; }
-    case INTSXP:                          { auto v = r_vec<r_int>(static_cast<SEXP>(x), internal::view_tag{});              f(v); break; }
-    case internal::CPPALLY_INT64SXP:      { auto v = r_vec<r_int64>(static_cast<SEXP>(x), internal::view_tag{});           f(v); break; }
-    case REALSXP:                         { auto v = r_vec<r_dbl>(static_cast<SEXP>(x), internal::view_tag{});              f(v); break; }
-    case STRSXP:                          { auto v = r_vec<r_str>(static_cast<SEXP>(x), internal::view_tag{});              f(v); break; }
-    case VECSXP:                          { auto v = r_vec<r_sexp>(static_cast<SEXP>(x), internal::view_tag{});             f(v); break; }
-    case CPLXSXP:                         { auto v = r_vec<r_cplx>(static_cast<SEXP>(x), internal::view_tag{});             f(v); break; }
-    case RAWSXP:                          { auto v = r_vec<r_raw>(static_cast<SEXP>(x), internal::view_tag{});              f(v); break; }
-    case NILSXP:                          { auto v = r_vec<r_sexp>(r_null, internal::view_tag{});                           f(v); break; }
-    case internal::CPPALLY_REALDATESXP:   { auto v = r_vec<r_date>(static_cast<SEXP>(x), internal::view_tag{});             f(v); break; }
-    case internal::CPPALLY_REALPSXTSXP:   { auto v = r_vec<r_psxct>(static_cast<SEXP>(x), internal::view_tag{});           f(v); break; }
-    case internal::CPPALLY_FCTSXP:        { auto v = r_factors(static_cast<SEXP>(x), internal::view_tag{});                 f(v); break; }
-    case SYMSXP:                          { auto v = r_sym(static_cast<SEXP>(x), internal::view_tag{});                     f(v); break; }
-    case internal::CPPALLY_DFSXP:         { auto v = r_df(static_cast<SEXP>(x), internal::view_tag{});                     f(v); break; }
-    default:                              { auto v = r_sexp(static_cast<SEXP>(x), internal::view_tag{});                   f(v); break; }
+    case LGLSXP:                          internal::mutate_as<r_vec<r_lgl>>(x, f);    break;
+    case INTSXP:                          internal::mutate_as<r_vec<r_int>>(x, f);    break;
+    case internal::CPPALLY_INT64SXP:      internal::mutate_as<r_vec<r_int64>>(x, f);  break;
+    case REALSXP:                         internal::mutate_as<r_vec<r_dbl>>(x, f);    break;
+    case STRSXP:                          internal::mutate_as<r_vec<r_str>>(x, f);    break;
+    case VECSXP:                          internal::mutate_as<r_vec<r_sexp>>(x, f);   break;
+    case CPLXSXP:                         internal::mutate_as<r_vec<r_cplx>>(x, f);   break;
+    case RAWSXP:                          internal::mutate_as<r_vec<r_raw>>(x, f);    break;
+    case NILSXP:                          internal::mutate_as<r_vec<r_sexp>>(x, f);   break;
+    case internal::CPPALLY_REALDATESXP:   internal::mutate_as<r_vec<r_date>>(x, f);   break;
+    case internal::CPPALLY_REALPSXTSXP:   internal::mutate_as<r_vec<r_psxct>>(x, f);  break;
+    case internal::CPPALLY_FCTSXP:        internal::mutate_as<r_factors>(x, f);       break;
+    case SYMSXP:                          internal::mutate_as<r_sym>(x, f);           break;
+    case internal::CPPALLY_DFSXP:         internal::mutate_as<r_df>(x, f);            break;
+    default:                              internal::mutate_as<r_sexp>(x, f);          break;
 }
 }
 
