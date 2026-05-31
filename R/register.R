@@ -268,13 +268,18 @@ wrap_call <- function(name, return_type, args, is_template, template_params) {
     return(wrap_call_template(name, return_type, args, template_params))
   }
 
-  call <- glue::glue('::{name}({list_params})', list_params = glue_collapse_data(args, "as<{type}>({name})"))
+  # Materialise each arg into a named local: `as<>()` yields a prvalue, which
+  # can't bind to an lvalue-reference param; a named local is an lvalue.
+  decls <- glue::glue_data(args, "auto {name}_arg = as<{type}>({name});")
+  call  <- glue::glue("::{name}({list_params})", list_params = glue_collapse_data(args, "{name}_arg"))
 
-  if (type_is_void(return_type)){
-    unclass(glue::glue("{call};\n  return R_NilValue;", .trim = FALSE))
+  tail <- if (type_is_void(return_type)){
+    c(glue::glue("{call};"), "return R_NilValue;")
   } else {
-    unclass(glue::glue("return cpp_to_r({call});"))
+    glue::glue("return cpp_to_r({call});")
   }
+
+  unclass(glue::glue_collapse(c(decls, tail), sep = "\n  "))
 }
 
 wrap_call_template <- function(name, return_type, args, template_params) {
@@ -304,38 +309,36 @@ wrap_call_template <- function(name, return_type, args, template_params) {
   # Construct the lambda parameters (ALL args)
   lambda_params <- glue::glue_collapse(glue::glue("SEXP {args$name}_internal"), ", ")
 
-  # Conversion logic
   conversions <- glue::glue("as<{args$type}>({args$name}_internal)")
-  call_args_str <- paste(conversions, collapse = ", ")
 
-  call_str <- paste0("::", name, "(", call_args_str, ")")
+  # Body: materialise each arg into a named lvalue local; `as<>()` yields a
+  # prvalue, which can't bind to an lvalue-reference param, but the local can.
+  decls     <- glue::glue_collapse(glue::glue("auto {args$name}_arg = {conversions};"), " ")
+  body_args <- glue::glue_collapse(glue::glue("{args$name}_arg"), ", ")
+  call_str  <- glue::glue("::{name}({body_args})")
+
+  rt_args     <- glue::glue_collapse(glue::glue("std::declval<decltype({conversions})&>()"), ", ")
+  rt_call_str <- glue::glue("::{name}({rt_args})")
 
   outer_args <- glue::glue_collapse(args$name, ", ")
 
-  is_void <- type_is_void(return_type)
-
-  if (is_void) {
-    result <- glue::glue('
-    return internal::dispatch_template_impl<{num_template_params}, {num_args}, std::array<int, {num_args}>{map_str}>(
-        []<{template_args_def}>({lambda_params}) -> decltype({call_str}, R_NilValue) {{
-            {call_str};
-            return R_NilValue;
-        }},
-        {outer_args}
-      );
-    ')
+  if (type_is_void(return_type)) {
+    ret_type <- glue::glue("decltype({rt_call_str}, R_NilValue)")
+    call   <- glue::glue("{call_str}; return R_NilValue;")
   } else {
-    full_expr <- glue::glue("cpp_to_r({call_str})")
+    ret_type <- glue::glue("decltype(cpp_to_r({rt_call_str}))")
+    call   <- glue::glue("return cpp_to_r({call_str});")
+  }
 
-    result <- glue::glue('
+  result <- glue::glue('
     return dispatch_template_impl<{num_template_params}, {num_args}, std::array<int, {num_args}>{map_str}>(
-        []<{template_args_def}>({lambda_params}) -> decltype({full_expr}) {{
-            return {full_expr};
+        []<{template_args_def}>({lambda_params}) -> {ret_type} {{
+            {decls}
+            {call}
         }},
         {outer_args}
       );
     ')
-  }
 
   unclass(result)
 }
