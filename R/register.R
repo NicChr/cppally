@@ -68,6 +68,11 @@ type_is_void <- function(type){
   stringr::str_detect(type, "\\bvoid\\s*$")
 }
 
+is_lvalue_ref_arg <- function(x){
+    grepl("(?<!&)&\\s*$", x, perl = TRUE) &
+    !grepl("^\\s*const", x, perl = TRUE)
+}
+
 is_header <- function(x){
   file_extension(x) %in% c(".h", ".hpp")
 }
@@ -268,11 +273,11 @@ wrap_call <- function(name, return_type, args, is_template, template_params) {
     return(wrap_call_template(name, return_type, args, template_params))
   }
 
-  # An lvalue-reference param needs a named lvalue to bind to (`as<>()` returns a
-  # prvalue) - an rvalue-reference param needs that prvalue directly. So every
-  # non-`&&` arg is materialised into a local -- which an lvalue binds to -- and
-  # `&&` args are passed inline
-  is_lval_ref <- grepl("(?<!&)&\\s*$", args$type, perl = TRUE)
+  # Only an lvalue-reference param needs a named lvalue to bind to, since `as<>()`
+  # returns a prvalue. By-value and `&&` bind the prvalue directly, so they are
+  # passed inline.
+  is_lval_ref <- is_lvalue_ref_arg(args$type)
+
   call_args <- ifelse(
     is_lval_ref,
     glue::glue_data(args, "{name}_arg"),
@@ -321,11 +326,10 @@ wrap_call_template <- function(name, return_type, args, template_params) {
 
   conversions <- glue::glue("as<{args$type}>({args$name}_internal)")
 
-  # An lvalue-reference param needs a named lvalue to bind to (`as<>()` returns a
-  # prvalue); an rvalue-reference param needs that prvalue directly. So every
-  # non-`&&` arg is materialised into a local and modelled with declval in the
-  # return-type probe; `&&` args stay inline as the prvalue.
-  is_lval_ref <- grepl("(?<!&)&\\s*$", args$type, perl = TRUE)
+  # Only an lvalue-reference param needs a named lvalue to bind to, since `as<>()`
+  # returns a prvalue. By-value and `&&` bind the prvalue directly, so they are
+  # passed inline.
+  is_lval_ref <- is_lvalue_ref_arg(args$type)
   decls <- glue::glue("auto {args$name}_arg = {conversions};")[is_lval_ref]
   decls <- glue::glue_collapse(decls, " ")
 
@@ -339,13 +343,10 @@ wrap_call_template <- function(name, return_type, args, template_params) {
 
   call_str <- glue::glue("::{name}({body_args})")
 
-  rt_args <- glue::glue_collapse(
-    ifelse(
-      is_lval_ref,
-      glue::glue("std::declval<decltype({conversions})&>()"),
-      conversions
-    ), ", "
-  )
+  # Return-type probe: `std::declval<{type}>()` yields a value of the param's
+  # exact value-category, so it binds as the body does and deduces the same
+  # template args -- uniform across every param kind.
+  rt_args <- glue::glue_collapse(glue::glue("std::declval<{args$type}>()"), ", ")
   rt_call_str <- glue::glue("::{name}({rt_args})")
 
   outer_args <- glue::glue_collapse(args$name, ", ")
