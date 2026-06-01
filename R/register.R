@@ -272,13 +272,13 @@ wrap_call <- function(name, return_type, args, is_template, template_params) {
   # prvalue) - an rvalue-reference param needs that prvalue directly. So every
   # non-`&&` arg is materialised into a local -- which an lvalue binds to -- and
   # `&&` args are passed inline
-  is_rref   <- grepl("&&\\s*$", args$type, perl = TRUE)
+  is_lval_ref <- grepl("(?<!&)&\\s*$", args$type, perl = TRUE)
   call_args <- ifelse(
-    is_rref,
-    glue::glue_data(args, "as<{type}>({name})"),
-    glue::glue_data(args, "{name}_arg")
+    is_lval_ref,
+    glue::glue_data(args, "{name}_arg"),
+    glue::glue_data(args, "as<{type}>({name})")
   )
-  decls <- glue::glue_data(args, "auto {name}_arg = as<{type}>({name});")[!is_rref]
+  decls <- glue::glue_data(args, "auto {name}_arg = as<{type}>({name});")[is_lval_ref]
 
   list_params <- glue::glue_collapse(call_args, ", ")
   call <- glue::glue("::{name}({list_params})")
@@ -325,19 +325,25 @@ wrap_call_template <- function(name, return_type, args, template_params) {
   # prvalue); an rvalue-reference param needs that prvalue directly. So every
   # non-`&&` arg is materialised into a local and modelled with declval in the
   # return-type probe; `&&` args stay inline as the prvalue.
-  is_rref <- grepl("&&\\s*$", args$type, perl = TRUE)
-
-  decls <- glue::glue("auto {args$name}_arg = {conversions};")[!is_rref]
+  is_lval_ref <- grepl("(?<!&)&\\s*$", args$type, perl = TRUE)
+  decls <- glue::glue("auto {args$name}_arg = {conversions};")[is_lval_ref]
   decls <- glue::glue_collapse(decls, " ")
 
-  body_args <- glue::glue_collapse(ifelse(is_rref, conversions, glue::glue("{args$name}_arg")), ", ")
+  body_args <- glue::glue_collapse(
+    ifelse(
+      is_lval_ref,
+      glue::glue("{args$name}_arg"),
+      conversions
+    ), ", "
+  )
+
   call_str <- glue::glue("::{name}({body_args})")
 
   rt_args <- glue::glue_collapse(
     ifelse(
-      is_rref,
-      conversions,
-      glue::glue("std::declval<decltype({conversions})&>()")
+      is_lval_ref,
+      glue::glue("std::declval<decltype({conversions})&>()"),
+      conversions
     ), ", "
   )
   rt_call_str <- glue::glue("::{name}({rt_args})")
