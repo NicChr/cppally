@@ -268,15 +268,25 @@ wrap_call <- function(name, return_type, args, is_template, template_params) {
     return(wrap_call_template(name, return_type, args, template_params))
   }
 
-  # Materialise each arg into a named local: `as<>()` yields a prvalue, which
-  # can't bind to an lvalue-reference param; a named local is an lvalue.
-  decls <- glue::glue_data(args, "auto {name}_arg = as<{type}>({name});")
-  call  <- glue::glue("::{name}({list_params})", list_params = glue_collapse_data(args, "{name}_arg"))
+  # An lvalue-reference param needs a named lvalue to bind to (`as<>()` returns a
+  # prvalue) - an rvalue-reference param needs that prvalue directly. So every
+  # non-`&&` arg is materialised into a local -- which an lvalue binds to -- and
+  # `&&` args are passed inline
+  is_rref   <- grepl("&&\\s*$", args$type, perl = TRUE)
+  call_args <- ifelse(
+    is_rref,
+    glue::glue_data(args, "as<{type}>({name})"),
+    glue::glue_data(args, "{name}_arg")
+  )
+  decls <- glue::glue_data(args, "auto {name}_arg = as<{type}>({name});")[!is_rref]
 
-  tail <- if (type_is_void(return_type)){
-    c(glue::glue("{call};"), "return R_NilValue;")
+  list_params <- glue::glue_collapse(call_args, ", ")
+  call <- glue::glue("::{name}({list_params})")
+
+  if (type_is_void(return_type)){
+    tail <- c(glue::glue("{call};"), "return R_NilValue;")
   } else {
-    glue::glue("return cpp_to_r({call});")
+    tail <- glue::glue("return cpp_to_r({call});")
   }
 
   unclass(glue::glue_collapse(c(decls, tail), sep = "\n  "))
@@ -311,23 +321,35 @@ wrap_call_template <- function(name, return_type, args, template_params) {
 
   conversions <- glue::glue("as<{args$type}>({args$name}_internal)")
 
-  # Body: materialise each arg into a named lvalue local; `as<>()` yields a
-  # prvalue, which can't bind to an lvalue-reference param, but the local can.
-  decls     <- glue::glue_collapse(glue::glue("auto {args$name}_arg = {conversions};"), " ")
-  body_args <- glue::glue_collapse(glue::glue("{args$name}_arg"), ", ")
-  call_str  <- glue::glue("::{name}({body_args})")
+  # An lvalue-reference param needs a named lvalue to bind to (`as<>()` returns a
+  # prvalue); an rvalue-reference param needs that prvalue directly. So every
+  # non-`&&` arg is materialised into a local and modelled with declval in the
+  # return-type probe; `&&` args stay inline as the prvalue.
+  is_rref <- grepl("&&\\s*$", args$type, perl = TRUE)
 
-  rt_args     <- glue::glue_collapse(glue::glue("std::declval<decltype({conversions})&>()"), ", ")
+  decls <- glue::glue("auto {args$name}_arg = {conversions};")[!is_rref]
+  decls <- glue::glue_collapse(decls, " ")
+
+  body_args <- glue::glue_collapse(ifelse(is_rref, conversions, glue::glue("{args$name}_arg")), ", ")
+  call_str <- glue::glue("::{name}({body_args})")
+
+  rt_args <- glue::glue_collapse(
+    ifelse(
+      is_rref,
+      conversions,
+      glue::glue("std::declval<decltype({conversions})&>()")
+    ), ", "
+  )
   rt_call_str <- glue::glue("::{name}({rt_args})")
 
   outer_args <- glue::glue_collapse(args$name, ", ")
 
   if (type_is_void(return_type)) {
     ret_type <- glue::glue("decltype({rt_call_str}, R_NilValue)")
-    call   <- glue::glue("{call_str}; return R_NilValue;")
+    call <- glue::glue("{call_str}; return R_NilValue;")
   } else {
     ret_type <- glue::glue("decltype(cpp_to_r({rt_call_str}))")
-    call   <- glue::glue("return cpp_to_r({call_str});")
+    call <- glue::glue("return cpp_to_r({call_str});")
   }
 
   result <- glue::glue('
