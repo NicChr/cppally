@@ -68,9 +68,10 @@ type_is_void <- function(type){
   stringr::str_detect(type, "\\bvoid\\s*$")
 }
 
+# Is C++ arg an lvalue reference, e.g. T& x
 is_lvalue_ref_arg <- function(x){
     grepl("(?<!&)&\\s*$", x, perl = TRUE) &
-    !grepl("^\\s*const", x, perl = TRUE)
+    !grepl("^\\s*const\\b", x, perl = TRUE)
 }
 
 is_header <- function(x){
