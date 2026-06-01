@@ -358,7 +358,17 @@ wrap_call_template <- function(name, return_type, args, template_params) {
     call <- glue::glue("return cpp_to_r({call_str});")
   }
 
-  result <- glue::glue('
+  if (decls == ""){
+    result <- glue::glue('
+    return dispatch_template_impl<{num_template_params}, {num_args}, std::array<int, {num_args}>{map_str}>(
+        []<{template_args_def}>({lambda_params}) -> {ret_type} {{
+            {call}
+        }},
+        {outer_args}
+      );
+    ')
+  } else {
+    result <- glue::glue('
     return dispatch_template_impl<{num_template_params}, {num_args}, std::array<int, {num_args}>{map_str}>(
         []<{template_args_def}>({lambda_params}) -> {ret_type} {{
             {decls}
@@ -367,6 +377,7 @@ wrap_call_template <- function(name, return_type, args, template_params) {
         {outer_args}
       );
     ')
+  }
 
   unclass(result)
 }
