@@ -388,6 +388,38 @@ bench_protect_copy_cppally <- function(n) {
   .Call(`_cppallytest_bench_protect_copy_cppally`, n)
 }
 
+test_by_value <- function(x) {
+  .Call(`_cppallytest_test_by_value`, x)
+}
+
+test_by_lvalue_ref <- function(x) {
+  .Call(`_cppallytest_test_by_lvalue_ref`, x)
+}
+
+test_by_rvalue_ref <- function(x) {
+  .Call(`_cppallytest_test_by_rvalue_ref`, x)
+}
+
+test_by_const_lvalue_ref <- function(x) {
+  .Call(`_cppallytest_test_by_const_lvalue_ref`, x)
+}
+
+test_temp_by_value <- function(x) {
+  .Call(`_cppallytest_test_temp_by_value`, x)
+}
+
+test_temp_by_lvalue_ref <- function(x) {
+  .Call(`_cppallytest_test_temp_by_lvalue_ref`, x)
+}
+
+test_temp_by_rvalue_ref <- function(x) {
+  .Call(`_cppallytest_test_temp_by_rvalue_ref`, x)
+}
+
+test_temp_by_const_lvalue_ref <- function(x) {
+  .Call(`_cppallytest_test_temp_by_const_lvalue_ref`, x)
+}
+
 test_order <- function(x, preserve_ties) {
   .Call(`_cppallytest_test_order`, x, preserve_ties)
 }

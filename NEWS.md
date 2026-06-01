@@ -84,10 +84,13 @@ of a specified type. Similar to `unlist(recursive = FALSE)` but it
 differs in that only the return type must be specified, 
 e.g. `flatten<r_vector<r_int>>(make_vec<r_sexp>(1, 2, 3))`
 
-
-* Many functions that were originally `r_vec` only members are now 
+* Many functions that were originally `r_vec`-only members are now 
 free functions that also work on `r_sexp` as well as `RComposite` types, 
 allowing for easier manipulation of lists. 
+
+* All C++ reference qualifiers (T&, T&&, const T&) are now supported for 
+registered functions, including templated ones.
+
 
 ### Bug fixes
 

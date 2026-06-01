@@ -68,6 +68,12 @@ type_is_void <- function(type){
   stringr::str_detect(type, "\\bvoid\\s*$")
 }
 
+# Is C++ arg an lvalue reference, e.g. T& x
+is_lvalue_ref_arg <- function(x){
+    grepl("(?<!&)&\\s*$", x, perl = TRUE) &
+    !grepl("^\\s*const\\b", x, perl = TRUE)
+}
+
 is_header <- function(x){
   file_extension(x) %in% c(".h", ".hpp")
 }
@@ -268,13 +274,28 @@ wrap_call <- function(name, return_type, args, is_template, template_params) {
     return(wrap_call_template(name, return_type, args, template_params))
   }
 
-  call <- glue::glue('::{name}({list_params})', list_params = glue_collapse_data(args, "as<{type}>({name})"))
+  # Only an lvalue-reference param needs a named lvalue to bind to, since `as<>()`
+  # returns a prvalue. By-value and `&&` bind the prvalue directly, so they are
+  # passed inline.
+  is_lval_ref <- is_lvalue_ref_arg(args$type)
+
+  call_args <- ifelse(
+    is_lval_ref,
+    glue::glue_data(args, "{name}_arg"),
+    glue::glue_data(args, "as<{type}>({name})")
+  )
+  decls <- glue::glue_data(args, "auto {name}_arg = as<{type}>({name});")[is_lval_ref]
+
+  list_params <- glue::glue_collapse(call_args, ", ")
+  call <- glue::glue("::{name}({list_params})")
 
   if (type_is_void(return_type)){
-    unclass(glue::glue("{call};\n  return R_NilValue;", .trim = FALSE))
+    tail <- c(glue::glue("{call};"), "return R_NilValue;")
   } else {
-    unclass(glue::glue("return cpp_to_r({call});"))
+    tail <- glue::glue("return cpp_to_r({call});")
   }
+
+  unclass(glue::glue_collapse(c(decls, tail), sep = "\n  "))
 }
 
 wrap_call_template <- function(name, return_type, args, template_params) {
@@ -304,33 +325,56 @@ wrap_call_template <- function(name, return_type, args, template_params) {
   # Construct the lambda parameters (ALL args)
   lambda_params <- glue::glue_collapse(glue::glue("SEXP {args$name}_internal"), ", ")
 
-  # Conversion logic
   conversions <- glue::glue("as<{args$type}>({args$name}_internal)")
-  call_args_str <- paste(conversions, collapse = ", ")
 
-  call_str <- paste0("::", name, "(", call_args_str, ")")
+  # Only an lvalue-reference param needs a named lvalue to bind to, since `as<>()`
+  # returns a prvalue. By-value and `&&` bind the prvalue directly, so they are
+  # passed inline.
+  is_lval_ref <- is_lvalue_ref_arg(args$type)
+  decls <- glue::glue("auto {args$name}_arg = {conversions};")[is_lval_ref]
+  decls <- glue::glue_collapse(decls, " ")
+
+  body_args <- glue::glue_collapse(
+    ifelse(
+      is_lval_ref,
+      glue::glue("{args$name}_arg"),
+      conversions
+    ), ", "
+  )
+
+  call_str <- glue::glue("::{name}({body_args})")
+
+  # Return-type probe: `std::declval<{type}>()` yields a value of the param's
+  # exact value-category, so it binds as the body does and deduces the same
+  # template args -- uniform across every param kind.
+  rt_args <- glue::glue_collapse(glue::glue("std::declval<{args$type}>()"), ", ")
+  rt_call_str <- glue::glue("::{name}({rt_args})")
 
   outer_args <- glue::glue_collapse(args$name, ", ")
 
-  is_void <- type_is_void(return_type)
+  if (type_is_void(return_type)) {
+    ret_type <- glue::glue("decltype({rt_call_str}, R_NilValue)")
+    call <- glue::glue("{call_str}; return R_NilValue;")
+  } else {
+    ret_type <- glue::glue("decltype(cpp_to_r({rt_call_str}))")
+    call <- glue::glue("return cpp_to_r({call_str});")
+  }
 
-  if (is_void) {
+  if (decls == ""){
     result <- glue::glue('
-    return internal::dispatch_template_impl<{num_template_params}, {num_args}, std::array<int, {num_args}>{map_str}>(
-        []<{template_args_def}>({lambda_params}) -> decltype({call_str}, R_NilValue) {{
-            {call_str};
-            return R_NilValue;
+    return dispatch_template_impl<{num_template_params}, {num_args}, std::array<int, {num_args}>{map_str}>(
+        []<{template_args_def}>({lambda_params}) -> {ret_type} {{
+            {call}
         }},
         {outer_args}
       );
     ')
   } else {
-    full_expr <- glue::glue("cpp_to_r({call_str})")
-
     result <- glue::glue('
     return dispatch_template_impl<{num_template_params}, {num_args}, std::array<int, {num_args}>{map_str}>(
-        []<{template_args_def}>({lambda_params}) -> decltype({full_expr}) {{
-            return {full_expr};
+        []<{template_args_def}>({lambda_params}) -> {ret_type} {{
+            {decls}
+            {call}
         }},
         {outer_args}
       );
