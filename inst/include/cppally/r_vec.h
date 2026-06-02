@@ -39,7 +39,7 @@ concept RNumericSubscript = any<T, r_int, r_int64>;
 template<RVal T>
 struct r_vec {
 
-  r_sexp value = r_null;
+  r_sexp value;
   using data_type = std::remove_cvref_t<T>;
 
   bool is_null() const noexcept {
@@ -50,15 +50,42 @@ struct r_vec {
     return value.is_altrep();
   }
 
+  // Is this the only r_vec holding this r_sexp?
   bool is_exclusive() const noexcept {
     return value.is_exclusive();
   }
 
+  // Has data been materialised?
+  // Will only have been materialised if data ptr has been assigned
+  bool materialised() const noexcept {
+    return static_cast<bool>(m_ptr); 
+  }
+
+  void ensure_exclusive() {
+    if (!is_exclusive()) [[unlikely]] {
+      r_size_t n = length();
+      r_vec<T> new_vec(n);
+      r_copy_n(new_vec, *this, 0, n);
+      safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
+      // internal::share_name_cache(new_vec, *this); // Maybe include this
+      *this = std::move(new_vec);
+    }
+  }
+
+  void maybe_ensure_exclusive() {
+    #ifdef CPPALLY_COPY_ON_MODIFY
+    ensure_exclusive();
+    #endif
+  }
+
   private:
 
-  // Initialise read-only ptr to:
-  // SEXP - If T is a type convertible to SEXP
-  // unwrap_t<T> - Otherwise
+  template <RVector U>
+  friend void r_copy_n(U& target, const U& source, r_size_t target_offset, r_size_t n);
+
+  // Initialise data (pointer) to:
+  // const SEXP* (read-only) - If T is a type convertible to SEXP
+  // unwrap_t<T>* - Otherwise
   static constexpr bool is_write_barrier_protected = RObject<T>;
   using ptr_t = std::conditional_t<is_write_barrier_protected, const SEXP*, unwrap_t<T>*>;
 #ifdef CPPALLY_PRESERVE_ALTREP
@@ -105,24 +132,21 @@ struct r_vec {
   template <typename V>
   friend void internal::share_name_cache(V&, const V&);
 
-  template <RVector U>
-  friend void r_copy_n(U& target, const U& source, r_size_t target_offset, r_size_t n);
-
   // By default do nothing (e.g. for vectors with no attrs)
   template <typename U>
-  void validate_attrs(SEXP x){
+  void validate_attrs(SEXP x) const {
     return;
   }
 
   template <RDateType U>
-  void validate_attrs(SEXP x){
+  void validate_attrs(SEXP x) const {
     if (!Rf_inherits(x, "Date")) [[unlikely]] {
       abort("SEXP must be of class 'Date'");
     }
   }
 
   template <RPsxctType U>
-  void validate_attrs(SEXP x){
+  void validate_attrs(SEXP x) const {
     if (!Rf_inherits(x, "POSIXct")) [[unlikely]] {
       abort("SEXP must inherit class 'POSIXct'");
     }
@@ -130,44 +154,17 @@ struct r_vec {
 
   public:
 
-  // Has data been materialised?
-  // Will only have been materialised if data ptr has been assigned
-  bool materialised() const noexcept {
-    return static_cast<bool>(m_ptr); 
-  }
-
   // Constructor that wraps new_vec_impl<T>
-  explicit r_vec(r_size_t n)
-    : value(internal::new_vec_impl<data_type>(n))
-  {
+  explicit r_vec(r_size_t n) : value(internal::new_vec_impl<data_type>(n)){
     initialise_ptr();
   }
 
-  explicit r_vec(r_size_t n, T const& default_value)
-    : r_vec(n)
-  {
-    fill(r_size_t(0), n, default_value);
+  explicit r_vec(r_size_t n, const T& default_value) : r_vec(n){
+    fill(r_size_t{0}, n, default_value);
   }
   
   r_vec(): r_vec(r_size_t(0)){
     initialise_ptr();
-  }
-
-  void ensure_exclusive() {
-    if (!is_exclusive()) [[unlikely]] {
-      r_size_t n = length();
-      r_vec<T> new_vec(n);
-      r_copy_n(new_vec, *this, 0, n);
-      safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
-      // internal::share_name_cache(new_vec, *this); // Maybe include this
-      *this = std::move(new_vec);
-    }
-  }
-
-  void maybe_ensure_exclusive() {
-    #ifdef CPPALLY_COPY_ON_MODIFY
-    ensure_exclusive();
-    #endif
   }
 
   // Constructors from existing r_sexp/SEXP
@@ -313,6 +310,11 @@ struct r_vec {
     return name_index(r_str(name), abort_on_missing);
   }
 
+  // Split get into two constrained members - r_str/r_str_view are special cases where 
+  // their SEXP type is verified on construction
+  // Since r_vec<r_str> has been verified on construction as a valid STRSXP already, 
+  // this means all its elements will be valid CHARSXP and hence we can avoid re-checking on element access
+
   // Get element (no bounds-check)
   T get(r_size_t index) const requires (!RStringType<T>) {
     #ifdef CPPALLY_PRESERVE_ALTREP
@@ -325,11 +327,6 @@ struct r_vec {
     return T(m_ptr[index]);
     #endif
   }
-
-  // Split get into two constrained members - r_str/r_str_view are special cases where 
-  // their SEXP type is verified on construction
-  // Since r_vec<r_str> has been verified on construction as a valid STRSXP already, 
-  // this means all its elements will be valid CHARSXP and hence we can avoid re-checking on element access
 
   T get(r_size_t index) const requires (RStringType<T>) {
     #ifdef CPPALLY_PRESERVE_ALTREP
@@ -403,14 +400,14 @@ struct r_vec {
     #ifdef CPPALLY_COPY_ON_MODIFY
     ensure_exclusive();
     #endif
-      if constexpr (RStringType<T>){
-        SET_STRING_ELT(value, index, val);
-      } else if constexpr (is<T, r_sexp>){
-        SET_VECTOR_ELT(value, index, val);
-      } else {
-        static_assert(!is_write_barrier_protected, "Can't write data directly here, data is R write-barrier protected");
-        data()[index] = unwrap(val);
-      }
+    if constexpr (RStringType<T>){
+      SET_STRING_ELT(value, index, val);
+    } else if constexpr (is<T, r_sexp>){
+      SET_VECTOR_ELT(value, index, val);
+    } else {
+      static_assert(!is_write_barrier_protected, "Can't write data directly here, data is R write-barrier protected");
+      data()[index] = unwrap(val);
+    }
   }
 
   template <typename U>
