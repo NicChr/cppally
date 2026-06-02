@@ -216,13 +216,9 @@ int cpp11_na_count(SEXP x){
 # Compiled in their own batch since they are illustrative rather than benchmarked.
 display_only <- c(
   view_good = '
-void good(r_str x){
+bool good(r_str x){
   r_str_view str = x;
-  if (str.cpp_str() == "true"){
-    print("true");
-  } else {
-    print("false");
-  }
+  return is_na(str); // str only used for temporary read-only context
 }
 ',
   view_bad = '
@@ -277,7 +273,7 @@ insert_release_cppally <- replicate(10^4, bench_protect_insert_release_cppally(1
 mean(insert_release_cppally)
 ```
 
-On my machine, cpp11 performs an insert & release every ~`r round(mean(insert_release_cpp11))` nanoseconds. cppally performs significantly better, with ~`r round(mean(insert_release_cppally))` nanoseconds per insert & release.
+On my machine, cpp11 performs an insert & release every ~`r round(mean(insert_release_cpp11))` nanoseconds. cppally performs better, with ~`r round(mean(insert_release_cppally))` nanoseconds per insert & release.
 
 **Copy benchmark**
 
@@ -320,31 +316,31 @@ x <- sample(letters, 10^5, TRUE)
 x[sample.int(length(x), 10^3)] <- NA
 ```
 
-**R C API results** - Extremely fast <30 microseconds
+**R C API results**
 
 ```{r}
 library(bench)
 mark(C_na_count(x))
 ```
 
-**cpp11 results** - ~5 milliseconds
+**cpp11 results**
 
 ```{r}
 mark(cpp11_na_count(x))
 ```
 
-**cppally results** - ~750 microseconds
+**cppally results**
 
 ```{r}
 mark(cppally_na_count(x))
 ```
 
 
-Counting values is a simple operation and because of its simplicity, the overhead associated with protection will dominate the benchmark. We can see that when removing the protection overhead and using the R C API directly, we get a baseline result of 30 microseconds. Think of that as the best possible result for this operation. The same operation with cpp11 results in a function execution time of 5 milliseconds, 180x slower than the R C API. Considerably better (but still relatively slower), `cppally_na_count()` results in a function execution time of 730 microseconds, 27x slower than the R C API. This is much better though it still goes to show that for certain operations, one may want to consider other approaches where performance is critical.
+Counting values is a simple operation and because of its simplicity, the overhead associated with protection will dominate the benchmark. We can see that when removing the protection overhead and using the R C API directly, we get a baseline result of 30 microseconds. Think of that as the best possible result for this operation. The same operation with cpp11 results in a function execution time of a few milliseconds, considerably slower than the R C API. `cppally_na_count()` results in lower execution time, albeit still significantly slower than the R C API.
 
 ## cppally views: A solution to the protection overhead problem
 
-As we saw in the previous section, certain performance-heavy functions can be slowed down by cppally protection overhead. Luckily cppally offers some tools to avoid this if it becomes a real issue.
+As we saw in the previous section, performance-critical functions can be slowed down by cppally protection overhead. Luckily cppally offers some tools to avoid this in these scenarios.
 
 ### r_str_view
 
@@ -384,7 +380,8 @@ views can be used to eliminate the small overhead associated with automatic prot
 as_cpp_chunk(display_only[["view_good"]])
 ```
 
-The above example is safe because `str` is not returned by `good()` AND does not outlive `x`.
+The above example is safe because `r_str_view str` is destroyed when it goes out of scope 
+at the end of `good()`, meaning it does not outlive `r_str x`.
 
 **DON'T**:
 
