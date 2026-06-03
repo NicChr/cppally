@@ -1,13 +1,17 @@
-
 ---
 output: github_document
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/NicChr/cppally/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/NicChr/cppally/actions/workflows/R-CMD-check.yaml)
-[![CRAN status](https://www.r-pkg.org/badges/version/cppally)](https://CRAN.R-project.org/package=cppally)
-<!-- badges: end -->
 
+[![R-CMD-check](https://github.com/NicChr/cppally/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/NicChr/cppally/actions/workflows/R-CMD-check.yaml)
+[![CRAN
+status](https://www.r-pkg.org/badges/version/cppally)](https://CRAN.R-project.org/package=cppally)
+
+<!-- badges: end -->
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -17,7 +21,6 @@ knitr::opts_chunk$set(
   out.width = "100%"
 )
 ```
-
 
 ```{r, include = FALSE}
 required <- c("bit64", "brio", "callr", "cli", 
@@ -59,6 +62,19 @@ source_body <- function(x){
 }
 
 examples <- c(
+  basic_sum = '
+template <RMathType T>
+[[cppally::register]]
+r_dbl cpp_sum(r_vector<T> x){
+  r_size_t n = x.length();
+  r_dbl out(0);
+
+  for (r_size_t i = 0; i < n; ++i){
+    out += x.get(i);
+  }
+  return out;
+}
+  ',
   cppally_str_to_int = '
 [[cppally::register]]
 r_int cppally_str_to_int(){
@@ -94,84 +110,197 @@ int64_t cppally_as_int64_t(){
 }',
   vec_null = '
 [[cppally::register]]
-r_vec<r_int> vec_null(){
-  return r_vec<r_int>(r_null);
+r_vector<r_int> vec_null(){
+  return r_vector<r_int>(r_null);
 }',
   vec_is_null = '
 [[cppally::register]]
 bool vec_is_null(){
-  return r_vec<r_int>(r_null).is_null();
-}')
+  return r_vector<r_int>(r_null).is_null();
+}',
+  count_val = '
+[[cppally::register]]
+int count_val(r_vector<r_dbl> x, r_dbl value){
+  return x.count(value);
+}
+')
   
 
-source_code_collapsed <- paste(examples, collapse = "\n")
+source_code_collapsed <- paste(examples[-1], collapse = "\n")
 cpp_source(code = source_code_collapsed)
 ```
 
+# cppally
+
+cppally is a high-performance header-only library providing a rich C++20
+API for advanced R data manipulation. Leveraging C++20 Concepts, custom
+R-based classes, templated functions and
+Single-Instruction-Multiple-Data (SIMD) vectorisation, cppally enables
+type-safety, performance, flexible templates and readable code.
+
+For info on using cppally see [Getting started with
+cppally](https://nicchr.github.io/cppally/articles/cppally.html)
 
 ## Acknowledgements
 
-I first want to thank the authors and contributors of the fantastic [cpp11](https://cpp11.r-lib.org/) R package, without which I would not have been inspired to write this package. I'd also like to thank the authors and contributors of [Rcpp](https://github.com/RcppCore/Rcpp) for developing this ecosystem that has laid much of the groundwork for C++ and R integration.
+I first want to thank the authors and contributors of the fantastic
+[cpp11](https://cpp11.r-lib.org/) R package, without which I would not
+have been inspired to write this package. I'd also like to thank the
+authors and contributors of [Rcpp](https://github.com/RcppCore/Rcpp) for
+developing this ecosystem that has laid much of the groundwork for C++
+and R integration.
 
-# cppally
+## Installation
 
-cppally is a high-performance header-only library providing a rich C++20 API for advanced R data manipulation. Leveraging C++20 Concepts, custom R-based classes, templated functions and Single-Instruction-Multiple-Data (SIMD) vectorisation, cppally enables type-safety, performance, flexible templates and readable code.
+Install the CRAN release
 
+```{r,eval=FALSE}
+install.packages("cppally")
+```
 
-For info on using cppally see [Getting started with cppally](https://nicchr.github.io/cppally/articles/cppally.html)
+or the development version
+
+```{r,eval=FALSE}
+pak::pak("NicChr/cppally")
+```
+
+## Basic usage: Sum using a C++ template
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["basic_sum"]])
+```
+
+Register the C++ function to R
+
+```{r}
+cpp_source(code = '
+#include <cppally.hpp>
+using namespace cppally;
+
+template <RMathType T>
+[[cppally::register]]
+r_dbl cpp_sum(r_vector<T> x){
+  r_size_t n = x.length();
+  r_dbl out(0);
+
+  for (r_size_t i = 0; i < n; ++i){
+    out += x.get(i);
+  }
+  return out;
+}
+')
+```
+
+```{r}
+cpp_sum(1:5)
+```
+
+NA values are handled like in R. In this case NA is returned if 
+the vector contains one or more NA values. 
+
+```{r}
+cpp_sum(c(1, NA, 3))
+```
 
 ## Design choices
 
 ### Templates
 
-cppally makes heavy use of templates for powerful object-oriented programming. While this offers a flexible framework for writing generic functions, it comes at the cost of slower compile times and larger binary sizes.
+cppally makes heavy use of templates for powerful generic
+programming. While this offers a flexible framework for writing generic
+functions, it comes at the cost of slower compile times and larger
+binary sizes.
 
-Users can write and optionally register their own templates (to R). There are two main limitations to be aware of - a C++ specific one and an R specific one. The C++ limitation is that templates generally must be written in header files if they are to be used across multiple compilation units. The R limitation has to do with automatic template argument deduction. There is a workaround discussed in the main vignette [Getting started with cppally](https://nicchr.github.io/cppally/articles/cppally.html)
+Users can write and optionally register their own templates (to R).
+There are two main limitations to be aware of. The first is that templates must
+be written in header files if they are to be used across multiple
+compilation units. The other big limitation is that template specialisations 
+cannot be called from R, so when calling C++ template functions from R, 
+we always rely on automatic deduction from the function inputs.
+There is a workaround discussed in the main vignette [Getting started with
+cppally](https://nicchr.github.io/cppally/articles/cppally.html)
 
 ### Scalar R types and custom methods
 
-cppally offers R-based C++ scalar types that are `NA` aware. To achieve this multiple methods such as binary arithmetic operators have been written to ensure `NA` is propagated correctly. While every attempt has been made to make this as fast as possible, it adds some overhead and in some cases can prevent effective vectorisation (via e.g. SIMD instructions). If you find that this is slowing things down too much you can work with the underlying C/C++ types using `unwrap_t<>` and `unwrap()`.
+cppally offers R-based C++ scalar types that are `NA` aware. To achieve
+this multiple methods such as binary arithmetic operators have been
+written to ensure `NA` is propagated correctly. While every attempt has
+been made to make this as fast as possible, it adds some overhead and in
+some cases can prevent effective vectorisation (via e.g. SIMD
+instructions). If you find that this is slowing things down too much you
+can work with the underlying C/C++ types using `unwrap_t<>` and
+`unwrap()`.
 
 ### Automatic protection
 
-Like the excellent cpp11 package, cppally also handles automatic protection for R objects. For more info see [Automatic Protection](https://nicchr.github.io/cppally/articles/protection.html)
+Like the excellent cpp11 package, cppally also handles automatic
+protection for R objects. For more info see [Automatic
+Protection](https://nicchr.github.io/cppally/articles/protection.html)
 
 ### ALTREP
 
-For performance reasons, ALTREP materialisation is eager by default, which means that 
-ALTREP vectors are materialised on construction. To preserve ALTREP compact representations, one can enable the package-wide 'CPPALLY_PRESERVE_ALTREP' flag. This can be done through `cppally::use_preserve_altrep_flag()` or `cppally::cpp_source(..., preserve_altrep = TRUE)`. You can also manually add the 
-'-DCPPALLY_PRESERVE_ALTREP' flag to Makevars.
+For performance reasons, ALTREP materialisation is eager by default,
+which means that ALTREP vectors are materialised on construction. To
+preserve ALTREP compact representations, one can enable the package-wide
+'CPPALLY_PRESERVE_ALTREP' flag. This can be done through
+`cppally::use_preserve_altrep_flag()` or
+`cppally::cpp_source(..., preserve_altrep = TRUE)`. You can also
+manually add the '-DCPPALLY_PRESERVE_ALTREP' flag to Makevars.
 
-### Interopability with the R C API
+### Using both cppally and the R C API
 
-Using cppally together with the R C API is generally discouraged. 
+Using the R C API alongside cppally is strongly discouraged for the following
+reasons.
 
-If R throws an error via `Rf_error()` a 'longjmp' will occur, meaning C++ destructors won't run and memory that should have been released will not be released. If you really want to use the R C API and cppally, you must make sure that either the code is exception safe (unlikely), or that R C API functions are called via cppally's `safe[]`. 
+If R throws an error via `Rf_error()` a 'longjmp' will occur, meaning
+C++ destructors won't run and memory that should have been released will
+not be released.
+
+Furthermore, due to the way cppally caches vector names, using R C API
+functions like `Rf_setAttrib()` will set the vector's names without
+informing cppally, leading to synchronisation issues. cppally needs to
+keep the names cache in sync with the R names attribute and the only way
+it can do that is by detecting changes to the names via
+`cppally::r_vector::set_names()` or `cppally::attr::set_attr()` (or
+`cppally::set_old_names()`).
 
 ### Attributes
 
-The use of `Rf_setAttrib` is dangerous and highly discouraged in cppally. 
-Since cppally caches vector names in all `r_vec` objects, the use of
-`Rf_namesgets()` or `Rf_setAttrib(, R_NamesSymbol)` will invalidate the cache 
-and inevitably lead to incorrect results. Use `names()` and `set_names()` 
-member functions. The same goes for factor levels, use `levels()` and 
-`set_levels()` over `Rf_setAttrib(, R_LevelsSymbol)`. 
+Attribute manipulation is possible and helpers can be found in the
+`attr` namespace via `cppally::attr::`
 
-Attribute helpers can be found in attr namespace via `cppally::attr::`
+### Views
 
-### views
+To avoid the overhead associated with automatic protection entirely, one
+can use view types like e.g. `r_str_view`, a non-owning class for R
+strings. For more info on views see [Automatic
+Protection](https://nicchr.github.io/cppally/articles/protection.html)
 
-To avoid the overhead associated with automatic protection entirely, one can use view types like e.g. `r_str_view`, a non-owning class for R strings. For more info on views see [Automatic Protection](https://nicchr.github.io/cppally/articles/protection.html)
+### Opt-in copy-on-modify
 
-### No copy-on-write or copy-on-modify
+Copy-on-modify can be enabled via `cppally::use_copy_on_modify()` or by
+setting the CPPALLY_COPY_ON_MODIFY Makevars flag directly. When this is
+enabled, all in-place modifications check that the object being modified
+isn't referenced or owned by another object. If it is referenced, a copy
+is taken first before modifying, otherwise it directly modifies.
 
-Deep copies are almost never triggered when modifying vectors, a design choice that contrasts cpp11's copy-on-write approach. cppally's `r_vec<T>` member `set()` always modifies in-place. It is up to the user to ensure that a fresh vector is created before further manipulation or that it's safe to modify the existing vector.
+This safety check is inherently single-threaded which effectively
+disables almost all parallelisation. Enable this if prevention of
+accidental modification is a high concern. On the other hand, leaving it
+disabled may be preferably where performance is important.
+
+By default, copy-on-modify is disabled and hence all element setting is
+done in-place via `r_vector::set()`. It is up to the user to ensure that a
+fresh vector is created before further manipulation or that it's safe to
+modify the existing vector.
 
 ### Lossy coercion
 
-Any coercion that results in complete information loss is an error (partial is allowed, e.g. double -> int). 
+Any coercion that results in complete information loss is an error
+(partial is allowed, e.g. double -\> int).
 
-For example, string -> int may not be possible without complete information loss
+For example, string -\> int may not be possible without complete
+information loss
 
 ```{r, echo=FALSE, results = 'asis'}
 as_cpp_chunk(source_body(examples[["cppally_str_to_int"]]))
@@ -181,16 +310,18 @@ as_cpp_chunk(source_body(examples[["cppally_str_to_int"]]))
 cppally_str_to_int()
 ```
 
-This is contrast to R which returns an NA with a warning
+This is in contrast to R which returns an NA with a warning
 
 ```{r}
 as.integer("a")
 ```
 
+The benefit of cppally's approach is that when registering C++ functions
+to R, inputs can be supplied flexibly without unexpected behaviour.
 
-The benefit of cppally's approach is that when registering C++ functions to R, inputs can be supplied flexibly without unexpected behaviour. 
-
-Let's say you have a function `foo` that expects an `r_int` but you give it an `r_dbl` without realising - this will implicitly coerce to `r_int` without throwing an error.
+Let's say you have a function `foo` that expects an `r_int` but you give
+it an `r_dbl` without realising - this will implicitly coerce to `r_int`
+without throwing an error.
 
 ```{r, echo=FALSE, results = 'asis'}
 as_cpp_chunk(examples[["foo"]])
@@ -200,7 +331,50 @@ as_cpp_chunk(examples[["foo"]])
 foo(1.2345)
 ```
 
-If we allowed implicit coercion to NA then we would need to be strict with inputs to balance things out.
+The double `1.2345` was implicitly converted to `1`, 
+an example of **partial lossy coercion**. cppally allows this.
+
+What cppally doesn't allow is **total lossy coercion**, which can result in 
+ambiguity. Take the following example of counting the occurrence of a 
+value in a vector. 
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["count_val"]])
+```
+
+```{r}
+x <- c(rep(0, 20), rep(1, 30), rep(NA, 40))
+
+count_val(x, 0)
+count_val(x, 1)
+count_val(x, NA)
+
+# value can also implicitly coerce a string to a double
+
+count_val(x, "0")
+count_val(x, "1")
+```
+
+So far so good. But what happens if we implicitly coerced to NA and then 
+counted occurrences?
+
+```{r}
+count_val(x, as.double("1. 0")) # Wrong
+```
+
+`as.double("1. 0")` was coerced to `NA`, `count_val()` then counted the number of
+`NA` values and returned 40, even though we didn't ask for a count of `NA`, so the
+result should have been 0.
+
+This is the main issue with allowing total lossy coercion to `NA` - `count_val()` 
+can't distinguish between a true `NA` and an `NA` that has been produced from a 
+lossy coercion.
+
+With cppally this ambiguity is impossible.
+
+```{r,error=TRUE}
+count_val(x, "1. 0")
+```
 
 ### Vector indexing
 
@@ -208,13 +382,14 @@ All indexing is 0-based including subsetting vectors.
 
 ### 64-bit integers
 
-On the C++ side, 64-bit integers are fully supported, including vectors. To return 64-bit integers to R we need the bit64 package to be loaded. cppally delegates the handling of 64-bit integer vectors to bit64 by marking them with the "integer64" class.
-
+On the C++ side, 64-bit integers are fully supported, including vectors.
+To return 64-bit integers to R we need the bit64 package to be loaded.
+cppally delegates the handling of 64-bit integer vectors to bit64 by
+marking them with the "integer64" class.
 
 ```{r, message=FALSE}
 library(bit64)
 ```
-
 
 ```{r, echo=FALSE, results = 'asis'}
 as_cpp_chunk(examples[["as_int64"]])
@@ -224,7 +399,9 @@ as_cpp_chunk(examples[["as_int64"]])
 as_int64(.Machine$integer.max) + 1L
 ```
 
-Please note that other signed 64-bit integer types like `int64_t`, `R_xlen_t` and cppally's `r_size_t` will convert to 64-bit integer vectors when returned to R.
+Please note that other signed 64-bit integer types like `int64_t`,
+`R_xlen_t` and cppally's `r_size_t` will convert to 64-bit integer
+vectors when returned to R.
 
 ```{r, echo=FALSE, results = 'asis'}
 as_cpp_chunk(source_body(examples[["cppally_as_r_size_t"]]))
@@ -233,7 +410,6 @@ as_cpp_chunk(source_body(examples[["cppally_as_r_size_t"]]))
 ```{r, echo=FALSE}
 cppally_as_r_size_t()
 ```
-
 
 ```{r, echo=FALSE, results = 'asis'}
 as_cpp_chunk(source_body(examples[["cppally_as_r_xlen_t"]]))
@@ -251,10 +427,14 @@ as_cpp_chunk(source_body(examples[["cppally_as_int64_t"]]))
 cppally_as_int64_t()
 ```
 
-
 ### Using R's `NULL`
 
-The cppally version of R's `R_NilValue` is `r_null` which is of type `r_sexp`. In an attempt to avoid the use of additional meta-programming tactics to deal with `r_null`, we allow vectors to be able to contain `r_null` which makes programming with R attributes easier. This means `r_vec<T>` objects can be `r_null`. To detect this, use the `is_null()` member function.
+The cppally version of R's `R_NilValue` is `r_null` which is of type
+`r_sexp`. In an attempt to avoid the use of additional meta-programming
+tactics to deal with `r_null`, we allow vectors to be able to contain
+`r_null` which makes programming with R attributes easier. This means
+`r_vector<T>` objects can be `r_null`. To detect this, use the `is_null()`
+member function.
 
 ```{r, echo=FALSE, results = 'asis'}
 as_cpp_chunk(source_body(examples[["vec_null"]]))
@@ -274,36 +454,49 @@ vec_is_null()
 
 ## Useful Makevars flags
 
-Because cppally is a template-heavy library, binary sizes can sometimes get large. This is primarily an issue on windows which will throw a compiler error if a single .o file gets too big. In this case you may want to consider adding the following flag to Makevars.win
+Because cppally is a template-heavy library, binary sizes can sometimes
+get large. This is primarily an issue on windows which will throw a
+compiler error if a single .o file gets too big. In this case you may
+want to consider adding the following flag to Makevars.win
 
-```
+```         
 PKG_CXXFLAGS = -Wa,-mbig-obj
 ```
 
-To benefit from OMP SIMD vectorisation and parallelisation, it is recommended to add these flags to Makevars
+To benefit from OMP SIMD vectorisation and parallelisation, it is
+recommended to add these flags to Makevars
 
-```
+```         
 PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
 PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS)
 ```
 
-And these flags to Makevars.win (including the windows specific binary size flags)
+And these flags to Makevars.win (including the windows specific binary
+size flags)
 
-```
+```         
 PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS) -Wa,-mbig-obj
 PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS)
 ```
+
 ## C++20 and RStudio
 
-At the moment C++20 is not fully supported via RStudio, so I would recommend using vscode with the C/C++ for Visual Studio Code extension. Positron may also be an option but since I haven't used it, I can't speak to its capabilities.
+At the moment C++20 is not fully supported via RStudio, so I would
+recommend using vscode with the C/C++ for Visual Studio Code extension.
+Positron may also be an option but since I haven't used it, I can't
+speak to its capabilities.
 
-While I personally use vscode for C++ code and RStudio for R code and package development, you can also use vscode (or Positron) for both these things, but again, I haven't personally used vscode for writing R code so I can't say much about it.
+While I personally use vscode for C++ code and RStudio for R code and
+package development, you can also use vscode (or Positron) for both
+these things, but again, I haven't personally used vscode for writing R
+code so I can't say much about it.
 
-To get vscode's intellisense to work correctly, you will likely need to set some parameters in c_cpp_properties.json.
+To get vscode's intellisense to work correctly, you will likely need to
+set some parameters in c_cpp_properties.json.
 
 My json file looks like this:
 
-```json
+``` json
 {
   "configurations": [
     {
@@ -334,13 +527,13 @@ My json file looks like this:
 
 As your R installation path may differ, you can find the exact path with
 
-```r
+``` r
 normalizePath(Sys.getenv("R_HOME"), winslash = "/")
 ```
 
-Your R libraries can be found with 
+Your R libraries can be found with
 
-```r
+``` r
 .libPaths()
 ```
 
@@ -352,3 +545,5 @@ cxx <- system2(file.path(R.home("bin"), "R"),
 cxx_bin <- trimws(strsplit(cxx, " ")[[1]][1])
 Sys.which(cxx_bin)
 ```
+
+Once you have both paths, set compilerPath and the R include path in c_cpp_properties.json accordingly.

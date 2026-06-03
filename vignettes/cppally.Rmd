@@ -521,6 +521,8 @@ All cppally scalar types are implemented as structs that contain the underlying 
 cppally vectors are templated and can be thought of as containers of scalar
 elements like `r_int`, `r_dbl`, etc.
 
+**Note:** `r_vector` is an alias of `r_vec` so both can be used.
+
 We can create vectors like so
 
 ```{r, echo=FALSE, results = 'asis'}
