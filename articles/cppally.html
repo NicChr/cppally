@@ -411,6 +411,8 @@ true.&lt;/p&gt;"><sup>4</sup></a><br><br><br>
 </h2>
 <p>cppally vectors are templated and can be thought of as containers of
 scalar elements like <code>r_int</code>, <code>r_dbl</code>, etc.</p>
+<p><strong>Note:</strong> <code>r_vector</code> is an alias of
+<code>r_vec</code> so both can be used.</p>
 <p>We can create vectors like so</p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a></span>
 <span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="co">// Integer vector of size n</span></span>
@@ -910,8 +912,8 @@ of number of unique values.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression            min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_n_unique      1.23ms   1.45ms      692.    1.38MB     18.1</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_n_unique 306.28µs 308.72µs     <span style="text-decoration: underline;">3</span>175.        0B      0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_n_unique      1.28ms   1.32ms      757.    1.38MB     20.8</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_n_unique 279.03µs 281.58µs     <span style="text-decoration: underline;">3</span>494.        0B      0</span></span></code></pre></div>
 <p>More useful sugar functions</p>
 <ul>
 <li><p><code><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique()</a></code> - Like R’s <code><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique()</a></code> but with a

@@ -88,15 +88,14 @@ double bench_protect_insert_release_cppally(int n) {
 
 insert_release_cpp11 <- replicate(10^4, bench_protect_insert_release_cpp11(10^4)) 
 mean(insert_release_cpp11)
-#> [1] 46.54215
+#> [1] 39.14923
 insert_release_cppally <- replicate(10^4, bench_protect_insert_release_cppally(10^4))
 mean(insert_release_cppally)
-#> [1] 16.83855
+#> [1] 15.83253
 ```
 
-On my machine, cpp11 performs an insert & release every ~47 nanoseconds.
-cppally performs significantly better, with ~17 nanoseconds per insert &
-release.
+On my machine, cpp11 performs an insert & release every ~39 nanoseconds.
+cppally performs better, with ~16 nanoseconds per insert & release.
 
 **Copy benchmark**
 
@@ -151,14 +150,14 @@ double bench_protect_copy_cppally(int n) {
 
 copy_sexp_cpp11 <- replicate(10^4, bench_protect_copy_cpp11(10^4))
 mean(copy_sexp_cpp11)
-#> [1] 44.31284
+#> [1] 36.11257
 copy_sexp_cppally <- replicate(10^4, bench_protect_copy_cppally(10^4))
 mean(copy_sexp_cppally)
-#> [1] 0.7058484
+#> [1] 0.6269761
 ```
 
 In these benchmark results we can see a drastic difference, with cpp11
-at ~44 ns/copy and cppally at ~0.7 ns/copy.
+at ~36 ns/copy and cppally at ~0.6 ns/copy.
 
 **Impact of protection overhead, a real example**
 
@@ -225,7 +224,7 @@ x <- sample(letters, 10^5, TRUE)
 x[sample.int(length(x), 10^3)] <- NA
 ```
 
-**R C API results** - Extremely fast \<30 microseconds
+**R C API results**
 
 ``` r
 
@@ -234,10 +233,10 @@ mark(C_na_count(x))
 #> # A tibble: 1 × 6
 #>   expression         min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>    <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 C_na_count(x)   71.5µs   71.8µs    13694.        0B        0
+#> 1 C_na_count(x)   63.4µs   63.8µs    15354.        0B        0
 ```
 
-**cpp11 results** - ~5 milliseconds
+**cpp11 results**
 
 ``` r
 
@@ -245,10 +244,10 @@ mark(cpp11_na_count(x))
 #> # A tibble: 1 × 6
 #>   expression             min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>        <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cpp11_na_count(x)   7.26ms   8.86ms      114.        0B     33.3
+#> 1 cpp11_na_count(x)   6.54ms   6.68ms      149.        0B     47.5
 ```
 
-**cppally results** - ~750 microseconds
+**cppally results**
 
 ``` r
 
@@ -256,7 +255,7 @@ mark(cppally_na_count(x))
 #> # A tibble: 1 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_na_count(x)   1.35ms   1.36ms      731.        0B     2.01
+#> 1 cppally_na_count(x)   1.43ms   1.44ms      692.        0B        0
 ```
 
 Counting values is a simple operation and because of its simplicity, the
@@ -264,18 +263,16 @@ overhead associated with protection will dominate the benchmark. We can
 see that when removing the protection overhead and using the R C API
 directly, we get a baseline result of 30 microseconds. Think of that as
 the best possible result for this operation. The same operation with
-cpp11 results in a function execution time of 5 milliseconds, 180x
-slower than the R C API. Considerably better (but still relatively
-slower), `cppally_na_count()` results in a function execution time of
-730 microseconds, 27x slower than the R C API. This is much better
-though it still goes to show that for certain operations, one may want
-to consider other approaches where performance is critical.
+cpp11 results in a function execution time of a few milliseconds,
+considerably slower than the R C API. `cppally_na_count()` results in
+lower execution time, albeit still significantly slower than the R C
+API.
 
 ## cppally views: A solution to the protection overhead problem
 
-As we saw in the previous section, certain performance-heavy functions
-can be slowed down by cppally protection overhead. Luckily cppally
-offers some tools to avoid this if it becomes a real issue.
+As we saw in the previous section, performance-critical functions can be
+slowed down by cppally protection overhead. Luckily cppally offers some
+tools to avoid this in these scenarios.
 
 ### r_str_view
 
@@ -305,7 +302,7 @@ mark(cppally_fast_na_count(x))
 #> # A tibble: 1 × 6
 #>   expression                    min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>               <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_fast_na_count(x)   40.9µs   71.7µs    13838.        0B        0
+#> 1 cppally_fast_na_count(x)   35.2µs   63.8µs    15506.        0B     2.01
 ```
 
 Looking at the benchmark results, we have effectively eliminated the
@@ -338,7 +335,7 @@ mark(cppally_fast_na_count_v2(x))
 #> # A tibble: 1 × 6
 #>   expression                       min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>                  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_fast_na_count_v2(x)   81.6µs   82.3µs    11749.        0B        0
+#> 1 cppally_fast_na_count_v2(x)   79.5µs   80.1µs    12232.        0B        0
 ```
 
 The results are similar to that of `cppally_fast_na_count()`.
@@ -356,18 +353,15 @@ pointing to.
 
 ``` cpp
 
-void good(r_str x){
+bool good(r_str x){
   r_str_view str = x;
-  if (str.cpp_str() == "true"){
-    print("true");
-  } else {
-    print("false");
-  }
+  return is_na(str); // str only used for temporary read-only context
 }
 ```
 
-The above example is safe because `str` is not returned by `good()` AND
-does not outlive `x`.
+The above example is safe because `r_str_view str` is destroyed when it
+goes out of scope at the end of `good()`, meaning it does not outlive
+`r_str x`.
 
 **DON’T**:
 

@@ -246,6 +246,8 @@ underlying C/C++ types as well as other member functions.
 cppally vectors are templated and can be thought of as containers of
 scalar elements like `r_int`, `r_dbl`, etc.
 
+**Note:** `r_vector` is an alias of `r_vec` so both can be used.
+
 We can create vectors like so
 
 ``` cpp
@@ -899,8 +901,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique      1.23ms   1.45ms      692.    1.38MB     18.1
-#> 2 cppally_n_unique 306.28µs 308.72µs     3175.        0B      0
+#> 1 base_n_unique      1.28ms   1.32ms      757.    1.38MB     20.8
+#> 2 cppally_n_unique 279.03µs 281.58µs     3494.        0B      0
 ```
 
 More useful sugar functions

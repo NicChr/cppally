@@ -1,14 +1,5 @@
 # cppally
 
-## Acknowledgements
-
-I first want to thank the authors and contributors of the fantastic
-[cpp11](https://cpp11.r-lib.org/) R package, without which I would not
-have been inspired to write this package. I’d also like to thank the
-authors and contributors of [Rcpp](https://github.com/RcppCore/Rcpp) for
-developing this ecosystem that has laid much of the groundwork for C++
-and R integration.
-
 cppally is a high-performance header-only library providing a rich C++20
 API for advanced R data manipulation. Leveraging C++20 Concepts, custom
 R-based classes, templated functions and
@@ -18,21 +9,101 @@ type-safety, performance, flexible templates and readable code.
 For info on using cppally see [Getting started with
 cppally](https://nicchr.github.io/cppally/articles/cppally.html)
 
+## Acknowledgements
+
+I first want to thank the authors and contributors of the fantastic
+[cpp11](https://cpp11.r-lib.org/) R package, without which I would not
+have been inspired to write this package. I’d also like to thank the
+authors and contributors of [Rcpp](https://github.com/RcppCore/Rcpp) for
+developing this ecosystem that has laid much of the groundwork for C++
+and R integration.
+
+## Installation
+
+Install the CRAN release
+
+``` r
+
+install.packages("cppally")
+```
+
+or the development version
+
+``` r
+
+pak::pak("NicChr/cppally")
+```
+
+## Basic usage: Sum using a C++ template
+
+``` cpp
+
+template <RMathType T>
+[[cppally::register]]
+r_dbl cpp_sum(r_vector<T> x){
+  r_size_t n = x.length();
+  r_dbl out(0);
+
+  for (r_size_t i = 0; i < n; ++i){
+    out += x.get(i);
+  }
+  return out;
+}
+  
+```
+
+Register the C++ function to R
+
+``` r
+
+cpp_source(code = '
+#include <cppally.hpp>
+using namespace cppally;
+
+template <RMathType T>
+[[cppally::register]]
+r_dbl cpp_sum(r_vector<T> x){
+  r_size_t n = x.length();
+  r_dbl out(0);
+
+  for (r_size_t i = 0; i < n; ++i){
+    out += x.get(i);
+  }
+  return out;
+}
+')
+```
+
+``` r
+
+cpp_sum(1:5)
+#> [1] 15
+```
+
+NA values are handled like in R. In this case NA is returned if the
+vector contains one or more NA values.
+
+``` r
+
+cpp_sum(c(1, NA, 3))
+#> [1] NA
+```
+
 ## Design choices
 
 ### Templates
 
-cppally makes heavy use of templates for powerful object-oriented
-programming. While this offers a flexible framework for writing generic
-functions, it comes at the cost of slower compile times and larger
-binary sizes.
+cppally makes heavy use of templates for powerful generic programming.
+While this offers a flexible framework for writing generic functions, it
+comes at the cost of slower compile times and larger binary sizes.
 
 Users can write and optionally register their own templates (to R).
-There are two main limitations to be aware of - a C++ specific one and
-an R specific one. The C++ limitation is that templates generally must
-be written in header files if they are to be used across multiple
-compilation units. The R limitation has to do with automatic template
-argument deduction. There is a workaround discussed in the main vignette
+There are two main limitations to be aware of. The first is that
+templates must be written in header files if they are to be used across
+multiple compilation units. The other big limitation is that template
+specialisations cannot be called from R, so when calling C++ template
+functions from R, we always rely on automatic deduction from the
+function inputs. There is a workaround discussed in the main vignette
 [Getting started with
 cppally](https://nicchr.github.io/cppally/articles/cppally.html)
 
@@ -63,43 +134,54 @@ preserve ALTREP compact representations, one can enable the package-wide
 or `cppally::cpp_source(..., preserve_altrep = TRUE)`. You can also
 manually add the ‘-DCPPALLY_PRESERVE_ALTREP’ flag to Makevars.
 
-### Interopability with the R C API
+### Using both cppally and the R C API
 
-Using cppally together with the R C API is generally discouraged.
+Using the R C API alongside cppally is strongly discouraged for the
+following reasons.
 
 If R throws an error via `Rf_error()` a ‘longjmp’ will occur, meaning
 C++ destructors won’t run and memory that should have been released will
-not be released. If you really want to use the R C API and cppally, you
-must make sure that either the code is exception safe (unlikely), or
-that R C API functions are called via cppally’s `safe[]`.
+not be released.
+
+Furthermore, due to the way cppally caches vector names, using R C API
+functions like `Rf_setAttrib()` will set the vector’s names without
+informing cppally, leading to synchronisation issues. cppally needs to
+keep the names cache in sync with the R names attribute and the only way
+it can do that is by detecting changes to the names via
+`cppally::r_vector::set_names()` or `cppally::attr::set_attr()` (or
+`cppally::set_old_names()`).
 
 ### Attributes
 
-The use of `Rf_setAttrib` is dangerous and highly discouraged in
-cppally. Since cppally caches vector names in all `r_vec` objects, the
-use of `Rf_namesgets()` or `Rf_setAttrib(, R_NamesSymbol)` will
-invalidate the cache and inevitably lead to incorrect results. Use
-[`names()`](https://rdrr.io/r/base/names.html) and `set_names()` member
-functions. The same goes for factor levels, use
-[`levels()`](https://rdrr.io/r/base/levels.html) and `set_levels()` over
-`Rf_setAttrib(, R_LevelsSymbol)`.
+Attribute manipulation is possible and helpers can be found in the
+`attr` namespace via `cppally::attr::`
 
-Attribute helpers can be found in attr namespace via `cppally::attr::`
-
-### views
+### Views
 
 To avoid the overhead associated with automatic protection entirely, one
 can use view types like e.g. `r_str_view`, a non-owning class for R
 strings. For more info on views see [Automatic
 Protection](https://nicchr.github.io/cppally/articles/protection.html)
 
-### No copy-on-write or copy-on-modify
+### Opt-in copy-on-modify
 
-Deep copies are almost never triggered when modifying vectors, a design
-choice that contrasts cpp11’s copy-on-write approach. cppally’s
-`r_vec<T>` member `set()` always modifies in-place. It is up to the user
-to ensure that a fresh vector is created before further manipulation or
-that it’s safe to modify the existing vector.
+Copy-on-modify can be enabled via
+[`cppally::use_copy_on_modify()`](https://nicchr.github.io/cppally/reference/use_copy_on_modify.md)
+or by setting the CPPALLY_COPY_ON_MODIFY Makevars flag directly. When
+this is enabled, all in-place modifications check that the object being
+modified isn’t referenced or owned by another object. If it is
+referenced, a copy is taken first before modifying, otherwise it
+directly modifies.
+
+This safety check is inherently single-threaded which effectively
+disables almost all parallelisation. Enable this if prevention of
+accidental modification is a high concern. On the other hand, leaving it
+disabled may be preferably where performance is important.
+
+By default, copy-on-modify is disabled and hence all element setting is
+done in-place via `r_vector::set()`. It is up to the user to ensure that
+a fresh vector is created before further manipulation or that it’s safe
+to modify the existing vector.
 
 ### Lossy coercion
 
@@ -118,7 +200,7 @@ as<r_int>(r_str("a"))
 #> ! Implicit NA coercion detected from r_str to r_int, please ensure data can be coerced without complete loss of information
 ```
 
-This is contrast to R which returns an NA with a warning
+This is in contrast to R which returns an NA with a warning
 
 ``` r
 
@@ -148,8 +230,66 @@ foo(1.2345)
 #> [1] 1
 ```
 
-If we allowed implicit coercion to NA then we would need to be strict
-with inputs to balance things out.
+The double `1.2345` was implicitly converted to `1`, an example of
+**partial lossy coercion**. cppally allows this.
+
+What cppally doesn’t allow is **total lossy coercion**, which can result
+in ambiguity. Take the following example of counting the occurrence of a
+value in a vector.
+
+``` cpp
+
+[[cppally::register]]
+int count_val(r_vector<r_dbl> x, r_dbl value){
+  return x.count(value);
+}
+```
+
+``` r
+
+x <- c(rep(0, 20), rep(1, 30), rep(NA, 40))
+
+count_val(x, 0)
+#> [1] 20
+count_val(x, 1)
+#> [1] 30
+count_val(x, NA)
+#> [1] 40
+
+# value can also implicitly coerce a string to a double
+
+count_val(x, "0")
+#> [1] 20
+count_val(x, "1")
+#> [1] 30
+```
+
+So far so good. But what happens if we implicitly coerced to NA and then
+counted occurrences?
+
+``` r
+
+count_val(x, as.double("1. 0")) # Wrong
+#> Warning in count_val(x, as.double("1. 0")): NAs introduced by coercion
+#> [1] 40
+```
+
+`as.double("1. 0")` was coerced to `NA`, `count_val()` then counted the
+number of `NA` values and returned 40, even though we didn’t ask for a
+count of `NA`, so the result should have been 0.
+
+This is the main issue with allowing total lossy coercion to `NA` -
+`count_val()` can’t distinguish between a true `NA` and an `NA` that has
+been produced from a lossy coercion.
+
+With cppally this ambiguity is impossible.
+
+``` r
+
+count_val(x, "1. 0")
+#> Error:
+#> ! Implicit NA coercion detected from r_str to r_dbl, please ensure data can be coerced without complete loss of information
+```
 
 ### Vector indexing
 
@@ -219,11 +359,11 @@ The cppally version of R’s `R_NilValue` is `r_null` which is of type
 `r_sexp`. In an attempt to avoid the use of additional meta-programming
 tactics to deal with `r_null`, we allow vectors to be able to contain
 `r_null` which makes programming with R attributes easier. This means
-`r_vec<T>` objects can be `r_null`. To detect this, use the `is_null()`
-member function.
+`r_vector<T>` objects can be `r_null`. To detect this, use the
+`is_null()` member function.
 
 ``` cpp
-r_vec<r_int>(r_null)
+r_vector<r_int>(r_null)
 ```
 
 ``` R
@@ -231,7 +371,7 @@ r_vec<r_int>(r_null)
 ```
 
 ``` cpp
-r_vec<r_int>(r_null).is_null()
+r_vector<r_int>(r_null).is_null()
 ```
 
 ``` R
@@ -336,6 +476,9 @@ Sys.which(cxx_bin)
 #>                                          g++ 
 #> "C:\\rtools45\\X86_64~1.POS\\bin\\G__~1.EXE"
 ```
+
+Once you have both paths, set compilerPath and the R include path in
+c_cpp_properties.json accordingly.
 
 # Package index
 
