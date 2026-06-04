@@ -175,7 +175,7 @@ inline std::vector<uint64_t> row_hashes(const r_df& x) {
     int ncol = x.ncol();
     std::vector<uint64_t> row_ids(size_t(nrow), 0U);
     for (int c = 0; c < ncol; ++c) {
-        view_sexp(x.value.view(c), [&]<typename ColT>(const ColT& col) {
+        r_view(x.value.view(c), [&]<typename ColT>(const ColT& col) {
             if constexpr (requires (int i) { r_hash_impl(col.view(i)); }) {
                 for (int i = 0; i < nrow; ++i) {
                     row_ids[i] = hash_combine(row_ids[i], r_hash_impl(col.view(i)));

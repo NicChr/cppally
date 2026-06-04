@@ -84,7 +84,7 @@ inline r_vec<V> find(const T& x, const U& values, bool invert) {
 
 template <internal::RSubscript U, typename V>
 void fill(r_sexp& x, const r_vec<U>& where, const V& with) {
-    mutate_sexp(x, [&](auto& x_) {
+    internal::mutate_sexp(x, [&](auto& x_) {
         using x_t = std::remove_cvref_t<decltype(x_)>;
         if constexpr (is<x_t, r_sexp>){
             abort("Unsupported SEXP type in `fill()`");
@@ -98,14 +98,14 @@ void fill(r_sexp& x, const r_vec<U>& where, const V& with) {
 
 template <internal::RSubscript U>
 void fill(r_sexp& x, const r_vec<U>& where, const r_sexp& with) {
-    visit_sexp(with, [&](const auto& with_) {
+    r_visit(with, [&](const auto& with_) {
         fill(x, where, with_);
     });
 }
 
 template <typename U>
 inline void replace(r_sexp& x, const U& old_values, const U& new_values) {
-    mutate_sexp(x, [&](auto& x_) {
+    internal::mutate_sexp(x, [&](auto& x_) {
         using x_t = std::remove_cvref_t<decltype(x_)>;
         x_t oldv = x_t(static_cast<SEXP>(old_values));
         x_t newv = x_t(static_cast<SEXP>(new_values));
@@ -121,7 +121,7 @@ inline void replace(r_sexp& x, const U& old_values, const U& new_values) {
 
 template<>
 inline r_sexp deep_copy(const r_sexp& x) {
-    return view_sexp(x, [](const auto& vec) -> r_sexp {
+    return r_view(x, [](const auto& vec) -> r_sexp {
         if constexpr (!is<decltype(vec), r_sexp>){
             return as<r_sexp>(deep_copy(vec));
         } else {
@@ -132,7 +132,7 @@ inline r_sexp deep_copy(const r_sexp& x) {
 
 template<>
 inline r_sexp shallow_copy(const r_sexp& x) {
-    return view_sexp(x, [](const auto& vec) -> r_sexp {
+    return r_view(x, [](const auto& vec) -> r_sexp {
         if constexpr (!is<decltype(vec), r_sexp>){
             return as<r_sexp>(shallow_copy(vec));
         } else {
@@ -148,12 +148,12 @@ inline bool identical_impl(const r_sexp& a, const r_sexp& b) {
     SEXP y = unwrap(b);
     if (x == y) return true;
     if (a.is_null() || b.is_null()) return false; // If true it would have been caught by above ptr comparison
-    return view_sexp(a, [&b](const auto& vec1) -> bool {
+    return r_view(a, [&b](const auto& vec1) -> bool {
         using vec1_t = decltype(vec1);
         if constexpr (is<vec1_t, r_sexp>){
             return R_compute_identical(vec1, b, 16);
         } else {
-            return view_sexp(b, [&vec1](const auto& vec2) -> bool {
+            return r_view(b, [&vec1](const auto& vec2) -> bool {
                 using vec2_t = decltype(vec2);
                 if constexpr (!is<vec1_t, vec2_t>){
                     return false;

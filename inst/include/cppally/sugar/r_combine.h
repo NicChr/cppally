@@ -115,8 +115,8 @@ inline r_sexp flatten(const r_vec<r_sexp>& x) {
         r_sexp next = vectors.view(i);
         m = length(next);
         // Rolling common type
-        out = visit_sexp(out, [&]<typename out_t>(out_t&& out_vec) -> r_sexp {
-            return visit_sexp(next, [&]<typename next_t>(const next_t& next_vec) -> r_sexp {
+        out = r_visit(out, [&]<typename out_t>(out_t&& out_vec) -> r_sexp {
+            return r_visit(next, [&]<typename next_t>(const next_t& next_vec) -> r_sexp {
                 if constexpr (RComposite<out_t> && RComposite<next_t>){
                     using common_t = common_r_t<out_t, next_t>;
                     if constexpr (is<out_t, common_t>){

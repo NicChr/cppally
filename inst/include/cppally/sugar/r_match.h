@@ -131,8 +131,8 @@ build_cross_col_eq_probes(const r_df& needles, const r_df& haystack) {
     std::vector<std::function<bool(int, int)>> eqs;
     eqs.reserve(ncols);
     for (int c = 0; c < ncols; ++c) {
-        view_sexp(needles.value.view(c), [&]<typename NCol>(const NCol& nc) {
-            view_sexp(haystack.value.view(c), [&]<typename HCol>(const HCol& hc) {
+        r_view(needles.value.view(c), [&]<typename NCol>(const NCol& nc) {
+            r_view(haystack.value.view(c), [&]<typename HCol>(const HCol& hc) {
                 if constexpr (!is<NCol, HCol>) {
                     abort("match(r_df, r_df): column %d types differ", c + 1);
                 } else if constexpr (requires (int i, int j) {
