@@ -160,28 +160,24 @@ inline bool is_visitable(const r_sexp& x){
 // Helper that disambiguates r_sexp type via view_sexp and then calls the named function
 // If there is no defined specialisation or overload then this is caught in the last branch
 // If the visited type can't be disambiguated, this is caught in the first branch
-#define CPPALLY_VIEW_AND_APPLY(x, ret, fn, ...)                                 \
-    r_view(x, [&]<typename x_type_t>(const x_type_t& x_) -> ret {                                   \
-        if constexpr (is<x_type_t, r_sexp>) {                               \
-            abort("Unsupported SEXP type in `" #fn "()`");                      \
-        } else if constexpr (requires { fn(x_ __VA_OPT__(,) __VA_ARGS__); }) {  \
-            return fn(x_ __VA_OPT__(,) __VA_ARGS__);                            \
-        } else {                                                                \
-            abort("No available method for type %s in `" #fn "()`",             \
-                internal::type_str<std::remove_cvref_t<x_type_t>>());       \
-        }                                                                       \
+#define CPPALLY_VIEW_AND_APPLY(x, ret, fn, ...)                                                                                         \
+    r_view(x, [&]<typename x_type_t> requires (!is<x_type_t, r_sexp>) (const x_type_t& x_) -> ret {                                     \
+        if constexpr (requires { fn(x_ __VA_OPT__(,) __VA_ARGS__); }) {                                                                 \
+            return fn(x_ __VA_OPT__(,) __VA_ARGS__);                                                                                    \
+        } else {                                                                                                                        \
+            abort("No available method for type %s in `" #fn "()`",                                                                     \
+                internal::type_str<std::remove_cvref_t<x_type_t>>());                                                                   \
+        }                                                                                                                               \
     })
 
-#define CPPALLY_VISIT_AND_APPLY(x, ret, fn, ...)                                 \
-    r_visit(x, [&]<typename x_type_t>(const x_type_t& x_) -> ret {                                   \
-        if constexpr (is<x_type_t, r_sexp>) {                                \
-            abort("Unsupported SEXP type in `" #fn "()`");                       \
-        } else if constexpr (requires { fn(x_ __VA_OPT__(,) __VA_ARGS__); }) {   \
-            return fn(x_ __VA_OPT__(,) __VA_ARGS__);                             \
-        } else {                                                                 \
-            abort("No available method for type %s in `" #fn "()`",              \
-                internal::type_str<std::remove_cvref_t<x_type_t>>());        \
-        }                                                                        \
+#define CPPALLY_VISIT_AND_APPLY(x, ret, fn, ...)                                                                                        \
+    r_visit(x, [&]<typename x_type_t> requires (!is<x_type_t, r_sexp>) (const x_type_t& x_) -> ret {                                    \
+        if constexpr (requires { fn(x_ __VA_OPT__(,) __VA_ARGS__); }) {                                                                 \
+            return fn(x_ __VA_OPT__(,) __VA_ARGS__);                                                                                    \
+        } else {                                                                                                                        \
+            abort("No available method for type %s in `" #fn "()`",                                                                     \
+                internal::type_str<std::remove_cvref_t<x_type_t>>());                                                                   \
+        }                                                                                                                               \
     })
 
     // Double dispatch — handles (r_sexp, r_sexp), (r_sexp, V), and (V, r_sexp).
@@ -192,12 +188,12 @@ inline bool is_visitable(const r_sexp& x){
             static_assert(is<x_in_t, r_sexp> || is<y_in_t, r_sexp>,                                     \
                           "CPPALLY_VIEW_PAIR_AND_APPLY: at least one of x, y must be r_sexp");          \
             if constexpr (is<x_in_t, r_sexp> && is<y_in_t, r_sexp>) {                                   \
-                return r_view(x, [&](const auto& x_) -> ret {                                        \
+                return r_view(x, [&](const auto& x_) -> ret {                                           \
                     using x_t = std::remove_cvref_t<decltype(x_)>;                                      \
                     if constexpr (is<x_t, r_sexp>) {                                                    \
                         abort("Unsupported SEXP type in `" #fn "()`");                                  \
                     } else {                                                                            \
-                        return r_view(y, [&](const auto& y_) -> ret {                                \
+                        return r_view(y, [&](const auto& y_) -> ret {                                   \
                             using y_t = std::remove_cvref_t<decltype(y_)>;                              \
                             if constexpr (is<y_t, r_sexp>) {                                            \
                                 abort("Unsupported SEXP type in `" #fn "()`");                          \
@@ -212,7 +208,7 @@ inline bool is_visitable(const r_sexp& x){
                     }                                                                                   \
                 });                                                                                     \
             } else if constexpr (is<x_in_t, r_sexp>) {                                                  \
-                return r_view(x, [&](const auto& x_) -> ret {                                        \
+                return r_view(x, [&](const auto& x_) -> ret {                                           \
                     using x_t = std::remove_cvref_t<decltype(x_)>;                                      \
                     if constexpr (is<x_t, r_sexp>) {                                                    \
                         abort("Unsupported SEXP type in `" #fn "()`");                                  \
@@ -225,7 +221,7 @@ inline bool is_visitable(const r_sexp& x){
                     }                                                                                   \
                 });                                                                                     \
             } else {                                                                                    \
-                return r_view(y, [&](const auto& y_) -> ret {                                        \
+                return r_view(y, [&](const auto& y_) -> ret {                                           \
                     using y_t = std::remove_cvref_t<decltype(y_)>;                                      \
                     if constexpr (is<y_t, r_sexp>) {                                                    \
                         abort("Unsupported SEXP type in `" #fn "()`");                                  \
