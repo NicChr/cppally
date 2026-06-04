@@ -75,16 +75,19 @@ void mutate_sexp(r_sexp& x, F&& f) {
     }
 }
 
-// First type in Cs... that F accepts (void if none). Lazy: invoke_result is
-// only taken on the invocable branch.
+// Sentinel: F is invocable with none of the candidate types.
+struct unmatched {};
+
+// Return type of the first candidate F accepts (`unmatched` if none). Lazy:
+// invoke_result is only taken on the invocable branch.
 template <class F, class C, class... Rest>
 consteval auto first_result() {
     if constexpr (std::invocable<F, C>){
         return std::type_identity<std::invoke_result_t<F, C>>{};
     } else if constexpr (sizeof...(Rest) > 0){
         return first_result<F, Rest...>();
-    } else { 
-        return std::type_identity<void>{};
+    } else {
+        return std::type_identity<unmatched>{};
     }
 }
 
@@ -93,8 +96,8 @@ template <class... Cs> struct type_list {};
 template <class F, class L> struct visit_traits;
 template <class F, class... Cs>
 struct visit_traits<F, type_list<Cs...>> {
-    static constexpr bool accepts_any = (std::invocable<F, Cs> || ...);
     using return_t = typename decltype(first_result<F, Cs...>())::type;
+    static constexpr bool accepts_any = !std::is_same_v<return_t, unmatched>;
 };
 
 // The wrapped types visit_sexp can produce, plus the r_sexp fallback —
