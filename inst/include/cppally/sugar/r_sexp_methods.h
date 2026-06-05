@@ -138,17 +138,13 @@ inline r_sexp shallow_copy(const r_sexp& x) {
 namespace internal {
 
 inline bool identical_impl(const r_sexp& a, const r_sexp& b) {
-    SEXP x = unwrap(a);
-    SEXP y = unwrap(b);
-    if (x == y) return true;
+    if (internal::ptrs_identical(a, b)) return true;
     if (a.is_null() || b.is_null()) return false; // If true it would have been caught by above ptr comparison
-    return r_view(a, [&b](const auto& vec1) -> bool {
-        using vec1_t = decltype(vec1);
+    return r_view(a, [&b]<typename vec1_t>(const vec1_t& vec1) -> bool {
         if constexpr (is<vec1_t, r_sexp>){
             return R_compute_identical(vec1, b, 16);
         } else {
-            return r_view(b, [&vec1](const auto& vec2) -> bool {
-                using vec2_t = decltype(vec2);
+            return r_view(b, [&vec1]<typename vec2_t>(const vec2_t& vec2) -> bool {
                 if constexpr (!is<vec1_t, vec2_t>){
                     return false;
                 } else {
