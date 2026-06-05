@@ -84,11 +84,8 @@ inline r_vec<V> find(const T& x, const U& values, bool invert) {
 
 template <internal::RSubscript U, typename V>
 void fill(r_sexp& x, const r_vec<U>& where, const V& with) {
-    internal::mutate_sexp(x, [&](auto& x_) {
-        using x_t = std::remove_cvref_t<decltype(x_)>;
-        if constexpr (is<x_t, r_sexp>){
-            abort("Unsupported SEXP type in `fill()`");
-        } else if constexpr (requires { fill(x_, where, with); }){
+    r_mutate(x, [&]<typename x_t> requires (!is<x_t, r_sexp>) (x_t& x_){
+        if constexpr (requires { fill(x_, where, with); }){
             fill(x_, where, with);
         } else {
             abort("No available method for type %s in `fill()`", internal::type_str<x_t>());
@@ -105,13 +102,10 @@ void fill(r_sexp& x, const r_vec<U>& where, const r_sexp& with) {
 
 template <typename U>
 inline void replace(r_sexp& x, const U& old_values, const U& new_values) {
-    internal::mutate_sexp(x, [&](auto& x_) {
-        using x_t = std::remove_cvref_t<decltype(x_)>;
+    r_mutate(x, [&]<typename x_t> requires (!is<x_t, r_sexp>) (x_t& x_) {
         x_t oldv = x_t(static_cast<SEXP>(old_values));
         x_t newv = x_t(static_cast<SEXP>(new_values));
-        if constexpr (is<x_t, r_sexp>){
-            abort("Unsupported SEXP type in `replace()`");
-        } else if constexpr (requires { replace(x_, oldv, newv); }){
+        if constexpr (requires { replace(x_, oldv, newv); }){
             replace(x_, oldv, newv);
         } else {
             abort("No available method for type %s in `replace`", internal::type_str<x_t>());

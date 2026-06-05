@@ -30,21 +30,21 @@ inline void mutate_as(r_sexp& x, F&& f) {
 #define CPPALLY_VECTOR_CASES(A)                             \
     A(LGLSXP,                          r_vec<r_lgl>)        \
     A(INTSXP,                          r_vec<r_int>)        \
-    A(CPPALLY_INT64SXP,      r_vec<r_int64>)                \
+    A(CPPALLY_INT64SXP,                r_vec<r_int64>)      \
     A(REALSXP,                         r_vec<r_dbl>)        \
     A(STRSXP,                          r_vec<r_str>)        \
     A(VECSXP,                          r_vec<r_sexp>)       \
     A(CPLXSXP,                         r_vec<r_cplx>)       \
     A(RAWSXP,                          r_vec<r_raw>)        \
     A(NILSXP,                          r_vec<r_sexp>)       \
-    A(CPPALLY_REALDATESXP,   r_vec<r_date>)                 \
-    A(CPPALLY_REALPSXTSXP,   r_vec<r_psxct>)
+    A(CPPALLY_REALDATESXP,             r_vec<r_date>)       \
+    A(CPPALLY_REALPSXTSXP,             r_vec<r_psxct>)
 
 #define CPPALLY_ALL_CASES(A)                                \
     CPPALLY_VECTOR_CASES(A)                                 \
-    A(CPPALLY_FCTSXP,        r_factors)                     \
+    A(CPPALLY_FCTSXP,                  r_factors)           \
     A(SYMSXP,                          r_sym)               \
-    A(CPPALLY_DFSXP,         r_df)
+    A(CPPALLY_DFSXP,                   r_df)
 
 #define CPPALLY_CASE_OWNING(C, W)  case C: return f(W(x));
 #define CPPALLY_CASE_VIEWING(C, W) case C: return f(W(x, view_tag{}));
@@ -97,7 +97,7 @@ template <class F, class L> struct visit_traits;
 template <class F, class... Cs>
 struct visit_traits<F, type_list<Cs...>> {
     using return_t = typename decltype(first_result<F, Cs...>())::type;
-    static constexpr bool accepts_any = !std::is_same_v<return_t, unmatched>;
+    // static constexpr bool accepts_any = !std::is_same_v<return_t, unmatched>;
 };
 
 // The wrapped types visit_sexp can produce, plus the r_sexp fallback —
@@ -108,6 +108,12 @@ using r_visitable = type_list<CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>;
 
 template <class F>
 using visit_info = visit_traits<F, r_visitable>;
+
+// accepts_any for mutation: mutate visitors take `V&` (lvalue), so the check
+// must use lvalue refs — the prvalue-based visit_info would reject them.
+// template <class F, class L> inline constexpr bool mutate_accepts_v = false;
+// template <class F, class... Cs>
+// inline constexpr bool mutate_accepts_v<F, type_list<Cs...>> = (std::invocable<F&, Cs&> || ...);
 
 #undef CPPALLY_CASE_OWNING
 #undef CPPALLY_CASE_VIEWING
@@ -121,8 +127,8 @@ using visit_info = visit_traits<F, r_visitable>;
 template <class F, class Raw>
 decltype(auto) dispatch_constrained(F&& f, Raw&& raw) {
     using Info = visit_info<F&>;
-    static_assert(Info::accepts_any,
-        "visitor accepts no wrapped R type — check the concept on the lambda's template parameter");
+    // static_assert(Info::accepts_any,
+    //     "visitor accepts no wrapped R type — check the concept on the lambda's template parameter");
     using Ret = typename Info::return_t;
     return raw([&]<typename U>(U&& elem) -> Ret {
         if constexpr (std::invocable<F&, U>) {
@@ -150,6 +156,24 @@ template <class F>
 decltype(auto) r_view(const r_sexp& x, F&& f) {
     return internal::dispatch_constrained(std::forward<F>(f),
         [&](auto&& vis) -> decltype(auto) { return internal::view_sexp(x, std::forward<decltype(vis)>(vis)); });
+}
+
+// Constrained in-place mutation — the mutating sibling of r_visit/r_view. `f`
+// receives a sole-owning, mutable wrapper (move-in / write-back), e.g.
+// r_mutate(x, []<RVector V>(V& v){ ... }). Aborts at runtime if x's type isn't
+// one the visitor accepts. Takes x by r_sexp& — write-back needs ownership.
+template <class F>
+void r_mutate(r_sexp& x, F&& f) {
+    // static_assert(internal::mutate_accepts_v<F, internal::r_visitable>,
+    //     "r_mutate: visitor accepts no wrapped R type — check the concept on the lambda's template parameter");
+    internal::mutate_sexp(x, [&]<typename U>(U& elem) {
+        if constexpr (std::invocable<F&, U&>) {
+            std::forward<F>(f)(elem);
+        } else {
+            abort("constraints not satisfied for supplied type %s",
+                  internal::type_str<std::remove_cvref_t<U>>());
+        }
+    });
 }
 
 // Runtime predicate to check if r_sexp is visitable as a non-r_sexp
