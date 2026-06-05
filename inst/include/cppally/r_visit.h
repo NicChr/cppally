@@ -75,10 +75,7 @@ void mutate_sexp(r_sexp& x, F&& f) {
     }
 }
 
-// Sentinel: F is invocable with none of the candidate types.
-struct unmatched {};
-
-// Return type of the first candidate F accepts (`unmatched` if none). Lazy:
+// Return type of the first candidate F accepts (void if none). Lazy:
 // invoke_result is only taken on the invocable branch.
 template <class F, class C, class... Rest>
 consteval auto first_result() {
@@ -87,26 +84,17 @@ consteval auto first_result() {
     } else if constexpr (sizeof...(Rest) > 0){
         return first_result<F, Rest...>();
     } else {
-        return std::type_identity<unmatched>{};
+        return std::type_identity<void>{};
     }
 }
 
-template <class... Cs> struct type_list {};
-
-template <class F, class L> struct visit_traits;
-template <class F, class... Cs>
-struct visit_traits<F, type_list<Cs...>> {
-    using return_t = typename decltype(first_result<F, Cs...>())::type;
-};
-
-// The wrapped types visit_sexp can produce, plus the r_sexp fallback —
-// generated from the same case list as the dispatchers above.
+// Return type r_visit/r_view hand back: the result of the first candidate the
+// visitor accepts (void if none). Same case list as the dispatchers; r_sexp is
+// the fallback.
 #define CPPALLY_CASE_TYPE(C, W) W,
-using r_visitable = type_list<CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>;
-#undef CPPALLY_CASE_TYPE
-
 template <class F>
-using visit_info = visit_traits<F, r_visitable>;
+using visit_return_t = typename decltype(first_result<F, CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>())::type;
+#undef CPPALLY_CASE_TYPE
 
 #undef CPPALLY_CASE_OWNING
 #undef CPPALLY_CASE_VIEWING
@@ -119,8 +107,7 @@ using visit_info = visit_traits<F, r_visitable>;
 // wrapped types it accepts; abort at runtime on any it does not.
 template <class F, class Raw>
 decltype(auto) dispatch_constrained(F&& f, Raw&& raw) {
-    using Info = visit_info<F&>;
-    using Ret = typename Info::return_t;
+    using Ret = visit_return_t<F&>;
     return raw([&]<typename U>(U&& elem) -> Ret {
         if constexpr (std::invocable<F&, U>) {
             return std::forward<F>(f)(std::forward<U>(elem));
