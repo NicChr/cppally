@@ -43,7 +43,7 @@ inline r_size_t unlisted_length(const r_vec<r_sexp>& x){
         work.pop_back();
         r_size_t n = current.length();
         for (r_size_t i = 0; i < n; ++i){
-            r_view(current.view(i), [&]<typename T>(const T& elem){
+            r_sexp_view(current.view(i), [&]<typename T>(const T& elem){
                 if constexpr (is<T, r_vec<r_sexp>>){
                     work.push_back(elem);
                 } else {

@@ -84,7 +84,7 @@ inline r_vec<V> find(const T& x, const U& values, bool invert) {
 
 template <internal::RSubscript U, typename V>
 void fill(r_sexp& x, const r_vec<U>& where, const V& with) {
-    r_mutate(x, [&]<typename x_t> requires (!is<x_t, r_sexp>) (x_t& x_){
+    r_sexp_mutate(x, [&]<typename x_t> requires (!is<x_t, r_sexp>) (x_t& x_){
         if constexpr (requires { fill(x_, where, with); }){
             fill(x_, where, with);
         } else {
@@ -95,14 +95,14 @@ void fill(r_sexp& x, const r_vec<U>& where, const V& with) {
 
 template <internal::RSubscript U>
 void fill(r_sexp& x, const r_vec<U>& where, const r_sexp& with) {
-    r_visit(with, [&](const auto& with_) {
+    r_sexp_visit(with, [&](const auto& with_) {
         fill(x, where, with_);
     });
 }
 
 template <typename U>
 inline void replace(r_sexp& x, const U& old_values, const U& new_values) {
-    r_mutate(x, [&]<typename x_t> requires (!is<x_t, r_sexp>) (x_t& x_) {
+    r_sexp_mutate(x, [&]<typename x_t> requires (!is<x_t, r_sexp>) (x_t& x_) {
         x_t oldv = x_t(static_cast<SEXP>(old_values));
         x_t newv = x_t(static_cast<SEXP>(new_values));
         if constexpr (requires { replace(x_, oldv, newv); }){
@@ -115,7 +115,7 @@ inline void replace(r_sexp& x, const U& old_values, const U& new_values) {
 
 template<>
 inline r_sexp deep_copy(const r_sexp& x) {
-    return r_view(x, [](const auto& vec) -> r_sexp {
+    return r_sexp_view(x, [](const auto& vec) -> r_sexp {
         if constexpr (!is<decltype(vec), r_sexp>){
             return as<r_sexp>(deep_copy(vec));
         } else {
@@ -126,7 +126,7 @@ inline r_sexp deep_copy(const r_sexp& x) {
 
 template<>
 inline r_sexp shallow_copy(const r_sexp& x) {
-    return r_view(x, [](const auto& vec) -> r_sexp {
+    return r_sexp_view(x, [](const auto& vec) -> r_sexp {
         if constexpr (!is<decltype(vec), r_sexp>){
             return as<r_sexp>(shallow_copy(vec));
         } else {
@@ -140,11 +140,11 @@ namespace internal {
 inline bool identical_impl(const r_sexp& a, const r_sexp& b) {
     if (internal::ptrs_identical(a, b)) return true;
     if (a.is_null() || b.is_null()) return false; // If true it would have been caught by above ptr comparison
-    return r_view(a, [&b]<typename vec1_t>(const vec1_t& vec1) -> bool {
+    return r_sexp_view(a, [&b]<typename vec1_t>(const vec1_t& vec1) -> bool {
         if constexpr (is<vec1_t, r_sexp>){
             return R_compute_identical(vec1, b, 16);
         } else {
-            return r_view(b, [&vec1]<typename vec2_t>(const vec2_t& vec2) -> bool {
+            return r_sexp_view(b, [&vec1]<typename vec2_t>(const vec2_t& vec2) -> bool {
                 if constexpr (!is<vec1_t, vec2_t>){
                     return false;
                 } else {

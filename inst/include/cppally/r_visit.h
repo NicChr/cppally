@@ -88,7 +88,7 @@ consteval auto first_result() {
     }
 }
 
-// Return type r_visit/r_view hand back: the result of the first candidate the
+// Return type r_sexp_visit/r_sexp_view hand back: the result of the first candidate the
 // visitor accepts (void if none). Same case list as the dispatchers; r_sexp is
 // the fallback.
 #define CPPALLY_CASE_TYPE(C, W) W,
@@ -103,7 +103,7 @@ using visit_return_t = typename decltype(first_result<F, CPPALLY_ALL_CASES(CPPAL
 #undef CPPALLY_VECTOR_CASES
 
 
-// Shared constraint-filtering for r_visit / r_view: forward to `f` only the
+// Shared constraint-filtering for r_sexp_visit / r_sexp_view: forward to `f` only the
 // wrapped types it accepts; abort at runtime on any it does not.
 template <class F, class Raw>
 decltype(auto) dispatch_constrained(F&& f, Raw&& raw) {
@@ -121,11 +121,11 @@ decltype(auto) dispatch_constrained(F&& f, Raw&& raw) {
 }
 
 // Constrained visit/view: dispatch to `f` only for the wrapped types it accepts,
-// e.g. r_visit(x, []<RVector V>(const V& v){ ... }) — the concept rides on the
-// lambda's template parameter. r_view hands `f` views (no copy); r_visit hands
+// e.g. r_sexp_visit(x, []<RVector V>(const V& v){ ... }) — the concept rides on the
+// lambda's template parameter. r_sexp_view hands `f` views (no copy); r_sexp_visit hands
 // owning wrappers. Aborts at runtime if x's type isn't one the visitor accepts.
 template <class F>
-decltype(auto) r_visit(const r_sexp& x, F&& f) {
+decltype(auto) r_sexp_visit(const r_sexp& x, F&& f) {
     return internal::dispatch_constrained(std::forward<F>(f),
         [&](auto&& vis) -> decltype(auto) {
             return internal::visit_sexp(x, std::forward<decltype(vis)>(vis)); 
@@ -133,19 +133,19 @@ decltype(auto) r_visit(const r_sexp& x, F&& f) {
 }
 
 template <class F>
-decltype(auto) r_view(const r_sexp& x, F&& f) {
+decltype(auto) r_sexp_view(const r_sexp& x, F&& f) {
     return internal::dispatch_constrained(std::forward<F>(f),
         [&](auto&& vis) -> decltype(auto) {
             return internal::view_sexp(x, std::forward<decltype(vis)>(vis)); 
         });
 }
 
-// Constrained in-place mutation — the mutating sibling of r_visit/r_view. `f`
+// Constrained in-place mutation — the mutating sibling of r_sexp_visit/r_sexp_view. `f`
 // receives a sole-owning, mutable wrapper (move-in / write-back), e.g.
-// r_mutate(x, []<RVector V>(V& v){ ... }). Aborts at runtime if x's type isn't
+// r_sexp_mutate(x, []<RVector V>(V& v){ ... }). Aborts at runtime if x's type isn't
 // one the visitor accepts. Takes x by r_sexp& — write-back needs ownership.
 template <class F>
-void r_mutate(r_sexp& x, F&& f) {
+void r_sexp_mutate(r_sexp& x, F&& f) {
     internal::mutate_sexp(x, [&]<typename U>(U& elem) {
         if constexpr (std::invocable<F&, U&>) {
             std::forward<F>(f)(elem);
@@ -158,14 +158,14 @@ void r_mutate(r_sexp& x, F&& f) {
 
 // Runtime predicate to check if r_sexp is visitable as a non-r_sexp
 inline bool is_visitable(const r_sexp& x){
-    return r_visit(x, []<typename T>(const T&) -> bool { return !is<T, r_sexp>; });
+    return r_sexp_visit(x, []<typename T>(const T&) -> bool { return !is<T, r_sexp>; });
 }
 
 // Helper that disambiguates r_sexp type via view_sexp and then calls the named function
 // If there is no defined specialisation or overload then this is caught in the last branch
 // If the visited type can't be disambiguated, this is caught in the first branch
 #define CPPALLY_VIEW_AND_APPLY(x, ret, fn, ...)                                                                                         \
-    r_view(x, [&]<typename x_type_t> requires (!is<x_type_t, r_sexp>) (const x_type_t& x_) -> ret {                                     \
+    r_sexp_view(x, [&]<typename x_type_t> requires (!is<x_type_t, r_sexp>) (const x_type_t& x_) -> ret {                                     \
         if constexpr (requires { fn(x_ __VA_OPT__(,) __VA_ARGS__); }) {                                                                 \
             return fn(x_ __VA_OPT__(,) __VA_ARGS__);                                                                                    \
         } else {                                                                                                                        \
@@ -175,7 +175,7 @@ inline bool is_visitable(const r_sexp& x){
     })
 
 #define CPPALLY_VISIT_AND_APPLY(x, ret, fn, ...)                                                                                        \
-    r_visit(x, [&]<typename x_type_t> requires (!is<x_type_t, r_sexp>) (const x_type_t& x_) -> ret {                                    \
+    r_sexp_visit(x, [&]<typename x_type_t> requires (!is<x_type_t, r_sexp>) (const x_type_t& x_) -> ret {                                    \
         if constexpr (requires { fn(x_ __VA_OPT__(,) __VA_ARGS__); }) {                                                                 \
             return fn(x_ __VA_OPT__(,) __VA_ARGS__);                                                                                    \
         } else {                                                                                                                        \
@@ -192,8 +192,8 @@ inline bool is_visitable(const r_sexp& x){
     static_assert(is<x_in_t, r_sexp> || is<y_in_t, r_sexp>,                                                                             \
                   "CPPALLY_VIEW_PAIR_AND_APPLY: at least one of x, y must be r_sexp");                                                  \
     if constexpr (is<x_in_t, r_sexp> && is<y_in_t, r_sexp>) {                                                                           \
-      return r_view(x, [&]<typename x_t> requires (!is<x_t, r_sexp>) (const x_t& x_) -> ret {                                           \
-        return r_view(y, [&]<typename y_t> requires (!is<y_t, r_sexp>) (const y_t& y_) -> ret {                                         \
+      return r_sexp_view(x, [&]<typename x_t> requires (!is<x_t, r_sexp>) (const x_t& x_) -> ret {                                           \
+        return r_sexp_view(y, [&]<typename y_t> requires (!is<y_t, r_sexp>) (const y_t& y_) -> ret {                                         \
           if constexpr (requires { fn(x_, y_ __VA_OPT__(,) __VA_ARGS__); }) {                                                           \
             return fn(x_, y_ __VA_OPT__(,) __VA_ARGS__);                                                                                \
           } else {                                                                                                                      \
@@ -204,7 +204,7 @@ inline bool is_visitable(const r_sexp& x){
         });                                                                                                                             \
       });                                                                                                                               \
     } else if constexpr (is<x_in_t, r_sexp>) {                                                                                          \
-      return r_view(x, [&]<typename x_t> requires (!is<x_t, r_sexp>) (const x_t& x_) -> ret {                                           \
+      return r_sexp_view(x, [&]<typename x_t> requires (!is<x_t, r_sexp>) (const x_t& x_) -> ret {                                           \
         if constexpr (requires { fn(x_, y __VA_OPT__(,) __VA_ARGS__); }) {                                                              \
           return fn(x_, y __VA_OPT__(,) __VA_ARGS__);                                                                                   \
         } else {                                                                                                                        \
@@ -214,7 +214,7 @@ inline bool is_visitable(const r_sexp& x){
         }                                                                                                                               \
       });                                                                                                                               \
     } else {                                                                                                                            \
-      return r_view(y, [&]<typename y_t> requires (!is<y_t, r_sexp>) (const y_t& y_) -> ret {                                           \
+      return r_sexp_view(y, [&]<typename y_t> requires (!is<y_t, r_sexp>) (const y_t& y_) -> ret {                                           \
         if constexpr (requires { fn(x, y_ __VA_OPT__(,) __VA_ARGS__); }) {                                                              \
           return fn(x, y_ __VA_OPT__(,) __VA_ARGS__);                                                                                   \
         } else {                                                                                                                        \

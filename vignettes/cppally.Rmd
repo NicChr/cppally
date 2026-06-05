@@ -234,7 +234,7 @@ list new_list(int n){
 r_vec<r_sexp> resize_all(r_vec<r_sexp> x, r_size_t n){
     r_size_t list_length = x.length();
     for (r_size_t i = 0; i < list_length; ++i){
-        r_visit(x.view(i), [&]<RVector T>(T vec) {
+        r_sexp_visit(x.view(i), [&]<RVector T>(T vec) {
             x.set(i, vec.resize(n));
         });
     }
@@ -800,9 +800,9 @@ new_list(3)
 
 The problem with a class like `r_sexp` is that it is by design
 generic and therefore difficult to work with in C++.
-To disambiguate the actual type we can use `r_visit()` via a C++ lambda.
+To disambiguate the actual type we can use `r_sexp_visit()` via a C++ lambda.
 
-**Example:** using `r_visit()` to resize every vector to length n in-place
+**Example:** using `r_sexp_visit()` to resize every vector to length n in-place
 
 ```{r, echo=FALSE, results = 'asis'}
 as_cpp_chunk(examples[["resize_all"]])

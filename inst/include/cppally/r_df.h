@@ -229,7 +229,7 @@ struct r_df {
     }
 
     // Visit the i-th column dispatched to its concrete RComposite type.
-    // Definition in r_df_methods.h (needs r_visit)
+    // Definition in r_df_methods.h (needs r_sexp_visit)
     template <typename index_t, class F>
     decltype(auto) with_col(const index_t& index, F&& f, bool view_only = false) const;
 

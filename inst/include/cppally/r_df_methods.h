@@ -95,7 +95,7 @@ inline r_df r_df::get_row(int index) const {
     attr::set_old_class(out, internal::data_frame_class());
     attr::set_attr(out, symbol::row_names_sym, internal::create_row_names(1));
     for (int i = 0; i < ncols; ++i){
-        out.set(i, r_sexp(r_view(value.view(i), [index](const auto& vec) -> SEXP {
+        out.set(i, r_sexp(r_sexp_view(value.view(i), [index](const auto& vec) -> SEXP {
             using vec_t = std::remove_cvref_t<decltype(vec)>;
             if constexpr (requires { vec.view(index); }){
                 return as<SEXP>(vec.view(index));
@@ -182,9 +182,9 @@ template <typename index_t, class F>
 decltype(auto) r_df::with_col(const index_t& index, F&& f, bool view_only) const {
     auto col = [&]<RComposite T>(T&& x) -> decltype(auto) { return f(std::forward<T>(x)); };
     if (view_only){
-        return r_view(view_col(index), col);
+        return r_sexp_view(view_col(index), col);
     } else {
-        return r_visit(get_col(index), col);
+        return r_sexp_visit(get_col(index), col);
     }
 }
 
