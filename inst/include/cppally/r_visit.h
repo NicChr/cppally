@@ -12,9 +12,9 @@ namespace cppally {
 
 namespace internal {
 
-// In-place mutation helper for `mutate_sexp`.
+// In-place mutation helper for the mutate dispatchers
 //
-// We *move* `x` into the typed wrapper rather than viewing it: the move carries
+// We std::move x into the typed wrapper rather than viewing it: the move carries
 // x's ref without bumping the count, so the wrapper is sole owner exactly when x
 // was. Necessary when copy-on-modify is enabled.
 
@@ -25,7 +25,7 @@ inline void mutate_as(r_sexp& x, F&& f) {
     x = r_sexp(v);
 }
 
-// A cleaner lambda-based alternative to the canonical switch(TYPEOF(x)).
+// Lambda-based dispatchers over TYPEOF(x), so call sites don't hand-roll the switch.
 
 // (code, wrapper) entries shared by every dispatcher
 #define CPPALLY_VECTOR_CASES(A)                             \
@@ -76,21 +76,7 @@ void mutate_sexp(r_sexp& x, F&& f) {
     }
 }
 
-// Return type of the first candidate F accepts (void if none). Lazy:
-// invoke_result is only taken on the invocable branch.
-template <class F, class C, class... Rest>
-consteval auto first_result() {
-    if constexpr (std::invocable<F, C>){
-        return std::type_identity<std::invoke_result_t<F, C>>{};
-    } else if constexpr (sizeof...(Rest) > 0){
-        return first_result<F, Rest...>();
-    } else {
-        return std::type_identity<void>{};
-    }
-}
-
-// Comma-join the names of the candidate wrappers F accepts — checked by lvalue
-// ref
+// Comma-join the names of the candidate wrappers F accepts
 template <class F, class... Cs>
 inline std::string join_accepted() {
     std::string out;
@@ -103,16 +89,9 @@ inline std::string join_accepted() {
     return out;
 }
 
-// Return type r_sexp_visit/r_sexp_view hand back: the result of the first candidate the
-// visitor accepts (void if none). Same case list as the dispatchers; r_sexp is
-// the fallback.
+// The wrapped types F accepts, as a printable list. Used when a constrained
+// visit/view/mutate meets a runtime type its visitor rejects.
 #define CPPALLY_CASE_TYPE(C, W) W,
-template <class F>
-using visit_return_t = typename decltype(first_result<F, CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>())::type;
-
-// The wrapped types F accepts, as a printable list (same candidate set as
-// visit_return_t). Diagnostics only — used when a constrained visit/mutate
-// rejects the runtime type.
 template <class F>
 inline std::string accepted_types() {
     std::string s = join_accepted<F, CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>();
@@ -120,52 +99,81 @@ inline std::string accepted_types() {
 }
 #undef CPPALLY_CASE_TYPE
 
+// Terminal for a constrained dispatcher that meets a type its visitor rejects.
+// [[noreturn]] is load-bearing: in the guarded switches below the reject arms
+// carry no return statement, so they drop out of return-type deduction and the
+// dispatcher deduces its type from the accepted arms alone
+template <class F>
+[[noreturn]] void reject(const char* got) {
+    abort("`r_sexp` visitor cannot accept the value's type %s;\n"
+          "Accepted types that satisfy the constraints: %s",
+          got, accepted_types<F&>().c_str());
+}
+
+// Guarded arms: hand `f` the wrapper only if it accepts it, else reject.
+#define CPPALLY_CASE_OWNING_G(C, W)                                          \
+    case C: if constexpr (std::invocable<F&, W>) return f(W(x));             \
+            else internal::reject<F>(internal::type_str<W>());
+#define CPPALLY_CASE_VIEWING_G(C, W)                                         \
+    case C: if constexpr (std::invocable<F&, W>) return f(W(x, view_tag{})); \
+            else internal::reject<F>(internal::type_str<W>());
+#define CPPALLY_CASE_MUTATE_G(C, W)                                          \
+    case C: if constexpr (std::invocable<F&, W&>) { mutate_as<W>(x, f); break; } \
+            else internal::reject<F>(internal::type_str<W>());
+
+// Constrained owning visit: dispatch to `f` only for the types it accepts.
+template <class F>
+decltype(auto) visit_constrained(const r_sexp& x, F&& f) {
+    switch (CPPALLY_TYPEOF(x)) {
+        CPPALLY_ALL_CASES(CPPALLY_CASE_OWNING_G)
+        default: if constexpr (std::invocable<F&, r_sexp>) return f(r_sexp(x));
+                 else internal::reject<F>(internal::type_str<r_sexp>());
+    }
+}
+
+// Constrained viewing visit
+template <class F>
+decltype(auto) view_constrained(const r_sexp& x, F&& f) {
+    switch (CPPALLY_TYPEOF(x)) {
+        CPPALLY_ALL_CASES(CPPALLY_CASE_VIEWING_G)
+        default: if constexpr (std::invocable<F&, r_sexp>) return f(r_sexp(x, view_tag{}));
+                 else internal::reject<F>(internal::type_str<r_sexp>());
+    }
+}
+
+// Constrained in-place mutation (move-in / write-back per arm via mutate_as).
+template <class F>
+void mutate_constrained(r_sexp& x, F&& f) {
+    switch (CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
+        CPPALLY_ALL_CASES(CPPALLY_CASE_MUTATE_G)
+        default: if constexpr (std::invocable<F&, r_sexp&>) { mutate_as<r_sexp>(x, f); break; }
+                 else internal::reject<F>(internal::type_str<r_sexp>());
+    }
+}
+
+#undef CPPALLY_CASE_OWNING_G
+#undef CPPALLY_CASE_VIEWING_G
+#undef CPPALLY_CASE_MUTATE_G
+
 #undef CPPALLY_CASE_OWNING
 #undef CPPALLY_CASE_VIEWING
 #undef CPPALLY_CASE_MUTATE
 #undef CPPALLY_ALL_CASES
 #undef CPPALLY_VECTOR_CASES
 
-
-// Shared constraint-filtering for r_sexp_visit / r_sexp_view: forward to `f` only the
-// wrapped types it accepts; abort at runtime on any it does not.
-template <class F, class Raw>
-decltype(auto) dispatch_constrained(F&& f, Raw&& raw) {
-    using Ret = visit_return_t<F&>;
-    return raw([&]<typename U>(U&& elem) -> Ret {
-        if constexpr (std::invocable<F&, U>) {
-            return std::forward<F>(f)(std::forward<U>(elem));
-        } else {
-            abort(
-            "`r_sexp` visitor cannot accept the value's type %s;\n"
-            "Accepted types that satisfy the constraints: %s",
-            type_str<std::remove_cvref_t<U>>(),
-            accepted_types<F&>().c_str()
-            );
-        }
-    });
-}
-
 }
 
 // Constrained visit/view: dispatch to `f` only for the wrapped types it accepts,
-// e.g. r_sexp_visit(x, []<RVector V>(const V& v){ ... }) — the concept rides on the
-// lambda's template parameter. r_sexp_view hands `f` views (no copy); r_sexp_visit hands
-// owning wrappers. Aborts at runtime if x's type isn't one the visitor accepts.
+// e.g. r_sexp_visit(x, [&]<RVector V>(const V& v){ ... }) — the concept rides on the
+// lambda's template parameter. r_sexp_visit produces owning SEXP wrappers and r_sexp_view produces view-only SEXP wrappers.
+// Aborts at runtime if x's type isn't one the visitor accepts.
 template <class F>
 decltype(auto) r_sexp_visit(const r_sexp& x, F&& f) {
-    return internal::dispatch_constrained(std::forward<F>(f),
-        [&](auto&& vis) -> decltype(auto) {
-            return internal::visit_sexp(x, std::forward<decltype(vis)>(vis)); 
-        });
+    return internal::visit_constrained(x, std::forward<F>(f));
 }
-
 template <class F>
 decltype(auto) r_sexp_view(const r_sexp& x, F&& f) {
-    return internal::dispatch_constrained(std::forward<F>(f),
-        [&](auto&& vis) -> decltype(auto) {
-            return internal::view_sexp(x, std::forward<decltype(vis)>(vis)); 
-        });
+    return internal::view_constrained(x, std::forward<F>(f));
 }
 
 // Constrained in-place mutation — the mutating sibling of r_sexp_visit/r_sexp_view. `f`
@@ -174,16 +182,7 @@ decltype(auto) r_sexp_view(const r_sexp& x, F&& f) {
 // one the visitor accepts. Takes x by r_sexp& — write-back needs ownership.
 template <class F>
 void r_sexp_mutate(r_sexp& x, F&& f) {
-    internal::mutate_sexp(x, [&]<typename U>(U& elem) {
-        if constexpr (std::invocable<F&, U&>) {
-            std::forward<F>(f)(elem);
-        } else {
-            abort("`r_sexp` visitor cannot accept the value's type %s;\n"
-                "Accepted types that satisfy the constraints: %s",
-                internal::type_str<std::remove_cvref_t<U>>(),
-                internal::accepted_types<F&>().c_str());
-        }
-    });
+    internal::mutate_constrained(x, std::forward<F>(f));
 }
 
 // Runtime predicate to check if r_sexp is visitable as a non-r_sexp
