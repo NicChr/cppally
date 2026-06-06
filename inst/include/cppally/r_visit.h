@@ -6,6 +6,7 @@
 #include <cppally/r_sexp_types.h>
 #include <cppally/r_df.h>
 #include <utility>
+#include <string>
 
 namespace cppally {
 
@@ -88,12 +89,35 @@ consteval auto first_result() {
     }
 }
 
+// Comma-join the names of the candidate wrappers F accepts — checked by lvalue
+// ref
+template <class F, class... Cs>
+inline std::string join_accepted() {
+    std::string out;
+    ([&]{
+        if constexpr (std::invocable<F, Cs&>) {
+            if (!out.empty()) out += ", ";
+            out += type_str<Cs>();
+        }
+    }(), ...);
+    return out;
+}
+
 // Return type r_sexp_visit/r_sexp_view hand back: the result of the first candidate the
 // visitor accepts (void if none). Same case list as the dispatchers; r_sexp is
 // the fallback.
 #define CPPALLY_CASE_TYPE(C, W) W,
 template <class F>
 using visit_return_t = typename decltype(first_result<F, CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>())::type;
+
+// The wrapped types F accepts, as a printable list (same candidate set as
+// visit_return_t). Diagnostics only — used when a constrained visit/mutate
+// rejects the runtime type.
+template <class F>
+inline std::string accepted_types() {
+    std::string s = join_accepted<F, CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>();
+    return s.empty() ? "(none)" : s;
+}
 #undef CPPALLY_CASE_TYPE
 
 #undef CPPALLY_CASE_OWNING
@@ -112,8 +136,12 @@ decltype(auto) dispatch_constrained(F&& f, Raw&& raw) {
         if constexpr (std::invocable<F&, U>) {
             return std::forward<F>(f)(std::forward<U>(elem));
         } else {
-            abort("constraints not satisfied for supplied type %s",
-                  type_str<std::remove_cvref_t<U>>());
+            abort(
+            "`r_sexp` visitor cannot accept the value's type %s;\n"
+            "Accepted types that satisfy the constraints: %s",
+            type_str<std::remove_cvref_t<U>>(),
+            accepted_types<F&>().c_str()
+            );
         }
     });
 }
@@ -150,8 +178,10 @@ void r_sexp_mutate(r_sexp& x, F&& f) {
         if constexpr (std::invocable<F&, U&>) {
             std::forward<F>(f)(elem);
         } else {
-            abort("constraints not satisfied for supplied type %s",
-                  internal::type_str<std::remove_cvref_t<U>>());
+            abort("`r_sexp` visitor cannot accept the value's type %s;\n"
+                "Accepted types that satisfy the constraints: %s",
+                internal::type_str<std::remove_cvref_t<U>>(),
+                internal::accepted_types<F&>().c_str());
         }
     });
 }
