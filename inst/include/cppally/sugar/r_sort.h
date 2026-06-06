@@ -364,7 +364,7 @@ inline r_vec<r_int> order(const r_df& x, bool preserve_ties = true) {
         stack.pop_back();
         if (f.col >= ncol) continue;
 
-        r_sexp_view(x.value.view(f.col), [&]<typename ColT>(const ColT& col) {
+        internal::view_sexp(x.value.view(f.col), [&]<typename ColT>(const ColT& col) {
             if constexpr (requires (const ColT& c, int i) {
                 order(c, false);
                 identical(c.view(i), c.view(i));

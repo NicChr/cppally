@@ -95,8 +95,7 @@ inline r_df r_df::get_row(int index) const {
     attr::set_old_class(out, internal::data_frame_class());
     attr::set_attr(out, symbol::row_names_sym, internal::create_row_names(1));
     for (int i = 0; i < ncols; ++i){
-        out.set(i, r_sexp(r_sexp_view(value.view(i), [index](const auto& vec) -> SEXP {
-            using vec_t = std::remove_cvref_t<decltype(vec)>;
+        out.set(i, r_sexp(internal::view_sexp(value.view(i), [index]<typename vec_t>(const vec_t& vec) -> SEXP {
             if constexpr (requires { vec.view(index); }){
                 return as<SEXP>(vec.view(index));
             } else {

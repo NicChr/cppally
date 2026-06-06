@@ -95,7 +95,7 @@ void fill(r_sexp& x, const r_vec<U>& where, const V& with) {
 
 template <internal::RSubscript U>
 void fill(r_sexp& x, const r_vec<U>& where, const r_sexp& with) {
-    r_sexp_visit(with, [&](const auto& with_) {
+    internal::visit_sexp(with, [&](const auto& with_) {
         fill(x, where, with_);
     });
 }
@@ -115,8 +115,8 @@ inline void replace(r_sexp& x, const U& old_values, const U& new_values) {
 
 template<>
 inline r_sexp deep_copy(const r_sexp& x) {
-    return r_sexp_view(x, [](const auto& vec) -> r_sexp {
-        if constexpr (!is<decltype(vec), r_sexp>){
+    return internal::view_sexp(x, []<typename vec_t>(const vec_t& vec) -> r_sexp {
+        if constexpr (!is<vec_t, r_sexp>){
             return as<r_sexp>(deep_copy(vec));
         } else {
             return r_sexp(safe[Rf_duplicate](vec));
@@ -126,8 +126,8 @@ inline r_sexp deep_copy(const r_sexp& x) {
 
 template<>
 inline r_sexp shallow_copy(const r_sexp& x) {
-    return r_sexp_view(x, [](const auto& vec) -> r_sexp {
-        if constexpr (!is<decltype(vec), r_sexp>){
+    return internal::view_sexp(x, []<typename vec_t>(const vec_t& vec) -> r_sexp {
+        if constexpr (!is<vec_t, r_sexp>){
             return as<r_sexp>(shallow_copy(vec));
         } else {
             return r_sexp(safe[Rf_shallow_duplicate](vec));
@@ -140,11 +140,11 @@ namespace internal {
 inline bool identical_impl(const r_sexp& a, const r_sexp& b) {
     if (internal::ptrs_identical(a, b)) return true;
     if (a.is_null() || b.is_null()) return false; // If true it would have been caught by above ptr comparison
-    return r_sexp_view(a, [&b]<typename vec1_t>(const vec1_t& vec1) -> bool {
+    return internal::view_sexp(a, [&b]<typename vec1_t>(const vec1_t& vec1) -> bool {
         if constexpr (is<vec1_t, r_sexp>){
             return R_compute_identical(vec1, b, 16);
         } else {
-            return r_sexp_view(b, [&vec1]<typename vec2_t>(const vec2_t& vec2) -> bool {
+            return internal::view_sexp(b, [&vec1]<typename vec2_t>(const vec2_t& vec2) -> bool {
                 if constexpr (!is<vec1_t, vec2_t>){
                     return false;
                 } else {

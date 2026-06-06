@@ -106,11 +106,11 @@ template <typename T, typename U>
 requires (is<T, r_sexp> || is<U, r_sexp>)
 inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) {
   if constexpr (is<T, r_sexp>){
-    return r_sexp_visit(lhs, [&]<typename lhs_t>(const lhs_t& x) -> r_vec<r_lgl> {
+    return internal::visit_sexp(lhs, [&]<typename lhs_t>(const lhs_t& x) -> r_vec<r_lgl> {
       return as<r_vec<r_lgl>>(x == lhs_t(rhs));
     });
   } else {
-    return r_sexp_visit(rhs, [&]<typename rhs_t>(const rhs_t& y) -> r_vec<r_lgl> {
+    return internal::visit_sexp(rhs, [&]<typename rhs_t>(const rhs_t& y) -> r_vec<r_lgl> {
       return as<r_vec<r_lgl>>(rhs_t(lhs) == y);
     });
   }

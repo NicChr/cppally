@@ -170,7 +170,7 @@ inline std::vector<std::function<bool(int, int)>> build_col_eq_probes(const r_df
     std::vector<std::function<bool(int, int)>> eqs;
     eqs.reserve(ncol);
     for (int c = 0; c < ncol; ++c) {
-        r_sexp_view(x.value.view(c), [&]<typename ColT>(const ColT& col) {
+        internal::view_sexp(x.value.view(c), [&]<typename ColT>(const ColT& col) {
             if constexpr (requires (int i, int j) {
                 identical(col.view(i), col.view(j));
             }) {
