@@ -46,9 +46,11 @@ inline void r_copy_n(r_df& target, const r_df& source, r_size_t target_offset, r
     r_vec<r_str_view> colnames = target.colnames();
     for (r_size_t j = 0; j < ncols; ++j){
         r_str_view colname = colnames.view(j);
-        target.with_col(j, [&]<typename col_t>(col_t&& tcol) -> void {
+        r_sexp col = target.get_col(j);
+        r_sexp_mutate(col, [&]<RComposite col_t>(col_t& tcol){
             r_copy_n(tcol, col_t(source.get_col(colname)), target_offset, n);
-        }, true);
+        });
+        target.set_col(j, col);
     }
 }
 
@@ -115,15 +117,16 @@ inline r_sexp flatten(const r_vec<r_sexp>& x) {
         r_sexp next = vectors.view(i);
         m = length(next);
         // Rolling common type
-        out = visit_sexp(out, [&]<typename out_t>(out_t&& out_vec) -> r_sexp {
-            return visit_sexp(next, [&]<typename next_t>(const next_t& next_vec) -> r_sexp {
+        out = internal::view_sexp(out, [&]<typename out_t>(const out_t& out_vec) -> r_sexp {
+            return internal::view_sexp(next, [&]<typename next_t>(const next_t& next_vec) -> r_sexp {
                 if constexpr (RComposite<out_t> && RComposite<next_t>){
                     using common_t = common_r_t<out_t, next_t>;
                     if constexpr (is<out_t, common_t>){
-                        r_copy_n(out_vec, as<common_t>(next_vec), k, m);
-                        return out;
+                        common_t acc(std::move(out));
+                        r_copy_n(acc, as<common_t>(next_vec), k, m);
+                        return as<r_sexp>(acc);
                     } else {
-                        // Promote out to common type, then write
+                        // Promote out to common type (fresh vector), then write
                         common_t out_promoted = as<common_t>(out_vec);
                         r_copy_n(out_promoted, next_vec, k, m);
                         return as<r_sexp>(out_promoted);

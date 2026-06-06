@@ -260,7 +260,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         for (uint32_t i = 0; i < n; ++i) {
             SEXP str = px[i];
             
-            if (str == NA_STRING) {
+            if (internal::ptrs_identical(str, na<r_str_view>())){
                 group_ids.push_back(uint32_t(-1));
                 last_id = uint32_t(-1); // Break linear cache
             } 
@@ -364,7 +364,7 @@ inline r_vec<r_int> order(const r_df& x, bool preserve_ties = true) {
         stack.pop_back();
         if (f.col >= ncol) continue;
 
-        view_sexp(x.value.view(f.col), [&]<typename ColT>(const ColT& col) {
+        internal::view_sexp(x.value.view(f.col), [&]<typename ColT>(const ColT& col) {
             if constexpr (requires (const ColT& c, int i) {
                 order(c, false);
                 identical(c.view(i), c.view(i));

@@ -2,7 +2,6 @@
 #define CPPALLY_R_IDENTICAL_H
 
 #include <cppally/r_vec.h>
-#include <cppally/r_visit.h>
 #include <cppally/r_attrs.h>
 
 namespace cppally {
@@ -58,11 +57,8 @@ inline bool identical_impl(const T& a, const T& b);
 
 template <RVector T>
 inline bool identical_impl(const T& a, const T& b) {
-    SEXP x = unwrap(a);
-    SEXP y = unwrap(b);
-    if (x == y) return true; // same pointer
+    if (internal::ptrs_identical(a, b)) return true; // same pointer
     if (a.length() != b.length()) return false;
-    if (TYPEOF(a) != TYPEOF(b)) return false;
     
     bool x_has_attrs = attr::has_attrs(a);
     bool y_has_attrs = attr::has_attrs(b);

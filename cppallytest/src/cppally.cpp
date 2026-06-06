@@ -5,7 +5,6 @@
 #include <cppally/r_dispatch.h>
 #include <cppally.hpp>
 #include <R_ext/Visibility.h>
-#include "readme.h"
 #include "test.h"
 #include "test_nas.h"
 #include "test_refs.h"
@@ -17,133 +16,6 @@ using namespace cppally;
 using internal::cpp_to_r;
 using internal::dispatch_template_impl;
 
-// readme.h
-extern "C" SEXP _cppallytest_scalar_init(SEXP ptype) {
-  BEGIN_CPPALLY
-  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP ptype_internal) -> decltype(cpp_to_r(::scalar_init(std::declval<T>()))) {
-        return cpp_to_r(::scalar_init(as<T>(ptype_internal)));
-    },
-    ptype
-  );
-  END_CPPALLY
-}
-// readme.h
-r_int64 as_int64(r_int x);
-extern "C" SEXP _cppallytest_as_int64(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::as_int64(as<r_int>(x)));
-  END_CPPALLY
-}
-// readme.h
-r_size_t as_r_size_t(r_int x);
-extern "C" SEXP _cppallytest_as_r_size_t(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::as_r_size_t(as<r_int>(x)));
-  END_CPPALLY
-}
-// readme.h
-extern "C" SEXP _cppallytest_cpp_length(SEXP vec) {
-  BEGIN_CPPALLY
-  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
-    []<typename T>(SEXP vec_internal) -> decltype(cpp_to_r(::cpp_length(std::declval<T>()))) {
-        return cpp_to_r(::cpp_length(as<T>(vec_internal)));
-    },
-    vec
-  );
-  END_CPPALLY
-}
-// readme.h
-r_dbl add_half(r_dbl x);
-extern "C" SEXP _cppallytest_add_half(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::add_half(as<r_dbl>(x)));
-  END_CPPALLY
-}
-// readme.h
-r_str symbol_to_string(r_sym x);
-extern "C" SEXP _cppallytest_symbol_to_string(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::symbol_to_string(as<r_sym>(x)));
-  END_CPPALLY
-}
-// readme.h
-r_factors new_factor(r_vec<r_str> x);
-extern "C" SEXP _cppallytest_new_factor(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::new_factor(as<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// readme.h
-r_vec<r_int> factor_codes(r_factors x);
-extern "C" SEXP _cppallytest_factor_codes(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::factor_codes(as<r_factors>(x)));
-  END_CPPALLY
-}
-// readme.h
-r_vec<r_int> cpp_lengths(const r_vec<r_sexp>& x);
-extern "C" SEXP _cppallytest_cpp_lengths(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::cpp_lengths(as<const r_vec<r_sexp>&>(x)));
-  END_CPPALLY
-}
-// readme.h
-r_vec<r_int> cpp_lengths2(const r_vec<r_sexp>& x);
-extern "C" SEXP _cppallytest_cpp_lengths2(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::cpp_lengths2(as<const r_vec<r_sexp>&>(x)));
-  END_CPPALLY
-}
-// readme.h
-r_int double_to_int(r_dbl x);
-extern "C" SEXP _cppallytest_double_to_int(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::double_to_int(as<r_dbl>(x)));
-  END_CPPALLY
-}
-// readme.h
-r_vec<r_int> to_int_vec(r_vec<r_dbl> x);
-extern "C" SEXP _cppallytest_to_int_vec(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::to_int_vec(as<r_vec<r_dbl>>(x)));
-  END_CPPALLY
-}
-// readme.h
-r_vec<r_sexp> coercions();
-extern "C" SEXP _cppallytest_coercions() {
-  BEGIN_CPPALLY
-  return cpp_to_r(::coercions());
-  END_CPPALLY
-}
-// readme.h
-int cpp_na_count(r_vec<r_str> x);
-extern "C" SEXP _cppallytest_cpp_na_count(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::cpp_na_count(as<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// readme.h
-int C_na_count(SEXP x);
-extern "C" SEXP _cppallytest_C_na_count(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::C_na_count(as<SEXP>(x)));
-  END_CPPALLY
-}
-// readme.h
-int cpp_fast_na_count(r_vec<r_str_view> x);
-extern "C" SEXP _cppallytest_cpp_fast_na_count(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::cpp_fast_na_count(as<r_vec<r_str_view>>(x)));
-  END_CPPALLY
-}
-// readme.h
-int cpp_fast_na_count_v2(r_vec<r_str> x);
-extern "C" SEXP _cppallytest_cpp_fast_na_count_v2(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::cpp_fast_na_count_v2(as<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
 // test.cpp
 void cpp_set_threads(int n);
 extern "C" SEXP _cppallytest_cpp_set_threads(SEXP n) {
@@ -848,20 +720,6 @@ extern "C" SEXP _cppallytest_test_na_types() {
   return cpp_to_r(::test_na_types());
   END_CPPALLY
 }
-// test_protect.cpp
-double bench_protect_insert_release_cppally(int n);
-extern "C" SEXP _cppallytest_bench_protect_insert_release_cppally(SEXP n) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::bench_protect_insert_release_cppally(as<int>(n)));
-  END_CPPALLY
-}
-// test_protect.cpp
-double bench_protect_copy_cppally(int n);
-extern "C" SEXP _cppallytest_bench_protect_copy_cppally(SEXP n) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::bench_protect_copy_cppally(as<int>(n)));
-  END_CPPALLY
-}
 // test_refs.h
 SEXP test_by_value(r_vec<r_dbl> x);
 extern "C" SEXP _cppallytest_test_by_value(SEXP x) {
@@ -1079,124 +937,105 @@ extern "C" SEXP _cppallytest_test_valgrind() {
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
-    {"_cppallytest_C_na_count",                           (DL_FUNC) &_cppallytest_C_na_count,                           1},
-    {"_cppallytest_add_half",                             (DL_FUNC) &_cppallytest_add_half,                             1},
-    {"_cppallytest_as_int64",                             (DL_FUNC) &_cppallytest_as_int64,                             1},
-    {"_cppallytest_as_r_size_t",                          (DL_FUNC) &_cppallytest_as_r_size_t,                          1},
-    {"_cppallytest_bench_protect_copy_cppally",           (DL_FUNC) &_cppallytest_bench_protect_copy_cppally,           1},
-    {"_cppallytest_bench_protect_insert_release_cppally", (DL_FUNC) &_cppallytest_bench_protect_insert_release_cppally, 1},
-    {"_cppallytest_coercions",                            (DL_FUNC) &_cppallytest_coercions,                            0},
-    {"_cppallytest_cpp_fast_na_count",                    (DL_FUNC) &_cppallytest_cpp_fast_na_count,                    1},
-    {"_cppallytest_cpp_fast_na_count_v2",                 (DL_FUNC) &_cppallytest_cpp_fast_na_count_v2,                 1},
-    {"_cppallytest_cpp_get_max_threads",                  (DL_FUNC) &_cppallytest_cpp_get_max_threads,                  0},
-    {"_cppallytest_cpp_get_threads",                      (DL_FUNC) &_cppallytest_cpp_get_threads,                      0},
-    {"_cppallytest_cpp_length",                           (DL_FUNC) &_cppallytest_cpp_length,                           1},
-    {"_cppallytest_cpp_lengths",                          (DL_FUNC) &_cppallytest_cpp_lengths,                          1},
-    {"_cppallytest_cpp_lengths2",                         (DL_FUNC) &_cppallytest_cpp_lengths2,                         1},
-    {"_cppallytest_cpp_na_count",                         (DL_FUNC) &_cppallytest_cpp_na_count,                         1},
-    {"_cppallytest_cpp_set_threads",                      (DL_FUNC) &_cppallytest_cpp_set_threads,                      1},
-    {"_cppallytest_cpp_typeof",                           (DL_FUNC) &_cppallytest_cpp_typeof,                           1},
-    {"_cppallytest_double_to_int",                        (DL_FUNC) &_cppallytest_double_to_int,                        1},
-    {"_cppallytest_factor_codes",                         (DL_FUNC) &_cppallytest_factor_codes,                         1},
-    {"_cppallytest_new_factor",                           (DL_FUNC) &_cppallytest_new_factor,                           1},
-    {"_cppallytest_scalar1",                              (DL_FUNC) &_cppallytest_scalar1,                              1},
-    {"_cppallytest_scalar2",                              (DL_FUNC) &_cppallytest_scalar2,                              1},
-    {"_cppallytest_scalar3",                              (DL_FUNC) &_cppallytest_scalar3,                              2},
-    {"_cppallytest_scalar4",                              (DL_FUNC) &_cppallytest_scalar4,                              2},
-    {"_cppallytest_scalar_init",                          (DL_FUNC) &_cppallytest_scalar_init,                          1},
-    {"_cppallytest_scalar_vec1",                          (DL_FUNC) &_cppallytest_scalar_vec1,                          2},
-    {"_cppallytest_scalar_vec2",                          (DL_FUNC) &_cppallytest_scalar_vec2,                          2},
-    {"_cppallytest_scalar_vec3",                          (DL_FUNC) &_cppallytest_scalar_vec3,                          4},
-    {"_cppallytest_symbol_to_string",                     (DL_FUNC) &_cppallytest_symbol_to_string,                     1},
-    {"_cppallytest_test_as_date",                         (DL_FUNC) &_cppallytest_test_as_date,                         1},
-    {"_cppallytest_test_as_date2",                        (DL_FUNC) &_cppallytest_test_as_date2,                        1},
-    {"_cppallytest_test_as_dbl",                          (DL_FUNC) &_cppallytest_test_as_dbl,                          6},
-    {"_cppallytest_test_as_int",                          (DL_FUNC) &_cppallytest_test_as_int,                          6},
-    {"_cppallytest_test_as_str",                          (DL_FUNC) &_cppallytest_test_as_str,                          6},
-    {"_cppallytest_test_as_sym",                          (DL_FUNC) &_cppallytest_test_as_sym,                          6},
-    {"_cppallytest_test_attrs",                           (DL_FUNC) &_cppallytest_test_attrs,                           1},
-    {"_cppallytest_test_by_const_lvalue_ref",             (DL_FUNC) &_cppallytest_test_by_const_lvalue_ref,             1},
-    {"_cppallytest_test_by_lvalue_ref",                   (DL_FUNC) &_cppallytest_test_by_lvalue_ref,                   1},
-    {"_cppallytest_test_by_rvalue_ref",                   (DL_FUNC) &_cppallytest_test_by_rvalue_ref,                   1},
-    {"_cppallytest_test_by_value",                        (DL_FUNC) &_cppallytest_test_by_value,                        1},
-    {"_cppallytest_test_coerce",                          (DL_FUNC) &_cppallytest_test_coerce,                          2},
-    {"_cppallytest_test_coerce1",                         (DL_FUNC) &_cppallytest_test_coerce1,                         1},
-    {"_cppallytest_test_combine2",                        (DL_FUNC) &_cppallytest_test_combine2,                        2},
-    {"_cppallytest_test_construct_date",                  (DL_FUNC) &_cppallytest_test_construct_date,                  1},
-    {"_cppallytest_test_copy",                            (DL_FUNC) &_cppallytest_test_copy,                            1},
-    {"_cppallytest_test_counts",                          (DL_FUNC) &_cppallytest_test_counts,                          2},
-    {"_cppallytest_test_dates1",                          (DL_FUNC) &_cppallytest_test_dates1,                          1},
-    {"_cppallytest_test_dates2",                          (DL_FUNC) &_cppallytest_test_dates2,                          1},
-    {"_cppallytest_test_deduced_scalar_type",             (DL_FUNC) &_cppallytest_test_deduced_scalar_type,             1},
-    {"_cppallytest_test_deduced_scalar_type2",            (DL_FUNC) &_cppallytest_test_deduced_scalar_type2,            1},
-    {"_cppallytest_test_deduced_type",                    (DL_FUNC) &_cppallytest_test_deduced_type,                    1},
-    {"_cppallytest_test_deduced_vec_type",                (DL_FUNC) &_cppallytest_test_deduced_vec_type,                1},
-    {"_cppallytest_test_df",                              (DL_FUNC) &_cppallytest_test_df,                              1},
-    {"_cppallytest_test_factor1",                         (DL_FUNC) &_cppallytest_test_factor1,                         1},
-    {"_cppallytest_test_factor2",                         (DL_FUNC) &_cppallytest_test_factor2,                         1},
-    {"_cppallytest_test_factor3",                         (DL_FUNC) &_cppallytest_test_factor3,                         1},
-    {"_cppallytest_test_fill",                            (DL_FUNC) &_cppallytest_test_fill,                            3},
-    {"_cppallytest_test_find",                            (DL_FUNC) &_cppallytest_test_find,                            2},
-    {"_cppallytest_test_group_counts",                    (DL_FUNC) &_cppallytest_test_group_counts,                    2},
-    {"_cppallytest_test_group_id",                        (DL_FUNC) &_cppallytest_test_group_id,                        2},
-    {"_cppallytest_test_identical",                       (DL_FUNC) &_cppallytest_test_identical,                       2},
-    {"_cppallytest_test_identity",                        (DL_FUNC) &_cppallytest_test_identity,                        1},
-    {"_cppallytest_test_identity2",                       (DL_FUNC) &_cppallytest_test_identity2,                       1},
-    {"_cppallytest_test_lengths",                         (DL_FUNC) &_cppallytest_test_lengths,                         1},
-    {"_cppallytest_test_lgl",                             (DL_FUNC) &_cppallytest_test_lgl,                             0},
-    {"_cppallytest_test_list_to_scalars",                 (DL_FUNC) &_cppallytest_test_list_to_scalars,                 1},
-    {"_cppallytest_test_match",                           (DL_FUNC) &_cppallytest_test_match,                           2},
-    {"_cppallytest_test_mean",                            (DL_FUNC) &_cppallytest_test_mean,                            2},
-    {"_cppallytest_test_mix2",                            (DL_FUNC) &_cppallytest_test_mix2,                            7},
-    {"_cppallytest_test_multiline_template_add",          (DL_FUNC) &_cppallytest_test_multiline_template_add,          2},
-    {"_cppallytest_test_multiline_template_add2",         (DL_FUNC) &_cppallytest_test_multiline_template_add2,         2},
-    {"_cppallytest_test_multiple_deduction",              (DL_FUNC) &_cppallytest_test_multiple_deduction,              2},
-    {"_cppallytest_test_n_unique",                        (DL_FUNC) &_cppallytest_test_n_unique,                        1},
-    {"_cppallytest_test_na_types",                        (DL_FUNC) &_cppallytest_test_na_types,                        0},
-    {"_cppallytest_test_names_empty",                     (DL_FUNC) &_cppallytest_test_names_empty,                     0},
-    {"_cppallytest_test_names_growing",                   (DL_FUNC) &_cppallytest_test_names_growing,                   0},
-    {"_cppallytest_test_names_inplace_mutation",          (DL_FUNC) &_cppallytest_test_names_inplace_mutation,          0},
-    {"_cppallytest_test_names_roundtrip_after_grow",      (DL_FUNC) &_cppallytest_test_names_roundtrip_after_grow,      0},
-    {"_cppallytest_test_names_set_attr_invalidation",     (DL_FUNC) &_cppallytest_test_names_set_attr_invalidation,     0},
-    {"_cppallytest_test_names_shallow_copy_isolation",    (DL_FUNC) &_cppallytest_test_names_shallow_copy_isolation,    0},
-    {"_cppallytest_test_names_stale_invalidation",        (DL_FUNC) &_cppallytest_test_names_stale_invalidation,        0},
-    {"_cppallytest_test_names_sweep",                     (DL_FUNC) &_cppallytest_test_names_sweep,                     0},
-    {"_cppallytest_test_nas",                             (DL_FUNC) &_cppallytest_test_nas,                             1},
-    {"_cppallytest_test_null",                            (DL_FUNC) &_cppallytest_test_null,                            0},
-    {"_cppallytest_test_order",                           (DL_FUNC) &_cppallytest_test_order,                           2},
-    {"_cppallytest_test_range",                           (DL_FUNC) &_cppallytest_test_range,                           2},
-    {"_cppallytest_test_remove",                          (DL_FUNC) &_cppallytest_test_remove,                          2},
-    {"_cppallytest_test_replace",                         (DL_FUNC) &_cppallytest_test_replace,                         3},
-    {"_cppallytest_test_rval_identity",                   (DL_FUNC) &_cppallytest_test_rval_identity,                   1},
-    {"_cppallytest_test_scalar",                          (DL_FUNC) &_cppallytest_test_scalar,                          2},
-    {"_cppallytest_test_scalar2",                         (DL_FUNC) &_cppallytest_test_scalar2,                         2},
-    {"_cppallytest_test_scalar3",                         (DL_FUNC) &_cppallytest_test_scalar3,                         2},
-    {"_cppallytest_test_seqs",                            (DL_FUNC) &_cppallytest_test_seqs,                            3},
-    {"_cppallytest_test_sexp",                            (DL_FUNC) &_cppallytest_test_sexp,                            1},
-    {"_cppallytest_test_sexp2",                           (DL_FUNC) &_cppallytest_test_sexp2,                           1},
-    {"_cppallytest_test_sexp3",                           (DL_FUNC) &_cppallytest_test_sexp3,                           1},
-    {"_cppallytest_test_sexp4",                           (DL_FUNC) &_cppallytest_test_sexp4,                           1},
-    {"_cppallytest_test_sort",                            (DL_FUNC) &_cppallytest_test_sort,                            2},
-    {"_cppallytest_test_specialisation",                  (DL_FUNC) &_cppallytest_test_specialisation,                  1},
-    {"_cppallytest_test_str1",                            (DL_FUNC) &_cppallytest_test_str1,                            1},
-    {"_cppallytest_test_str2",                            (DL_FUNC) &_cppallytest_test_str2,                            1},
-    {"_cppallytest_test_str3",                            (DL_FUNC) &_cppallytest_test_str3,                            1},
-    {"_cppallytest_test_str4",                            (DL_FUNC) &_cppallytest_test_str4,                            1},
-    {"_cppallytest_test_subset",                          (DL_FUNC) &_cppallytest_test_subset,                          3},
-    {"_cppallytest_test_sum",                             (DL_FUNC) &_cppallytest_test_sum,                             2},
-    {"_cppallytest_test_sym",                             (DL_FUNC) &_cppallytest_test_sym,                             1},
-    {"_cppallytest_test_temp_by_const_lvalue_ref",        (DL_FUNC) &_cppallytest_test_temp_by_const_lvalue_ref,        1},
-    {"_cppallytest_test_temp_by_lvalue_ref",              (DL_FUNC) &_cppallytest_test_temp_by_lvalue_ref,              1},
-    {"_cppallytest_test_temp_by_rvalue_ref",              (DL_FUNC) &_cppallytest_test_temp_by_rvalue_ref,              1},
-    {"_cppallytest_test_temp_by_value",                   (DL_FUNC) &_cppallytest_test_temp_by_value,                   1},
-    {"_cppallytest_test_template_null",                   (DL_FUNC) &_cppallytest_test_template_null,                   1},
-    {"_cppallytest_test_tz",                              (DL_FUNC) &_cppallytest_test_tz,                              1},
-    {"_cppallytest_test_unique",                          (DL_FUNC) &_cppallytest_test_unique,                          1},
-    {"_cppallytest_test_valgrind",                        (DL_FUNC) &_cppallytest_test_valgrind,                        0},
-    {"_cppallytest_test_var",                             (DL_FUNC) &_cppallytest_test_var,                             2},
-    {"_cppallytest_to_int_vec",                           (DL_FUNC) &_cppallytest_to_int_vec,                           1},
-    {"_cppallytest_vector1",                              (DL_FUNC) &_cppallytest_vector1,                              1},
-    {"_cppallytest_vector2",                              (DL_FUNC) &_cppallytest_vector2,                              1},
+    {"_cppallytest_cpp_get_max_threads",               (DL_FUNC) &_cppallytest_cpp_get_max_threads,               0},
+    {"_cppallytest_cpp_get_threads",                   (DL_FUNC) &_cppallytest_cpp_get_threads,                   0},
+    {"_cppallytest_cpp_set_threads",                   (DL_FUNC) &_cppallytest_cpp_set_threads,                   1},
+    {"_cppallytest_cpp_typeof",                        (DL_FUNC) &_cppallytest_cpp_typeof,                        1},
+    {"_cppallytest_scalar1",                           (DL_FUNC) &_cppallytest_scalar1,                           1},
+    {"_cppallytest_scalar2",                           (DL_FUNC) &_cppallytest_scalar2,                           1},
+    {"_cppallytest_scalar3",                           (DL_FUNC) &_cppallytest_scalar3,                           2},
+    {"_cppallytest_scalar4",                           (DL_FUNC) &_cppallytest_scalar4,                           2},
+    {"_cppallytest_scalar_vec1",                       (DL_FUNC) &_cppallytest_scalar_vec1,                       2},
+    {"_cppallytest_scalar_vec2",                       (DL_FUNC) &_cppallytest_scalar_vec2,                       2},
+    {"_cppallytest_scalar_vec3",                       (DL_FUNC) &_cppallytest_scalar_vec3,                       4},
+    {"_cppallytest_test_as_date",                      (DL_FUNC) &_cppallytest_test_as_date,                      1},
+    {"_cppallytest_test_as_date2",                     (DL_FUNC) &_cppallytest_test_as_date2,                     1},
+    {"_cppallytest_test_as_dbl",                       (DL_FUNC) &_cppallytest_test_as_dbl,                       6},
+    {"_cppallytest_test_as_int",                       (DL_FUNC) &_cppallytest_test_as_int,                       6},
+    {"_cppallytest_test_as_str",                       (DL_FUNC) &_cppallytest_test_as_str,                       6},
+    {"_cppallytest_test_as_sym",                       (DL_FUNC) &_cppallytest_test_as_sym,                       6},
+    {"_cppallytest_test_attrs",                        (DL_FUNC) &_cppallytest_test_attrs,                        1},
+    {"_cppallytest_test_by_const_lvalue_ref",          (DL_FUNC) &_cppallytest_test_by_const_lvalue_ref,          1},
+    {"_cppallytest_test_by_lvalue_ref",                (DL_FUNC) &_cppallytest_test_by_lvalue_ref,                1},
+    {"_cppallytest_test_by_rvalue_ref",                (DL_FUNC) &_cppallytest_test_by_rvalue_ref,                1},
+    {"_cppallytest_test_by_value",                     (DL_FUNC) &_cppallytest_test_by_value,                     1},
+    {"_cppallytest_test_coerce",                       (DL_FUNC) &_cppallytest_test_coerce,                       2},
+    {"_cppallytest_test_coerce1",                      (DL_FUNC) &_cppallytest_test_coerce1,                      1},
+    {"_cppallytest_test_combine2",                     (DL_FUNC) &_cppallytest_test_combine2,                     2},
+    {"_cppallytest_test_construct_date",               (DL_FUNC) &_cppallytest_test_construct_date,               1},
+    {"_cppallytest_test_copy",                         (DL_FUNC) &_cppallytest_test_copy,                         1},
+    {"_cppallytest_test_counts",                       (DL_FUNC) &_cppallytest_test_counts,                       2},
+    {"_cppallytest_test_dates1",                       (DL_FUNC) &_cppallytest_test_dates1,                       1},
+    {"_cppallytest_test_dates2",                       (DL_FUNC) &_cppallytest_test_dates2,                       1},
+    {"_cppallytest_test_deduced_scalar_type",          (DL_FUNC) &_cppallytest_test_deduced_scalar_type,          1},
+    {"_cppallytest_test_deduced_scalar_type2",         (DL_FUNC) &_cppallytest_test_deduced_scalar_type2,         1},
+    {"_cppallytest_test_deduced_type",                 (DL_FUNC) &_cppallytest_test_deduced_type,                 1},
+    {"_cppallytest_test_deduced_vec_type",             (DL_FUNC) &_cppallytest_test_deduced_vec_type,             1},
+    {"_cppallytest_test_df",                           (DL_FUNC) &_cppallytest_test_df,                           1},
+    {"_cppallytest_test_factor1",                      (DL_FUNC) &_cppallytest_test_factor1,                      1},
+    {"_cppallytest_test_factor2",                      (DL_FUNC) &_cppallytest_test_factor2,                      1},
+    {"_cppallytest_test_factor3",                      (DL_FUNC) &_cppallytest_test_factor3,                      1},
+    {"_cppallytest_test_fill",                         (DL_FUNC) &_cppallytest_test_fill,                         3},
+    {"_cppallytest_test_find",                         (DL_FUNC) &_cppallytest_test_find,                         2},
+    {"_cppallytest_test_group_counts",                 (DL_FUNC) &_cppallytest_test_group_counts,                 2},
+    {"_cppallytest_test_group_id",                     (DL_FUNC) &_cppallytest_test_group_id,                     2},
+    {"_cppallytest_test_identical",                    (DL_FUNC) &_cppallytest_test_identical,                    2},
+    {"_cppallytest_test_identity",                     (DL_FUNC) &_cppallytest_test_identity,                     1},
+    {"_cppallytest_test_identity2",                    (DL_FUNC) &_cppallytest_test_identity2,                    1},
+    {"_cppallytest_test_lengths",                      (DL_FUNC) &_cppallytest_test_lengths,                      1},
+    {"_cppallytest_test_lgl",                          (DL_FUNC) &_cppallytest_test_lgl,                          0},
+    {"_cppallytest_test_list_to_scalars",              (DL_FUNC) &_cppallytest_test_list_to_scalars,              1},
+    {"_cppallytest_test_match",                        (DL_FUNC) &_cppallytest_test_match,                        2},
+    {"_cppallytest_test_mean",                         (DL_FUNC) &_cppallytest_test_mean,                         2},
+    {"_cppallytest_test_mix2",                         (DL_FUNC) &_cppallytest_test_mix2,                         7},
+    {"_cppallytest_test_multiline_template_add",       (DL_FUNC) &_cppallytest_test_multiline_template_add,       2},
+    {"_cppallytest_test_multiline_template_add2",      (DL_FUNC) &_cppallytest_test_multiline_template_add2,      2},
+    {"_cppallytest_test_multiple_deduction",           (DL_FUNC) &_cppallytest_test_multiple_deduction,           2},
+    {"_cppallytest_test_n_unique",                     (DL_FUNC) &_cppallytest_test_n_unique,                     1},
+    {"_cppallytest_test_na_types",                     (DL_FUNC) &_cppallytest_test_na_types,                     0},
+    {"_cppallytest_test_names_empty",                  (DL_FUNC) &_cppallytest_test_names_empty,                  0},
+    {"_cppallytest_test_names_growing",                (DL_FUNC) &_cppallytest_test_names_growing,                0},
+    {"_cppallytest_test_names_inplace_mutation",       (DL_FUNC) &_cppallytest_test_names_inplace_mutation,       0},
+    {"_cppallytest_test_names_roundtrip_after_grow",   (DL_FUNC) &_cppallytest_test_names_roundtrip_after_grow,   0},
+    {"_cppallytest_test_names_set_attr_invalidation",  (DL_FUNC) &_cppallytest_test_names_set_attr_invalidation,  0},
+    {"_cppallytest_test_names_shallow_copy_isolation", (DL_FUNC) &_cppallytest_test_names_shallow_copy_isolation, 0},
+    {"_cppallytest_test_names_stale_invalidation",     (DL_FUNC) &_cppallytest_test_names_stale_invalidation,     0},
+    {"_cppallytest_test_names_sweep",                  (DL_FUNC) &_cppallytest_test_names_sweep,                  0},
+    {"_cppallytest_test_nas",                          (DL_FUNC) &_cppallytest_test_nas,                          1},
+    {"_cppallytest_test_null",                         (DL_FUNC) &_cppallytest_test_null,                         0},
+    {"_cppallytest_test_order",                        (DL_FUNC) &_cppallytest_test_order,                        2},
+    {"_cppallytest_test_range",                        (DL_FUNC) &_cppallytest_test_range,                        2},
+    {"_cppallytest_test_remove",                       (DL_FUNC) &_cppallytest_test_remove,                       2},
+    {"_cppallytest_test_replace",                      (DL_FUNC) &_cppallytest_test_replace,                      3},
+    {"_cppallytest_test_rval_identity",                (DL_FUNC) &_cppallytest_test_rval_identity,                1},
+    {"_cppallytest_test_scalar",                       (DL_FUNC) &_cppallytest_test_scalar,                       2},
+    {"_cppallytest_test_scalar2",                      (DL_FUNC) &_cppallytest_test_scalar2,                      2},
+    {"_cppallytest_test_scalar3",                      (DL_FUNC) &_cppallytest_test_scalar3,                      2},
+    {"_cppallytest_test_seqs",                         (DL_FUNC) &_cppallytest_test_seqs,                         3},
+    {"_cppallytest_test_sexp",                         (DL_FUNC) &_cppallytest_test_sexp,                         1},
+    {"_cppallytest_test_sexp2",                        (DL_FUNC) &_cppallytest_test_sexp2,                        1},
+    {"_cppallytest_test_sexp3",                        (DL_FUNC) &_cppallytest_test_sexp3,                        1},
+    {"_cppallytest_test_sexp4",                        (DL_FUNC) &_cppallytest_test_sexp4,                        1},
+    {"_cppallytest_test_sort",                         (DL_FUNC) &_cppallytest_test_sort,                         2},
+    {"_cppallytest_test_specialisation",               (DL_FUNC) &_cppallytest_test_specialisation,               1},
+    {"_cppallytest_test_str1",                         (DL_FUNC) &_cppallytest_test_str1,                         1},
+    {"_cppallytest_test_str2",                         (DL_FUNC) &_cppallytest_test_str2,                         1},
+    {"_cppallytest_test_str3",                         (DL_FUNC) &_cppallytest_test_str3,                         1},
+    {"_cppallytest_test_str4",                         (DL_FUNC) &_cppallytest_test_str4,                         1},
+    {"_cppallytest_test_subset",                       (DL_FUNC) &_cppallytest_test_subset,                       3},
+    {"_cppallytest_test_sum",                          (DL_FUNC) &_cppallytest_test_sum,                          2},
+    {"_cppallytest_test_sym",                          (DL_FUNC) &_cppallytest_test_sym,                          1},
+    {"_cppallytest_test_temp_by_const_lvalue_ref",     (DL_FUNC) &_cppallytest_test_temp_by_const_lvalue_ref,     1},
+    {"_cppallytest_test_temp_by_lvalue_ref",           (DL_FUNC) &_cppallytest_test_temp_by_lvalue_ref,           1},
+    {"_cppallytest_test_temp_by_rvalue_ref",           (DL_FUNC) &_cppallytest_test_temp_by_rvalue_ref,           1},
+    {"_cppallytest_test_temp_by_value",                (DL_FUNC) &_cppallytest_test_temp_by_value,                1},
+    {"_cppallytest_test_template_null",                (DL_FUNC) &_cppallytest_test_template_null,                1},
+    {"_cppallytest_test_tz",                           (DL_FUNC) &_cppallytest_test_tz,                           1},
+    {"_cppallytest_test_unique",                       (DL_FUNC) &_cppallytest_test_unique,                       1},
+    {"_cppallytest_test_valgrind",                     (DL_FUNC) &_cppallytest_test_valgrind,                     0},
+    {"_cppallytest_test_var",                          (DL_FUNC) &_cppallytest_test_var,                          2},
+    {"_cppallytest_vector1",                           (DL_FUNC) &_cppallytest_vector1,                           1},
+    {"_cppallytest_vector2",                           (DL_FUNC) &_cppallytest_vector2,                           1},
     {NULL, NULL, 0}
 };
 }

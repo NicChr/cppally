@@ -84,11 +84,8 @@ inline r_vec<V> find(const T& x, const U& values, bool invert) {
 
 template <internal::RSubscript U, typename V>
 void fill(r_sexp& x, const r_vec<U>& where, const V& with) {
-    mutate_sexp(x, [&](auto& x_) {
-        using x_t = std::remove_cvref_t<decltype(x_)>;
-        if constexpr (is<x_t, r_sexp>){
-            abort("Unsupported SEXP type in `fill()`");
-        } else if constexpr (requires { fill(x_, where, with); }){
+    r_sexp_mutate(x, [&]<typename x_t> requires (!is<x_t, r_sexp>) (x_t& x_){
+        if constexpr (requires { fill(x_, where, with); }){
             fill(x_, where, with);
         } else {
             abort("No available method for type %s in `fill()`", internal::type_str<x_t>());
@@ -98,20 +95,21 @@ void fill(r_sexp& x, const r_vec<U>& where, const V& with) {
 
 template <internal::RSubscript U>
 void fill(r_sexp& x, const r_vec<U>& where, const r_sexp& with) {
-    visit_sexp(with, [&](const auto& with_) {
-        fill(x, where, with_);
+    internal::visit_sexp(with, [&]<typename with_t>(const with_t& with_) {
+        if constexpr (is<with_t, r_sexp>) {
+            abort("fill: unsupported `with` type %s", internal::type_str<with_t>());
+        } else {
+            fill(x, where, with_);
+        }
     });
 }
 
 template <typename U>
 inline void replace(r_sexp& x, const U& old_values, const U& new_values) {
-    mutate_sexp(x, [&](auto& x_) {
-        using x_t = std::remove_cvref_t<decltype(x_)>;
+    r_sexp_mutate(x, [&]<typename x_t> requires (!is<x_t, r_sexp>) (x_t& x_) {
         x_t oldv = x_t(static_cast<SEXP>(old_values));
         x_t newv = x_t(static_cast<SEXP>(new_values));
-        if constexpr (is<x_t, r_sexp>){
-            abort("Unsupported SEXP type in `replace()`");
-        } else if constexpr (requires { replace(x_, oldv, newv); }){
+        if constexpr (requires { replace(x_, oldv, newv); }){
             replace(x_, oldv, newv);
         } else {
             abort("No available method for type %s in `replace`", internal::type_str<x_t>());
@@ -121,8 +119,8 @@ inline void replace(r_sexp& x, const U& old_values, const U& new_values) {
 
 template<>
 inline r_sexp deep_copy(const r_sexp& x) {
-    return view_sexp(x, [](const auto& vec) -> r_sexp {
-        if constexpr (!is<decltype(vec), r_sexp>){
+    return internal::view_sexp(x, []<typename vec_t>(const vec_t& vec) -> r_sexp {
+        if constexpr (!is<vec_t, r_sexp>){
             return as<r_sexp>(deep_copy(vec));
         } else {
             return r_sexp(safe[Rf_duplicate](vec));
@@ -132,8 +130,8 @@ inline r_sexp deep_copy(const r_sexp& x) {
 
 template<>
 inline r_sexp shallow_copy(const r_sexp& x) {
-    return view_sexp(x, [](const auto& vec) -> r_sexp {
-        if constexpr (!is<decltype(vec), r_sexp>){
+    return internal::view_sexp(x, []<typename vec_t>(const vec_t& vec) -> r_sexp {
+        if constexpr (!is<vec_t, r_sexp>){
             return as<r_sexp>(shallow_copy(vec));
         } else {
             return r_sexp(safe[Rf_shallow_duplicate](vec));
@@ -144,17 +142,13 @@ inline r_sexp shallow_copy(const r_sexp& x) {
 namespace internal {
 
 inline bool identical_impl(const r_sexp& a, const r_sexp& b) {
-    SEXP x = unwrap(a);
-    SEXP y = unwrap(b);
-    if (x == y) return true;
+    if (internal::ptrs_identical(a, b)) return true;
     if (a.is_null() || b.is_null()) return false; // If true it would have been caught by above ptr comparison
-    return view_sexp(a, [&b](const auto& vec1) -> bool {
-        using vec1_t = decltype(vec1);
+    return internal::view_sexp(a, [&b]<typename vec1_t>(const vec1_t& vec1) -> bool {
         if constexpr (is<vec1_t, r_sexp>){
             return R_compute_identical(vec1, b, 16);
         } else {
-            return view_sexp(b, [&vec1](const auto& vec2) -> bool {
-                using vec2_t = decltype(vec2);
+            return internal::view_sexp(b, [&vec1]<typename vec2_t>(const vec2_t& vec2) -> bool {
                 if constexpr (!is<vec1_t, vec2_t>){
                     return false;
                 } else {

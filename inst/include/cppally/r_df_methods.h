@@ -95,8 +95,7 @@ inline r_df r_df::get_row(int index) const {
     attr::set_old_class(out, internal::data_frame_class());
     attr::set_attr(out, symbol::row_names_sym, internal::create_row_names(1));
     for (int i = 0; i < ncols; ++i){
-        out.set(i, r_sexp(view_sexp(value.view(i), [index](const auto& vec) -> SEXP {
-            using vec_t = std::remove_cvref_t<decltype(vec)>;
+        out.set(i, r_sexp(internal::view_sexp(value.view(i), [index]<typename vec_t>(const vec_t& vec) -> SEXP {
             if constexpr (requires { vec.view(index); }){
                 return as<SEXP>(vec.view(index));
             } else {
@@ -180,26 +179,11 @@ inline r_df make_df(Args&&... args) {
 // Non-RComposite SEXP types (r_sym, fallback r_sexp) abort.
 template <typename index_t, class F>
 decltype(auto) r_df::with_col(const index_t& index, F&& f, bool view_only) const {
+    auto col = [&]<RComposite T>(T&& x) -> decltype(auto) { return f(std::forward<T>(x)); };
     if (view_only){
-        return view_sexp(view_col(index),
-        [&]<typename T>(T&& x) -> decltype(f(std::declval<r_vec<r_lgl>>())) {
-          using U = std::remove_cvref_t<T>;
-          if constexpr (RComposite<U>) {
-              return f(std::forward<T>(x));
-          } else {
-              abort("col_apply: r_df can't handle column type: %s", internal::type_str<U>());
-          }
-        });
+        return r_sexp_view(view_col(index), col);
     } else {
-        return visit_sexp(view_col(index),
-        [&]<typename T>(T&& x) -> decltype(f(std::declval<r_vec<r_lgl>>())) {
-          using U = std::remove_cvref_t<T>;
-          if constexpr (RComposite<U>) {
-            return f(std::forward<T>(x));
-          } else {
-            abort("col_apply: r_df can't handle column type: %s", internal::type_str<U>());
-          }
-        });
+        return r_sexp_visit(get_col(index), col);
     }
 }
 

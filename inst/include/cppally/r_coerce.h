@@ -58,9 +58,9 @@ inline T as_impl(const U& x) {
 // Always visit the SEXP and then convert using the disambiguated type
 template <NotSexp T, AnySexp U>
 inline T as_impl(const U& x) {
-  return visit_sexp(x, []<typename x_t>(const x_t& xvec) -> T {
+  return internal::visit_sexp(r_sexp(x), []<typename x_t> (const x_t& xvec) -> T {
     if constexpr (is<x_t, r_sexp>){
-      abort("Don't know how to visit this r_sexp");
+      abort("Don't know how to visit this `r_sexp`");
     } else {
       return as<T>(xvec);
     }

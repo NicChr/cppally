@@ -5,139 +5,18 @@
 #include <cppally/r_factor.h>
 #include <cppally/r_sexp_types.h>
 #include <cppally/r_df.h>
+#include <utility>
+#include <string>
 
 namespace cppally {
 
-// A cleaner lambda-based alternative to
-// using the canonical switch(TYPEOF(x))
+namespace internal {
 
-template <class F>
-decltype(auto) visit_sexp(SEXP x, F&& f) {
-switch (internal::CPPALLY_TYPEOF(x)) {
-    case LGLSXP:                            return f(r_vec<r_lgl>(x));
-    case INTSXP:                            return f(r_vec<r_int>(x));
-    case internal::CPPALLY_INT64SXP:        return f(r_vec<r_int64>(x));
-    case REALSXP:                           return f(r_vec<r_dbl>(x));
-    case STRSXP:                            return f(r_vec<r_str>(x));
-    case VECSXP:                            return f(r_vec<r_sexp>(x));
-    case CPLXSXP:                           return f(r_vec<r_cplx>(x));
-    case RAWSXP:                            return f(r_vec<r_raw>(x));
-    case NILSXP:                            return f(r_vec<r_sexp>(r_null));
-    case internal::CPPALLY_REALDATESXP:     return f(r_vec<r_date>(x));
-    case internal::CPPALLY_REALPSXTSXP:     return f(r_vec<r_psxct>(x));
-    case internal::CPPALLY_FCTSXP:          return f(r_factors(x));
-    case SYMSXP:                            return f(r_sym(x));
-    case internal::CPPALLY_DFSXP:           return f(r_df(x));
-    default:                                return f(r_sexp(x));
-}
-}
-
-template <class F>
-decltype(auto) visit_sexp(const r_sexp& x, F&& f) {
-switch (internal::CPPALLY_TYPEOF(x)) {
-    case LGLSXP:                        return f(r_vec<r_lgl>(x));
-    case INTSXP:                        return f(r_vec<r_int>(x));
-    case internal::CPPALLY_INT64SXP:      return f(r_vec<r_int64>(x));
-    case REALSXP:                       return f(r_vec<r_dbl>(x));
-    case STRSXP:                        return f(r_vec<r_str>(x));
-    case VECSXP:                        return f(r_vec<r_sexp>(x));
-    case CPLXSXP:                       return f(r_vec<r_cplx>(x));
-    case RAWSXP:                        return f(r_vec<r_raw>(x));
-    case NILSXP:                            return f(r_vec<r_sexp>(r_null));
-    case internal::CPPALLY_REALDATESXP:   return f(r_vec<r_date>(x));
-    case internal::CPPALLY_REALPSXTSXP:   return f(r_vec<r_psxct>(x));
-    case internal::CPPALLY_FCTSXP:        return f(r_factors(x));
-    case SYMSXP:                        return f(r_sym(x));
-    case internal::CPPALLY_DFSXP:           return f(r_df(x));
-    default:                            return f(r_sexp(x));
-}
-}
-
-template <class F>
-decltype(auto) visit_vector(SEXP x, F&& f) {
-switch (internal::CPPALLY_TYPEOF(x)) {
-    case LGLSXP:                        return f(r_vec<r_lgl>(x));
-    case INTSXP:                        return f(r_vec<r_int>(x));
-    case internal::CPPALLY_INT64SXP:      return f(r_vec<r_int64>(x));
-    case REALSXP:                       return f(r_vec<r_dbl>(x));
-    case STRSXP:                        return f(r_vec<r_str>(x));
-    case VECSXP:                        return f(r_vec<r_sexp>(x));
-    case CPLXSXP:                       return f(r_vec<r_cplx>(x));
-    case RAWSXP:                        return f(r_vec<r_raw>(x));
-    case NILSXP:                            return f(r_vec<r_sexp>(r_null));
-    case internal::CPPALLY_REALDATESXP:   return f(r_vec<r_date>(x));
-    case internal::CPPALLY_REALPSXTSXP:   return f(r_vec<r_psxct>(x));
-    default:                            abort("`x` must be a vector to be instantiated from an `r_sexp`");
-}
-}
-
-template <class F>
-decltype(auto) visit_vector(const r_sexp& x, F&& f) {
-switch (internal::CPPALLY_TYPEOF(x)) {
-    case LGLSXP:                        return f(r_vec<r_lgl>(x));
-    case INTSXP:                        return f(r_vec<r_int>(x));
-    case internal::CPPALLY_INT64SXP:      return f(r_vec<r_int64>(x));
-    case REALSXP:                       return f(r_vec<r_dbl>(x));
-    case STRSXP:                        return f(r_vec<r_str>(x));
-    case VECSXP:                        return f(r_vec<r_sexp>(x));
-    case CPLXSXP:                       return f(r_vec<r_cplx>(x));
-    case RAWSXP:                        return f(r_vec<r_raw>(x));
-    case NILSXP:                            return f(r_vec<r_sexp>(r_null));
-    case internal::CPPALLY_REALDATESXP:   return f(r_vec<r_date>(x));
-    case internal::CPPALLY_REALPSXTSXP:   return f(r_vec<r_psxct>(x));
-    default:                            abort("`x` must be a vector to be instantiated from an `r_sexp`");
-}
-}
-
-template <class F>
-decltype(auto) view_sexp(const r_sexp& x, F&& f) {
-switch (internal::CPPALLY_TYPEOF(x)) {
-    case LGLSXP:                        return f(r_vec<r_lgl>(x, internal::view_tag{}));
-    case INTSXP:                        return f(r_vec<r_int>(x, internal::view_tag{}));
-    case internal::CPPALLY_INT64SXP:      return f(r_vec<r_int64>(x, internal::view_tag{}));
-    case REALSXP:                       return f(r_vec<r_dbl>(x, internal::view_tag{}));
-    case STRSXP:                        return f(r_vec<r_str>(x, internal::view_tag{}));
-    case VECSXP:                        return f(r_vec<r_sexp>(x, internal::view_tag{}));
-    case CPLXSXP:                       return f(r_vec<r_cplx>(x, internal::view_tag{}));
-    case RAWSXP:                        return f(r_vec<r_raw>(x, internal::view_tag{}));
-    case NILSXP:                            return f(r_vec<r_sexp>(r_null, internal::view_tag{}));
-    case internal::CPPALLY_REALDATESXP:   return f(r_vec<r_date>(x, internal::view_tag{}));
-    case internal::CPPALLY_REALPSXTSXP:   return f(r_vec<r_psxct>(x, internal::view_tag{}));
-    case internal::CPPALLY_FCTSXP:        return f(r_factors(x, internal::view_tag{}));
-    case SYMSXP:                        return f(r_sym(x, internal::view_tag{}));
-    case internal::CPPALLY_DFSXP:                return f(r_df(x, internal::view_tag{}));
-    default:                            return f(r_sexp(x, internal::view_tag{}));
-}
-}
-
-template <class F>
-decltype(auto) view_sexp(SEXP x, F&& f) {
-switch (internal::CPPALLY_TYPEOF(x)) {
-    case LGLSXP:                        return f(r_vec<r_lgl>(x, internal::view_tag{}));
-    case INTSXP:                        return f(r_vec<r_int>(x, internal::view_tag{}));
-    case internal::CPPALLY_INT64SXP:      return f(r_vec<r_int64>(x, internal::view_tag{}));
-    case REALSXP:                       return f(r_vec<r_dbl>(x, internal::view_tag{}));
-    case STRSXP:                        return f(r_vec<r_str>(x, internal::view_tag{}));
-    case VECSXP:                        return f(r_vec<r_sexp>(x, internal::view_tag{}));
-    case CPLXSXP:                       return f(r_vec<r_cplx>(x, internal::view_tag{}));
-    case RAWSXP:                        return f(r_vec<r_raw>(x, internal::view_tag{}));
-    case NILSXP:                            return f(r_vec<r_sexp>(r_null, internal::view_tag{}));
-    case internal::CPPALLY_REALDATESXP:   return f(r_vec<r_date>(x, internal::view_tag{}));
-    case internal::CPPALLY_REALPSXTSXP:   return f(r_vec<r_psxct>(x, internal::view_tag{}));
-    case internal::CPPALLY_FCTSXP:        return f(r_factors(x, internal::view_tag{}));
-    case SYMSXP:                        return f(r_sym(x, internal::view_tag{}));
-    case internal::CPPALLY_DFSXP:                return f(r_df(x, internal::view_tag{}));
-    default:                            return f(r_sexp(x, internal::view_tag{}));
-}
-}
-
-// In-place mutation helper for `mutate_sexp`.
+// In-place mutation helper for the mutate dispatchers
 //
-// We *move* `x` into the typed wrapper rather than viewing it: the move carries
+// We std::move x into the typed wrapper rather than viewing it: the move carries
 // x's ref without bumping the count, so the wrapper is sole owner exactly when x
 // was. Necessary when copy-on-modify is enabled.
-
-namespace internal {
 
 template <class V, class F>
 inline void mutate_as(r_sexp& x, F&& f) {
@@ -146,54 +25,195 @@ inline void mutate_as(r_sexp& x, F&& f) {
     x = r_sexp(v);
 }
 
+// Lambda-based dispatchers over TYPEOF(x), so call sites don't hand-roll the switch.
+
+// (code, wrapper) entries shared by every dispatcher
+#define CPPALLY_VECTOR_CASES(A)                             \
+    A(LGLSXP,                          r_vec<r_lgl>)        \
+    A(INTSXP,                          r_vec<r_int>)        \
+    A(CPPALLY_INT64SXP,                r_vec<r_int64>)      \
+    A(REALSXP,                         r_vec<r_dbl>)        \
+    A(STRSXP,                          r_vec<r_str>)        \
+    A(VECSXP,                          r_vec<r_sexp>)       \
+    A(CPLXSXP,                         r_vec<r_cplx>)       \
+    A(RAWSXP,                          r_vec<r_raw>)        \
+    A(NILSXP,                          r_vec<r_sexp>)       \
+    A(CPPALLY_REALDATESXP,             r_vec<r_date>)       \
+    A(CPPALLY_REALPSXTSXP,             r_vec<r_psxct>)
+
+#define CPPALLY_ALL_CASES(A)                                \
+    CPPALLY_VECTOR_CASES(A)                                 \
+    A(CPPALLY_FCTSXP,                  r_factors)           \
+    A(SYMSXP,                          r_sym)               \
+    A(CPPALLY_DFSXP,                   r_df)
+
+#define CPPALLY_CASE_OWNING(C, W)  case C: return f(W(x));
+#define CPPALLY_CASE_VIEWING(C, W) case C: return f(W(x, view_tag{}));
+#define CPPALLY_CASE_MUTATE(C, W)  case C: mutate_as<W>(x, f); break;
+
+template <class F>
+decltype(auto) visit_sexp(const r_sexp& x, F&& f) {
+    switch (CPPALLY_TYPEOF(x)) {
+        CPPALLY_ALL_CASES(CPPALLY_CASE_OWNING)
+        default: return f(r_sexp(x));
+    }
+}
+
+template <class F>
+decltype(auto) view_sexp(const r_sexp& x, F&& f) {
+    switch (CPPALLY_TYPEOF(x)) {
+        CPPALLY_ALL_CASES(CPPALLY_CASE_VIEWING)
+        default: return f(r_sexp(x, view_tag{}));
+    }
 }
 
 // visit sexp and mutate underlying object in-place - for methods like free-function `fill()`
 template <class F>
 void mutate_sexp(r_sexp& x, F&& f) {
-switch (internal::CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
-    case LGLSXP:                          internal::mutate_as<r_vec<r_lgl>>(x, f);    break;
-    case INTSXP:                          internal::mutate_as<r_vec<r_int>>(x, f);    break;
-    case internal::CPPALLY_INT64SXP:      internal::mutate_as<r_vec<r_int64>>(x, f);  break;
-    case REALSXP:                         internal::mutate_as<r_vec<r_dbl>>(x, f);    break;
-    case STRSXP:                          internal::mutate_as<r_vec<r_str>>(x, f);    break;
-    case VECSXP:                          internal::mutate_as<r_vec<r_sexp>>(x, f);   break;
-    case CPLXSXP:                         internal::mutate_as<r_vec<r_cplx>>(x, f);   break;
-    case RAWSXP:                          internal::mutate_as<r_vec<r_raw>>(x, f);    break;
-    case NILSXP:                          internal::mutate_as<r_vec<r_sexp>>(x, f);   break;
-    case internal::CPPALLY_REALDATESXP:   internal::mutate_as<r_vec<r_date>>(x, f);   break;
-    case internal::CPPALLY_REALPSXTSXP:   internal::mutate_as<r_vec<r_psxct>>(x, f);  break;
-    case internal::CPPALLY_FCTSXP:        internal::mutate_as<r_factors>(x, f);       break;
-    case SYMSXP:                          internal::mutate_as<r_sym>(x, f);           break;
-    case internal::CPPALLY_DFSXP:         internal::mutate_as<r_df>(x, f);            break;
-    default:                              internal::mutate_as<r_sexp>(x, f);          break;
+    switch (CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
+        CPPALLY_ALL_CASES(CPPALLY_CASE_MUTATE)
+        default: mutate_as<r_sexp>(x, f); break;
+    }
 }
+
+// Comma-join the names of the candidate wrappers F accepts
+template <class F, class... Cs>
+inline std::string join_accepted() {
+    std::string out;
+    ([&]{
+        if constexpr (std::invocable<F, Cs&>) {
+            if (!out.empty()) out += ", ";
+            out += type_str<Cs>();
+        }
+    }(), ...);
+    return out;
+}
+
+// The wrapped types F accepts, as a printable list. Used when a constrained
+// visit/view/mutate meets a runtime type its visitor rejects.
+#define CPPALLY_CASE_TYPE(C, W) W,
+template <class F>
+inline std::string accepted_types() {
+    std::string s = join_accepted<F, CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>();
+    return s.empty() ? "(none)" : s;
+}
+#undef CPPALLY_CASE_TYPE
+
+// Terminal for a constrained dispatcher that meets a type its visitor rejects.
+// [[noreturn]] is load-bearing: in the guarded switches below the reject arms
+// carry no return statement, so they drop out of return-type deduction and the
+// dispatcher deduces its type from the accepted arms alone
+template <class F>
+[[noreturn]] void reject(const char* got) {
+    abort("`r_sexp` visitor cannot accept the value's type %s;\n"
+          "Accepted types that satisfy the constraints: %s",
+          got, accepted_types<F&>().c_str());
+}
+
+// Guarded arms: hand `f` the wrapper only if it accepts it, else reject.
+#define CPPALLY_CASE_OWNING_G(C, W)                                          \
+    case C: if constexpr (std::invocable<F&, W>) return f(W(x));             \
+            else internal::reject<F>(internal::type_str<W>());
+#define CPPALLY_CASE_VIEWING_G(C, W)                                         \
+    case C: if constexpr (std::invocable<F&, W>) return f(W(x, view_tag{})); \
+            else internal::reject<F>(internal::type_str<W>());
+#define CPPALLY_CASE_MUTATE_G(C, W)                                          \
+    case C: if constexpr (std::invocable<F&, W&>) { mutate_as<W>(x, f); break; } \
+            else internal::reject<F>(internal::type_str<W>());
+
+// Constrained owning visit: dispatch to `f` only for the types it accepts.
+template <class F>
+decltype(auto) visit_constrained(const r_sexp& x, F&& f) {
+    switch (CPPALLY_TYPEOF(x)) {
+        CPPALLY_ALL_CASES(CPPALLY_CASE_OWNING_G)
+        default: if constexpr (std::invocable<F&, r_sexp>) return f(r_sexp(x));
+                 else internal::reject<F>(internal::type_str<r_sexp>());
+    }
+}
+
+// Constrained viewing visit
+template <class F>
+decltype(auto) view_constrained(const r_sexp& x, F&& f) {
+    switch (CPPALLY_TYPEOF(x)) {
+        CPPALLY_ALL_CASES(CPPALLY_CASE_VIEWING_G)
+        default: if constexpr (std::invocable<F&, r_sexp>) return f(r_sexp(x, view_tag{}));
+                 else internal::reject<F>(internal::type_str<r_sexp>());
+    }
+}
+
+// Constrained in-place mutation (move-in / write-back per arm via mutate_as).
+template <class F>
+void mutate_constrained(r_sexp& x, F&& f) {
+    switch (CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
+        CPPALLY_ALL_CASES(CPPALLY_CASE_MUTATE_G)
+        default: if constexpr (std::invocable<F&, r_sexp&>) { mutate_as<r_sexp>(x, f); break; }
+                 else internal::reject<F>(internal::type_str<r_sexp>());
+    }
+}
+
+#undef CPPALLY_CASE_OWNING_G
+#undef CPPALLY_CASE_VIEWING_G
+#undef CPPALLY_CASE_MUTATE_G
+
+#undef CPPALLY_CASE_OWNING
+#undef CPPALLY_CASE_VIEWING
+#undef CPPALLY_CASE_MUTATE
+#undef CPPALLY_ALL_CASES
+#undef CPPALLY_VECTOR_CASES
+
+}
+
+// Constrained visit/view: dispatch to `f` only for the wrapped types it accepts,
+// e.g. r_sexp_visit(x, [&]<RVector V>(const V& v){ ... }) — the concept rides on the
+// lambda's template parameter. r_sexp_visit produces owning SEXP wrappers and r_sexp_view produces view-only SEXP wrappers.
+// Aborts at runtime if x's type isn't one the visitor accepts.
+template <class F>
+decltype(auto) r_sexp_visit(const r_sexp& x, F&& f) {
+    return internal::visit_constrained(x, std::forward<F>(f));
+}
+template <class F>
+decltype(auto) r_sexp_view(const r_sexp& x, F&& f) {
+    return internal::view_constrained(x, std::forward<F>(f));
+}
+
+// Constrained in-place mutation — the mutating sibling of r_sexp_visit/r_sexp_view. `f`
+// receives a sole-owning, mutable wrapper (move-in / write-back), e.g.
+// r_sexp_mutate(x, []<RVector V>(V& v){ ... }). Aborts at runtime if x's type isn't
+// one the visitor accepts. Takes x by r_sexp& — write-back needs ownership.
+template <class F>
+void r_sexp_mutate(r_sexp& x, F&& f) {
+    internal::mutate_constrained(x, std::forward<F>(f));
+}
+
+// Runtime predicate to check if r_sexp is visitable as a non-r_sexp
+inline bool is_visitable(const r_sexp& x){
+    return internal::view_sexp(x, []<typename T>(const T&) -> bool { return !is<T, r_sexp>; });
 }
 
 // Helper that disambiguates r_sexp type via view_sexp and then calls the named function
 // If there is no defined specialisation or overload then this is caught in the last branch
 // If the visited type can't be disambiguated, this is caught in the first branch
 #define CPPALLY_VIEW_AND_APPLY(x, ret, fn, ...)                                 \
-    view_sexp(x, [&](const auto& x_) -> ret {                                   \
-        if constexpr (is<decltype(x_), r_sexp>) {                               \
+    internal::view_sexp(x, [&]<typename x_type_t>(const x_type_t& x_) -> ret {                                   \
+        if constexpr (is<x_type_t, r_sexp>) {                               \
             abort("Unsupported SEXP type in `" #fn "()`");                      \
         } else if constexpr (requires { fn(x_ __VA_OPT__(,) __VA_ARGS__); }) {  \
             return fn(x_ __VA_OPT__(,) __VA_ARGS__);                            \
         } else {                                                                \
             abort("No available method for type %s in `" #fn "()`",             \
-                internal::type_str<std::remove_cvref_t<decltype(x_)>>());       \
+                internal::type_str<std::remove_cvref_t<x_type_t>>());       \
         }                                                                       \
     })
 
 #define CPPALLY_VISIT_AND_APPLY(x, ret, fn, ...)                                 \
-    visit_sexp(x, [&](const auto& x_) -> ret {                                   \
-        if constexpr (is<decltype(x_), r_sexp>) {                                \
+    internal::visit_sexp(x, [&]<typename x_type_t>(const x_type_t& x_) -> ret {                                   \
+        if constexpr (is<x_type_t, r_sexp>) {                                \
             abort("Unsupported SEXP type in `" #fn "()`");                       \
         } else if constexpr (requires { fn(x_ __VA_OPT__(,) __VA_ARGS__); }) {   \
             return fn(x_ __VA_OPT__(,) __VA_ARGS__);                             \
         } else {                                                                 \
             abort("No available method for type %s in `" #fn "()`",              \
-                internal::type_str<std::remove_cvref_t<decltype(x_)>>());        \
+                internal::type_str<std::remove_cvref_t<x_type_t>>());        \
         }                                                                        \
     })
 
@@ -205,12 +225,12 @@ switch (internal::CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
             static_assert(is<x_in_t, r_sexp> || is<y_in_t, r_sexp>,                                     \
                           "CPPALLY_VIEW_PAIR_AND_APPLY: at least one of x, y must be r_sexp");          \
             if constexpr (is<x_in_t, r_sexp> && is<y_in_t, r_sexp>) {                                   \
-                return view_sexp(x, [&](const auto& x_) -> ret {                                        \
+                return internal::view_sexp(x, [&](const auto& x_) -> ret {                                        \
                     using x_t = std::remove_cvref_t<decltype(x_)>;                                      \
                     if constexpr (is<x_t, r_sexp>) {                                                    \
                         abort("Unsupported SEXP type in `" #fn "()`");                                  \
                     } else {                                                                            \
-                        return view_sexp(y, [&](const auto& y_) -> ret {                                \
+                        return internal::view_sexp(y, [&](const auto& y_) -> ret {                                \
                             using y_t = std::remove_cvref_t<decltype(y_)>;                              \
                             if constexpr (is<y_t, r_sexp>) {                                            \
                                 abort("Unsupported SEXP type in `" #fn "()`");                          \
@@ -225,7 +245,7 @@ switch (internal::CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
                     }                                                                                   \
                 });                                                                                     \
             } else if constexpr (is<x_in_t, r_sexp>) {                                                  \
-                return view_sexp(x, [&](const auto& x_) -> ret {                                        \
+                return internal::view_sexp(x, [&](const auto& x_) -> ret {                                        \
                     using x_t = std::remove_cvref_t<decltype(x_)>;                                      \
                     if constexpr (is<x_t, r_sexp>) {                                                    \
                         abort("Unsupported SEXP type in `" #fn "()`");                                  \
@@ -238,7 +258,7 @@ switch (internal::CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
                     }                                                                                   \
                 });                                                                                     \
             } else {                                                                                    \
-                return view_sexp(y, [&](const auto& y_) -> ret {                                        \
+                return internal::view_sexp(y, [&](const auto& y_) -> ret {                                        \
                     using y_t = std::remove_cvref_t<decltype(y_)>;                                      \
                     if constexpr (is<y_t, r_sexp>) {                                                    \
                         abort("Unsupported SEXP type in `" #fn "()`");                                  \

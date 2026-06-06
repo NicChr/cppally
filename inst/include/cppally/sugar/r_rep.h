@@ -3,7 +3,6 @@
 
 #include <cppally/r_vec.h>
 #include <cppally/sugar/r_stats.h>
-#include <cppally/r_visit.h>
 #include <cppally/r_copy.h>
 
 namespace cppally {

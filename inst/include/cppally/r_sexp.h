@@ -128,6 +128,12 @@ inline bool is_altrep(SEXP x) noexcept {
   return r_sexp(x, internal::view_tag{}).is_altrep();
 }
 
+namespace internal {
+inline bool ptrs_identical(SEXP x, SEXP y) noexcept {
+  return x == y;
+}
+}
+
 }
 
 

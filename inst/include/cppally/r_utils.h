@@ -33,11 +33,7 @@ inline constexpr void recycle_index(T& v, T size) {
 
 namespace internal {
 
-inline bool ptrs_identical(SEXP x, SEXP y) noexcept {
-  return x == y;
-}
-
-template<typename T, typename U>
+template <typename T, typename U>
 inline constexpr bool between_impl(const T x, const U lo, const U hi) {
   return x >= lo && x <= hi;
 }
