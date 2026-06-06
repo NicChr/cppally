@@ -12,10 +12,9 @@ namespace cppally {
 
 namespace internal {
 
-// Constructs R's NA_REAL: A Quiet NaN with the payload 1954 (0x7a2).
-// Hex: 0x7ff00000 (Exp/Quiet) << 32 | 0x7a2 (Payload).
-// Uses std::bit_cast for portable interpretation of the 64-bit pattern
-// no manual endianness swapping required
+// Constructs R's NA_REAL: a signaling NaN with payload 1954 (0x7a2).
+// Bit 51 (quiet bit) = 0, so technically signaling NaN — a pattern R chose deliberately
+// Hex: 0x7ff00000 (Exp, bit51=0) << 32 | 0x7a2 (Payload).
 inline consteval double make_na_real() noexcept {
   return std::bit_cast<double>(0x7ff00000000007a2ULL);
 }
