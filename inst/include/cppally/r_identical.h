@@ -2,7 +2,6 @@
 #define CPPALLY_R_IDENTICAL_H
 
 #include <cppally/r_vec.h>
-#include <cppally/r_visit.h>
 #include <cppally/r_attrs.h>
 
 namespace cppally {
