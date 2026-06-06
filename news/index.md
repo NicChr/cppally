@@ -25,20 +25,32 @@
   `r_factors`, `r_df` and in some cases `r_sexp` for attribute
   manipulation.
 
+- `visit_vector`, `visit_sexp` and `view_sexp` have been deprecated in
+  favour of the more flexible constrained `r_sexp` visitors:
+  `r_sexp_visit`, `r_sexp_view` and `r_sexp_mutate`. These allow
+  concepts and custom constraints to be applied directly on the lambda’s
+  template parameter, e.g. `r_sexp_visit(x, [&]<RVector T>(T vec){})` —
+  here `x` is dispatched as its concrete vector type and aborts at
+  runtime if the underlying type isn’t an `RVector`. `r_sexp_view` is
+  the non-owning sibling: the wrapper handed to the lambda is a view (no
+  extra protect), so it must not outlive `x`. `r_sexp_mutate` is for
+  in-place mutation: it moves `x` into the typed wrapper (making it the
+  sole owner), calls `f`, then writes the result back.
+
 - `r_factors` elements are now treated as `r_str` in member functions
   like [`get()`](https://rdrr.io/r/base/get.html) and `set()`
 
-- `visit_vector()` and `visit_sexp()` now visit `r_null` as
-  `r_vec<r_sexp>(r_null)`, essentially treating `NULL` as an empty list
-  but without changing the underlying data
+- `r_sexp_visit()` now visit `r_null` as `r_vec<r_sexp>(r_null)`,
+  essentially treating `NULL` as an empty list but without changing the
+  underlying data
 
 For example, in the below pseudo-code, when x is `r_null` of type
-`r_sexp`, `visit_vector()` will disambiguate it as
+`r_sexp`, `r_sexp_visit()` will disambiguate it as
 `r_vec<r_sexp>(r_null)`, preserving its data as R’s `NULL` but assigning
 its type as `r_vec<r_sexp>` (list).
 
 ``` cpp
- visit_vector(x, [&](const auto& vec) -> bool {
+ r_sexp_visit(x, [&]<RVector T>(const T& vec) -> bool {
   return vec.is_null();
  });
 ```

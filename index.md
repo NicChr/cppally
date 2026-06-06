@@ -176,7 +176,7 @@ directly modifies.
 This safety check is inherently single-threaded which effectively
 disables almost all parallelisation. Enable this if prevention of
 accidental modification is a high concern. On the other hand, leaving it
-disabled may be preferably where performance is important.
+disabled may be preferable when performance is important.
 
 By default, copy-on-modify is disabled and hence all element setting is
 done in-place via `r_vector::set()`. It is up to the user to ensure that

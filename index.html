@@ -163,7 +163,7 @@
 <h3 id="opt-in-copy-on-modify">Opt-in copy-on-modify<a class="anchor" aria-label="anchor" href="#opt-in-copy-on-modify"></a>
 </h3>
 <p>Copy-on-modify can be enabled via <code><a href="reference/use_copy_on_modify.html">cppally::use_copy_on_modify()</a></code> or by setting the CPPALLY_COPY_ON_MODIFY Makevars flag directly. When this is enabled, all in-place modifications check that the object being modified isn’t referenced or owned by another object. If it is referenced, a copy is taken first before modifying, otherwise it directly modifies.</p>
-<p>This safety check is inherently single-threaded which effectively disables almost all parallelisation. Enable this if prevention of accidental modification is a high concern. On the other hand, leaving it disabled may be preferably where performance is important.</p>
+<p>This safety check is inherently single-threaded which effectively disables almost all parallelisation. Enable this if prevention of accidental modification is a high concern. On the other hand, leaving it disabled may be preferable when performance is important.</p>
 <p>By default, copy-on-modify is disabled and hence all element setting is done in-place via <code>r_vector::set()</code>. It is up to the user to ensure that a fresh vector is created before further manipulation or that it’s safe to modify the existing vector.</p>
 </div>
 <div class="section level3">

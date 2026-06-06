@@ -688,9 +688,9 @@ new_list(3)
 
 The problem with a class like `r_sexp` is that it is by design generic
 and therefore difficult to work with in C++. To disambiguate the actual
-type we can use `visit_vector()` or `visit_sexp()` via a C++ lambda.
+type we can use `r_sexp_visit()` via a C++ lambda.
 
-**Example:** using `visit_vector()` to resize every vector to length n
+**Example:** using `r_sexp_visit()` to resize every vector to length n
 in-place
 
 ``` cpp
@@ -699,78 +699,12 @@ in-place
 r_vec<r_sexp> resize_all(r_vec<r_sexp> x, r_size_t n){
     r_size_t list_length = x.length();
     for (r_size_t i = 0; i < list_length; ++i){
-        visit_vector(x.view(i), [&](auto vec) {
+        r_sexp_visit(x.view(i), [&]<RVector T>(T vec) {
             x.set(i, vec.resize(n));
         });
     }
     return x;
 }
-```
-
-``` r
-
-# Resize to size 1
-resize_all(list(1:5, letters), n = 1)
-#> [[1]]
-#> [1] 1
-#> 
-#> [[2]]
-#> [1] "a"
-```
-
-When we pass a non-vector to `visit_vector`, it aborts and explains that
-the input must be a vector
-
-``` r
-
-resize_all(list(mean_fn = mean), 1)
-#> Error:
-#> ! `x` must be a vector to be instantiated from an `r_sexp`
-```
-
-**visit_sexp**
-
-This allows us to visit more types than just vectors, including factors,
-symbols and (soon to be implemented) data frames. When an object’s type
-can’t be deduced into a distinct type, `r_sexp` is returned.
-
-**Example:** Same example as above but with `visit_sexp()`
-
-``` cpp
-
-[[cppally::register]]
-r_vec<r_sexp> resize_all2(r_vec<r_sexp> x, r_size_t n){
-    r_size_t list_length = x.length();
-    for (r_size_t i = 0; i < list_length; ++i){
-        visit_sexp(x.view(i), [&](auto vec) {
-          using vec_t = decltype(vec); // type of object `vec`
-          if constexpr (RVector<vec_t>){
-            x.set(i, vec.resize(n));
-          } else {
-            abort("Cannot resize a non-vector");
-          }
-        });
-    }
-    return x;
-}
-```
-
-``` r
-
-# Resize to size 1
-resize_all2(list(1:5, letters), n = 1)
-#> [[1]]
-#> [1] 1
-#> 
-#> [[2]]
-#> [1] "a"
-```
-
-``` r
-
-resize_all2(list(mean_fn = mean), n = 1)
-#> Error:
-#> ! Cannot resize a non-vector
 ```
 
 ## Factors
@@ -901,8 +835,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique      1.28ms   1.32ms      757.    1.38MB     20.8
-#> 2 cppally_n_unique 279.03µs 281.58µs     3494.        0B      0
+#> 1 base_n_unique      1.28ms   1.32ms      754.    1.38MB     20.8
+#> 2 cppally_n_unique 264.44µs 266.68µs     3690.        0B      0
 ```
 
 More useful sugar functions
