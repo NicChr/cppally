@@ -95,8 +95,12 @@ void fill(r_sexp& x, const r_vec<U>& where, const V& with) {
 
 template <internal::RSubscript U>
 void fill(r_sexp& x, const r_vec<U>& where, const r_sexp& with) {
-    internal::visit_sexp(with, [&](const auto& with_) {
-        fill(x, where, with_);
+    internal::visit_sexp(with, [&]<typename with_t>(const with_t& with_) {
+        if constexpr (is<with_t, r_sexp>) {
+            abort("fill: unsupported `with` type %s", internal::type_str<with_t>());
+        } else {
+            fill(x, where, with_);
+        }
     });
 }
 
