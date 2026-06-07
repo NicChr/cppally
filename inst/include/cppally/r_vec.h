@@ -495,32 +495,42 @@ struct r_vec {
     r_size_t out = 0;
     r_size_t n = length();
     
-    if (static_cast<uint32_t>(n) < std::numeric_limits<uint32_t>::max()){
-      uint32_t n_na = 0;
-      OMP_SIMD
-      for (r_size_t i = 0; i < n; ++i){
-        n_na += static_cast<uint32_t>(cppally::is_na(view(i)));
+    if constexpr (RVectorisable<T>){
+
+      const auto* RESTRICT p = data();
+      int n_threads = internal::calc_threads(n);
+
+      if (n_threads > 1){
+        OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:out)
+        for (r_size_t i = 0; i < n; ++i){
+          out += static_cast<r_size_t>(cppally::is_na(T(p[i])));
+        }
+      } else {
+        OMP_SIMD_REDUCTION1(+:out)
+        for (r_size_t i = 0; i < n; ++i){
+          out += static_cast<r_size_t>(cppally::is_na(T(p[i])));
+        }
       }
-      out = static_cast<r_size_t>(n_na);
-      return out;
+
     } else {
-      OMP_SIMD
       for (r_size_t i = 0; i < n; ++i){
         out += static_cast<r_size_t>(cppally::is_na(view(i)));
       }
-      return out;
     }
+    return out;
   }
 
   r_size_t count(const T& val) const {
     r_size_t out = 0;
     r_size_t n = length();
-    if constexpr (is_write_barrier_protected){
+
+    if constexpr (RVectorisable<T>){
+      const auto* RESTRICT p = data();
+      OMP_SIMD_REDUCTION1(+:out)
       for (r_size_t i = 0; i < n; ++i){
-        out += identical(view(i), val);
+        out += identical(T(p[i]), val);
       }
     } else {
-      OMP_SIMD_REDUCTION1(+:out)
       for (r_size_t i = 0; i < n; ++i){
         out += identical(view(i), val);
       }
