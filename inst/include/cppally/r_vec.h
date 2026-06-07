@@ -198,8 +198,8 @@ struct r_vec {
   }
 
   // Direct pointer access - materialises ALTREP when CPPALLY_PRESERVE_ALTREP is on
+  #ifdef CPPALLY_PRESERVE_ALTREP
   ptr_t data() const {
-#ifdef CPPALLY_PRESERVE_ALTREP
     if (!m_ptr) [[unlikely]] {
       if constexpr (is_write_barrier_protected) {
         m_ptr = safe[internal::vector_ptr_ro<T>](value);
@@ -207,9 +207,13 @@ struct r_vec {
         m_ptr = safe[internal::vector_ptr<T>](value);
       }
     }
-#endif
     return m_ptr;
   }
+  #else
+  ptr_t data() const noexcept {
+    return m_ptr;
+  }
+  #endif
 
   // Iterator support - begin + end
   ptr_t begin() {
