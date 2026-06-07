@@ -49,6 +49,11 @@ struct r_psxct;
 
 // Concepts to enable R type templates
 
+// RObject is any object that can be represented in R
+// All cppally classes that contain SEXP will be implicitly convertible to SEXP
+template <typename T> 
+concept RObject = std::is_convertible_v<T, SEXP>;
+
 template <typename T>
 concept RLogicalType = is<T, r_lgl>; 
 
@@ -155,6 +160,10 @@ concept RScalar = RNumericType<T> || RComplexType<T> || RStringType<T> || RRawTy
 template <typename T>
 concept RVal = RScalar<T> || is<T, r_sexp>;
 
+// Types that are OMP friendly (i.e. they can work safely with OMP simd, reductions and parallel clauses)
+template <typename T>
+concept RVectorisable = RScalar<T> && !RObject<T>;
+
 template <typename T, typename U>
 concept AtLeastOneRMathType =
 (RMathType<T> || RMathType<U>) && (MathType<T> && MathType<U>);
@@ -198,11 +207,6 @@ concept RMetaVector = RFactor<T>;
 
 template <typename T>
 concept RSortableVector = RVector<T> && RSortableType<typename std::remove_cvref_t<T>::data_type>;
-
-// RObject is any object that can be represented in R
-// All cppally classes that contain SEXP will be implicitly convertible to SEXP
-template <typename T> 
-concept RObject = std::is_convertible_v<T, SEXP>;
 
 template <typename T>
 concept CppScalar = std::is_scalar_v<T>;

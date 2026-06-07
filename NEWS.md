@@ -101,6 +101,7 @@ allowing for easier manipulation of lists.
 * All C++ reference qualifiers (T&, T&&, const T&) are now supported for 
 registered functions, including templated ones.
 
+* New concept `RVectorisable` which encompasses types that are OMP friendly.
 
 ### Bug fixes
 
