@@ -238,67 +238,47 @@ template <>
 inline r_sexp new_vec_impl<r_sexp>(r_size_t n){
   return internal::new_vec(VECSXP, n);
 }
-
-template <RVal T>
-inline r_sexp new_scalar_vec(T const& default_value) {
-
-  if constexpr (RDateType<T>){
-    r_sexp out = new_scalar_vec<inherited_type_t<T>>(static_cast<inherited_type_t<T>>(default_value));
-    Rf_setAttrib(out, symbol::class_sym, Rf_ScalarString(cached_str<"Date">()));
-    return out;
-  } else if constexpr (RPsxctType<T>){
-    r_sexp out = new_scalar_vec<inherited_type_t<T>>(static_cast<inherited_type_t<T>>(default_value));
-    r_sexp cls = new_vec(STRSXP, 2);
-    SET_STRING_ELT(cls, 0, cached_str<"POSIXct">());
-    SET_STRING_ELT(cls, 1, cached_str<"POSIXt">());
-    Rf_setAttrib(out, symbol::class_sym, cls);
-    Rf_setAttrib(out, cached_sym<"tzone">(), Rf_ScalarString(cached_str<"UTC">()));
-    return out;
-  } else {
-    static_assert(
-      always_false<T>,
-      "Unimplemented `new_scalar_vec` specialisation"
-    );
-    return r_null;
-  }
-}
-
-template <>
-inline r_sexp new_scalar_vec<r_lgl>(r_lgl const& default_value) {
+inline r_sexp new_scalar_vec(r_lgl default_value) {
   return r_sexp(Rf_ScalarLogical(unwrap(default_value)));
 }
-template <>
-inline r_sexp new_scalar_vec<r_int>(r_int const& default_value){
+inline r_sexp new_scalar_vec(r_int default_value){
   return r_sexp(Rf_ScalarInteger(unwrap(default_value)));
 }
-template <>
-inline r_sexp new_scalar_vec<r_dbl>(r_dbl const& default_value){
+inline r_sexp new_scalar_vec(r_dbl default_value){
   return r_sexp(Rf_ScalarReal(unwrap(default_value)));
 }
-template <>
-inline r_sexp new_scalar_vec<r_int64>(r_int64 const& default_value){
+inline r_sexp new_scalar_vec(r_int64 default_value){
   r_sexp out = new_vec_impl<r_int64>(1);
   vector_ptr<r_int64>(out)[0] = default_value;
   return out;
 }
-template <>
-inline r_sexp new_scalar_vec<r_str_view>(r_str_view const& default_value){
+inline r_sexp new_scalar_vec(r_str_view default_value){
   return r_sexp(Rf_ScalarString(unwrap(default_value)));
 }
-template <>
-inline r_sexp new_scalar_vec<r_str>(r_str const& default_value){
+inline r_sexp new_scalar_vec(const r_str& default_value){
   return r_sexp(Rf_ScalarString(unwrap(default_value)));
 }
-template <>
-inline r_sexp new_scalar_vec<r_cplx>(r_cplx const& default_value){
+inline r_sexp new_scalar_vec(const r_cplx& default_value){
   return r_sexp(Rf_ScalarComplex(Rcomplex{{default_value.re(), default_value.im()}}));
 }
-template <>
-inline r_sexp new_scalar_vec<r_raw>(r_raw const& default_value){
-  return r_sexp(Rf_ScalarRaw(unwrap(default_value)));
+inline r_sexp new_scalar_vec(r_raw default_value){
+  return r_sexp(Rf_ScalarRaw(static_cast<Rbyte>(unwrap(default_value))));
 }
-template <>
-inline r_sexp new_scalar_vec<r_sexp>(r_sexp const& default_value){
+inline r_sexp new_scalar_vec(r_date default_value){
+  r_sexp out = new_scalar_vec(static_cast<inherited_type_t<r_date>>(default_value));
+  Rf_setAttrib(out, symbol::class_sym, new_scalar_vec(cached_str<"Date">()));
+  return out;
+}
+inline r_sexp new_scalar_vec(r_psxct default_value){
+  r_sexp out = new_scalar_vec(static_cast<inherited_type_t<r_psxct>>(default_value));
+  r_sexp cls = new_vec(STRSXP, 2);
+  SET_STRING_ELT(cls, 0, cached_str<"POSIXct">());
+  SET_STRING_ELT(cls, 1, cached_str<"POSIXt">());
+  Rf_setAttrib(out, symbol::class_sym, cls);
+  Rf_setAttrib(out, cached_sym<"tzone">(), new_scalar_vec(cached_str<"UTC">()));
+  return out;
+}
+inline r_sexp new_scalar_vec(const r_sexp& default_value){
   r_sexp out = new_vec_impl<r_sexp>(1);
   SET_VECTOR_ELT(out.value, 0, unwrap(default_value));
   return out;
