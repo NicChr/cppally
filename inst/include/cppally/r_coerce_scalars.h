@@ -48,7 +48,7 @@ SEXP cpp_to_r(const T& x) {
 
 // Assumes no NAs at all
 template<typename T>
-inline constexpr bool can_be_int(T const& x){
+inline constexpr bool can_be_int(const T& x){
   constexpr int max_int = std::numeric_limits<int>::max();
   constexpr int min_int = -max_int; // Doesn't include lowest int (reserved for NA)
 
@@ -63,7 +63,7 @@ inline constexpr bool can_be_int(T const& x){
   }
 }
 template<typename T>
-inline constexpr bool can_be_int64(T const& x){
+inline constexpr bool can_be_int64(const T& x){
   constexpr int64_t max_int64 = std::numeric_limits<int64_t>::max();
   constexpr int64_t min_int64 = -max_int64; // Doesn't include lowest int (reserved for NA)
 
@@ -109,7 +109,7 @@ inline r_dbl parse_double(const char* x){
 
 // Coerce functions that account for NA
 template <RScalar T>
-inline r_lgl as_bool(T const& x){
+inline r_lgl as_bool(const T& x){
   if constexpr (is<unwrap_t<T>, int>){
     return unwrap(x) == 0 ? r_false : (is_na(x) ? r_na : r_true);
   } else if constexpr (RMathType<T>){
@@ -128,7 +128,7 @@ inline r_lgl as_bool(T const& x){
   }
 }
 template <RScalar T>
-inline r_int as_int(T const& x){
+inline r_int as_int(const T& x){
   if constexpr (is<unwrap_t<T>, int>){
     return r_int(unwrap(x));
   } else if constexpr (RMathType<T>){
@@ -140,7 +140,7 @@ inline r_int as_int(T const& x){
   }
 }
 template <RScalar T>
-inline r_int64 as_int64(T const& x){
+inline r_int64 as_int64(const T& x){
   if constexpr (is<unwrap_t<T>, int64_t>){
     return r_int64(unwrap(x));
   } else if constexpr (RMathType<T>){
@@ -152,7 +152,7 @@ inline r_int64 as_int64(T const& x){
   }
 }
 template <RScalar T>
-inline r_dbl as_double(T const& x){
+inline r_dbl as_double(const T& x){
   if constexpr (is<unwrap_t<T>, double>){
     return r_dbl(unwrap(x));
   } else if constexpr (RMathType<T>){
@@ -164,7 +164,7 @@ inline r_dbl as_double(T const& x){
   }
 }
 template <RScalar T>
-inline r_cplx as_complex(T const& x){
+inline r_cplx as_complex(const T& x){
   if constexpr (is<unwrap_t<T>, std::complex<double>>){
     return r_cplx(unwrap(x));
   } else if constexpr (RMathType<T>){
@@ -174,7 +174,7 @@ inline r_cplx as_complex(T const& x){
   }
 }
 template <RScalar T>
-inline r_raw as_raw(T const& x){
+inline r_raw as_raw(const T& x){
   if constexpr (is<unwrap_t<T>, unsigned char>){
     return r_raw(unwrap(x));
   } else if constexpr (RMathType<T>){
@@ -187,7 +187,7 @@ inline r_raw as_raw(T const& x){
 
 // As CHARSXP
 template <RScalar T>
-inline r_str_view as_r_string(T const& x){
+inline r_str_view as_r_string(const T& x){
   if constexpr (RStringType<T>){
     return r_str_view(x);
   } else if constexpr (is<T, r_lgl>){

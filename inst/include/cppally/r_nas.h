@@ -98,7 +98,7 @@ inline constexpr T na() noexcept {
 }
 
 template<typename T>
-inline constexpr bool is_na(T const& x) noexcept {
+inline constexpr bool is_na(const T& x) noexcept {
   if constexpr (RScalar<T>){
     return unwrap(x) == unwrap(na<T>());
   } else if constexpr (CastableToRScalar<T>){
@@ -109,27 +109,27 @@ inline constexpr bool is_na(T const& x) noexcept {
 }
 
 template<>
-inline constexpr bool is_na(r_dbl const& x) noexcept {
+inline constexpr bool is_na(const r_dbl& x) noexcept {
   return unwrap(x) != unwrap(x);
 }
 
 template<>
-inline constexpr bool is_na(r_cplx const& x) noexcept {
-  return is_na(x.re()) || is_na(x.im());
+inline constexpr bool is_na(const r_cplx& x) noexcept {
+  return is_na(x.re()) || is_na(x.im());  
 }
 
 template<>
-inline constexpr bool is_na(r_raw const& x) noexcept {
+inline constexpr bool is_na(const r_raw& x) noexcept {
   return false;
 }
 
 template <typename T>
-inline constexpr bool is_nan(T const& x) noexcept {
+inline constexpr bool is_nan(const T& x) noexcept {
   return false;
 }
 // NaN but not NA_REAL
 template <>
-inline constexpr bool is_nan(r_dbl const& x) noexcept {
+inline constexpr bool is_nan(const r_dbl& x) noexcept {
   return is_na(x) && !internal::is_na_real(unwrap(x));
 }
 

@@ -489,7 +489,7 @@ struct r_vec {
     return true;
   } 
 
-  r_size_t count(T const& val) const {
+  r_size_t count(const T& val) const {
     r_size_t out = 0;
     r_size_t n = length();
     if constexpr (is_write_barrier_protected){
@@ -504,7 +504,7 @@ struct r_vec {
     }
     return out;
   }
-  r_vec<T> remove(T const& val) const {
+  r_vec<T> remove(const T& val) const {
     r_size_t n_remove = count(val);
     r_size_t n = length();
 
@@ -527,7 +527,7 @@ struct r_vec {
 
   // locations of value in vector
   template <internal::RNumericSubscript V = r_int>
-  r_vec<V> find(T const& val, bool invert = false) const {
+  r_vec<V> find(const T& val, bool invert = false) const {
 
     r_size_t n = length();
 
@@ -588,11 +588,11 @@ struct r_vec {
   }
 
   // Fill entire vector with value
-  void fill(T const& val){
+  void fill(const T& val){
     fill(0, length(), val);
   }
 
-  void replace(r_size_t start, r_size_t n, T const& old_val, T const& new_val){
+  void replace(r_size_t start, r_size_t n, const T& old_val, const T& new_val){
     for (r_size_t i = 0; i < n; ++i) {
       r_size_t idx = start + i;
       if (identical(view(idx), old_val)){
@@ -602,7 +602,7 @@ struct r_vec {
   }
 
   // Replace all occurrences of old_val with new_val
-  void replace(T const& old_val, T const& new_val){
+  void replace(const T& old_val, const T& new_val){
     replace(0, length(), old_val, new_val);
   }
 
