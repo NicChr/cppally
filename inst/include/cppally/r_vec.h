@@ -489,6 +489,29 @@ struct r_vec {
     return true;
   } 
 
+  // Count the number of NAs in a vector
+  // It is marked noexcept because all `is_na()` functions are noexcept and there are no R vector allocations
+  r_size_t na_count() const noexcept {
+    r_size_t out = 0;
+    r_size_t n = length();
+    
+    if (static_cast<uint32_t>(n) < std::numeric_limits<uint32_t>::max()){
+      uint32_t n_na = 0;
+      OMP_SIMD
+      for (r_size_t i = 0; i < n; ++i){
+        n_na += static_cast<uint32_t>(cppally::is_na(view(i)));
+      }
+      out = static_cast<r_size_t>(n_na);
+      return out;
+    } else {
+      OMP_SIMD
+      for (r_size_t i = 0; i < n; ++i){
+        out += static_cast<r_size_t>(cppally::is_na(view(i)));
+      }
+      return out;
+    }
+  }
+
   r_size_t count(const T& val) const {
     r_size_t out = 0;
     r_size_t n = length();
