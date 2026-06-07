@@ -109,7 +109,7 @@ struct r_sexp {
         warned = true;
     }
     return Rf_xlength(value);
-}
+  }
 
   r_str address() const;
 };
