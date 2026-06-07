@@ -452,7 +452,7 @@ struct r_vec {
     r_size_t n = length();
     r_vec<r_lgl> out(n);
 
-    if constexpr (!is_write_barrier_protected){
+    if constexpr (RVectorisable<T>){
       int n_threads = internal::calc_threads(n);
       if (n_threads > 1){
         OMP_PARALLEL_FOR_SIMD(n_threads)
@@ -598,7 +598,7 @@ struct r_vec {
   // Sequential fill
   void fill(r_size_t start, r_size_t n, const T& val){
     
-    if constexpr (!is_write_barrier_protected){
+    if constexpr (RVectorisable<T>){
       
       maybe_ensure_exclusive();
 
@@ -656,7 +656,7 @@ struct r_vec {
       r_vec<T> resized_vec(n);
       r_size_t n_to_copy = std::min(n, vec_size);
 
-      if constexpr (!is_write_barrier_protected){
+      if constexpr (RVectorisable<T>){
         std::copy_n(this->begin(), n_to_copy, resized_vec.begin());
       } else {
         for (r_size_t i = 0; i < n_to_copy; ++i){
