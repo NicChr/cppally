@@ -31,6 +31,7 @@
 #include <cppally/r_identical.h>
 #include <cppally/r_df_methods.h>
 #include <cppally/sugar/r_named_arg.h>
+#include <cppally/sugar/r_omp.h>
 #include <cppally/sugar/r_stats.h>
 #include <cppally/sugar/r_exprs.h>
 #include <cppally/sugar/r_fns.h>
