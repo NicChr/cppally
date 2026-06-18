@@ -107,7 +107,7 @@ inline T as_impl(const U& x) {
 
   r_size_t n = x.length();
   T out(n);
-  if constexpr (internal::RPtrWritableType<to_data_t> && internal::RPtrWritableType<from_data_t>){
+  if constexpr (RVectorisable<to_data_t> && RVectorisable<from_data_t>){
     OMP_SIMD
     for (r_size_t i = 0; i < n; ++i){
       out.set(i, x.view(i));

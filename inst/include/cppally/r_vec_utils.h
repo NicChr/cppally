@@ -13,7 +13,7 @@ inline r_sexp new_vec(SEXPTYPE type, r_size_t n){
   return r_sexp(safe[Rf_allocVector](type, n));
 }
 
-template <internal::RPtrWritableType T>
+template <RVectorisable T>
 inline unwrap_t<T>* vector_ptr(SEXP x) {
   if constexpr (RTimeType<T>){
     return reinterpret_cast<unwrap_t<T>*>(vector_ptr<inherited_type_t<T>>(x));

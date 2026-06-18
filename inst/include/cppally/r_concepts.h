@@ -231,10 +231,6 @@ concept CppType = !CppallyType<T>;
 // Internal helpers
 namespace internal {
 
-// A `SEXP` which we can write data to directly via a pointer
-template <typename T>
-concept RPtrWritableType = RScalar<T> && !RObject<T>;
-
 // template <typename T>
 // concept RPassByValueType = any<T, r_lgl, r_int, r_int64, r_dbl, r_raw>;
 

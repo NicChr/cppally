@@ -2,6 +2,7 @@
 #define CPPALLY_R_STATS_H
 
 #include <cppally/r_vec.h>
+#include <cppally/sugar/r_omp.h>
 
 namespace cppally {
     
@@ -13,19 +14,15 @@ r_dbl sum(const r_vec<T>& x, bool na_rm = false){
 
     // Use int64_t since (2^31-1)^2 < INT64_MAX
     int_fast64_t res = 0;
-    const auto* RESTRICT p_x = x.data();
 
     if (na_rm){
-        OMP_SIMD_REDUCTION1(+:res)
-        for (r_size_t i = 0; i < n; ++i){
-            res += is_na(p_x[i]) ? 0 : static_cast<int_fast64_t>(p_x[i]);
-        }
+        omp::simd_reduce_add(x, res, [](auto v){ return is_na(v) ? 0 : static_cast<int_fast64_t>(unwrap(v)); });
     } else {
         for (r_size_t i = 0; i < n; ++i){
-            if (is_na(p_x[i])){
+            if (is_na(x.get(i))){
                 return na<r_dbl>();
             }
-            res += static_cast<int_fast64_t>(p_x[i]);
+            res += static_cast<int_fast64_t>(x.data()[i]);
         }
     }
     return r_dbl(static_cast<double>(res));
@@ -35,42 +32,18 @@ template <RMathType T>
 r_dbl sum(const r_vec<T>& x, bool na_rm = false){
     r_size_t n = x.length();
     double out_ = 0;
-    const auto* RESTRICT p_x = x.data();
 
     if (na_rm){
-        OMP_SIMD_REDUCTION1(+:out_)
-        for (r_size_t i = 0; i < n; ++i){
-            out_ += (is_na(T(p_x[i]))) ? 0 : p_x[i];
-        }
+        omp::simd_reduce_add(x, out_, [](auto v){ return is_na(v) ? 0 : unwrap(v); });
+    } else if constexpr (is<T, r_dbl>){
+        omp::simd_reduce_add(x, out_, [](auto v){ return unwrap(v); });
     } else {
         for (r_size_t i = 0; i < n; ++i){
-            if (is_na(T(p_x[i]))){
+            if (is_na(x.get(i))){
                 return na<r_dbl>();
             }
-            out_ += p_x[i];
+            out_ += x.data()[i];
         }
-    }
-    return r_dbl(out_);
-}
-
-// Optimisation for r_dbl
-template <>
-inline r_dbl sum(const r_vec<r_dbl>& x, bool na_rm){
-    r_size_t n = x.length();
-    double out_ = 0;
-    const auto* RESTRICT p_x = x.data();
-
-    if (na_rm){
-        OMP_SIMD_REDUCTION1(+:out_)
-        for (r_size_t i = 0; i < n; ++i){
-            out_ += is_na(r_dbl(p_x[i])) ? 0 : p_x[i];
-        }
-    } else {
-        OMP_SIMD_REDUCTION1(+:out_)
-        for (r_size_t i = 0; i < n; ++i){
-            out_ += p_x[i];
-        }
-        
     }
     return r_dbl(out_);
 }
