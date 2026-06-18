@@ -725,9 +725,10 @@ struct r_vec {
 
   void iota(T init = T(0)) requires (any<T, r_int, r_int64>) {
     r_size_t n = length();
+    auto* RESTRICT p_x = data();
     OMP_SIMD
     for (r_size_t i = 0; i < n; ++i){
-      set(i, init + i);
+      p_x[i] = unwrap(init + i);
     }
   }
 
