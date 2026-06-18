@@ -281,7 +281,7 @@ struct r_vec {
     if (first_access) {
       ensure_names_cached();
       r_int index = cached_names->find(name);
-      if (cppally::is_na(index)){ 
+      if (is_na(index)){ 
         if (abort_on_missing) {
           report_no_match();
         } else {
@@ -452,31 +452,6 @@ struct r_vec {
     return subset(r_vec<r_int64>(1, r_int64(static_cast<int64_t>(index))), check, invert);
   }
 
-  r_vec<r_lgl> is_na() const {
-    r_size_t n = length();
-    r_vec<r_lgl> out(n);
-
-    if constexpr (RVectorisable<T>){
-      int n_threads = internal::calc_threads(n);
-      if (n_threads > 1){
-        OMP_PARALLEL_FOR_SIMD(n_threads)
-        for (r_size_t i = 0; i < n; ++i){
-          out.set(i, r_lgl(cppally::is_na(view(i))));
-        }
-      } else {
-        OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-          out.set(i, r_lgl(cppally::is_na(view(i))));
-        }
-      }
-    } else {
-      for (r_size_t i = 0; i < n; ++i){
-        out.set(i, r_lgl(cppally::is_na(view(i))));
-      }
-    }
-    return out;
-  }
-
   bool any_val(const T& val) const {
     r_size_t n = length();
     for (r_size_t i = 0; i < n; ++i){
@@ -507,18 +482,18 @@ struct r_vec {
       if (n_threads > 1){
         OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:out)
         for (r_size_t i = 0; i < n; ++i){
-          out += static_cast<r_size_t>(cppally::is_na(T(p[i])));
+          out += static_cast<r_size_t>(is_na(T(p[i])));
         }
       } else {
         OMP_SIMD_REDUCTION1(+:out)
         for (r_size_t i = 0; i < n; ++i){
-          out += static_cast<r_size_t>(cppally::is_na(T(p[i])));
+          out += static_cast<r_size_t>(is_na(T(p[i])));
         }
       }
 
     } else {
       for (r_size_t i = 0; i < n; ++i){
-        out += static_cast<r_size_t>(cppally::is_na(view(i)));
+        out += static_cast<r_size_t>(is_na(view(i)));
       }
     }
     return out;
@@ -743,7 +718,7 @@ struct r_vec {
       abort("`r_vec<r_psxct_t>` vector must have a valid tzone attribute");
     } else {
       r_str_view tz_str = tz.view(0);
-      if (cppally::is_na(tz_str)){
+      if (is_na(tz_str)){
         abort("tzone cannot be NA");
       }
       return r_str(tz_str);
