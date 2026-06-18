@@ -11,7 +11,7 @@ namespace omp {
 
 // Apply unary function to source's elements and set target's elements to output (via OMP SIMD)
 template <RVectorisable T, RVectorisable U>
-void simd_apply(const r_vec<T>& source, r_vec<U>& target, std::invocable<T> auto f, bool parallel = true) {
+void simd_apply(r_vec<T>& source, r_vec<U>& target, std::invocable<T> auto f, bool parallel = true) {
     
     r_size_t n = source.length();
 
@@ -55,7 +55,7 @@ void simd_apply(r_vec<T>& target, std::invocable<T> auto f, bool parallel = true
 
 // Apply binary function (via OMP SIMD)
 template <RVectorisable T, RVectorisable U, RVectorisable V>
-void simd_apply(const r_vec<T>& lhs, const r_vec<U>& rhs, r_vec<V>& target, std::invocable<T, U> auto f, bool parallel = true) {
+void simd_apply(r_vec<T>& lhs, r_vec<U>& rhs, r_vec<V>& target, std::invocable<T, U> auto f, bool parallel = true) {
     
     r_size_t n = target.length();
 
