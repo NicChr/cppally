@@ -746,6 +746,17 @@ struct r_vec {
     return out;
   }
 
+  // Apply a function to each element of r_vec
+  template <RVal U>
+  r_vec<U> map(std::invocable<U> auto fn) const {
+    r_size_t n = length();
+    r_vec<U> out(n);
+    for (r_size_t i = 0; i < n; ++i){
+      out.set(i, fn(view(i)));
+    }
+    return out;
+  }
+
 };
 
 // Alias of r_vec
