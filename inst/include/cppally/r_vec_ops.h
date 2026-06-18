@@ -232,10 +232,10 @@ bool use_in_place_ops(const T& lhs, const U& rhs) noexcept {
     if (!lhs.is_exclusive()){
         return false;
    }
-    if constexpr (RAtomicVector<U>){
-        return lhs.length() >= rhs.length();
-    }
-    return true;
+   if constexpr (RAtomicVector<U>){
+    return (lhs.length() == rhs.length()) || (lhs.length() > rhs.length() && rhs.length() != 0);
+   }
+   return true;
 }
 }
 
