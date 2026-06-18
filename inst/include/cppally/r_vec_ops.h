@@ -3,6 +3,7 @@
 
 #include <cppally/r_utils.h>
 #include <cppally/r_vec.h>
+#include <cppally/r_omp.h>
 
 // Vectorised binary operators: +,-,*,/,&,|,+=,-=,*=,/=,==,<=,<,>=,>
 // Vectorised unary operators: !,-,
@@ -11,46 +12,6 @@
 
 namespace cppally {
 
-#define CPPALLY_UNARY_OP_IN_PLACE(OP, X)                                      \
-r_size_t n = X.length();                                                      \
-int n_threads = internal::calc_threads(n);                                    \
-if constexpr (RObject<typename std::remove_cvref_t<decltype(X)>::data_type>){ \
-  for (r_size_t i = 0; i < n; ++i){                                           \
-    X.set(i, OP X.view(i));                                                   \
-  }                                                                           \
-} else if (n_threads > 1){                                                    \
-  OMP_PARALLEL_FOR_SIMD(n_threads)                                            \
-  for (r_size_t i = 0; i < n; ++i){                                           \
-    X.set(i, OP X.view(i));                                                   \
-  }                                                                           \
-} else {                                                                      \
-  OMP_SIMD                                                                    \
-  for (r_size_t i = 0; i < n; ++i){                                           \
-    X.set(i, OP X.view(i));                                                   \
-  }                                                                           \
-}
-
-#define CPPALLY_UNARY_OP(OP, X)                                                 \
-r_size_t n = X.length();                                                        \
-using out_t = std::remove_cvref_t<decltype(X)>;                                 \
-out_t out(n);                                                                   \
-int n_threads = internal::calc_threads(n);                                      \
-if constexpr (RObject<typename std::remove_cvref_t<decltype(out)>::data_type>){ \
-  for (r_size_t i = 0; i < n; ++i){                                             \
-    out.set(i, OP X.view(i));                                                   \
-  }                                                                             \
-} else if (n_threads > 1){                                                      \
-  OMP_PARALLEL_FOR_SIMD(n_threads)                                              \
-  for (r_size_t i = 0; i < n; ++i){                                             \
-    out.set(i, OP X.view(i));                                                   \
-  }                                                                             \
-} else {                                                                        \
-  OMP_SIMD                                                                      \
-  for (r_size_t i = 0; i < n; ++i){                                             \
-    out.set(i, OP X.view(i));                                                   \
-  }                                                                             \
-}                                                                               \
-return out;
 
 #define CPPALLY_BINARY_OP_IN_PLACE(OP)                                                                \
 r_size_t lhs_size = lhs.length();                                                                     \
@@ -69,7 +30,6 @@ if constexpr (RAtomicVector<U>){                                                
       for (r_size_t i = 0; i < lhs_size; ++i){ lhs.set(i, lhs.view(i) OP val); }                      \
     }                                                                                                 \
   } else if (lhs_size == rhs_size){                                                                   \
-    {                                                                                                 \
       int n_threads = internal::calc_threads(lhs_size);                                               \
       if constexpr (RObject<typename std::remove_cvref_t<decltype(lhs)>::data_type>){                 \
         for (r_size_t i = 0; i < lhs_size; ++i){                                                      \
@@ -86,7 +46,6 @@ if constexpr (RAtomicVector<U>){                                                
           lhs.set(i, lhs.get(i) OP rhs.get(i));                                                       \
         }                                                                                             \
       }                                                                                               \
-    }                                                                                                 \
   } else {                                                                                            \
     r_size_t n = lhs_size;                                                                            \
     for (r_size_t i = 0, rhsi = 0; i < n;                                                             \
@@ -487,30 +446,34 @@ inline r_vec<r_lgl> operator&(T&& lhs, const U& rhs) {
 
 inline r_vec<r_lgl> operator!(r_vec<r_lgl>&& x){
     if (x.is_exclusive()){
-        CPPALLY_UNARY_OP_IN_PLACE(!, x)
+        omp::simd_apply(x, [](r_lgl v){ return !v; });
         return std::move(x);
     } else {
-        CPPALLY_UNARY_OP(!, x)
+        r_vec<r_lgl> out(x.length());
+        omp::simd_apply(x, out, [](r_lgl v){ return !v; });
+        return out;
     }
 }
 
 template <RMathType T>
 inline r_vec<T> operator-(r_vec<T>&& x){
     if (x.is_exclusive()){
-        CPPALLY_UNARY_OP_IN_PLACE(-, x)
+        omp::simd_apply(x, [](T v){ return -v; });
         return std::move(x);
     } else {
-        CPPALLY_UNARY_OP(-, x)
+        r_vec<T> out(x.length());
+        omp::simd_apply(x, out, [](T v){ return -v; });
+        return out;
     }
 }
 
 namespace internal {
 
-// Helper to negative result of `==` in-place
+// Helper to negate result of `==` in-place
 template <typename T, typename U>
 inline r_vec<r_lgl> not_equal(const T& lhs, const U& rhs){
     r_vec<r_lgl> eq = lhs == rhs;
-    CPPALLY_UNARY_OP_IN_PLACE(!, eq)
+    omp::simd_apply(eq, [](r_lgl v){ return !v; });
     return eq;
 }
 

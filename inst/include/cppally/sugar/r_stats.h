@@ -2,7 +2,7 @@
 #define CPPALLY_R_STATS_H
 
 #include <cppally/r_vec.h>
-#include <cppally/sugar/r_omp.h>
+#include <cppally/r_omp.h>
 
 namespace cppally {
     
