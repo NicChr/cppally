@@ -452,6 +452,83 @@ struct r_vec {
     return subset(r_vec<r_int64>(1, r_int64(static_cast<int64_t>(index))), check, invert);
   }
 
+  private: 
+
+  // Core engine: fn(index, value) -> set onto target[i]. All map/apply variants use this
+  template <RVal U>
+  void map_impl(r_vec<U>& target, std::invocable<r_size_t, T> auto fn, bool simd, int n_threads) const {
+    r_size_t n = length();
+    if (target.length() != n) [[unlikely]] {
+      abort("map: target length must match source length");
+    }
+
+    if (simd || n_threads > 1){
+      if constexpr (!RVectorisable<T>){
+        abort("map: Unsupported type: %s. Only vectorisable types can use SIMD or multiple threads", internal::type_str<T>());
+      }
+      if constexpr (!RVectorisable<U>){
+        abort("map: Unsupported type: %s. Only vectorisable types can use SIMD or multiple threads", internal::type_str<U>());
+      }
+    }
+
+    if (simd){
+
+      auto* p_x = data();
+      auto* p_target = target.data();
+
+      if (n_threads > 1){
+        OMP_PARALLEL_FOR_SIMD(n_threads)
+        for (r_size_t i = 0; i < n; ++i){
+          p_target[i] = unwrap(fn(i, T(p_x[i])));
+        }
+      } else {
+        OMP_SIMD
+        for (r_size_t i = 0; i < n; ++i){
+          p_target[i] = unwrap(fn(i, T(p_x[i])));
+        }
+      }
+    } else {
+      if (n_threads > 1){
+        OMP_PARALLEL(n_threads)
+        for (r_size_t i = 0; i < n; ++i){
+          target.set(i, fn(i, view(i)));
+        }
+      } else {
+        for (r_size_t i = 0; i < n; ++i){
+          target.set(i, fn(i, view(i)));
+        }
+      }
+    }
+  }
+
+  public:
+
+  // Map each element to a new r_vec<U>: fn(value) -> U
+  template <RVal U>
+  r_vec<U> map(std::invocable<T> auto fn, bool simd = false, int n_threads = 1) const {
+    r_vec<U> out(length());
+    map_impl(out, [&](r_size_t, auto v){ return fn(v); }, simd, n_threads);
+    return out;
+  }
+
+  // Map each element to a new r_vec<U>, with access to the index: fn(index, value) -> U
+  template <RVal U>
+  r_vec<U> map_with_index(std::invocable<r_size_t, T> auto fn, bool simd = false, int n_threads = 1) const {
+    r_vec<U> out(length());
+    map_impl(out, fn, simd, n_threads);
+    return out;
+  }
+
+  // Apply a function to each element, modifying *this in-place: fn(value) -> T
+  void apply(std::invocable<T> auto fn, bool simd = false, int n_threads = 1) {
+    map_impl(*this, [&](r_size_t, auto v){ return fn(v); }, simd, n_threads);
+  }
+
+  // Apply a function to each element with access to the index, modifying *this in-place: fn(index, value) -> T
+  void apply_with_index(std::invocable<r_size_t, T> auto fn, bool simd = false, int n_threads = 1) {
+    map_impl(*this, fn, simd, n_threads);
+  }
+
   bool any_val(const T& val) const {
     r_size_t n = length();
     for (r_size_t i = 0; i < n; ++i){
@@ -699,12 +776,7 @@ struct r_vec {
   }
 
   void iota(T init = T(0)) requires (any<T, r_int, r_int64>) {
-    r_size_t n = length();
-    auto* RESTRICT p_x = data();
-    OMP_SIMD
-    for (r_size_t i = 0; i < n; ++i){
-      p_x[i] = unwrap(init + i);
-    }
+    apply_with_index([init](r_size_t i, auto){ return init + i; }, /*simd = */ true);
   }
 
 
@@ -742,17 +814,6 @@ struct r_vec {
         abort("`lengths()` does not currently support long-vectors");
       }
       out.set(i, r_int(static_cast<int>(len)));
-    }
-    return out;
-  }
-
-  // Apply a function to each element of r_vec
-  template <RVal U>
-  r_vec<U> map(std::invocable<U> auto fn) const {
-    r_size_t n = length();
-    r_vec<U> out(n);
-    for (r_size_t i = 0; i < n; ++i){
-      out.set(i, fn(view(i)));
     }
     return out;
   }
