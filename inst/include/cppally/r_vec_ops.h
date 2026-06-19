@@ -458,15 +458,24 @@ inline r_vec<r_lgl> operator&(T&& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, &&, r_vec<r_lgl>)
 }
 
-inline r_vec<r_lgl> operator!(r_vec<r_lgl>&& x){
+template <RVector T>
+requires (is<T, r_vec<r_lgl>>)
+inline r_vec<r_lgl> operator!(T&& x){
+  if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
     if (x.is_exclusive()){
-        omp::simd_apply(x, [](r_lgl v){ return !v; });
+        x.apply(
+          [](r_lgl v){ return !v; },
+          /*simd = */ true, 
+          /*n_threads = */ internal::calc_threads(x.length())
+        );
         return std::move(x);
-    } else {
-        r_vec<r_lgl> out(x.length());
-        omp::simd_apply(x, out, [](r_lgl v){ return !v; });
-        return out;
     }
+  }
+  return x.template map<r_lgl>(
+    [](r_lgl v){ return !v; },
+    /*simd = */ true, 
+    /*n_threads = */ internal::calc_threads(x.length())
+  );
 }
 
 template <internal::RMathVector T>
@@ -475,7 +484,11 @@ inline std::remove_cvref_t<T> operator-(T&& x){
 
   if constexpr (std::is_same_v<T, std::remove_cvref_t<T>>){
     if (x.is_exclusive()){
-      x.apply([](auto v){ return -v; });
+      x.apply(
+      /*fn = */ [](auto v){ return -v; }, 
+      /*simd = */ true, 
+      /*n_threads = */ internal::calc_threads(x.length())
+      );
       return std::move(x);
     }
   }
