@@ -455,16 +455,21 @@ inline r_vec<r_lgl> operator!(r_vec<r_lgl>&& x){
     }
 }
 
-template <RMathType T>
-inline r_vec<T> operator-(r_vec<T>&& x){
+template <internal::RMathVector T>
+inline std::remove_cvref_t<T> operator-(T&& x){
+  using data_t = typename std::remove_cvref_t<T>::data_type;
+
+  if constexpr (std::is_same_v<T, std::remove_cvref_t<T>>){
     if (x.is_exclusive()){
-        omp::simd_apply(x, [](T v){ return -v; });
-        return std::move(x);
-    } else {
-        r_vec<T> out(x.length());
-        omp::simd_apply(x, out, [](T v){ return -v; });
-        return out;
+      x.apply([](auto v){ return -v; });
+      return std::move(x);
     }
+  }
+  return x.template map<data_t>(
+    /*fn = */ [](auto v){ return -v; }, 
+    /*simd = */ true, 
+    /*n_threads = */ internal::calc_threads(x.length())
+  );
 }
 
 namespace internal {
