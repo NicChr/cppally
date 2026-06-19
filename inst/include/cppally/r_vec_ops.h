@@ -500,15 +500,11 @@ inline std::remove_cvref_t<T> operator-(T&& x){
 }
 
 namespace internal {
-
 // Helper to negate result of `==` in-place
 template <typename T, typename U>
 inline r_vec<r_lgl> not_equal(const T& lhs, const U& rhs){
-    r_vec<r_lgl> eq = lhs == rhs;
-    omp::simd_apply(eq, [](r_lgl v){ return !v; });
-    return eq;
+    return !(lhs == rhs);
 }
-
 }
 
 
