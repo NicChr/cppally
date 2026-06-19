@@ -4,13 +4,9 @@
 using namespace cppally;
 
 template <RVector T>
+[[cppally::register]]
 r_vec<r_lgl> vec_is_na(const T& x){
-    r_size_t n = x.length();
-    r_vec<r_lgl> out(n);
-    for (r_size_t i = 0; i < n; ++i){
-        out.set(i, is_na(x.get(i)));
-    }
-    return out;
+    return x.template map<r_lgl>([](auto v){ return is_na(v); }, true);
 }
 
 template <RVector T>
