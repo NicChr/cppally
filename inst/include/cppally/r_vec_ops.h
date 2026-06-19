@@ -10,6 +10,20 @@
 // All operators are only for atomic vectors
 // Arithmetic operators are constrained on vectors of element RMathType
 
+// ----- Important notes -----
+//
+// Most (if not all) operators will implicitly mutate in-place when certain conditions (detailed below) are satisfied
+//
+// Forwarding references are used to achieve this
+//
+// To be able to IMPLICITLY mutate vectors in-place, a few things need to be checked
+// - Must be owning rvalue
+// - Must satisfy x.is_exclusive, this ensures it is the only object that references the underlying SEXP
+// - The resulting vector type must align with the input vector type
+//
+// Crucially though, the first (owning rvalue) check must be done at compile time (via e.g. if constexpr block)
+// So that the mutating branch is not checked by the compiler when it doesn't need to be
+
 namespace cppally {
 
 
@@ -245,7 +259,7 @@ requires (
     (internal::RMathVector<T> && MathType<U>) ||
     (MathType<T> && internal::RMathVector<U>)
 )
-using common_math_vec_t = r_vec<common_math_t<typename as_r_vector_t<T>::data_type, typename as_r_vector_t<U>::data_type>>;
+using common_math_vec_t = std::remove_cvref_t<r_vec<common_math_t<typename as_r_vector_t<T>::data_type, typename as_r_vector_t<U>::data_type>>>;
 
 template<typename T, typename U>
 requires (
