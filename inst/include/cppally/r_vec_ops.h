@@ -471,7 +471,7 @@ inline r_vec<r_lgl> operator!(T&& x){
         return std::move(x);
     }
   }
-  return x.template map<r_lgl>(
+  return x.map(
     [](r_lgl v){ return !v; },
     /*simd = */ true, 
     /*n_threads = */ internal::calc_threads(x.length())
@@ -492,8 +492,8 @@ inline std::remove_cvref_t<T> operator-(T&& x){
       return std::move(x);
     }
   }
-  return x.template map<data_t>(
-    /*fn = */ [](auto v){ return -v; }, 
+  return x.map(
+    /*fn = */ [](data_t v){ return -v; }, 
     /*simd = */ true, 
     /*n_threads = */ internal::calc_threads(x.length())
   );

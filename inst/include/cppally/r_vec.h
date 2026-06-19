@@ -504,17 +504,22 @@ struct r_vec {
   public:
 
   // Map each element to a new r_vec<U>: fn(value) -> U
-  template <RVal U>
-  r_vec<U> map(std::invocable<T> auto fn, bool simd = false, int n_threads = 1) const {
-    r_vec<U> out(length());
+  // U defaults to void => deduce output element type from fn's return; pass U explicitly to force it
+  template <typename U = void, std::invocable<T> F>
+  auto map(F fn, bool simd = false, int n_threads = 1) const {
+    using out_t = std::conditional_t<std::is_void_v<U>, std::invoke_result_t<F, T>, U>;
+    static_assert(RVal<out_t>, "map: output type is not storable in r_vec");
+    r_vec<out_t> out(length());
     map_impl(out, [&](r_size_t, auto v){ return fn(v); }, simd, n_threads);
     return out;
   }
 
   // Map each element to a new r_vec<U>, with access to the index: fn(index, value) -> U
-  template <RVal U>
-  r_vec<U> map_with_index(std::invocable<r_size_t, T> auto fn, bool simd = false, int n_threads = 1) const {
-    r_vec<U> out(length());
+  template <typename U = void, std::invocable<r_size_t, T> F>
+  auto map_with_index(F fn, bool simd = false, int n_threads = 1) const {
+    using out_t = std::conditional_t<std::is_void_v<U>, std::invoke_result_t<F, r_size_t, T>, U>;
+    static_assert(RVal<out_t>, "map_with_index: output type is not storable in r_vec");
+    r_vec<out_t> out(length());
     map_impl(out, fn, simd, n_threads);
     return out;
   }
