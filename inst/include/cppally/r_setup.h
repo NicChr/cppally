@@ -59,7 +59,7 @@
 #endif
 
 // Disable custom OMP macros when copy-on-modify behaviour is specified
-#if defined(_OPENMP) && !defined(CPPALLY_COPY_ON_MODIFY)
+#if defined(_OPENMP) && !defined(CPPALLY_COPY_ON_MODIFY) && !defined(CPPALLY_PRESERVE_ALTREP)
 #include <omp.h>
 #define OMP_PRAGMA(x) _Pragma(#x)
 #define OMP_NUM_PROCS omp_get_num_procs()
