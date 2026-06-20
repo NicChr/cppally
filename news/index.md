@@ -112,6 +112,9 @@ long as the element coercions are supported by `cppally::as`
 - All C++ reference qualifiers (T&, T&&, const T&) are now supported for
   registered functions, including templated ones.
 
+- New concept `RVectorisable` which encompasses types that are OMP
+  friendly.
+
 #### Bug fixes
 
 - When registering C++ functions, cppally.hpp is now included in the
