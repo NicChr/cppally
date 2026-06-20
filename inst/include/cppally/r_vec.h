@@ -462,14 +462,14 @@ struct r_vec {
       abort("map: target length must match source length");
     }
 
-    if constexpr (!RVectorisable<T> || !RVectorisable<U>){
+    if constexpr (!RVectorisable<T>){
       if (simd || n_threads > 1){
-        if (!RVectorisable<T>){
-          abort("map: Unsupported type: %s. Only vectorisable types can use SIMD or multiple threads", internal::type_str<T>());
-        }
-        if (!RVectorisable<U>){
-          abort("map: Unsupported type: %s. Only vectorisable types can use SIMD or multiple threads", internal::type_str<U>());
-        }
+        abort("map: Unsupported type: %s. Only vectorisable types can use SIMD or multiple threads", internal::type_str<T>());
+      }
+    }
+    if constexpr (!RVectorisable<U>){
+      if (simd || n_threads > 1){
+        abort("map: Unsupported type: %s. Only vectorisable types can use SIMD or multiple threads", internal::type_str<U>());
       }
     }
 
