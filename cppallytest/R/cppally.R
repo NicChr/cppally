@@ -304,6 +304,10 @@ test_names_roundtrip_after_grow <- function() {
   .Call(`_cppallytest_test_names_roundtrip_after_grow`)
 }
 
+vec_is_na <- function(x) {
+  .Call(`_cppallytest_vec_is_na`, x)
+}
+
 test_nas <- function(x) {
   .Call(`_cppallytest_test_nas`, x)
 }

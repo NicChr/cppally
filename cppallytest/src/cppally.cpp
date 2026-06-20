@@ -702,6 +702,17 @@ extern "C" SEXP _cppallytest_test_names_roundtrip_after_grow() {
   END_CPPALLY
 }
 // test_nas.h
+extern "C" SEXP _cppallytest_vec_is_na(SEXP x) {
+  BEGIN_CPPALLY
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_r(::vec_is_na(std::declval<const T&>()))) {
+        return cpp_to_r(::vec_is_na(as<const T&>(x_internal)));
+    },
+    x
+  );
+  END_CPPALLY
+}
+// test_nas.h
 extern "C" SEXP _cppallytest_test_nas(SEXP x) {
   BEGIN_CPPALLY
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
@@ -1034,6 +1045,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_unique",                       (DL_FUNC) &_cppallytest_test_unique,                       1},
     {"_cppallytest_test_valgrind",                     (DL_FUNC) &_cppallytest_test_valgrind,                     0},
     {"_cppallytest_test_var",                          (DL_FUNC) &_cppallytest_test_var,                          2},
+    {"_cppallytest_vec_is_na",                         (DL_FUNC) &_cppallytest_vec_is_na,                         1},
     {"_cppallytest_vector1",                           (DL_FUNC) &_cppallytest_vector1,                           1},
     {"_cppallytest_vector2",                           (DL_FUNC) &_cppallytest_vector2,                           1},
     {NULL, NULL, 0}
