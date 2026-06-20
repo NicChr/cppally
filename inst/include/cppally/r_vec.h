@@ -462,12 +462,14 @@ struct r_vec {
       abort("map: target length must match source length");
     }
 
-    if (simd || n_threads > 1){
-      if constexpr (!RVectorisable<T>){
-        abort("map: Unsupported type: %s. Only vectorisable types can use SIMD or multiple threads", internal::type_str<T>());
-      }
-      if constexpr (!RVectorisable<U>){
-        abort("map: Unsupported type: %s. Only vectorisable types can use SIMD or multiple threads", internal::type_str<U>());
+    if constexpr (!RVectorisable<T> || !RVectorisable<U>){
+      if (simd || n_threads > 1){
+        if (!RVectorisable<T>){
+          abort("map: Unsupported type: %s. Only vectorisable types can use SIMD or multiple threads", internal::type_str<T>());
+        }
+        if (!RVectorisable<U>){
+          abort("map: Unsupported type: %s. Only vectorisable types can use SIMD or multiple threads", internal::type_str<U>());
+        }
       }
     }
 
@@ -503,21 +505,20 @@ struct r_vec {
 
   public:
 
-  // Map each element to a new r_vec<U>: fn(value) -> U
-  // U defaults to void => deduce output element type from fn's return; pass U explicitly to force it
-  template <typename U = void, std::invocable<T> F>
+  // Map each element to a new r_vec: fn(value) -> output element type (deduced from fn's return)
+  template <std::invocable<T> F>
   auto map(F fn, bool simd = false, int n_threads = 1) const {
-    using out_t = std::conditional_t<std::is_void_v<U>, std::invoke_result_t<F, T>, U>;
+    using out_t = std::invoke_result_t<F, T>;
     static_assert(RVal<out_t>, "map: output type is not storable in r_vec");
     r_vec<out_t> out(length());
     map_impl(out, [&](r_size_t, auto v){ return fn(v); }, simd, n_threads);
     return out;
   }
 
-  // Map each element to a new r_vec<U>, with access to the index: fn(index, value) -> U
-  template <typename U = void, std::invocable<r_size_t, T> F>
+  // Map each element to a new r_vec, with access to the index: fn(index, value) -> output element type
+  template <std::invocable<r_size_t, T> F>
   auto map_with_index(F fn, bool simd = false, int n_threads = 1) const {
-    using out_t = std::conditional_t<std::is_void_v<U>, std::invoke_result_t<F, r_size_t, T>, U>;
+    using out_t = std::invoke_result_t<F, r_size_t, T>;
     static_assert(RVal<out_t>, "map_with_index: output type is not storable in r_vec");
     r_vec<out_t> out(length());
     map_impl(out, fn, simd, n_threads);
