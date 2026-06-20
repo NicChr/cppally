@@ -2,9 +2,26 @@
 #define CPPALLY_R_STATS_H
 
 #include <cppally/r_vec.h>
-#include <cppally/r_omp.h>
 
 namespace cppally {
+
+namespace internal {
+
+template <RVectorisable T, typename Acc>
+void simd_reduce_add(const r_vec<T>& x, Acc& init, std::invocable<T> auto f) noexcept {
+    r_size_t n = x.length();
+    const unwrap_t<T>* RESTRICT p_x = x.data();
+    int n_threads = internal::calc_threads(n);
+    if (n_threads > 1){
+        OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:init)
+        for (r_size_t i = 0; i < n; ++i) init += f(T(p_x[i]));
+    } else {
+        OMP_SIMD_REDUCTION1(+:init)
+        for (r_size_t i = 0; i < n; ++i) init += f(T(p_x[i]));
+    }
+}
+
+}
     
 // Very fast integer sum
 template <RMathType T> 
@@ -16,7 +33,7 @@ r_dbl sum(const r_vec<T>& x, bool na_rm = false){
     int_fast64_t res = 0;
 
     if (na_rm){
-        omp::simd_reduce_add(x, res, [](auto v){ return is_na(v) ? 0 : static_cast<int_fast64_t>(unwrap(v)); });
+        internal::simd_reduce_add(x, res, [](auto v){ return is_na(v) ? 0 : static_cast<int_fast64_t>(unwrap(v)); });
     } else {
         for (r_size_t i = 0; i < n; ++i){
             if (is_na(x.get(i))){
@@ -34,9 +51,9 @@ r_dbl sum(const r_vec<T>& x, bool na_rm = false){
     double out_ = 0;
 
     if (na_rm){
-        omp::simd_reduce_add(x, out_, [](auto v){ return is_na(v) ? 0 : unwrap(v); });
+        internal::simd_reduce_add(x, out_, [](auto v){ return is_na(v) ? 0 : unwrap(v); });
     } else if constexpr (is<T, r_dbl>){
-        omp::simd_reduce_add(x, out_, [](auto v){ return unwrap(v); });
+        internal::simd_reduce_add(x, out_, [](auto v){ return unwrap(v); });
     } else {
         for (r_size_t i = 0; i < n; ++i){
             if (is_na(x.get(i))){

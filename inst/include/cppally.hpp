@@ -19,7 +19,6 @@
 #include <cppally/r_vec_utils.h>
 #include <cppally/r_coerce_scalars.h>
 #include <cppally/r_vec.h>
-#include <cppally/r_omp.h>
 #include <cppally/r_vec_ops.h>
 #include <cppally/r_factor.h>
 #include <cppally/r_attrs.h>
