@@ -500,6 +500,8 @@ struct r_vec {
   public:
 
   // Map each element to a new r_vec: fn(value) -> output element type (deduced from fn's return)
+  // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
+  // n_threads - Number of threads to use via OMP_PARALLEL or OMP_PARALLEL_FOR_SIMD. Only applicable for RVectorisable types
   template <std::invocable<T> F>
   auto map(F fn, bool simd = false, int n_threads = 1) const {
     using out_t = std::invoke_result_t<F, T>;
@@ -510,6 +512,8 @@ struct r_vec {
   }
 
   // Map each element to a new r_vec, with access to the index: fn(index, value) -> output element type
+  // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
+  // n_threads - Number of threads to use via OMP_PARALLEL or OMP_PARALLEL_FOR_SIMD. Only applicable for RVectorisable types
   template <std::invocable<r_size_t, T> F>
   auto map_with_index(F fn, bool simd = false, int n_threads = 1) const {
     using out_t = std::invoke_result_t<F, r_size_t, T>;
@@ -520,11 +524,15 @@ struct r_vec {
   }
 
   // Apply a function to each element, modifying *this in-place: fn(value) -> T
+  // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
+  // n_threads - Number of threads to use via OMP_PARALLEL or OMP_PARALLEL_FOR_SIMD. Only applicable for RVectorisable types
   void apply(std::invocable<T> auto fn, bool simd = false, int n_threads = 1) {
     map_impl(*this, [&](r_size_t, auto v){ return fn(v); }, simd, n_threads);
   }
 
   // Apply a function to each element with access to the index, modifying *this in-place: fn(index, value) -> T
+  // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
+  // n_threads - Number of threads to use via OMP_PARALLEL or OMP_PARALLEL_FOR_SIMD. Only applicable for RVectorisable types
   void apply_with_index(std::invocable<r_size_t, T> auto fn, bool simd = false, int n_threads = 1) {
     map_impl(*this, fn, simd, n_threads);
   }
