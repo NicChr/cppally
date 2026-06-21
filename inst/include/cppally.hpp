@@ -19,6 +19,7 @@
 #include <cppally/r_vec_utils.h>
 #include <cppally/r_coerce_scalars.h>
 #include <cppally/r_vec.h>
+#include <cppally/r_pmap.h>
 #include <cppally/r_vec_ops.h>
 #include <cppally/r_factor.h>
 #include <cppally/r_attrs.h>
@@ -48,7 +49,6 @@
 #include <cppally/sugar/r_remove.h>
 #include <cppally/sugar/r_replace.h>
 #include <cppally/sugar/r_make_vec.h>
-#include <cppally/sugar/r_pmap.h>
 #include <cppally/sugar/r_combine.h>
 #include <cppally/sugar/r_recycle.h>
 #include <cppally/sugar/r_paste.h>
