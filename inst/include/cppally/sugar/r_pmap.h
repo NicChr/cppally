@@ -37,52 +37,37 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
 
     if constexpr (vectorisable_or_parallelisable && (simd || parallel)) {
 
+      #define CPPALLY_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, Ts(ps[i])...));
+
       auto* p_out = out.data();
 
-      if constexpr (simd){
+      // Unpack the data pointers once; only the pragma on each for-loop varies between branches.
+      std::apply([&](auto*... ps){
         if constexpr (parallel){
-          int n_threads = internal::calc_threads(n);
-          if (n_threads > 1){
-            std::apply([&](auto*... ps){
+          const int n_threads = internal::calc_threads(n);
+          if constexpr (simd){
+            if (n_threads > 1){
               OMP_PARALLEL_FOR_SIMD(n_threads)
-              for (r_size_t i = 0; i < n; ++i) {
-                p_out[i] = unwrap(fn(i, Ts(ps[i])...));
-              }
-            }, std::tuple{ vecs.data()... });
-          } else {
-            std::apply([&](auto*... ps){
+              CPPALLY_MAP_WITH_DATA
+            } else {
               OMP_SIMD
-              for (r_size_t i = 0; i < n; ++i) {
-                p_out[i] = unwrap(fn(i, Ts(ps[i])...));
-              }
-            }, std::tuple{ vecs.data()... });
+              CPPALLY_MAP_WITH_DATA
+            }
+          } else {
+            if (n_threads > 1){
+              OMP_PARALLEL(n_threads)
+              CPPALLY_MAP_WITH_DATA
+            } else {
+              CPPALLY_MAP_WITH_DATA
+            }
           }
         } else {
-          std::apply([&](auto*... ps){
-            OMP_SIMD
-            for (r_size_t i = 0; i < n; ++i) {
-              p_out[i] = unwrap(fn(i, Ts(ps[i])...));
-            }
-          }, std::tuple{ vecs.data()... });
+          // !parallel implies simd here (the enclosing branch requires simd || parallel)
+          OMP_SIMD
+          CPPALLY_MAP_WITH_DATA
         }
-      } else {
-        // Must be parallel = true in this branch
-        int n_threads = internal::calc_threads(n);
-        if (n_threads > 1){
-          std::apply([&](auto*... ps){
-            OMP_PARALLEL(n_threads)
-            for (r_size_t i = 0; i < n; ++i) {
-              p_out[i] = unwrap(fn(i, Ts(ps[i])...));
-            }
-          }, std::tuple{ vecs.data()... });
-        } else {
-          std::apply([&](auto*... ps){
-            for (r_size_t i = 0; i < n; ++i) {
-              p_out[i] = unwrap(fn(i, Ts(ps[i])...));
-            }
-          }, std::tuple{ vecs.data()... });
-        }
-      }
+      }, std::tuple{ vecs.data()... });
+
     } else {
       for (r_size_t i = 0; i < n; ++i) {
         out.set(i, fn(i, vecs.view(i)...));
@@ -90,6 +75,7 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
     }
     return out;
   }
+  #undef CPPALLY_MAP_WITH_DATA
 }
 
 // map m x n vectors to 1 x n output by applying a user function: fn(x0, x1, x2, ..., xn)
