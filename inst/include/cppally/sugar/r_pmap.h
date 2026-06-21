@@ -7,13 +7,12 @@
 namespace cppally {
 
 // map m x n vectors to 1 x n output by applying a user function: fn(r_size_t index, x0, x1, x2, ..., xn)
-template <typename F, RVal... Ts>
-  requires std::invocable<F, r_size_t, Ts...>
-auto pmap_with_index(F fn, const r_vec<Ts>&... vecs) {
+template <RVal... Ts>
+auto pmap_with_index(std::invocable<r_size_t, Ts...> auto fn, const r_vec<Ts>&... vecs) {
 
   constexpr int n_vecs = sizeof...(Ts);
 
-  using out_t = std::invoke_result_t<F, r_size_t, Ts...>;
+  using out_t = std::invoke_result_t<decltype(fn), r_size_t, Ts...>;
   static_assert(RVal<out_t>, "pmap: output type is not storable in r_vec");
 
   if constexpr (n_vecs == 0) {
@@ -37,9 +36,8 @@ auto pmap_with_index(F fn, const r_vec<Ts>&... vecs) {
 }
 
 // map m x n vectors to 1 x n output by applying a user function: fn(x0, x1, x2, ..., xn)
-template <typename F, RVal... Ts>
-  requires std::invocable<F, Ts...>
-auto pmap(F fn, const r_vec<Ts>&... vecs) {
+template <RVal... Ts>
+auto pmap(std::invocable<Ts...> auto fn, const r_vec<Ts>&... vecs) {
   return pmap_with_index([&](r_size_t, Ts... vs){ return fn(vs...); }, vecs...);
 }
 
