@@ -10,7 +10,7 @@ namespace cppally {
 // Engine for the pmap family. fn(r_size_t index, x0, x1, ..., xn) -> output element type.
 // simd applies the loop in an OMP SIMD region; only honoured when every type is RVectorisable,
 // otherwise it falls through to the scalar path.
-template <bool simd = false, int n_threads = 1, typename F, RVal... Ts>
+template <bool simd = false, bool parallel = false, typename F, RVal... Ts>
   requires std::invocable<F, r_size_t, Ts...>
 auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
 
@@ -35,33 +35,54 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
 
     constexpr bool vectorisable_or_parallelisable = (RVectorisable<Ts> && ...) && RVectorisable<out_t>;
 
-    if constexpr (vectorisable_or_parallelisable && (simd || n_threads > 1)) {
+    if constexpr (vectorisable_or_parallelisable && (simd || parallel)) {
 
       auto* p_out = out.data();
 
       if constexpr (simd){
-        std::apply([&](auto*... ps){
-          if constexpr (n_threads > 1){
-            OMP_PARALLEL_FOR_SIMD(n_threads)
-            for (r_size_t i = 0; i < n; ++i) {
-              p_out[i] = unwrap(fn(i, Ts(ps[i])...));
-            }
+        if constexpr (parallel){
+          int n_threads = internal::calc_threads(n);
+          if (n_threads > 1){
+            std::apply([&](auto*... ps){
+              OMP_PARALLEL_FOR_SIMD(n_threads)
+              for (r_size_t i = 0; i < n; ++i) {
+                p_out[i] = unwrap(fn(i, Ts(ps[i])...));
+              }
+            }, std::tuple{ vecs.data()... });
           } else {
+            std::apply([&](auto*... ps){
+              OMP_SIMD
+              for (r_size_t i = 0; i < n; ++i) {
+                p_out[i] = unwrap(fn(i, Ts(ps[i])...));
+              }
+            }, std::tuple{ vecs.data()... });
+          }
+        } else {
+          std::apply([&](auto*... ps){
             OMP_SIMD
             for (r_size_t i = 0; i < n; ++i) {
               p_out[i] = unwrap(fn(i, Ts(ps[i])...));
             }
-          }
-        }, std::tuple{ vecs.data()... });
+          }, std::tuple{ vecs.data()... });
+        }
       } else {
-        std::apply([&](auto*... ps){
-          OMP_PARALLEL(n_threads)
-          for (r_size_t i = 0; i < n; ++i) {
-            p_out[i] = unwrap(fn(i, Ts(ps[i])...));
-          }
-        }, std::tuple{ vecs.data()... });
+        // Must be parallel = true in this branch
+        int n_threads = internal::calc_threads(n);
+        if (n_threads > 1){
+          std::apply([&](auto*... ps){
+            OMP_PARALLEL(n_threads)
+            for (r_size_t i = 0; i < n; ++i) {
+              p_out[i] = unwrap(fn(i, Ts(ps[i])...));
+            }
+          }, std::tuple{ vecs.data()... });
+        } else {
+          std::apply([&](auto*... ps){
+            for (r_size_t i = 0; i < n; ++i) {
+              p_out[i] = unwrap(fn(i, Ts(ps[i])...));
+            }
+          }, std::tuple{ vecs.data()... });
+        }
       }
-
     } else {
       for (r_size_t i = 0; i < n; ++i) {
         out.set(i, fn(i, vecs.view(i)...));
