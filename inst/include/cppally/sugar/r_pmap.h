@@ -14,6 +14,9 @@ template <bool simd = false, bool parallel = false, typename F, RVal... Ts>
   requires std::invocable<F, r_size_t, Ts...>
 auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
 
+  #define CPPALLY_DO_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, Ts(ps[i])...));
+  #define CPPALLY_DO_MAP for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, vecs.view(i)...));
+
   constexpr int n_vecs = sizeof...(Ts);
 
   using out_t = std::invoke_result_t<F, r_size_t, Ts...>;
@@ -22,22 +25,37 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
   if constexpr (n_vecs == 0) {
     return r_vec<out_t>();
   } else {
+    bool recycle = false;
     // Check that all vectors are of the same length
     const std::array<r_size_t, n_vecs> lens{ vecs.length()... };
-    const r_size_t n = lens[0];
+    r_size_t n = lens[0];
     for (r_size_t l : lens) {
-      if (l != n) [[unlikely]] {
-        abort("pmap: all vectors must have equal length");
+      if (l == 0){
+        return r_vec<out_t>();
       }
+      if (n != l){
+        n = std::max(n, l);
+        recycle = true;
+      }      
     }
 
     r_vec<out_t> out(n);
 
+    if (recycle){
+      // Can't use SIMD or multiple threads here. Per-vector counters wrap via recycle_index
+      // (no div), each paired with its own lens[Is].
+      [&]<std::size_t... Is>(std::index_sequence<Is...>){
+        std::array<r_size_t, n_vecs> j{};
+        for (r_size_t i = 0; i < n; (recycle_index(j[Is], lens[Is]), ...), ++i){
+          out.set(i, fn(i, vecs.view(j[Is])...));
+        }
+      }(std::index_sequence_for<Ts...>{});
+      return out;
+    }
+
     constexpr bool vectorisable_or_parallelisable = (RVectorisable<Ts> && ...) && RVectorisable<out_t>;
 
     if constexpr (vectorisable_or_parallelisable && (simd || parallel)) {
-
-      #define CPPALLY_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, Ts(ps[i])...));
 
       auto* p_out = out.data();
 
@@ -48,34 +66,33 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
           if constexpr (simd){
             if (n_threads > 1){
               OMP_PARALLEL_FOR_SIMD(n_threads)
-              CPPALLY_MAP_WITH_DATA
+              CPPALLY_DO_MAP_WITH_DATA
             } else {
               OMP_SIMD
-              CPPALLY_MAP_WITH_DATA
+              CPPALLY_DO_MAP_WITH_DATA
             }
           } else {
             if (n_threads > 1){
               OMP_PARALLEL(n_threads)
-              CPPALLY_MAP_WITH_DATA
+              CPPALLY_DO_MAP_WITH_DATA
             } else {
-              CPPALLY_MAP_WITH_DATA
+              CPPALLY_DO_MAP_WITH_DATA
             }
           }
         } else {
           // !parallel implies simd here (the enclosing branch requires simd || parallel)
           OMP_SIMD
-          CPPALLY_MAP_WITH_DATA
+          CPPALLY_DO_MAP_WITH_DATA
         }
       }, std::tuple{ vecs.data()... });
 
     } else {
-      for (r_size_t i = 0; i < n; ++i) {
-        out.set(i, fn(i, vecs.view(i)...));
-      }
+      CPPALLY_DO_MAP
     }
     return out;
   }
-  #undef CPPALLY_MAP_WITH_DATA
+  #undef CPPALLY_DO_MAP_WITH_DATA
+  #undef CPPALLY_DO_MAP
 }
 
 // map m x n vectors to 1 x n output by applying a user function: fn(x0, x1, x2, ..., xn)
