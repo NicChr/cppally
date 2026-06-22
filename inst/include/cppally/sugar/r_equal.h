@@ -4,6 +4,7 @@
 
 #include <cppally/r_vec_ops.h>
 #include <cppally/r_visit.h>
+#include <cppally/r_pmap.h>
 #include <cppally/r_length.h>
 #include <cppally/r_identical.h>
 #include <cppally/r_df_methods.h>
