@@ -56,5 +56,6 @@
 #include <cppally/sugar/r_seq.h>
 #include <cppally/sugar/r_sexp_methods.h>
 #include <cppally/sugar/r_equal.h>
+#include <cppally/sugar/r_list_pmap.h>
 
 #endif
