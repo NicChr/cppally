@@ -136,7 +136,7 @@ if constexpr (RAtomicVector<lhs_t> && RAtomicVector<rhs_t>){                    
     }                                                                                                                  \
     return out;                                                                                                        \
   } else {                                                                                                             \
-    return pmap_impl</*simd=*/ true, /*parallel=*/ true>([](r_size_t, auto a, auto b) { return a OP b; }, lhs, rhs);   \
+    return pmap_parallel_simd([](auto a, auto b) { return a OP b; }, lhs, rhs);                                        \
   }                                                                                                                    \
   /*Cases where one is a scalar*/                                                                                      \
 } else if constexpr (RAtomicVector<lhs_t>) {                                                                           \

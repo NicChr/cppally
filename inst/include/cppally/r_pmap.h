@@ -109,6 +109,24 @@ auto pmap_with_index(F fn, const r_vec<Ts>&... vecs) {
   return pmap_impl<false>(fn, vecs...);
 }
 
+template <typename F, RVal... Ts>
+  requires std::invocable<F, Ts...>
+auto pmap_simd(F fn, const r_vec<Ts>&... vecs) {
+  return pmap_impl<true>([&](r_size_t, Ts... vs){ return fn(vs...); }, vecs...);
+}
+
+template <typename F, RVal... Ts>
+  requires std::invocable<F, Ts...>
+auto pmap_parallel(F fn, const r_vec<Ts>&... vecs) {
+  return pmap_impl<false, true>([&](r_size_t, Ts... vs){ return fn(vs...); }, vecs...);
+}
+
+template <typename F, RVal... Ts>
+  requires std::invocable<F, Ts...>
+auto pmap_parallel_simd(F fn, const r_vec<Ts>&... vecs) {
+  return pmap_impl<true, true>([&](r_size_t, Ts... vs){ return fn(vs...); }, vecs...);
+}
+
 }
 
 #endif
