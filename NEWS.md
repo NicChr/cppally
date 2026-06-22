@@ -67,22 +67,54 @@ is possible so long as the element coercions are supported by `cppally::as`
 
 ### Improvements and New Features
 
-* New alias of `r_vec`, `r_vector`
+#### Named vector hash lookups
 
 * For named vectors, lookup by name has been dramatically improved in C++ 
-by introducing a hashing approach. On second lookup, a hash map of names 
-is created and cached, making subsequent lookups much faster. This also 
-applies to factor levels.
+by introducing a hashing approach. It works in the following way: the first time 
+a lookup is requested, a linear scan is done to find the named value. The second time
+triggers the hash map of name-value pairs to be built and cached with the vector.
+That second lookup is completed using the cached hash map and all subsequent 
+lookups also use the hash map. The rationale for hashing on second lookup 
+is covered in the 'Automatic Names Hashing' vignette.
+
+A similar hashing approach is also used for `r_factors`, making conversions 
+of strings to and from factor codes fast and analytically viable.
+
+#### Copy-on-modify
 
 * cppally now supports copy-on-modify as an opt-in feature. This feature 
 prevents accidentally overwriting data between shared objects, just like R. 
 To opt-in, run `cppally::use_copy_on_modify()` or set the `copy_on_modify` 
-to `TRUE` in `cpp_source()`. The major downside of this feature is 
-significantly slower element setting as every set must verify the object is 
+to `TRUE` in `cpp_source()`. 
+
+The major downside of this feature is significantly slower element setting 
+as every set must verify the object is 
 not referenced by another object. This check is single-threaded and thus 
 nearly all parallel cppally code is disabled as a safety precaution. If using 
 copy-on-modify, it is recommended to avoid writing cppally registered R 
 functions that rely on in-place modification.
+
+#### pmap
+
+* Inspired by `purrr::pmap` and `base::mapply`, `cppally::pmap` is a 
+C++ variadic function that supports applying custom C++ lambdas element-wise 
+across multiple vectors. 
+
+With `pmap()` it is trivial to calculate parallel statistics like max, min, etc.
+Example of C++ version of `base::pmax()` applied to two vectors
+
+```cpp
+template <RVector T, RVector U>
+  requires requires(T::data_type a, U::data_type b) { max(a, b); }
+[[cppally::register]]
+auto pmax2(T x, U y){
+    return pmap([](auto a, auto b){ return max(a, b); }, x, y);
+}
+```
+
+#### Other improvements
+
+* New alias of `r_vec`, `r_vector`
 
 * Named-vector subsetting is now supported
 
