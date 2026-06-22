@@ -3,6 +3,7 @@
 
 #include <cppally/r_utils.h>
 #include <cppally/r_vec.h>
+#include <cppally/r_pmap.h>
 
 // Vectorised binary operators: +,-,*,/,&,|,+=,-=,*=,/=,==,<=,<,>=,>
 // Vectorised unary operators: !,-,
@@ -134,33 +135,8 @@ if constexpr (RAtomicVector<lhs_t> && RAtomicVector<rhs_t>){                    
       }                                                                                                                \
     }                                                                                                                  \
     return out;                                                                                                        \
-  } else if (n1 == n2){                                                                                                \
-    res_t out(n);                                                                                                      \
-    if constexpr (RObject<typename std::remove_cvref_t<decltype(out)>::data_type>){                                    \
-      for (r_size_t i = 0; i < n; ++i){                                                                                \
-        out.set(i, lhs.view(i) OP rhs.view(i));                                                                        \
-      }                                                                                                                \
-    } else if (n_threads > 1){                                                                                         \
-      OMP_PARALLEL_FOR_SIMD(n_threads)                                                                                 \
-      for (r_size_t i = 0; i < n; ++i){                                                                                \
-        out.set(i, lhs.view(i) OP rhs.view(i));                                                                        \
-      }                                                                                                                \
-    } else {                                                                                                           \
-      OMP_SIMD                                                                                                         \
-      for (r_size_t i = 0; i < n; ++i){                                                                                \
-        out.set(i, lhs.view(i) OP rhs.view(i));                                                                        \
-      }                                                                                                                \
-    }                                                                                                                  \
-    return out;                                                                                                        \
   } else {                                                                                                             \
-    res_t out(n);                                                                                                      \
-    for (r_size_t i = 0, lhsi = 0, rhsi = 0; i < n;                                                                    \
-    recycle_index(lhsi, n1),                                                                                           \
-    recycle_index(rhsi, n2),                                                                                           \
-    ++i){                                                                                                              \
-      out.set(i, lhs.view(lhsi) OP rhs.view(rhsi));                                                                    \
-    }                                                                                                                  \
-    return out;                                                                                                        \
+    return pmap_impl</*simd=*/ true, /*parallel=*/ true>([](r_size_t, auto a, auto b) { return a OP b; }, lhs, rhs);   \
   }                                                                                                                    \
   /*Cases where one is a scalar*/                                                                                      \
 } else if constexpr (RAtomicVector<lhs_t>) {                                                                           \
