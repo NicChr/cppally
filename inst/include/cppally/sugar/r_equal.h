@@ -14,23 +14,7 @@ namespace cppally {
 // Equality operator for lists
 // list-comparison becomes element-wise `identical()` comparison
 inline r_vec<r_lgl> operator==(const r_vec<r_sexp>& lhs, const r_vec<r_sexp>& rhs){
-  r_size_t n1 = lhs.length();
-  r_size_t n2 = rhs.length();
-
-  if (n1 == 0 || n2 == 0){
-    return r_vec<r_lgl>();
-  }
-
-  r_size_t n = std::max(n1, n2);
-  r_vec<r_lgl> out(n);
-  for (r_size_t i = 0, li = 0, ri = 0; 
-    i < n; 
-    recycle_index(li, n1), 
-    recycle_index(ri, n2), 
-    ++i){
-    out.set(i, r_lgl(identical(lhs.view(li), rhs.view(ri))));
-  }
-  return out;
+  return pmap([](auto a, auto b){ return r_lgl(identical(a, b)); }, lhs, rhs);
 }
 
 // r_factors vectorised operators
