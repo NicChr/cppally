@@ -10,26 +10,24 @@
 namespace cppally {
 
 // Like cppally::pmap but works on a list of vectors instead of variadic inputs
-// IMPORTANT: Vectors are all coerced to a common type
-// The core issue is that the vectors must be visited (via `r_sexp_view`) 
+// IMPORTANT: the inputs are coerced to a common type; the result's type is the
+// caller-supplied `ret_t` (fn's return is coerced into it via r_vec::set).
+// The core issue is that the vectors must be visited (via `r_sexp_view`)
 // which incurs a combinatorial instantiation cost of 15^k instantiations for k vectors
-// After 6 combinations compile-time becomes practically impossible (15^6 = 11390625 instantiations)
+// After 6 vectors compile-time becomes practically impossible (15^6 = 11390625 instantiations)
 // To get around this C++ limitation, we find the common type and coerce all vectors to that type before applying the function
-template <typename F>
-r_sexp list_pmap(const r_vec<r_sexp>& vectors, F fn) {
-  const r_size_t k = vectors.length();
-  if (k == 0) return r_null;
+template <RVector ret_t = r_vec<r_sexp>, typename F>
+ret_t list_pmap(const r_vec<r_sexp>& vectors, F fn) {
+  r_size_t k = vectors.length();
+  if (k == 0) return ret_t();
 
-  return r_sexp_view(common_ptype(vectors), [&]<RVector T>(const T&) -> r_sexp {
+  return r_sexp_view(common_ptype(vectors), [&]<RVector T>(const T&) -> ret_t {
     using elem_t = typename T::data_type;
 
     // fn is handed a mutable std::span<elem_t>, so callers never need to write const. The
     // lambda is instantiated for EVERY RVector T, so only build the body for element types
     // fn accepts; the rest abort at runtime (never reached, since the common type is fixed).
     if constexpr (std::invocable<F, std::span<elem_t>>) {
-      using out_t = std::invoke_result_t<F, std::span<elem_t>>;
-      static_assert(RVal<out_t>, "list_pmap: fn's return type is not storable in r_vec");
-
       // Coerce each list element to the common type, recording lengths.
       std::vector<T>        coerced;  coerced.reserve(k);
       std::vector<r_size_t> lens;     lens.reserve(k);
@@ -45,10 +43,10 @@ r_sexp list_pmap(const r_vec<r_sexp>& vectors, F fn) {
         any_zero |= (len == 0);
       }
       if (any_zero){
-        return as<r_sexp>(r_vec<out_t>());
+        return ret_t();
       }
 
-      r_vec<out_t> out(n);
+      ret_t out(n);
       std::vector<elem_t> row(k);
 
       if (recycle){
@@ -66,7 +64,7 @@ r_sexp list_pmap(const r_vec<r_sexp>& vectors, F fn) {
         }
       }
 
-      return as<r_sexp>(out);
+      return out;
     } else {
       abort("list_pmap: fn does not accept vectors of the list's common type (%s)",
             internal::type_str<T>());
