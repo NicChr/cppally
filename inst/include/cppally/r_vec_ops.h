@@ -3,6 +3,7 @@
 
 #include <cppally/r_utils.h>
 #include <cppally/r_vec.h>
+#include <cppally/r_pmap.h>
 
 // Vectorised binary operators: +,-,*,/,&,|,+=,-=,*=,/=,==,<=,<,>=,>
 // Vectorised unary operators: !,-,
@@ -134,33 +135,8 @@ if constexpr (RAtomicVector<lhs_t> && RAtomicVector<rhs_t>){                    
       }                                                                                                                \
     }                                                                                                                  \
     return out;                                                                                                        \
-  } else if (n1 == n2){                                                                                                \
-    res_t out(n);                                                                                                      \
-    if constexpr (RObject<typename std::remove_cvref_t<decltype(out)>::data_type>){                                    \
-      for (r_size_t i = 0; i < n; ++i){                                                                                \
-        out.set(i, lhs.view(i) OP rhs.view(i));                                                                        \
-      }                                                                                                                \
-    } else if (n_threads > 1){                                                                                         \
-      OMP_PARALLEL_FOR_SIMD(n_threads)                                                                                 \
-      for (r_size_t i = 0; i < n; ++i){                                                                                \
-        out.set(i, lhs.view(i) OP rhs.view(i));                                                                        \
-      }                                                                                                                \
-    } else {                                                                                                           \
-      OMP_SIMD                                                                                                         \
-      for (r_size_t i = 0; i < n; ++i){                                                                                \
-        out.set(i, lhs.view(i) OP rhs.view(i));                                                                        \
-      }                                                                                                                \
-    }                                                                                                                  \
-    return out;                                                                                                        \
   } else {                                                                                                             \
-    res_t out(n);                                                                                                      \
-    for (r_size_t i = 0, lhsi = 0, rhsi = 0; i < n;                                                                    \
-    recycle_index(lhsi, n1),                                                                                           \
-    recycle_index(rhsi, n2),                                                                                           \
-    ++i){                                                                                                              \
-      out.set(i, lhs.view(lhsi) OP rhs.view(rhsi));                                                                    \
-    }                                                                                                                  \
-    return out;                                                                                                        \
+    return pmap_parallel_simd([](auto a, auto b) { return a OP b; }, lhs, rhs);                                        \
   }                                                                                                                    \
   /*Cases where one is a scalar*/                                                                                      \
 } else if constexpr (RAtomicVector<lhs_t>) {                                                                           \
@@ -465,16 +441,12 @@ inline r_vec<r_lgl> operator!(T&& x){
         x.apply(
           [](r_lgl v){ return !v; },
           /*simd = */ true, 
-          /*n_threads = */ internal::calc_threads(x.length())
+          /*parallel = */ true
         );
         return std::move(x);
     }
   }
-  return x.map(
-    [](r_lgl v){ return !v; },
-    /*simd = */ true, 
-    /*n_threads = */ internal::calc_threads(x.length())
-  );
+  return pmap_parallel_simd([](r_lgl v){ return !v; }, x);
 }
 
 template <internal::RMathVector T>
@@ -486,16 +458,12 @@ inline std::remove_cvref_t<T> operator-(T&& x){
       x.apply(
       /*fn = */ [](auto v){ return -v; }, 
       /*simd = */ true, 
-      /*n_threads = */ internal::calc_threads(x.length())
+      /*parallel = */ true
       );
       return std::move(x);
     }
   }
-  return x.map(
-    /*fn = */ [](data_t v){ return -v; }, 
-    /*simd = */ true, 
-    /*n_threads = */ internal::calc_threads(x.length())
-  );
+  return pmap_parallel_simd([](data_t v){ return -v; }, x);
 }
 
 namespace internal {

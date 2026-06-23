@@ -6,7 +6,7 @@ using namespace cppally;
 template <RVector T>
 [[cppally::register]]
 r_vec<r_lgl> vec_is_na(const T& x){
-    return x.map([](auto v) -> r_lgl { return r_lgl(is_na(v)); });
+    return pmap([](auto v) -> r_lgl { return r_lgl(is_na(v)); }, x);
 }
 
 template <RVector T>

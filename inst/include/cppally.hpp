@@ -19,6 +19,7 @@
 #include <cppally/r_vec_utils.h>
 #include <cppally/r_coerce_scalars.h>
 #include <cppally/r_vec.h>
+#include <cppally/r_pmap.h>
 #include <cppally/r_vec_ops.h>
 #include <cppally/r_factor.h>
 #include <cppally/r_attrs.h>
@@ -55,5 +56,6 @@
 #include <cppally/sugar/r_seq.h>
 #include <cppally/sugar/r_sexp_methods.h>
 #include <cppally/sugar/r_equal.h>
+#include <cppally/sugar/r_list_pmap.h>
 
 #endif

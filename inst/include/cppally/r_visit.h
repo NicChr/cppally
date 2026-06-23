@@ -273,6 +273,29 @@ inline bool is_visitable(const r_sexp& x){
             }                                                                                           \
         }()
 
+// Returns a length-0 prototype r_sexp whose type is the common type
+inline r_sexp common_ptype(const r_vec<r_sexp>& vecs) {
+    r_size_t k = vecs.length();
+    if (k == 0){
+        return r_null;
+    }
+
+    // Prototype of the first r_sexp
+    r_sexp out = r_sexp_view(vecs.view(0), []<RComposite A>(const A&) -> r_sexp {
+        return as<r_sexp>(A());
+    });
+
+    // Roll the common type pairwise
+    for (r_size_t j = 1; j < k; ++j) {
+        out = r_sexp_view(out, [&]<RComposite A>(const A&) -> r_sexp {
+            return r_sexp_view(vecs.view(j), [&]<RComposite B>(const B&) -> r_sexp {
+                return as<r_sexp>(common_r_t<A, B>());
+            });
+        });
+    }
+    return out;
+}
+
 }
 
 #endif

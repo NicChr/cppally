@@ -10,6 +10,7 @@
 #include <cppally/r_coerce_scalars.h>
 #include <cppally/r_hash_names.h>
 #include <algorithm>
+#include <utility>
 
 namespace cppally {
 
@@ -34,7 +35,23 @@ concept RSubscript = any<T, r_lgl, r_int, r_int64, r_str_view, r_str>;
 
 template <typename T>
 concept RNumericSubscript = any<T, r_int, r_int64>;
+
+// break signal for short-circuiting folds (see `r_vec::reduce_while`).
+// Continuing is the default: returning a bare accumulator value keeps folding
+// (implicit conversion below). `done(x)` stops the fold and makes x the result.
+template <typename Acc>
+struct control_flow {
+  using value_type = Acc;
+  Acc value;
+  bool stop = false;
+  control_flow(Acc v) : value(std::move(v)) {}              // bare value = continue
+  control_flow(Acc v, bool s) : value(std::move(v)), stop(s) {}
+};
+
 }
+
+template <typename Acc>
+internal::control_flow<Acc> done(Acc v){ return { std::move(v), true }; }
 
 template<RVal T>
 struct r_vec {
@@ -456,7 +473,7 @@ struct r_vec {
 
   // Core engine: fn(index, value) -> set onto target[i]. All map/apply variants use this
   template <RVal U>
-  void map_impl(r_vec<U>& target, std::invocable<r_size_t, T> auto fn, bool simd, int n_threads) const {
+  void map_impl(r_vec<U>& target, std::invocable<r_size_t, T> auto fn, bool simd, bool parallel) const {
     r_size_t n = length();
     if (target.length() != n) [[unlikely]] {
       abort("map: target length must match source length");
@@ -464,8 +481,10 @@ struct r_vec {
 
     if constexpr (!RVectorisable<T> || !RVectorisable<U>){
       simd = false;
-      n_threads = 1;
+      parallel = false;
     }
+
+    int n_threads = parallel ? internal::calc_threads(n) : 1;
      
     if (simd){
 
@@ -499,42 +518,65 @@ struct r_vec {
 
   public:
 
-  // Map each element to a new r_vec: fn(value) -> output element type (deduced from fn's return)
-  // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
-  // n_threads - Number of threads to use via OMP_PARALLEL or OMP_PARALLEL_FOR_SIMD. Only applicable for RVectorisable types
-  template <std::invocable<T> F>
-  auto map(F fn, bool simd = false, int n_threads = 1) const {
-    using out_t = std::invoke_result_t<F, T>;
-    static_assert(RVal<out_t>, "map: output type is not storable in r_vec");
-    r_vec<out_t> out(length());
-    map_impl(out, [&](r_size_t, auto v){ return fn(v); }, simd, n_threads);
-    return out;
-  }
-
-  // Map each element to a new r_vec, with access to the index: fn(index, value) -> output element type
-  // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
-  // n_threads - Number of threads to use via OMP_PARALLEL or OMP_PARALLEL_FOR_SIMD. Only applicable for RVectorisable types
-  template <std::invocable<r_size_t, T> F>
-  auto map_with_index(F fn, bool simd = false, int n_threads = 1) const {
-    using out_t = std::invoke_result_t<F, r_size_t, T>;
-    static_assert(RVal<out_t>, "map_with_index: output type is not storable in r_vec");
-    r_vec<out_t> out(length());
-    map_impl(out, fn, simd, n_threads);
-    return out;
-  }
-
   // Apply a function to each element, modifying *this in-place: fn(value) -> T
   // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
-  // n_threads - Number of threads to use via OMP_PARALLEL or OMP_PARALLEL_FOR_SIMD. Only applicable for RVectorisable types
-  void apply(std::invocable<T> auto fn, bool simd = false, int n_threads = 1) {
-    map_impl(*this, [&](r_size_t, auto v){ return fn(v); }, simd, n_threads);
+  // parallel - Should loop be exected using multiple threads? Only applicable for RVectorisable types. Threads are set via `set_threads()`
+  void apply(std::invocable<T> auto fn, bool simd = false, bool parallel = false) {
+    map_impl(*this, [&](r_size_t, auto v){ return fn(v); }, simd, parallel);
   }
 
   // Apply a function to each element with access to the index, modifying *this in-place: fn(index, value) -> T
   // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
-  // n_threads - Number of threads to use via OMP_PARALLEL or OMP_PARALLEL_FOR_SIMD. Only applicable for RVectorisable types
-  void apply_with_index(std::invocable<r_size_t, T> auto fn, bool simd = false, int n_threads = 1) {
-    map_impl(*this, fn, simd, n_threads);
+  // parallel - Should loop be exected using multiple threads? Only applicable for RVectorisable types. Threads are set via `set_threads()`
+  void apply_with_index(std::invocable<r_size_t, T> auto fn, bool simd = false, bool parallel = false) {
+    map_impl(*this, fn, simd, parallel);
+  }
+
+  // Left fold with an explicit seed: acc = fn(acc, elem), folding every element
+  // into `init`. The accumulator type is the combiner's *return* type (à la
+  // std::ranges::fold_left), not `init`'s type, so the combiner's result is never
+  // forced back into `init`'s (possibly narrower) type. `init` is coerced via `as`
+  // into the accumulator type to seed the fold, so it may differ from both the
+  // element type and `init`'s type. An empty vector returns the seed unchanged.
+  template <typename Acc, typename F>
+  requires std::invocable<F, Acc, T>
+  auto reduce(F fn, Acc init, r_size_t from = 0) const {
+    using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>;
+    r_size_t n = length();
+    acc_t acc = as<acc_t>(init);
+    for (r_size_t i = from; i < n; ++i){
+      acc = fn(acc, view(i));
+    }
+    return acc;
+  }
+
+  // Seedless left fold: the first element seeds the accumulator, and the vector
+  // must be non-empty. The result type follows the combiner's return type.
+  template <typename F>
+  requires std::invocable<F, T, T>
+  auto reduce(F fn) const {
+    if (length() == 0) [[unlikely]] {
+      abort("`reduce`: cannot reduce an empty vector without an `init` seed");
+    }
+    return reduce(fn, /*init = */ view(0), /*from = */ 1);
+  }
+
+  // Short-circuiting left fold (cf. itertools fold_while): `fn(acc, elem)` returns
+  // a control_flow<Acc> — return a bare accumulator to keep folding, `done(x)` to
+  // stop early. The result type follows the combiner's accumulator (the type wrapped
+  // by its control_flow return), not `init`'s type; `init` is converted into it.
+  template <typename Acc, typename F>
+  requires std::invocable<F, Acc, T>
+  auto reduce_while(F fn, Acc init) const {
+    using acc_t = typename std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>::value_type;
+    r_size_t n = length();
+    acc_t acc = as<acc_t>(init);
+    for (r_size_t i = 0; i < n; ++i){
+      auto step = fn(acc, view(i));
+      acc = std::move(step.value);
+      if (step.stop) break;
+    }
+    return acc;
   }
 
   bool any_val(const T& val) const {
