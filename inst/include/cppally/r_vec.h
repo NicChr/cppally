@@ -232,23 +232,6 @@ struct r_vec {
   }
   #endif
 
-  // Iterator support - begin + end
-  ptr_t begin() {
-      return data();
-  }
-
-  ptr_t end() {
-      return data() + length();
-  }
-
-  ptr_t begin() const {
-      return data();
-  }
-
-  ptr_t end() const {
-      return data() + length();
-  }
-
   r_size_t length() const noexcept {
     return Rf_xlength(value);
   }
@@ -763,7 +746,7 @@ struct r_vec {
       r_size_t n_to_copy = std::min(n, vec_size);
 
       if constexpr (RVectorisable<T>){
-        std::copy_n(this->begin(), n_to_copy, resized_vec.begin());
+        std::copy_n(this->data(), n_to_copy, resized_vec.data());
       } else {
         for (r_size_t i = 0; i < n_to_copy; ++i){
           resized_vec.set(i, view(i)); 

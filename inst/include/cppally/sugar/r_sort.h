@@ -29,14 +29,14 @@ r_vec<r_int> cpp_order(const T& x) {
     auto *p_x = x.data();
 
     if constexpr (RNumericType<data_t>){
-        std::sort(p.begin(), p.end(), [&](int i, int j) {
+        std::sort(p.data(), p.data() + n, [&](int i, int j) {
             if (is_na(x.view(i))) return false;
             if (is_na(x.view(j))) return true;
             return p_x[i] < p_x[j];
         });
     } else {
         // Below works on strings
-        std::sort(p.begin(), p.end(), [&](int i, int j) {
+        std::sort(p.data(), p.data() + n, [&](int i, int j) {
             auto res = x.view(i) < x.view(j);
             if (is_na(res)){
                 if (is_na(x.view(i))){
@@ -61,14 +61,14 @@ r_vec<r_int> cpp_stable_order(const T& x) {
     auto *p_x = x.data();
 
     if constexpr (RNumericType<data_t>){
-        std::stable_sort(p.begin(), p.end(), [&](int i, int j) {
+        std::stable_sort(p.data(), p.data() + n, [&](int i, int j) {
             if (is_na(x.view(i))) return false;
             if (is_na(x.view(j))) return true;
             return p_x[i] < p_x[j];
         });
     } else {
         // Below works on strings
-        std::stable_sort(p.begin(), p.end(), [&](int i, int j) {
+        std::stable_sort(p.data(), p.data() + n, [&](int i, int j) {
             auto res = x.view(i) < x.view(j);
             if (is_na(res)){
                 if (is_na(x.view(i))){

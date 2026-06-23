@@ -79,8 +79,6 @@ struct r_factors {
   FORWARD_METHOD(is_exclusive)
   FORWARD_MUTATING_METHOD(maybe_ensure_exclusive)
   FORWARD_METHOD(data)
-  FORWARD_METHOD(begin)
-  FORWARD_METHOD(end)
   FORWARD_METHOD(address)
   FORWARD_METHOD(names)
   FORWARD_MUTATING_METHOD(set_names)
