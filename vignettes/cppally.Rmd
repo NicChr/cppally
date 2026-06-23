@@ -918,11 +918,9 @@ There is a rich suite of math functions. Some examples include `min()`, `max()`,
 Some statistical summary functions that are all very highly optimised for speed
 
 - `sum()` - Sum of values
+- `mean()` - Average of values
 - `range()` - Min and max range of values
-- `abs()` - Computes absolute values (there is also a scalar version)
-- `var()` and `sd()` - Variance and standard deviation
-- `gcd()` - Greatest common divisor
-- `lcm()` - Lowest common multiple
+- `var()` - Variance
 
 ## Annex
 
