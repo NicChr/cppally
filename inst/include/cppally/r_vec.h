@@ -10,6 +10,7 @@
 #include <cppally/r_coerce_scalars.h>
 #include <cppally/r_hash_names.h>
 #include <algorithm>
+#include <utility>
 
 namespace cppally {
 
@@ -34,7 +35,22 @@ concept RSubscript = any<T, r_lgl, r_int, r_int64, r_str_view, r_str>;
 
 template <typename T>
 concept RNumericSubscript = any<T, r_int, r_int64>;
+
+// break signal for short-circuiting folds (see `r_vec::reduce_while`).
+// Continuing is the default: returning a bare accumulator value keeps folding
+// (implicit conversion below). `done(x)` stops the fold and makes x the result.
+template <typename Acc>
+struct control_flow {
+  Acc value;
+  bool stop = false;
+  control_flow(Acc v) : value(std::move(v)) {}              // bare value = continue
+  control_flow(Acc v, bool s) : value(std::move(v)), stop(s) {}
+};
+
 }
+
+template <typename Acc>
+internal::control_flow<Acc> done(Acc v){ return { std::move(v), true }; }
 
 template<RVal T>
 struct r_vec {
@@ -513,6 +529,49 @@ struct r_vec {
   // parallel - Should loop be exected using multiple threads? Only applicable for RVectorisable types. Threads are set via `set_threads()`
   void apply_with_index(std::invocable<r_size_t, T> auto fn, bool simd = false, bool parallel = false) {
     map_impl(*this, fn, simd, parallel);
+  }
+
+  // Left fold with an explicit seed: acc = fn(acc, elem), folding every element
+  // into `init`. The accumulator type `Acc` is deduced from `init`, so it may
+  // differ from the vector's element type (e.g. fold elements into a running r_str).
+  // An empty vector returns `init` unchanged.
+  template <typename Acc, typename F>
+  requires std::invocable<F, Acc, T>
+  Acc reduce(F fn, Acc init, r_size_t from = 0) const {
+    r_size_t n = length();
+    Acc acc = init;
+    for (r_size_t i = from; i < n; ++i){
+      acc = fn(acc, view(i));
+    }
+    return acc;
+  }
+
+  // Seedless left fold: the first element seeds the accumulator, so the combiner
+  // must be closed over the element type (fn(T, T) -> T) and the vector must be
+  // non-empty.
+  template <typename F>
+  requires std::invocable<F, T, T>
+  T reduce(F fn) const {
+    if (length() == 0) [[unlikely]] {
+      abort("`reduce`: cannot reduce an empty vector without an `init` seed");
+    }
+    return reduce(fn, /*init = */ view(0), /*from = */ 1);
+  }
+
+  // Short-circuiting left fold (cf. itertools fold_while): `fn(acc, elem)` returns
+  // a control_flow<Acc> — return a bare accumulator to keep folding, `done(x)` to
+  // stop early. The result is the accumulator carried by the final step.
+  template <typename Acc, typename F>
+  requires std::invocable<F, Acc, T>
+  Acc reduce_while(F fn, Acc init) const {
+    r_size_t n = length();
+    Acc acc = init;
+    for (r_size_t i = 0; i < n; ++i){
+      internal::control_flow<Acc> step = fn(acc, view(i));
+      acc = std::move(step.value);
+      if (step.stop) break;
+    }
+    return acc;
   }
 
   bool any_val(const T& val) const {
