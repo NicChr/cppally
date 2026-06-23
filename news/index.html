@@ -77,15 +77,85 @@
 </div>
 <div class="section level4">
 <h4 id="improvements-and-new-features-development-version">Improvements and New Features<a class="anchor" aria-label="anchor" href="#improvements-and-new-features-development-version"></a></h4>
+<div class="section level5">
+<h5 id="named-vector-hash-lookups-development-version">Named vector hash lookups<a class="anchor" aria-label="anchor" href="#named-vector-hash-lookups-development-version"></a></h5>
+<p>For named vectors, lookup by name has been dramatically improved in C++ by introducing a hashing approach. It works in the following way: the first time a lookup is requested, a linear scan is done to find the named value. The second time triggers the hash map of name-value pairs to be built and cached with the vector. That second lookup is completed using the cached hash map and all subsequent lookups also use the hash map. The rationale for hashing on second lookup is covered in the ‘Automatic Names Hashing’ vignette.</p>
+<p>A similar hashing approach is also used for <code>r_factors</code>, making conversions of strings to and from factor codes fast and analytically viable.</p>
+</div>
+<div class="section level5">
+<h5 id="copy-on-modify-development-version">Copy-on-modify<a class="anchor" aria-label="anchor" href="#copy-on-modify-development-version"></a></h5>
+<p>cppally now supports copy-on-modify as an opt-in feature. This feature prevents accidentally overwriting data between shared objects, just like R. To opt-in, run <code><a href="../reference/use_copy_on_modify.html">cppally::use_copy_on_modify()</a></code> or set the <code>copy_on_modify</code> to <code>TRUE</code> in <code><a href="../reference/cpp_source.html">cpp_source()</a></code>.</p>
+<p>The major downside of this feature is significantly slower element setting as every set must verify the object is not referenced by another object. This check is single-threaded and thus nearly all parallel cppally code is disabled as a safety precaution. If using copy-on-modify, it is recommended to avoid writing cppally registered R functions that rely on in-place modification.</p>
+</div>
+<div class="section level5">
+<h5 id="pmap-development-version">pmap<a class="anchor" aria-label="anchor" href="#pmap-development-version"></a></h5>
+<p>Inspired by <code><a href="https://purrr.tidyverse.org/reference/pmap.html" class="external-link">purrr::pmap</a></code> and <code><a href="https://rdrr.io/r/base/mapply.html" class="external-link">base::mapply</a></code>, <code>cppally::pmap</code> is a C++ variadic function that supports applying custom C++ lambda functions across corresponding elements of multiple vectors.</p>
+<p>With <code>pmap()</code> it is trivial to calculate parallel statistics like max, min, etc. Example of C++ version of <code><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">base::pmax()</a></code> applied to two vectors</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RVector T<span class="op">,</span> RVector U<span class="op">&gt;</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="kw">requires</span> <span class="kw">requires</span><span class="op">(</span><span class="kw">typename</span> T<span class="op">::</span><span class="dt">data_type</span> a<span class="op">,</span> <span class="kw">typename</span> U<span class="op">::</span><span class="dt">data_type</span> b<span class="op">)</span> <span class="op">{</span> max<span class="op">(</span>a<span class="op">,</span> b<span class="op">);</span> <span class="op">}</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="kw">auto</span> cpp_pmax2<span class="op">(</span>T x<span class="op">,</span> U y<span class="op">){</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="cf">return</span> pmap<span class="op">([](</span><span class="kw">auto</span> a<span class="op">,</span> <span class="kw">auto</span> b<span class="op">){</span> <span class="cf">return</span> max<span class="op">(</span>a<span class="op">,</span> b<span class="op">);</span> <span class="op">},</span> x<span class="op">,</span> y<span class="op">);</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>While <code>pmap()</code> is a powerful iterator, as with all variadic functions, the number of inputs must be known at compile-time, therefore we can’t write an exact <code><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">base::pmax()</a></code> equivalent using <code>pmap()</code> because the number of vectors is only known at runtime.</p>
+<p><code>list_pmap()</code> doesn’t have this limitation and can iterate over n vectors where n is known at runtime. This comes with other trade-offs which are detailed below.</p>
+<table class="table"><colgroup><col width="41%"><col width="29%"><col width="29%"></colgroup><thead><tr><th></th>
+<th>pmap</th>
+<th>list_pmap</th>
+</tr></thead><tbody><tr><td>Inputs</td>
+<td>Function in arg-1, variadic-supplied vectors thereafter</td>
+<td>List of vectors in arg-1, function in arg-2</td>
+</tr><tr><td>Return type deduced at compile-time</td>
+<td>Yes</td>
+<td>No - defaults to <code>r_sexp</code> but can also be specified</td>
+</tr><tr><td>SIMD-enabled loops</td>
+<td>Yes</td>
+<td>No</td>
+</tr><tr><td>Parallel loops (&gt;1 thread)</td>
+<td>Yes</td>
+<td>No</td>
+</tr><tr><td>Speed</td>
+<td>Very fast</td>
+<td>Fast with some overhead</td>
+</tr><tr><td>Lambda requirements</td>
+<td>Scalar inputs expressed explicitly</td>
+<td>Container whose size is known at runtime like <code>std::span</code> (recommended) or <code>std::vector</code>
+</td>
+</tr><tr><td>Accepted R objects</td>
+<td>Vectors only</td>
+<td>Vectors only</td>
+</tr></tbody></table><p>The biggest and perhaps most surprising limitation of <code>list_pmap</code> is that it coerces all its vectors to a common type. Visiting all <code>r_sexp</code> objects simultaneously (via <code>r_sexp_view</code>) would incur a combinatorial explosion of instantiation size, roughly 15^k for k vectors, therefore this is practically impossible for any reasonably-sized list.</p>
+<p>Example of C++ version of <code><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">base::pmax</a></code></p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>SEXP list_pmax<span class="op">(</span>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> vectors<span class="op">){</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="cf">return</span> list_pmap<span class="op">&lt;</span>r_vec<span class="op">&lt;</span>r_dbl<span class="op">&gt;&gt;(</span>vectors<span class="op">,</span> <span class="op">[]&lt;</span>RMathType elem<span class="op">&gt;(</span><span class="bu">std::</span>span<span class="op">&lt;</span>elem<span class="op">&gt;</span> r<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>    elem m <span class="op">=</span> r<span class="op">[</span><span class="dv">0</span><span class="op">];</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>    <span class="cf">for</span> <span class="op">(</span><span class="dt">size_t</span> i <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> i <span class="op">&lt;</span> r<span class="op">.</span>size<span class="op">();</span> <span class="op">++</span>i<span class="op">){</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>      m <span class="op">=</span> max<span class="op">(</span>m<span class="op">,</span> r<span class="op">[</span>i<span class="op">]);</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>    <span class="cf">return</span> m<span class="op">;</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  <span class="op">});</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cpp_pmax</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">{</span></span>
+<span>  <span class="fu">list_pmax</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">cpp_pmax2</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">4</span>), <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)) <span class="co"># Parallel max across 2 vectors</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="dv">1</span> <span class="dv">2</span> <span class="dv">4</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">cpp_pmax</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">4</span>), <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>), <span class="fu">c</span>(<span class="sc">-</span><span class="dv">5</span>, <span class="dv">0</span>, <span class="dv">5</span>)) <span class="co"># Parallel max across k vectors</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="dv">1</span> <span class="dv">2</span> <span class="dv">5</span></span></code></pre></div>
+<p>For performance reasons, always use <code>pmap</code> if you know the number of vectors up front, otherwise use <code>list_pmap</code>.</p>
+</div>
+<div class="section level5">
+<h5 id="other-improvements-development-version">Other improvements<a class="anchor" aria-label="anchor" href="#other-improvements-development-version"></a></h5>
 <ul><li><p>New alias of <code>r_vec</code>, <code>r_vector</code></p></li>
-<li><p>For named vectors, lookup by name has been dramatically improved in C++ by introducing a hashing approach. On second lookup, a hash map of names is created and cached, making subsequent lookups much faster. This also applies to factor levels.</p></li>
-<li><p>cppally now supports copy-on-modify as an opt-in feature. This feature prevents accidentally overwriting data between shared objects, just like R. To opt-in, run <code><a href="../reference/use_copy_on_modify.html">cppally::use_copy_on_modify()</a></code> or set the <code>copy_on_modify</code> to <code>TRUE</code> in <code><a href="../reference/cpp_source.html">cpp_source()</a></code>. The major downside of this feature is significantly slower element setting as every set must verify the object is not referenced by another object. This check is single-threaded and thus nearly all parallel cppally code is disabled as a safety precaution. If using copy-on-modify, it is recommended to avoid writing cppally registered R functions that rely on in-place modification.</p></li>
 <li><p>Named-vector subsetting is now supported</p></li>
 <li><p>New C++ functions <code>combine()</code> and <code>flatten()</code>. <code>combine()</code> is a variadic function that allows for combining multiple vectors into one, similar to <code><a href="https://rdrr.io/r/base/c.html" class="external-link">base::c()</a></code> but always casts vectors to the common type among them. <code>flatten()</code> allows one to flatten a list of vectors into one vector of a specified type. Similar to <code>unlist(recursive = FALSE)</code> but it differs in that only the return type must be specified, e.g. <code>flatten&lt;r_vector&lt;r_int&gt;&gt;(make_vec&lt;r_sexp&gt;(1, 2, 3))</code></p></li>
 <li><p>Many functions that were originally <code>r_vec</code>-only members are now free functions that also work on <code>r_sexp</code> as well as <code>RComposite</code> types, allowing for easier manipulation of lists.</p></li>
 <li><p>All C++ reference qualifiers (T&amp;, T&amp;&amp;, const T&amp;) are now supported for registered functions, including templated ones.</p></li>
 <li><p>New concept <code>RVectorisable</code> which encompasses types that are OMP friendly.</p></li>
 </ul></div>
+</div>
 <div class="section level4">
 <h4 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h4>
 <ul><li>When registering C++ functions, cppally.hpp is now included in the generated C++ code. Not including it caused issues when trying to compile functions that constructed factors</li>

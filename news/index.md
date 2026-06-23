@@ -74,25 +74,121 @@ long as the element coercions are supported by `cppally::as`
 
 #### Improvements and New Features
 
+##### Named vector hash lookups
+
+For named vectors, lookup by name has been dramatically improved in C++
+by introducing a hashing approach. It works in the following way: the
+first time a lookup is requested, a linear scan is done to find the
+named value. The second time triggers the hash map of name-value pairs
+to be built and cached with the vector. That second lookup is completed
+using the cached hash map and all subsequent lookups also use the hash
+map. The rationale for hashing on second lookup is covered in the
+‘Automatic Names Hashing’ vignette.
+
+A similar hashing approach is also used for `r_factors`, making
+conversions of strings to and from factor codes fast and analytically
+viable.
+
+##### Copy-on-modify
+
+cppally now supports copy-on-modify as an opt-in feature. This feature
+prevents accidentally overwriting data between shared objects, just like
+R. To opt-in, run
+[`cppally::use_copy_on_modify()`](https://nicchr.github.io/cppally/reference/use_copy_on_modify.md)
+or set the `copy_on_modify` to `TRUE` in
+[`cpp_source()`](https://nicchr.github.io/cppally/reference/cpp_source.md).
+
+The major downside of this feature is significantly slower element
+setting as every set must verify the object is not referenced by another
+object. This check is single-threaded and thus nearly all parallel
+cppally code is disabled as a safety precaution. If using
+copy-on-modify, it is recommended to avoid writing cppally registered R
+functions that rely on in-place modification.
+
+##### pmap
+
+Inspired by
+[`purrr::pmap`](https://purrr.tidyverse.org/reference/pmap.html) and
+[`base::mapply`](https://rdrr.io/r/base/mapply.html), `cppally::pmap` is
+a C++ variadic function that supports applying custom C++ lambda
+functions across corresponding elements of multiple vectors.
+
+With `pmap()` it is trivial to calculate parallel statistics like max,
+min, etc. Example of C++ version of
+[`base::pmax()`](https://rdrr.io/r/base/Extremes.html) applied to two
+vectors
+
+``` cpp
+template <RVector T, RVector U>
+requires requires(typename T::data_type a, typename U::data_type b) { max(a, b); }
+[[cppally::register]]
+auto cpp_pmax2(T x, U y){
+  return pmap([](auto a, auto b){ return max(a, b); }, x, y);
+}
+```
+
+While `pmap()` is a powerful iterator, as with all variadic functions,
+the number of inputs must be known at compile-time, therefore we can’t
+write an exact [`base::pmax()`](https://rdrr.io/r/base/Extremes.html)
+equivalent using `pmap()` because the number of vectors is only known at
+runtime.
+
+`list_pmap()` doesn’t have this limitation and can iterate over n
+vectors where n is known at runtime. This comes with other trade-offs
+which are detailed below.
+
+|  | pmap | list_pmap |
+|----|----|----|
+| Inputs | Function in arg-1, variadic-supplied vectors thereafter | List of vectors in arg-1, function in arg-2 |
+| Return type deduced at compile-time | Yes | No - defaults to `r_sexp` but can also be specified |
+| SIMD-enabled loops | Yes | No |
+| Parallel loops (\>1 thread) | Yes | No |
+| Speed | Very fast | Fast with some overhead |
+| Lambda requirements | Scalar inputs expressed explicitly | Container whose size is known at runtime like `std::span` (recommended) or `std::vector` |
+| Accepted R objects | Vectors only | Vectors only |
+
+The biggest and perhaps most surprising limitation of `list_pmap` is
+that it coerces all its vectors to a common type. Visiting all `r_sexp`
+objects simultaneously (via `r_sexp_view`) would incur a combinatorial
+explosion of instantiation size, roughly 15^k for k vectors, therefore
+this is practically impossible for any reasonably-sized list.
+
+Example of C++ version of
+[`base::pmax`](https://rdrr.io/r/base/Extremes.html)
+
+``` cpp
+[[cppally::register]]
+SEXP list_pmax(r_vec<r_sexp> vectors){
+  return list_pmap<r_vec<r_dbl>>(vectors, []<RMathType elem>(std::span<elem> r) {
+    elem m = r[0];
+    for (size_t i = 1; i < r.size(); ++i){
+      m = max(m, r[i]);
+    }
+    return m;
+  });
+}
+```
+
+``` r
+
+cpp_pmax <- function(...){
+  list_pmax(list(...))
+}
+```
+
+``` r
+cpp_pmax2(c(0, 2, 4), c(1, 2, 3)) # Parallel max across 2 vectors
+1 2 4
+cpp_pmax(c(0, 2, 4), c(1, 2, 3), c(-5, 0, 5)) # Parallel max across k vectors
+1 2 5
+```
+
+For performance reasons, always use `pmap` if you know the number of
+vectors up front, otherwise use `list_pmap`.
+
+##### Other improvements
+
 - New alias of `r_vec`, `r_vector`
-
-- For named vectors, lookup by name has been dramatically improved in
-  C++ by introducing a hashing approach. On second lookup, a hash map of
-  names is created and cached, making subsequent lookups much faster.
-  This also applies to factor levels.
-
-- cppally now supports copy-on-modify as an opt-in feature. This feature
-  prevents accidentally overwriting data between shared objects, just
-  like R. To opt-in, run
-  [`cppally::use_copy_on_modify()`](https://nicchr.github.io/cppally/reference/use_copy_on_modify.md)
-  or set the `copy_on_modify` to `TRUE` in
-  [`cpp_source()`](https://nicchr.github.io/cppally/reference/cpp_source.md).
-  The major downside of this feature is significantly slower element
-  setting as every set must verify the object is not referenced by
-  another object. This check is single-threaded and thus nearly all
-  parallel cppally code is disabled as a safety precaution. If using
-  copy-on-modify, it is recommended to avoid writing cppally registered
-  R functions that rely on in-place modification.
 
 - Named-vector subsetting is now supported
 

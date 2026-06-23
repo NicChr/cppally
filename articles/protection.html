@@ -143,12 +143,12 @@ optimisations.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">insert_release_cpp11</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">replicate</a></span><span class="op">(</span><span class="fl">10</span><span class="op">^</span><span class="fl">4</span>, <span class="fu">bench_protect_insert_release_cpp11</span><span class="op">(</span><span class="fl">10</span><span class="op">^</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span> </span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">insert_release_cpp11</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 46.77783</span></span>
+<span><span class="co">#&gt; [1] 38.39908</span></span>
 <span><span class="va">insert_release_cppally</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">replicate</a></span><span class="op">(</span><span class="fl">10</span><span class="op">^</span><span class="fl">4</span>, <span class="fu">bench_protect_insert_release_cppally</span><span class="op">(</span><span class="fl">10</span><span class="op">^</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">insert_release_cppally</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 15.43027</span></span></code></pre></div>
-<p>On my machine, cpp11 performs an insert &amp; release every ~47
-nanoseconds. cppally performs better, with ~15 nanoseconds per insert
+<span><span class="co">#&gt; [1] 15.99059</span></span></code></pre></div>
+<p>On my machine, cpp11 performs an insert &amp; release every ~38
+nanoseconds. cppally performs better, with ~16 nanoseconds per insert
 &amp; release.</p>
 <p><strong>Copy benchmark</strong></p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a></span>
@@ -194,12 +194,12 @@ nanoseconds. cppally performs better, with ~15 nanoseconds per insert
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">copy_sexp_cpp11</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">replicate</a></span><span class="op">(</span><span class="fl">10</span><span class="op">^</span><span class="fl">4</span>, <span class="fu">bench_protect_copy_cpp11</span><span class="op">(</span><span class="fl">10</span><span class="op">^</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">copy_sexp_cpp11</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 44.38462</span></span>
+<span><span class="co">#&gt; [1] 36.61168</span></span>
 <span><span class="va">copy_sexp_cppally</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">replicate</a></span><span class="op">(</span><span class="fl">10</span><span class="op">^</span><span class="fl">4</span>, <span class="fu">bench_protect_copy_cppally</span><span class="op">(</span><span class="fl">10</span><span class="op">^</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">copy_sexp_cppally</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0.7070194</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.6259703</span></span></code></pre></div>
 <p>In these benchmark results we can see a drastic difference, with
-cpp11 at ~44 ns/copy and cppally at ~0.7 ns/copy.</p>
+cpp11 at ~37 ns/copy and cppally at ~0.6 ns/copy.</p>
 <p><strong>Impact of protection overhead, a real example</strong></p>
 <p>Let’s look at a real example of how much protection overhead can have
 an impact on performance.</p>
@@ -258,21 +258,21 @@ values in a character vector</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
 <span><span class="co">#&gt;   expression         min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> C_na_count(x)   40.9µs   71.4µs    <span style="text-decoration: underline;">13</span>880.        0B        0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> C_na_count(x)     34µs   63.4µs    <span style="text-decoration: underline;">18</span>284.        0B        0</span></span></code></pre></div>
 <p><strong>cpp11 results</strong></p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp11_na_count</span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
 <span><span class="co">#&gt;   expression             min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp11_na_count(x)   7.47ms   8.45ms      119.        0B     36.8</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp11_na_count(x)   6.58ms   6.71ms      148.        0B     43.4</span></span></code></pre></div>
 <p><strong>cppally results</strong></p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cppally_na_count</span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
 <span><span class="co">#&gt;   expression               min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_na_count(x)   1.38ms   1.39ms      717.        0B        0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_na_count(x)   1.43ms   1.44ms      692.        0B        0</span></span></code></pre></div>
 <p>Counting values is a simple operation and because of its simplicity,
 the overhead associated with protection will dominate the benchmark. We
 can see that when removing the protection overhead and using the R C API
@@ -314,7 +314,7 @@ non-owning version of <code>r_str</code>.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
 <span><span class="co">#&gt;   expression                    min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_fast_na_count(x)   71.1µs   71.4µs    <span style="text-decoration: underline;">13</span>793.        0B        0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_fast_na_count(x)   63.4µs   63.6µs    <span style="text-decoration: underline;">15</span>410.        0B        0</span></span></code></pre></div>
 <p>Looking at the benchmark results, we have effectively eliminated the
 protection overhead and the median execution time is much closer to that
 of the R C API.</p>
@@ -341,7 +341,7 @@ context.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
 <span><span class="co">#&gt;   expression                       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_fast_na_count_v2(x)   81.3µs   81.8µs    <span style="text-decoration: underline;">11</span>955.        0B        0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_fast_na_count_v2(x)   79.4µs   79.8µs    <span style="text-decoration: underline;">12</span>211.        0B        0</span></span></code></pre></div>
 <p>The results are similar to that of
 <code>cppally_fast_na_count()</code>.</p>
 </div>

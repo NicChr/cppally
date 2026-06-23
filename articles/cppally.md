@@ -835,8 +835,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique      1.36ms   1.44ms      689.    1.38MB     18.1
-#> 2 cppally_n_unique 307.33µs 308.97µs     3189.        0B      0
+#> 1 base_n_unique      1.25ms   1.33ms      750.    1.38MB     20.8
+#> 2 cppally_n_unique 280.57µs 283.42µs     3481.        0B      0
 ```
 
 More useful sugar functions
@@ -899,16 +899,10 @@ Some statistical summary functions that are all very highly optimised
 for speed
 
 - [`sum()`](https://rdrr.io/r/base/sum.html) - Sum of values
+- [`mean()`](https://rdrr.io/r/base/mean.html) - Average of values
 - [`range()`](https://rdrr.io/r/base/range.html) - Min and max range of
   values
-- [`abs()`](https://rdrr.io/r/base/MathFun.html) - Computes absolute
-  values (there is also a scalar version)
-- [`var()`](https://rdrr.io/r/stats/cor.html) and
-  [`sd()`](https://rdrr.io/r/stats/sd.html) - Variance and standard
-  deviation
-- `gcd()` - Greatest common divisor
-- [`lcm()`](https://rdrr.io/r/graphics/layout.html) - Lowest common
-  multiple
+- [`var()`](https://rdrr.io/r/stats/cor.html) - Variance
 
 ## Annex
 
