@@ -41,6 +41,7 @@ concept RNumericSubscript = any<T, r_int, r_int64>;
 // (implicit conversion below). `done(x)` stops the fold and makes x the result.
 template <typename Acc>
 struct control_flow {
+  using value_type = Acc;
   Acc value;
   bool stop = false;
   control_flow(Acc v) : value(std::move(v)) {}              // bare value = continue
@@ -532,26 +533,28 @@ struct r_vec {
   }
 
   // Left fold with an explicit seed: acc = fn(acc, elem), folding every element
-  // into `init`. The accumulator type `Acc` is deduced from `init`, so it may
-  // differ from the vector's element type (e.g. fold elements into a running r_str).
-  // An empty vector returns `init` unchanged.
+  // into `init`. The accumulator type is the combiner's *return* type (à la
+  // std::ranges::fold_left), not `init`'s type, so the combiner's result is never
+  // forced back into `init`'s (possibly narrower) type. `init` is coerced via `as`
+  // into the accumulator type to seed the fold, so it may differ from both the
+  // element type and `init`'s type. An empty vector returns the seed unchanged.
   template <typename Acc, typename F>
   requires std::invocable<F, Acc, T>
-  Acc reduce(F fn, Acc init, r_size_t from = 0) const {
+  auto reduce(F fn, Acc init, r_size_t from = 0) const {
+    using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>;
     r_size_t n = length();
-    Acc acc = init;
+    acc_t acc = as<acc_t>(init);
     for (r_size_t i = from; i < n; ++i){
       acc = fn(acc, view(i));
     }
     return acc;
   }
 
-  // Seedless left fold: the first element seeds the accumulator, so the combiner
-  // must be closed over the element type (fn(T, T) -> T) and the vector must be
-  // non-empty.
+  // Seedless left fold: the first element seeds the accumulator, and the vector
+  // must be non-empty. The result type follows the combiner's return type.
   template <typename F>
   requires std::invocable<F, T, T>
-  T reduce(F fn) const {
+  auto reduce(F fn) const {
     if (length() == 0) [[unlikely]] {
       abort("`reduce`: cannot reduce an empty vector without an `init` seed");
     }
@@ -560,14 +563,16 @@ struct r_vec {
 
   // Short-circuiting left fold (cf. itertools fold_while): `fn(acc, elem)` returns
   // a control_flow<Acc> — return a bare accumulator to keep folding, `done(x)` to
-  // stop early. The result is the accumulator carried by the final step.
+  // stop early. The result type follows the combiner's accumulator (the type wrapped
+  // by its control_flow return), not `init`'s type; `init` is converted into it.
   template <typename Acc, typename F>
   requires std::invocable<F, Acc, T>
-  Acc reduce_while(F fn, Acc init) const {
+  auto reduce_while(F fn, Acc init) const {
+    using acc_t = typename std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>::value_type;
     r_size_t n = length();
-    Acc acc = init;
+    acc_t acc = as<acc_t>(init);
     for (r_size_t i = 0; i < n; ++i){
-      internal::control_flow<Acc> step = fn(acc, view(i));
+      auto step = fn(acc, view(i));
       acc = std::move(step.value);
       if (step.stop) break;
     }
