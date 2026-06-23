@@ -282,14 +282,14 @@ inline r_sexp common_ptype(const r_vec<r_sexp>& vecs) {
 
     // Prototype of the first r_sexp
     r_sexp out = r_sexp_view(vecs.view(0), []<RComposite A>(const A&) -> r_sexp {
-        return as<r_sexp>(A());
+        return static_cast<r_sexp>(A());
     });
 
     // Roll the common type pairwise
     for (r_size_t j = 1; j < k; ++j) {
         out = r_sexp_view(out, [&]<RComposite A>(const A&) -> r_sexp {
             return r_sexp_view(vecs.view(j), [&]<RComposite B>(const B&) -> r_sexp {
-                return as<r_sexp>(common_r_t<A, B>());
+                return static_cast<r_sexp>(common_r_t<A, B>());
             });
         });
     }
