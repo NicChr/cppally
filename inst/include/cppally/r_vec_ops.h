@@ -441,16 +441,12 @@ inline r_vec<r_lgl> operator!(T&& x){
         x.apply(
           [](r_lgl v){ return !v; },
           /*simd = */ true, 
-          /*n_threads = */ internal::calc_threads(x.length())
+          /*parallel = */ true
         );
         return std::move(x);
     }
   }
-  return x.map(
-    [](r_lgl v){ return !v; },
-    /*simd = */ true, 
-    /*n_threads = */ internal::calc_threads(x.length())
-  );
+  return pmap_parallel_simd([](r_lgl v){ return !v; }, x);
 }
 
 template <internal::RMathVector T>
@@ -462,16 +458,12 @@ inline std::remove_cvref_t<T> operator-(T&& x){
       x.apply(
       /*fn = */ [](auto v){ return -v; }, 
       /*simd = */ true, 
-      /*n_threads = */ internal::calc_threads(x.length())
+      /*parallel = */ true
       );
       return std::move(x);
     }
   }
-  return x.map(
-    /*fn = */ [](data_t v){ return -v; }, 
-    /*simd = */ true, 
-    /*n_threads = */ internal::calc_threads(x.length())
-  );
+  return pmap_parallel_simd([](data_t v){ return -v; }, x);
 }
 
 namespace internal {

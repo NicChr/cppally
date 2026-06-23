@@ -456,7 +456,7 @@ struct r_vec {
 
   // Core engine: fn(index, value) -> set onto target[i]. All map/apply variants use this
   template <RVal U>
-  void map_impl(r_vec<U>& target, std::invocable<r_size_t, T> auto fn, bool simd, int n_threads) const {
+  void map_impl(r_vec<U>& target, std::invocable<r_size_t, T> auto fn, bool simd, bool parallel) const {
     r_size_t n = length();
     if (target.length() != n) [[unlikely]] {
       abort("map: target length must match source length");
@@ -464,8 +464,10 @@ struct r_vec {
 
     if constexpr (!RVectorisable<T> || !RVectorisable<U>){
       simd = false;
-      n_threads = 1;
+      parallel = false;
     }
+
+    int n_threads = parallel ? internal::calc_threads(n) : 1;
      
     if (simd){
 
@@ -499,42 +501,18 @@ struct r_vec {
 
   public:
 
-  // Map each element to a new r_vec: fn(value) -> output element type (deduced from fn's return)
-  // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
-  // n_threads - Number of threads to use via OMP_PARALLEL or OMP_PARALLEL_FOR_SIMD. Only applicable for RVectorisable types
-  template <std::invocable<T> F>
-  auto map(F fn, bool simd = false, int n_threads = 1) const {
-    using out_t = std::invoke_result_t<F, T>;
-    static_assert(RVal<out_t>, "map: output type is not storable in r_vec");
-    r_vec<out_t> out(length());
-    map_impl(out, [&](r_size_t, auto v){ return fn(v); }, simd, n_threads);
-    return out;
-  }
-
-  // Map each element to a new r_vec, with access to the index: fn(index, value) -> output element type
-  // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
-  // n_threads - Number of threads to use via OMP_PARALLEL or OMP_PARALLEL_FOR_SIMD. Only applicable for RVectorisable types
-  template <std::invocable<r_size_t, T> F>
-  auto map_with_index(F fn, bool simd = false, int n_threads = 1) const {
-    using out_t = std::invoke_result_t<F, r_size_t, T>;
-    static_assert(RVal<out_t>, "map_with_index: output type is not storable in r_vec");
-    r_vec<out_t> out(length());
-    map_impl(out, fn, simd, n_threads);
-    return out;
-  }
-
   // Apply a function to each element, modifying *this in-place: fn(value) -> T
   // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
-  // n_threads - Number of threads to use via OMP_PARALLEL or OMP_PARALLEL_FOR_SIMD. Only applicable for RVectorisable types
-  void apply(std::invocable<T> auto fn, bool simd = false, int n_threads = 1) {
-    map_impl(*this, [&](r_size_t, auto v){ return fn(v); }, simd, n_threads);
+  // parallel - Should loop be exected using multiple threads? Only applicable for RVectorisable types. Threads are set via `set_threads()`
+  void apply(std::invocable<T> auto fn, bool simd = false, bool parallel = false) {
+    map_impl(*this, [&](r_size_t, auto v){ return fn(v); }, simd, parallel);
   }
 
   // Apply a function to each element with access to the index, modifying *this in-place: fn(index, value) -> T
   // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
-  // n_threads - Number of threads to use via OMP_PARALLEL or OMP_PARALLEL_FOR_SIMD. Only applicable for RVectorisable types
-  void apply_with_index(std::invocable<r_size_t, T> auto fn, bool simd = false, int n_threads = 1) {
-    map_impl(*this, fn, simd, n_threads);
+  // parallel - Should loop be exected using multiple threads? Only applicable for RVectorisable types. Threads are set via `set_threads()`
+  void apply_with_index(std::invocable<r_size_t, T> auto fn, bool simd = false, bool parallel = false) {
+    map_impl(*this, fn, simd, parallel);
   }
 
   bool any_val(const T& val) const {
