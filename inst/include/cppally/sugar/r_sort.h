@@ -112,7 +112,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
     
             if (n >= 100000){
     
-            r_vec<r_int> out(n);
+            r_vec<r_int> out(static_cast<r_size_t>(n));
     
             auto rng = range(x, true);
     
@@ -180,7 +180,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         }
     }
 
-    r_vec<r_int> out(n);
+    r_vec<r_int> out(static_cast<r_size_t>(n));
     int* RESTRICT p_out = out.data();
     const auto* RESTRICT p_x = x.data();
 

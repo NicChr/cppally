@@ -78,7 +78,7 @@ T rep(const T& x, const r_vec<r_int>& times){
         if (is_na(out_size)){
             abort("%s: `times` contains `NA` values", __func__);
         }
-        T out(out_size);
+        T out(static_cast<r_size_t>(out_size));
         r_size_t k = 0;
         for (r_size_t i = 0; i < n; ++i){
           out.fill(k, times.data()[i], x.view(i));

@@ -172,12 +172,16 @@ struct r_vec {
   public:
 
   // Constructor that wraps new_vec_impl<T>
-  explicit r_vec(r_size_t n) : value(internal::new_vec_impl<data_type>(n)){
+  template <typename N>
+  requires std::convertible_to<N, r_size_t>
+  explicit r_vec(N n) : value(internal::new_vec_impl<data_type>(static_cast<r_size_t>(n))){
     initialise_ptr();
   }
 
-  explicit r_vec(r_size_t n, const T& default_value) : r_vec(n){
-    fill(r_size_t{0}, n, default_value);
+  template <typename N>
+  requires std::convertible_to<N, r_size_t>
+  explicit r_vec(N n, const T& default_value) : r_vec(n){
+    fill(r_size_t{0}, static_cast<r_size_t>(n), default_value);
   }
   
   r_vec(): r_vec(r_size_t(0)){
@@ -434,6 +438,9 @@ struct r_vec {
   }
 
   // These overloads exist purely to avoid ambiguity between nullptr (int=0) and const char*
+
+  // explicit r_vec(int n) requires long_vectors_supported : r_vec(static_cast<r_size_t>(n)){}
+  // explicit r_vec(int n, const T& default_value) requires long_vectors_supported : r_vec(static_cast<r_size_t>(n), default_value){}
 
   template <typename U>
   void set(int index, const U& val) requires long_vectors_supported {
