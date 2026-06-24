@@ -529,13 +529,23 @@ struct r_vec {
   // element type and `init`'s type. An empty vector returns the seed unchanged.
   template <typename Acc, typename F>
   requires std::invocable<F&, Acc, T>
-  auto reduce(F fn, Acc init, r_size_t from = 0) const {
+  auto reduce(F fn, Acc init, bool na_skip = false, r_size_t from = 0) const {
     using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>;
     r_size_t n = length();
     acc_t acc = as<acc_t>(init);
-    for (r_size_t i = from; i < n; ++i){
-      acc = fn(acc, view(i));
+    if (na_skip){
+      for (r_size_t i = from; i < n; ++i){
+        if (is_na(view(i))){
+          continue;
+        }
+        acc = fn(acc, view(i));
+      }
+    } else {
+      for (r_size_t i = from; i < n; ++i){
+        acc = fn(acc, view(i));
+      }
     }
+
     return acc;
   }
 
@@ -545,7 +555,7 @@ struct r_vec {
   requires std::invocable<F&, T, T>
   auto reduce(F fn) const {
     if (length() == 0) [[unlikely]] {
-      abort("`reduce`: cannot reduce an empty vector without an `init` seed");
+      abort("`reduce`: cannot reduce an empty vector without an `init` starting value");
     }
     return reduce(fn, /*init = */ view(0), /*from = */ 1);
   }
