@@ -26,6 +26,25 @@
 
 namespace cppally {
 
+#define CPPALLY_BINARY_OP(lhs, rhs, OP, res_t)                                                                         \
+using lhs_t = decltype(lhs);                                                                                           \
+using rhs_t = decltype(rhs);                                                                                           \
+if constexpr (RAtomicVector<lhs_t> && RAtomicVector<rhs_t>){                                                           \
+  if (rhs.length() == 1){                                                                                              \
+    auto val = rhs.view(0);                                                                                            \
+    return pmap_parallel_simd([&val](auto a) { return a OP val; }, lhs);                                               \
+  } else if (lhs.length() == 1){                                                                                       \
+    auto val = lhs.view(0);                                                                                            \
+    return pmap_parallel_simd([&val](auto b) { return val OP b; }, rhs);                                               \
+  } else {                                                                                                             \
+    return pmap_parallel_simd([](auto a, auto b) { return a OP b; }, lhs, rhs);                                        \
+  }                                                                                                                    \
+  /*Cases where one is a scalar*/                                                                                      \
+} else if constexpr (RAtomicVector<lhs_t>) {                                                                           \
+  return pmap_parallel_simd([&rhs](auto a) { return a OP rhs; }, lhs);                                                 \
+} else {                                                                                                               \
+  return pmap_parallel_simd([&lhs](auto b) { return lhs OP b; }, rhs);                                                 \
+}
 
 #define CPPALLY_BINARY_OP_IN_PLACE(OP)                                                                \
 r_size_t lhs_size = lhs.length();                                                                     \
@@ -70,26 +89,6 @@ if constexpr (RAtomicVector<U>){                                                
   }                                                                                                   \
 } else {                                                                                              \
   lhs.apply([&rhs](auto a){ return a OP rhs; }, true, true);                                          \
-}
-
-#define CPPALLY_BINARY_OP(lhs, rhs, OP, res_t)                                                                         \
-using lhs_t = decltype(lhs);                                                                                           \
-using rhs_t = decltype(rhs);                                                                                           \
-if constexpr (RAtomicVector<lhs_t> && RAtomicVector<rhs_t>){                                                           \
-  if (rhs.length() == 1){                                                                                              \
-    auto val = rhs.view(0);                                                                                            \
-    return pmap_parallel_simd([&val](auto a) { return a OP val; }, lhs);                                               \
-  } else if (lhs.length() == 1){                                                                                       \
-    auto val = lhs.view(0);                                                                                            \
-    return pmap_parallel_simd([&val](auto b) { return val OP b; }, rhs);                                               \
-  } else {                                                                                                             \
-    return pmap_parallel_simd([](auto a, auto b) { return a OP b; }, lhs, rhs);                                        \
-  }                                                                                                                    \
-  /*Cases where one is a scalar*/                                                                                      \
-} else if constexpr (RAtomicVector<lhs_t>) {                                                                           \
-  return pmap_parallel_simd([&rhs](auto a) { return a OP rhs; }, lhs);                                                 \
-} else {                                                                                                               \
-  return pmap_parallel_simd([&lhs](auto b) { return lhs OP b; }, rhs);                                                 \
 }
 
 template<RAtomicVector T, typename U>
