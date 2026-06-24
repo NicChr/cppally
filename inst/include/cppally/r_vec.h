@@ -528,7 +528,7 @@ struct r_vec {
   // into the accumulator type to seed the fold, so it may differ from both the
   // element type and `init`'s type. An empty vector returns the seed unchanged.
   template <typename Acc, typename F>
-  requires std::invocable<F, Acc, T>
+  requires std::invocable<F&, Acc, T>
   auto reduce(F fn, Acc init, r_size_t from = 0) const {
     using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>;
     r_size_t n = length();
@@ -542,7 +542,7 @@ struct r_vec {
   // Seedless left fold: the first element seeds the accumulator, and the vector
   // must be non-empty. The result type follows the combiner's return type.
   template <typename F>
-  requires std::invocable<F, T, T>
+  requires std::invocable<F&, T, T>
   auto reduce(F fn) const {
     if (length() == 0) [[unlikely]] {
       abort("`reduce`: cannot reduce an empty vector without an `init` seed");
@@ -555,7 +555,7 @@ struct r_vec {
   // stop early. The result type follows the combiner's accumulator (the type wrapped
   // by its control_flow return), not `init`'s type; `init` is converted into it.
   template <typename Acc, typename F>
-  requires std::invocable<F, Acc, T>
+  requires std::invocable<F&, Acc, T>
   auto reduce_while(F fn, Acc init) const {
     using acc_t = typename std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>::value_type;
     r_size_t n = length();
@@ -566,6 +566,38 @@ struct r_vec {
       if (step.stop) break;
     }
     return acc;
+  }
+
+  template <typename Acc, typename F>
+  requires std::invocable<F&, Acc, T>
+  auto cumulative_reduce(F fn, Acc init, r_size_t from = 0) const {
+    using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>;
+    r_size_t n = length();
+    r_vec<acc_t> out(n - from);
+    acc_t acc = as<acc_t>(init);
+    for (r_size_t i = from, k = 0; i < n; ++i, ++k){
+      acc = fn(acc, view(i));
+      out.set(k, acc);
+    }
+    return out;
+  }
+
+  template <typename F>
+  requires std::invocable<F&, T, T>
+  auto cumulative_reduce(F fn) const {
+    using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, T, T>>;
+    r_size_t n = length();
+    r_vec<acc_t> out(n);
+    if (n < 2){
+      return as<r_vec<acc_t>>(*this);
+    }
+    acc_t acc = as<acc_t>(view(0));
+    out.set(r_size_t{0}, acc);
+    for (r_size_t i = 1; i < n; ++i){
+      acc = fn(acc, view(i));
+      out.set(i, acc);
+    }
+    return out;
   }
 
   bool any_val(const T& val) const {
