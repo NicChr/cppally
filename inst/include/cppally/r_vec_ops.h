@@ -32,18 +32,18 @@ using rhs_t = decltype(rhs);                                                    
 if constexpr (RAtomicVector<lhs_t> && RAtomicVector<rhs_t>){                                                           \
   if (rhs.length() == 1){                                                                                              \
     auto val = rhs.view(0);                                                                                            \
-    return pmap_parallel_simd([&val](auto a) { return a OP val; }, lhs);                                               \
+    return pmap_parallel_simd([&val](auto a) noexcept { return a OP val; }, lhs);                                               \
   } else if (lhs.length() == 1){                                                                                       \
     auto val = lhs.view(0);                                                                                            \
-    return pmap_parallel_simd([&val](auto b) { return val OP b; }, rhs);                                               \
+    return pmap_parallel_simd([&val](auto b) noexcept { return val OP b; }, rhs);                                               \
   } else {                                                                                                             \
-    return pmap_parallel_simd([](auto a, auto b) { return a OP b; }, lhs, rhs);                                        \
+    return pmap_parallel_simd([](auto a, auto b) noexcept { return a OP b; }, lhs, rhs);                                        \
   }                                                                                                                    \
   /*Cases where one is a scalar*/                                                                                      \
 } else if constexpr (RAtomicVector<lhs_t>) {                                                                           \
-  return pmap_parallel_simd([&rhs](auto a) { return a OP rhs; }, lhs);                                                 \
+  return pmap_parallel_simd([&rhs](auto a) noexcept { return a OP rhs; }, lhs);                                                 \
 } else {                                                                                                               \
-  return pmap_parallel_simd([&lhs](auto b) { return lhs OP b; }, rhs);                                                 \
+  return pmap_parallel_simd([&lhs](auto b) noexcept { return lhs OP b; }, rhs);                                                 \
 }
 
 #define CPPALLY_BINARY_OP_IN_PLACE(OP)                                                                \
@@ -88,7 +88,7 @@ if constexpr (RAtomicVector<U>){                                                
     }                                                                                                 \
   }                                                                                                   \
 } else {                                                                                              \
-  lhs.apply([&rhs](auto a){ return a OP rhs; }, true, true);                                          \
+  lhs.apply([&rhs](auto a) noexcept { return a OP rhs; }, true, true);                                          \
 }
 
 template<RAtomicVector T, typename U>
@@ -349,14 +349,14 @@ inline r_vec<r_lgl> operator!(T&& x){
   if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
     if (x.is_exclusive()){
         x.apply(
-          [](r_lgl v){ return !v; },
+          [](r_lgl v) noexcept { return !v; },
           /*simd = */ true, 
           /*parallel = */ true
         );
         return std::move(x);
     }
   }
-  return pmap_parallel_simd([](r_lgl v){ return !v; }, x);
+  return pmap_parallel_simd([](r_lgl v) noexcept { return !v; }, x);
 }
 
 template <internal::RMathVector T>
@@ -366,14 +366,14 @@ inline std::remove_cvref_t<T> operator-(T&& x){
   if constexpr (std::is_same_v<T, std::remove_cvref_t<T>>){
     if (x.is_exclusive()){
       x.apply(
-      /*fn = */ [](auto v){ return -v; }, 
+      /*fn = */ [](auto v) noexcept { return -v; },
       /*simd = */ true, 
       /*parallel = */ true
       );
       return std::move(x);
     }
   }
-  return pmap_parallel_simd([](data_t v){ return -v; }, x);
+  return pmap_parallel_simd([](data_t v) noexcept { return -v; }, x);
 }
 
 namespace internal {
