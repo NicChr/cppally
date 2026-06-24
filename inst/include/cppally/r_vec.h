@@ -554,11 +554,11 @@ struct r_vec {
   // the result of each fn is used the first argument of the next call
   template <typename F>
   requires std::invocable<F&, T, T>
-  auto reduce(F fn) const {
+  auto reduce(F fn, bool na_skip = false) const {
     if (length() == 0) [[unlikely]] {
       abort("`reduce`: cannot reduce an empty vector without an `init` starting value");
     }
-    return reduce(fn, /*init = */ view(0), /*na_skip = */ false, /*from = */ 1);
+    return reduce(fn, /*init = */ view(0), /*na_skip = */ na_skip, /*from = */ 1);
   }
 
   template <typename Acc, typename F>
@@ -579,7 +579,7 @@ struct r_vec {
 
   template <typename F>
   requires std::invocable<F&, T, T>
-  auto cumulative_reduce(F fn) const {
+  auto cumulative_reduce(F fn, bool na_skip = false) const {
     using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, T, T>>;
     r_size_t n = length();
     if (n < 2){
@@ -589,6 +589,10 @@ struct r_vec {
     acc_t acc = as<acc_t>(view(0));
     out.set(r_size_t{0}, acc);
     for (r_size_t i = 1; i < n; ++i){
+      if (na_skip && is_na(view(i))){
+        out.set(i, acc);
+        continue;
+      }
       acc = fn(acc, view(i));
       out.set(i, acc);
     }
