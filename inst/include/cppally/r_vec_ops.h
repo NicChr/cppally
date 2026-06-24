@@ -69,116 +69,27 @@ if constexpr (RAtomicVector<U>){                                                
     }                                                                                                 \
   }                                                                                                   \
 } else {                                                                                              \
-  r_size_t n = lhs_size;                                                                              \
-  int n_threads = internal::calc_threads(n);                                                          \
-  if constexpr (RObject<typename std::remove_cvref_t<decltype(lhs)>::data_type>){                     \
-    for (r_size_t i = 0; i < n; ++i){                                                                 \
-      lhs.set(i, lhs.get(i) OP rhs);                                                                  \
-    }                                                                                                 \
-  } else if (n_threads > 1){                                                                          \
-    OMP_PARALLEL_FOR_SIMD(n_threads)                                                                  \
-    for (r_size_t i = 0; i < n; ++i){                                                                 \
-      lhs.set(i, lhs.get(i) OP rhs);                                                                  \
-    }                                                                                                 \
-  } else {                                                                                            \
-    OMP_SIMD                                                                                          \
-    for (r_size_t i = 0; i < n; ++i){                                                                 \
-      lhs.set(i, lhs.get(i) OP rhs);                                                                  \
-    }                                                                                                 \
-  }                                                                                                   \
+  lhs.apply([&rhs](auto a){ return a OP rhs; }, true, true);                                          \
 }
 
 #define CPPALLY_BINARY_OP(lhs, rhs, OP, res_t)                                                                         \
 using lhs_t = decltype(lhs);                                                                                           \
 using rhs_t = decltype(rhs);                                                                                           \
 if constexpr (RAtomicVector<lhs_t> && RAtomicVector<rhs_t>){                                                           \
-  r_size_t n1 = lhs.length();                                                                                          \
-  r_size_t n2 = rhs.length();                                                                                          \
-  r_size_t n = std::max(n1, n2);                                                                                       \
-  if (n1 == 0 || n2 == 0) return res_t();                                                                              \
-  int n_threads = internal::calc_threads(n);                                                                           \
-  if (n2 == 1){                                                                                                        \
-    res_t out(n);                                                                                                      \
+  if (rhs.length() == 1){                                                                                              \
     auto val = rhs.view(0);                                                                                            \
-    if constexpr (RObject<typename std::remove_cvref_t<decltype(out)>::data_type>){                                    \
-      for (r_size_t i = 0; i < n; ++i){                                                                                \
-        out.set(i, lhs.view(i) OP val);                                                                                \
-      }                                                                                                                \
-    } else if (n_threads > 1){                                                                                         \
-      OMP_PARALLEL_FOR_SIMD(n_threads)                                                                                 \
-      for (r_size_t i = 0; i < n; ++i){                                                                                \
-        out.set(i, lhs.view(i) OP val);                                                                                \
-      }                                                                                                                \
-    } else {                                                                                                           \
-      OMP_SIMD                                                                                                         \
-      for (r_size_t i = 0; i < n; ++i){                                                                                \
-        out.set(i, lhs.view(i) OP val);                                                                                \
-      }                                                                                                                \
-    }                                                                                                                  \
-    return out;                                                                                                        \
-  } else if (n1 == 1){                                                                                                 \
-    res_t out(n);                                                                                                      \
+    return pmap_parallel_simd([&val](auto a) { return a OP val; }, lhs);                                               \
+  } else if (lhs.length() == 1){                                                                                       \
     auto val = lhs.view(0);                                                                                            \
-    if constexpr (RObject<typename std::remove_cvref_t<decltype(out)>::data_type>){                                    \
-      for (r_size_t i = 0; i < n; ++i){                                                                                \
-        out.set(i, val OP rhs.view(i));                                                                                \
-      }                                                                                                                \
-    } else if (n_threads > 1){                                                                                         \
-      OMP_PARALLEL_FOR_SIMD(n_threads)                                                                                 \
-      for (r_size_t i = 0; i < n; ++i){                                                                                \
-        out.set(i, val OP rhs.view(i));                                                                                \
-      }                                                                                                                \
-    } else {                                                                                                           \
-      OMP_SIMD                                                                                                         \
-      for (r_size_t i = 0; i < n; ++i){                                                                                \
-        out.set(i, val OP rhs.view(i));                                                                                \
-      }                                                                                                                \
-    }                                                                                                                  \
-    return out;                                                                                                        \
+    return pmap_parallel_simd([&val](auto b) { return val OP b; }, rhs);                                               \
   } else {                                                                                                             \
     return pmap_parallel_simd([](auto a, auto b) { return a OP b; }, lhs, rhs);                                        \
   }                                                                                                                    \
   /*Cases where one is a scalar*/                                                                                      \
 } else if constexpr (RAtomicVector<lhs_t>) {                                                                           \
-  r_size_t n = lhs.length();                                                                                           \
-  res_t out(n);                                                                                                        \
-  int n_threads = internal::calc_threads(n);                                                                           \
-  if constexpr (RObject<typename std::remove_cvref_t<decltype(out)>::data_type>){                                      \
-    for (r_size_t i = 0; i < n; ++i){                                                                                  \
-      out.set(i, lhs.view(i) OP rhs);                                                                                  \
-    }                                                                                                                  \
-  } else if (n_threads > 1){                                                                                           \
-    OMP_PARALLEL_FOR_SIMD(n_threads)                                                                                   \
-    for (r_size_t i = 0; i < n; ++i){                                                                                  \
-      out.set(i, lhs.view(i) OP rhs);                                                                                  \
-    }                                                                                                                  \
-  } else {                                                                                                             \
-    OMP_SIMD                                                                                                           \
-    for (r_size_t i = 0; i < n; ++i){                                                                                  \
-      out.set(i, lhs.view(i) OP rhs);                                                                                  \
-    }                                                                                                                  \
-  }                                                                                                                    \
-  return out;                                                                                                          \
+  return pmap_parallel_simd([&rhs](auto a) { return a OP rhs; }, lhs);                                                 \
 } else {                                                                                                               \
-  r_size_t n = rhs.length();                                                                                           \
-  res_t out(n);                                                                                                        \
-  int n_threads = internal::calc_threads(n);                                                                           \
-  if constexpr (RObject<typename std::remove_cvref_t<decltype(out)>::data_type>){                                      \
-    for (r_size_t i = 0; i < n; ++i){                                                                                  \
-      out.set(i, lhs OP rhs.view(i));                                                                                  \
-    }                                                                                                                  \
-  } else if (n_threads > 1){                                                                                           \
-    OMP_PARALLEL_FOR_SIMD(n_threads)                                                                                   \
-    for (r_size_t i = 0; i < n; ++i){                                                                                  \
-      out.set(i, lhs OP rhs.view(i));                                                                                  \
-    }                                                                                                                  \
-  } else {                                                                                                             \
-    OMP_SIMD                                                                                                           \
-    for (r_size_t i = 0; i < n; ++i){                                                                                  \
-      out.set(i, lhs OP rhs.view(i));                                                                                  \
-    }                                                                                                                  \
-  }                                                                                                                    \
-  return out;                                                                                                          \
+  return pmap_parallel_simd([&lhs](auto b) { return lhs OP b; }, rhs);                                                 \
 }
 
 template<RAtomicVector T, typename U>
