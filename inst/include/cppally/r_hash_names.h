@@ -193,7 +193,7 @@ struct names_map {
             abort("Long vector name hashing is not supported");
         }
 
-        const SEXP* p_names = STRING_PTR_RO(nms);
+        const SEXP* p_names = safe[STRING_PTR_RO](nms);
         map->reserve(static_cast<std::size_t>(n), p_names);
         int n_ = static_cast<int>(n);
         for (int i = 0; i < n_; ++i){
