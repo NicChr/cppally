@@ -52,33 +52,9 @@ if constexpr (RAtomicVector<U>){                                                
   r_size_t rhs_size = rhs.length();                                                                   \
   if (rhs_size == 1){                                                                                 \
     auto val = rhs.view(0);                                                                           \
-    int n_threads = internal::calc_threads(lhs_size);                                                 \
-    if constexpr (RObject<typename std::remove_cvref_t<decltype(lhs)>::data_type>){                   \
-      for (r_size_t i = 0; i < lhs_size; ++i){ lhs.set(i, lhs.view(i) OP val); }                      \
-    } else if (n_threads > 1){                                                                        \
-      OMP_PARALLEL_FOR_SIMD(n_threads)                                                                \
-      for (r_size_t i = 0; i < lhs_size; ++i){ lhs.set(i, lhs.view(i) OP val); }                      \
-    } else {                                                                                          \
-      OMP_SIMD                                                                                        \
-      for (r_size_t i = 0; i < lhs_size; ++i){ lhs.set(i, lhs.view(i) OP val); }                      \
-    }                                                                                                 \
-  } else if (lhs_size == rhs_size){                                                                   \
-      int n_threads = internal::calc_threads(lhs_size);                                               \
-      if constexpr (RObject<typename std::remove_cvref_t<decltype(lhs)>::data_type>){                 \
-        for (r_size_t i = 0; i < lhs_size; ++i){                                                      \
-          lhs.set(i, lhs.get(i) OP rhs.get(i));                                                       \
-        }                                                                                             \
-      } else if (n_threads > 1){                                                                      \
-        OMP_PARALLEL_FOR_SIMD(n_threads)                                                              \
-        for (r_size_t i = 0; i < lhs_size; ++i){                                                      \
-          lhs.set(i, lhs.get(i) OP rhs.get(i));                                                       \
-        }                                                                                             \
-      } else {                                                                                        \
-        OMP_SIMD                                                                                      \
-        for (r_size_t i = 0; i < lhs_size; ++i){                                                      \
-          lhs.set(i, lhs.get(i) OP rhs.get(i));                                                       \
-        }                                                                                             \
-      }                                                                                               \
+    lhs.apply([&val](auto a) noexcept { return a OP val; }, true, true);                                            \
+  } else if (lhs_size == rhs_size){                                                                                 \
+    lhs.apply_with_index([&rhs](r_size_t i, auto a) noexcept { return a OP rhs.view(i); }, true, true);             \
   } else {                                                                                            \
     r_size_t n = lhs_size;                                                                            \
     for (r_size_t i = 0, rhsi = 0; i < n;                                                             \
@@ -88,7 +64,7 @@ if constexpr (RAtomicVector<U>){                                                
     }                                                                                                 \
   }                                                                                                   \
 } else {                                                                                              \
-  lhs.apply([&rhs](auto a) noexcept { return a OP rhs; }, true, true);                                          \
+  lhs.apply([&rhs](auto a) noexcept { return a OP rhs; }, true, true);                                \
 }
 
 template<RAtomicVector T, typename U>
