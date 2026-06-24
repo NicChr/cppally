@@ -188,7 +188,7 @@ template <RMathType T>
 r_dbl mean(const r_vec<T>& x, bool na_rm = false){
     r_dbl total = sum(x, na_rm);
     if (na_rm){
-        return total / (x.length() - x.count(na<T>()));
+        return total / (x.length() - na_count());
     } else {
         return total / x.length();
     }
@@ -201,7 +201,7 @@ r_dbl var(const r_vec<T>& x, bool na_rm = false){
     r_size_t N;
 
     if (na_rm){
-        N = x.length() - x.count(na<T>());
+        N = x.length() - na_count();
     } else {
         N = x.length();
     }

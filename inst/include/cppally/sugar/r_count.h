@@ -23,12 +23,12 @@ r_size_t r_vec<T>::count(const r_vec<T>& values) const {
   // Have to explicitly request 64-bit matches (annoying)
   if (is_long()){
     r_vec<r_int64> matches = match<r_int64>(*this, values);
-    out = matches.length() - matches.count(na<r_int64>());
+    out = matches.length() - matches.na_count();
     out = std::max(out, r_size_t(0));
     return out;
   } else {
     r_vec<r_int> matches = match(*this, values);
-    out = matches.length() - matches.count(na<r_int>());
+    out = matches.length() - matches.na_count();
     out = std::max(out, r_size_t(0));
     return out;
   }

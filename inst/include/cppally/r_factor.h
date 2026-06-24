@@ -332,7 +332,7 @@ struct r_factors {
   template <RStringType U>
   r_size_t count(const U& val) const {
     if (is_na(val)){
-      return value.count(na<r_int>());
+      return value.na_count();
     } else {
       r_int code = get_code(val);
       if (is_na(code)){
