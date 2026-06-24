@@ -36,9 +36,7 @@ concept RSubscript = any<T, r_lgl, r_int, r_int64, r_str_view, r_str>;
 template <typename T>
 concept RNumericSubscript = any<T, r_int, r_int64>;
 
-// break signal for short-circuiting folds (see `r_vec::reduce_while`).
-// Continuing is the default: returning a bare accumulator value keeps folding
-// (implicit conversion below). `done(x)` stops the fold and makes x the result.
+// break signal for short-circuiting folds (see `r_vec::reduce`) - done(x) stops the fold
 template <typename Acc>
 struct control_flow {
   using value_type = Acc;
@@ -47,6 +45,8 @@ struct control_flow {
   control_flow(Acc v) : value(std::move(v)) {}              // bare value = continue
   control_flow(Acc v, bool s) : value(std::move(v)), stop(s) {}
 };
+template <typename R> struct fold_result                 { using acc = R; static constexpr bool stops = false; };
+template <typename A> struct fold_result<control_flow<A>> { using acc = A; static constexpr bool stops = true;  };
 
 }
 
@@ -521,61 +521,44 @@ struct r_vec {
     map_impl(*this, fn, simd, parallel);
   }
 
-  // Left fold with an explicit seed: acc = fn(acc, elem), folding every element
-  // into `init`. The accumulator type is the combiner's *return* type (à la
-  // std::ranges::fold_left), not `init`'s type, so the combiner's result is never
-  // forced back into `init`'s (possibly narrower) type. `init` is coerced via `as`
-  // into the accumulator type to seed the fold, so it may differ from both the
-  // element type and `init`'s type. An empty vector returns the seed unchanged.
+  // From left-to-right: recursively apply a binary function to pairs of elements across *this
+  // the result of each fn is used the first argument of the next call
+  // To break early, use `done(x)` where x is the result to return early
   template <typename Acc, typename F>
   requires std::invocable<F&, Acc, T>
   auto reduce(F fn, Acc init, bool na_skip = false, r_size_t from = 0) const {
-    using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>;
+
+    using ret_t = std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>;
+    using acc_t = typename internal::fold_result<ret_t>::acc;
     r_size_t n = length();
     acc_t acc = as<acc_t>(init);
-    if (na_skip){
-      for (r_size_t i = from; i < n; ++i){
-        if (is_na(view(i))){
-          continue;
-        }
-        acc = fn(acc, view(i));
+
+    for (r_size_t i = from; i < n; ++i){
+      if (na_skip && is_na(view(i))){
+        continue;
       }
-    } else {
-      for (r_size_t i = from; i < n; ++i){
+      if constexpr (internal::fold_result<ret_t>::stops){
+        auto step = fn(acc, view(i));
+        acc = std::move(step.value);
+        if (step.stop){
+          break;
+        }
+      } else {
         acc = fn(acc, view(i));
       }
     }
-
     return acc;
   }
 
-  // Seedless left fold: the first element seeds the accumulator, and the vector
-  // must be non-empty. The result type follows the combiner's return type.
+  // From left-to-right: recursively apply a binary function to pairs of elements across *this
+  // the result of each fn is used the first argument of the next call
   template <typename F>
   requires std::invocable<F&, T, T>
   auto reduce(F fn) const {
     if (length() == 0) [[unlikely]] {
       abort("`reduce`: cannot reduce an empty vector without an `init` starting value");
     }
-    return reduce(fn, /*init = */ view(0), /*from = */ 1);
-  }
-
-  // Short-circuiting left fold (cf. itertools fold_while): `fn(acc, elem)` returns
-  // a control_flow<Acc> — return a bare accumulator to keep folding, `done(x)` to
-  // stop early. The result type follows the combiner's accumulator (the type wrapped
-  // by its control_flow return), not `init`'s type; `init` is converted into it.
-  template <typename Acc, typename F>
-  requires std::invocable<F&, Acc, T>
-  auto reduce_while(F fn, Acc init) const {
-    using acc_t = typename std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>::value_type;
-    r_size_t n = length();
-    acc_t acc = as<acc_t>(init);
-    for (r_size_t i = 0; i < n; ++i){
-      auto step = fn(acc, view(i));
-      acc = std::move(step.value);
-      if (step.stop) break;
-    }
-    return acc;
+    return reduce(fn, /*init = */ view(0), /*na_skip = */ false, /*from = */ 1);
   }
 
   template <typename Acc, typename F>
