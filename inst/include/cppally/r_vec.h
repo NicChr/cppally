@@ -563,15 +563,17 @@ struct r_vec {
 
   template <typename Acc, typename F>
   requires std::invocable<F&, Acc, T>
-  auto cumulative_reduce(F fn, Acc init, r_size_t from = 0) const {
+  auto cumulative_reduce(F fn, Acc init, bool na_skip = false, r_size_t from = 0) const {
     using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>;
-    r_size_t n = length();
-    r_vec<acc_t> out(n - from);
-    acc_t acc = as<acc_t>(init);
-    for (r_size_t i = from, k = 0; i < n; ++i, ++k){
-      acc = fn(acc, view(i));
-      out.set(k, acc);
-    }
+    static_assert(!internal::fold_result<acc_t>::stops,
+                  "cumulative_reduce combiner must not short-circuit (no `done()`)");
+    r_vec<acc_t> out(length() - from);
+    r_size_t k = 0;
+    reduce([&](const acc_t& acc, T x){
+      acc_t next = (na_skip && is_na(x)) ? acc : fn(acc, x);
+      out.set(k++, next);
+      return next;
+    }, as<acc_t>(init), /*na_skip=*/false, from);
     return out;
   }
 
@@ -580,10 +582,10 @@ struct r_vec {
   auto cumulative_reduce(F fn) const {
     using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, T, T>>;
     r_size_t n = length();
-    r_vec<acc_t> out(n);
     if (n < 2){
       return as<r_vec<acc_t>>(*this);
     }
+    r_vec<acc_t> out(n);
     acc_t acc = as<acc_t>(view(0));
     out.set(r_size_t{0}, acc);
     for (r_size_t i = 1; i < n; ++i){
