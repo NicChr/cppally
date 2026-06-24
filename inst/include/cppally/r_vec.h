@@ -171,13 +171,14 @@ struct r_vec {
 
   public:
 
-  // Constructor that wraps new_vec_impl<T>
+  // Construct new r_vec of length n
   template <typename N>
   requires std::convertible_to<N, r_size_t>
   explicit r_vec(N n) : value(internal::new_vec_impl<data_type>(static_cast<r_size_t>(n))){
     initialise_ptr();
   }
 
+  // Construct new r_vec of length n filled with default value
   template <typename N>
   requires std::convertible_to<N, r_size_t>
   explicit r_vec(N n, const T& default_value) : r_vec(n){
