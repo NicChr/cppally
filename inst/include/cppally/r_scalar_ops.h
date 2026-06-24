@@ -174,7 +174,7 @@ inline constexpr auto operator+(T lhs, U rhs) noexcept {
 
   using common_t = common_math_t<T, U>;
 
-  if constexpr (is<common_t, r_dbl>){
+  if constexpr (is<T, r_dbl> && is<U, r_dbl>){
     return r_dbl(static_cast<double>(unwrap(lhs)) + static_cast<double>(unwrap(rhs)));
   } else {
     return ( internal::either_na(lhs, rhs) ) ? 
@@ -189,7 +189,7 @@ inline constexpr auto operator-(T lhs, U rhs) noexcept {
 
   using common_t = common_math_t<T, U>;
 
-  if constexpr (is<common_t, r_dbl>){
+  if constexpr (is<T, r_dbl> && is<U, r_dbl>){
     return r_dbl(static_cast<double>(unwrap(lhs)) - static_cast<double>(unwrap(rhs)));
   } else {
     return ( internal::either_na(lhs, rhs) ) ? 
@@ -204,7 +204,7 @@ inline constexpr auto operator*(T lhs, U rhs) noexcept {
 
   using common_t = common_math_t<T, U>;
 
-  if constexpr (is<common_t, r_dbl>){
+  if constexpr (is<T, r_dbl> && is<U, r_dbl>){
     return r_dbl(static_cast<double>(unwrap(lhs)) * static_cast<double>(unwrap(rhs)));
   } else {
     return ( internal::either_na(lhs, rhs) ) ? 
