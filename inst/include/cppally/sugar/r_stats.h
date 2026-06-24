@@ -198,37 +198,35 @@ r_dbl mean(const r_vec<T>& x, bool na_rm = false){
 template <RMathType T>
 r_dbl var(const r_vec<T>& x, bool na_rm = false){
 
+    r_size_t n = x.length();
     r_size_t N;
 
     if (na_rm){
-        N = x.length() - x.na_count();
+        N = n - x.na_count();
     } else {
-        N = x.length();
+        N = n;
     }
 
     if (N < 2){
         return na<r_dbl>();
     }
 
-    --N;
-
-    r_dbl mu = mean(x, na_rm);
+    r_dbl mu = sum(x, na_rm) / N;
 
     if (is_na(mu)){
         return mu;
     }
     // Sum of squared differences
 
-    r_size_t n = x.length();
+    r_dbl sum_sq_diff = x.reduce([mu, na_rm](auto acc, auto curr) {
+        if (na_rm && is_na(curr)){
+            return acc;
+        }
+        r_dbl diff = curr - mu;
+        return acc + (diff * diff);
+    }, r_dbl(0));
 
-    double sum_sq_diff(0);
-    
-    for (r_size_t i = 0; i < n; ++i){
-        if (is_na(x.get(i))) continue;
-        double diff = unwrap(x.get(i)) - unwrap(mu);
-        sum_sq_diff += diff * diff;
-      }
-      return r_dbl(sum_sq_diff) / N;
+     return sum_sq_diff / (N - 1);
 }
 
 } 
