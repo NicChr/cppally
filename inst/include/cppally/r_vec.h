@@ -16,7 +16,7 @@ namespace cppally {
 
 // Forward declarations
 template <typename T, typename U>
-inline constexpr bool identical(const T& a, const U& b);
+inline constexpr bool identical(const T& a, const U& b) noexcept(RScalar<T>);
 
 template <RVector T>
 inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_t n);

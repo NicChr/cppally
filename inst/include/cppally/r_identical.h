@@ -111,7 +111,7 @@ inline bool identical_impl(SEXP a, SEXP b) {
 
 // Identical takes type into account
 template <typename T, typename U>
-inline constexpr bool identical(const T& a, const U& b) {
+inline constexpr bool identical(const T& a, const U& b) noexcept(RScalar<T>) {
     if constexpr (is<T, U>){
         return internal::identical_impl(a, b);
     } else {
