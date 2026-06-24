@@ -47,6 +47,9 @@ struct r_sexp;
 struct r_date;
 struct r_psxct;
 
+// Are long vectors supported?
+constexpr bool long_vectors_supported = !std::is_same_v<int, r_size_t>;
+
 // Concepts to enable R type templates
 
 // RObject is any object that can be represented in R

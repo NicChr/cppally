@@ -434,14 +434,15 @@ struct r_vec {
   }
 
   // These overloads exist purely to avoid ambiguity between nullptr (int=0) and const char*
+
   template <typename U>
-  void set(int index, const U& val) {
+  void set(int index, const U& val) requires long_vectors_supported {
     set(static_cast<r_size_t>(index), val); 
   }
-  T get(int index) const {
+  T get(int index) const requires long_vectors_supported {
     return get(static_cast<r_size_t>(index)); 
   }
-  T view(int index) const { 
+  T view(int index) const requires long_vectors_supported { 
     return view(static_cast<r_size_t>(index)); 
   }
 
