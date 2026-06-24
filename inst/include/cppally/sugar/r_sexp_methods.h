@@ -159,7 +159,7 @@ inline bool identical_impl(const r_sexp& a, const r_sexp& b) {
     });
 }
 
-inline uint64_t r_hash_impl(const r_sexp& x) noexcept {
+inline uint64_t r_hash_impl(const r_sexp& x) {
     return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ uint64_t, /*fn = */ r_hash_impl);
 }
 

@@ -92,7 +92,7 @@ inline uint64_t r_hash_impl(const r_sym& x) noexcept {
 // Vector hashing
 
 template <RVector T>
-inline uint64_t r_hash_impl(const T& x) noexcept {
+inline uint64_t r_hash_impl(const T& x) {
         
     if (x.is_null()) return 0;
     r_size_t n = x.length();
@@ -113,24 +113,21 @@ inline uint64_t r_hash_impl(const T& x) noexcept {
     return seed;
 };
 
-template<>
-inline uint64_t r_hash_impl(const r_factors& x) noexcept {
+inline uint64_t r_hash_impl(const r_factors& x) {
     return r_hash_impl(x.value);
 };
 
 
 // Overload for elements of lists — defined in sugar/r_sexp_methods.h
-inline uint64_t r_hash_impl(const r_sexp& x) noexcept;
+inline uint64_t r_hash_impl(const r_sexp& x);
 
 
 template <typename T>
 struct r_hash {
-    
     using is_avalanching = void; // Tells ankerl this is already a good quality hash
-
     // For hash map memory efficiency we use the underlying type
     using base_t = unwrap_t<T>;
-    uint64_t operator()(const base_t& x) const noexcept {
+    uint64_t operator()(const base_t& x) const noexcept(RScalar<T>) {
         if constexpr (std::is_constructible_v<T, base_t, internal::view_tag>){
             return r_hash_impl(T(x, internal::view_tag{}));
         } else {
