@@ -6,6 +6,7 @@
 #include <cppally.hpp>
 #include <R_ext/Visibility.h>
 #include "test.h"
+#include "test_functionals.h"
 #include "test_nas.h"
 #include "test_refs.h"
 #include "test_sort.h"
@@ -645,6 +646,68 @@ extern "C" SEXP _cppallytest_test_factor3(SEXP x) {
   return cpp_to_r(::test_factor3(as<r_factors>(x)));
   END_CPPALLY
 }
+// test_functionals.h
+extern "C" SEXP _cppallytest_reduce_sum(SEXP x, SEXP na_rm) {
+  BEGIN_CPPALLY
+  return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp_to_r(::reduce_sum(std::declval<r_vec<T>>(), std::declval<bool>()))) {
+        return cpp_to_r(::reduce_sum(as<r_vec<T>>(x_internal), as<bool>(na_rm_internal)));
+    },
+    x, na_rm
+  );
+  END_CPPALLY
+}
+// test_functionals.h
+extern "C" SEXP _cppallytest_reduce_max(SEXP x, SEXP na_rm) {
+  BEGIN_CPPALLY
+  return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp_to_r(::reduce_max(std::declval<r_vec<T>>(), std::declval<bool>()))) {
+        return cpp_to_r(::reduce_max(as<r_vec<T>>(x_internal), as<bool>(na_rm_internal)));
+    },
+    x, na_rm
+  );
+  END_CPPALLY
+}
+// test_functionals.h
+extern "C" SEXP _cppallytest_reduce_cumulative_sum(SEXP x, SEXP na_rm) {
+  BEGIN_CPPALLY
+  return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP na_rm_internal) -> decltype(cpp_to_r(::reduce_cumulative_sum(std::declval<r_vec<T>>(), std::declval<bool>()))) {
+        return cpp_to_r(::reduce_cumulative_sum(as<r_vec<T>>(x_internal), as<bool>(na_rm_internal)));
+    },
+    x, na_rm
+  );
+  END_CPPALLY
+}
+// test_functionals.h
+extern "C" SEXP _cppallytest_reduce_gcd(SEXP x) {
+  BEGIN_CPPALLY
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_internal) -> decltype(cpp_to_r(::reduce_gcd(std::declval<r_vec<T>>()))) {
+        return cpp_to_r(::reduce_gcd(as<r_vec<T>>(x_internal)));
+    },
+    x
+  );
+  END_CPPALLY
+}
+// test_functionals.h
+extern "C" SEXP _cppallytest_pmap2_add(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
+    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_r(::pmap2_add(std::declval<r_vec<T>>(), std::declval<r_vec<U>>()))) {
+        return cpp_to_r(::pmap2_add(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)));
+    },
+    x, y
+  );
+  END_CPPALLY
+}
+// test_functionals.h
+r_sexp pmap_add(r_vec<r_sexp> x);
+extern "C" SEXP _cppallytest_pmap_add(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::pmap_add(as<r_vec<r_sexp>>(x)));
+  END_CPPALLY
+}
 // test_names.cpp
 r_vec<r_str_view> test_names_inplace_mutation();
 extern "C" SEXP _cppallytest_test_names_inplace_mutation() {
@@ -952,6 +1015,12 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_cpp_get_threads",                   (DL_FUNC) &_cppallytest_cpp_get_threads,                   0},
     {"_cppallytest_cpp_set_threads",                   (DL_FUNC) &_cppallytest_cpp_set_threads,                   1},
     {"_cppallytest_cpp_typeof",                        (DL_FUNC) &_cppallytest_cpp_typeof,                        1},
+    {"_cppallytest_pmap2_add",                         (DL_FUNC) &_cppallytest_pmap2_add,                         2},
+    {"_cppallytest_pmap_add",                          (DL_FUNC) &_cppallytest_pmap_add,                          1},
+    {"_cppallytest_reduce_cumulative_sum",             (DL_FUNC) &_cppallytest_reduce_cumulative_sum,             2},
+    {"_cppallytest_reduce_gcd",                        (DL_FUNC) &_cppallytest_reduce_gcd,                        1},
+    {"_cppallytest_reduce_max",                        (DL_FUNC) &_cppallytest_reduce_max,                        2},
+    {"_cppallytest_reduce_sum",                        (DL_FUNC) &_cppallytest_reduce_sum,                        2},
     {"_cppallytest_scalar1",                           (DL_FUNC) &_cppallytest_scalar1,                           1},
     {"_cppallytest_scalar2",                           (DL_FUNC) &_cppallytest_scalar2,                           1},
     {"_cppallytest_scalar3",                           (DL_FUNC) &_cppallytest_scalar3,                           2},

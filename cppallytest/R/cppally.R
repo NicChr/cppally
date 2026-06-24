@@ -272,6 +272,30 @@ test_factor3 <- function(x) {
   .Call(`_cppallytest_test_factor3`, x)
 }
 
+reduce_sum <- function(x, na_rm) {
+  .Call(`_cppallytest_reduce_sum`, x, na_rm)
+}
+
+reduce_max <- function(x, na_rm) {
+  .Call(`_cppallytest_reduce_max`, x, na_rm)
+}
+
+reduce_cumulative_sum <- function(x, na_rm) {
+  .Call(`_cppallytest_reduce_cumulative_sum`, x, na_rm)
+}
+
+reduce_gcd <- function(x) {
+  .Call(`_cppallytest_reduce_gcd`, x)
+}
+
+pmap2_add <- function(x, y) {
+  .Call(`_cppallytest_pmap2_add`, x, y)
+}
+
+pmap_add <- function(x) {
+  .Call(`_cppallytest_pmap_add`, x)
+}
+
 test_names_inplace_mutation <- function() {
   .Call(`_cppallytest_test_names_inplace_mutation`)
 }
