@@ -439,9 +439,6 @@ struct r_vec {
 
   // These overloads exist purely to avoid ambiguity between nullptr (int=0) and const char*
 
-  // explicit r_vec(int n) requires long_vectors_supported : r_vec(static_cast<r_size_t>(n)){}
-  // explicit r_vec(int n, const T& default_value) requires long_vectors_supported : r_vec(static_cast<r_size_t>(n), default_value){}
-
   template <typename U>
   void set(int index, const U& val) requires long_vectors_supported {
     set(static_cast<r_size_t>(index), val); 
