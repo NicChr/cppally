@@ -19,7 +19,7 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
 
   constexpr int n_vecs = sizeof...(Ts);
 
-  using out_t = std::invoke_result_t<F&, r_size_t, Ts...>;
+  using out_t = std::remove_cvref_t<std::invoke_result_t<F&, r_size_t, Ts...>>;
   static_assert(RVal<out_t>, "pmap: output type is not storable in r_vec");
 
   if constexpr (n_vecs == 0) {

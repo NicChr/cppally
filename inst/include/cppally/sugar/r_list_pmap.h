@@ -32,8 +32,8 @@ ret_t list_pmap(const r_vec<r_sexp>& vectors, F fn) {
     // fn is handed a mutable std::span<elem_t>, so callers never need to write const. The
     // lambda is instantiated for EVERY RVector T, so only build the body for element types
     // fn accepts; the rest abort at runtime (never reached, since the common type is fixed).
-    if constexpr (std::invocable<F, std::span<elem_t>>) {
-      using out_t = std::invoke_result_t<F, std::span<elem_t>>;
+    if constexpr (std::invocable<F&, std::span<elem_t>>) {
+      using out_t = std::remove_cvref_t<std::invoke_result_t<F&, std::span<elem_t>>>;
       static_assert(RVal<out_t>, "list_pmap: fn's return type is not storable in r_vec");
 
       if (k == 0){
