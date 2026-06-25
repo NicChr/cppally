@@ -152,6 +152,8 @@ T curr(const cursor<T>& c) {
   return c.src->view(c.i);
 }
 
+// pmap but positional helpers like `lag()`, `lead()` and `curr()` must be used
+// e.g. [](auto a){ return curr(a); } instead of [](auto a){ return a; }
 template <typename F, RVal... Ts>
   requires std::invocable<F&, cursor<Ts>...>
 auto pmap_with_shift(F fn, const r_vec<Ts>&... vecs) {
