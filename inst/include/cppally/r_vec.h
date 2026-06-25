@@ -555,11 +555,11 @@ struct r_vec {
   // the result of each fn is used the first argument of the next call
   template <typename F>
   requires std::invocable<F&, T, T>
-  auto reduce(F fn, bool na_skip = false) const {
+  auto reduce(F fn) const {
     if (length() == 0) [[unlikely]] {
       abort("`reduce`: cannot reduce an empty vector without an `init` starting value");
     }
-    return reduce(fn, /*init = */ view(0), /*na_skip = */ na_skip, /*from = */ 1);
+    return reduce(fn, /*init = */ view(0), /*na_skip = */ false, /*from = */ 1);
   }
 
   template <typename Acc, typename F>
