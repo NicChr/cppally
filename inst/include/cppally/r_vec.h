@@ -507,18 +507,19 @@ struct r_vec {
 
   public:
 
-  // Apply a function to each element, modifying *this in-place: fn(value) -> T
-  // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
-  // parallel - Should loop be exected using multiple threads? Only applicable for RVectorisable types. Threads are set via `set_threads()`
-  void apply(std::invocable<T> auto fn, bool simd = false, bool parallel = false) {
-    map_impl(*this, [&](r_size_t, auto v){ return fn(v); }, simd, parallel);
-  }
-
   // Apply a function to each element with access to the index, modifying *this in-place: fn(index, value) -> T
   // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
   // parallel - Should loop be exected using multiple threads? Only applicable for RVectorisable types. Threads are set via `set_threads()`
   void apply_with_index(std::invocable<r_size_t, T> auto fn, bool simd = false, bool parallel = false) {
+    // maybe_ensure_exclusive();
     map_impl(*this, fn, simd, parallel);
+  }
+
+  // Apply a function to each element, modifying *this in-place: fn(value) -> T
+  // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
+  // parallel - Should loop be exected using multiple threads? Only applicable for RVectorisable types. Threads are set via `set_threads()`
+  void apply(std::invocable<T> auto fn, bool simd = false, bool parallel = false) {
+    apply_with_index([&](r_size_t, auto v){ return fn(v); }, simd, parallel);
   }
 
   // From left-to-right: recursively apply a binary function to pairs of elements across *this
@@ -843,6 +844,37 @@ struct r_vec {
     r_vec<r_str_view> nms = names();
     nms.rev();
     set_names(nms);
+  }
+
+  // In-place shift: k > 0 lags (shifts right), k < 0 leads (shifts left)
+  void shift(r_size_t k = 1, const T& fill_value = na<T>()) {
+
+    r_size_t n = length();
+
+    if (n == 0 || k == 0) {
+      return;
+    }
+
+    r_size_t ak = std::abs(k);
+    if (ak >= n) {
+      fill(fill_value);
+      return;
+    }
+    if (k > 0) {
+      for (r_size_t i = n - 1; i >= k; --i) {
+        set(i, view(i - k));
+      }
+      for (r_size_t i = 0; i < ak; ++i) {
+        set(i, fill_value);
+      }
+    } else {
+      for (r_size_t i = 0; i < n - ak; ++i) {
+        set(i, view(i + ak));
+      }
+      for (r_size_t i = n - ak; i < n; ++i) {
+        set(i, fill_value);
+      }
+    }
   }
 
   void iota(T init = T(0)) requires (any<T, r_int, r_int64>) {
