@@ -155,16 +155,14 @@ T curr(const cursor<T>& c) {
 template <typename F, RVal... Ts>
   requires std::invocable<F&, cursor<Ts>...>
 auto pmap_with_shift(F fn, const r_vec<Ts>&... vecs) {
-  if constexpr (sizeof...(Ts) > 1) {
-    const std::array<r_size_t, sizeof...(Ts)> lens{ vecs.length()... };
-    for (r_size_t l : lens) {
-      if (l != lens[0]) [[unlikely]] {
-        abort("pmap_window: all inputs must be the same length");
-      }
+  const std::array<r_size_t, sizeof...(Ts)> lens{ vecs.length()... };
+  for (r_size_t l : lens) {
+    if (l != lens[0]) [[unlikely]] {
+      abort("pmap_window: all inputs must be the same length");
     }
   }
   return pmap_with_index([&](r_size_t i, Ts...){
-    return fn(cursor<Ts>{ &vecs, i, vecs.length() }...);
+    return fn(cursor<Ts>{ &vecs, i, lens[0] }...);
   }, vecs...);
 }
 
