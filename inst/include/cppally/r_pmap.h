@@ -127,6 +127,62 @@ auto pmap_parallel_simd(F fn, const r_vec<Ts>&... vecs) {
   return pmap_impl<true, true>([&](r_size_t, Ts... vs){ return fn(vs...); }, vecs...);
 }
 
+template <RVal T>
+struct cursor {
+  const r_vec<T>* src;
+  r_size_t i;
+  r_size_t n;
+  bool oob(r_size_t idx) const noexcept {
+    using r_usize_t = std::make_unsigned_t<r_size_t>;
+    return static_cast<r_usize_t>(idx) >= static_cast<r_usize_t>(n);
+  }
+};
+
+template <RVal T>
+T lag(const cursor<T>& c, r_size_t k = 1, const T& default_value = na<T>()) {
+  r_size_t idx = c.i - k;
+  return c.oob(idx) ? default_value : c.src->view(idx);
+}
+template <RVal T>
+T lead(const cursor<T>& c, r_size_t k = 1, const T& default_value = na<T>()) {
+  return lag(c, -k, default_value);
+}
+template <RVal T>
+T curr(const cursor<T>& c) { 
+  return c.src->view(c.i);
+}
+
+template <typename F, RVal... Ts>
+  requires std::invocable<F&, cursor<Ts>...>
+auto pmap_window(F fn, const r_vec<Ts>&... vecs) {
+  using out_t = std::remove_cvref_t<std::invoke_result_t<F&, cursor<Ts>...>>;
+  static_assert(RVal<out_t>, "pmap_window: output type is not storable in r_vec");
+
+  constexpr int n_vecs = sizeof...(Ts);
+  if constexpr (n_vecs == 0) {
+    return r_vec<out_t>();
+  } else {
+    const std::array<r_size_t, n_vecs> lens{ vecs.length()... };
+    r_size_t n = lens[0];
+    for (r_size_t l : lens) {
+      if (l == 0) {
+        return r_vec<out_t>();
+      }
+      n = std::max(n, l);
+    }
+
+    r_vec<out_t> out(n);
+    [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+      std::array<r_size_t, n_vecs> j{};
+      for (r_size_t i = 0; i < n; ++i) {
+        out.set(i, fn(cursor<Ts>{ &vecs, j[Is], lens[Is] }...));
+        (recycle_index(j[Is], lens[Is]), ...);
+      }
+    }(std::index_sequence_for<Ts...>{});
+    return out;
+  }
+}
+
 }
 
 #endif
