@@ -122,7 +122,7 @@ struct r_factors {
 
     // If max is still the same value as when initialised, this either means the vector was full of NAs, or the max really is max int
     // Either way, we check in this rare case
-    if (max_code == unwrap(r_limits<r_int>::min()) && codes.all_val(na<r_int>())){
+    if (max_code == unwrap(r_limits<r_int>::min()) && (codes.na_count() == n)){
         max_code = unwrap(na<r_int>());
     }
 

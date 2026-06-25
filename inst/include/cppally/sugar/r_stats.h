@@ -155,7 +155,7 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
 
         // If lo/hi are still the same values as when initialised, this either means the vector was full of NAs, or the range really is max/min int
         // Either way, we check in this rare case
-        if (lo == max_val && hi == min_val && x.all_val(na<T>())){
+        if (lo == max_val && hi == min_val && (x.na_count() == n)){
             lo = na<T>();
             hi = na<T>();
         }
