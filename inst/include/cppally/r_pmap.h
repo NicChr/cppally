@@ -154,33 +154,18 @@ T curr(const cursor<T>& c) {
 
 template <typename F, RVal... Ts>
   requires std::invocable<F&, cursor<Ts>...>
-auto pmap_window(F fn, const r_vec<Ts>&... vecs) {
-  using out_t = std::remove_cvref_t<std::invoke_result_t<F&, cursor<Ts>...>>;
-  static_assert(RVal<out_t>, "pmap_window: output type is not storable in r_vec");
-
-  constexpr int n_vecs = sizeof...(Ts);
-  if constexpr (n_vecs == 0) {
-    return r_vec<out_t>();
-  } else {
-    const std::array<r_size_t, n_vecs> lens{ vecs.length()... };
-    r_size_t n = lens[0];
+auto pmap_with_shift(F fn, const r_vec<Ts>&... vecs) {
+  if constexpr (sizeof...(Ts) > 1) {
+    const std::array<r_size_t, sizeof...(Ts)> lens{ vecs.length()... };
     for (r_size_t l : lens) {
-      if (l == 0) {
-        return r_vec<out_t>();
+      if (l != lens[0]) [[unlikely]] {
+        abort("pmap_window: all inputs must be the same length");
       }
-      n = std::max(n, l);
     }
-
-    r_vec<out_t> out(n);
-    [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-      std::array<r_size_t, n_vecs> j{};
-      for (r_size_t i = 0; i < n; ++i) {
-        out.set(i, fn(cursor<Ts>{ &vecs, j[Is], lens[Is] }...));
-        (recycle_index(j[Is], lens[Is]), ...);
-      }
-    }(std::index_sequence_for<Ts...>{});
-    return out;
   }
+  return pmap_with_index([&](r_size_t i, Ts...){
+    return fn(cursor<Ts>{ &vecs, i, vecs.length() }...);
+  }, vecs...);
 }
 
 }
