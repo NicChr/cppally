@@ -52,6 +52,8 @@ template <typename A> struct fold_result<control_flow<A>> { using acc = A; stati
 
 template <typename Acc>
 internal::control_flow<Acc> done(Acc v){ return { std::move(v), true }; }
+template <typename Acc>
+internal::control_flow<Acc> keep(Acc v){ return { std::move(v), false }; }
 
 template<RVal T>
 struct r_vec {
@@ -571,7 +573,7 @@ struct r_vec {
                   "reduce_until: `pred` must be callable with the accumulator and return bool");
     return reduce([&](const auto& acc, T x){
       auto next = fn(acc, x);
-      return pred(next) ? done(next) : next;
+      return pred(next) ? done(next) : keep(next);
     }, init, na_skip, from);
   }
 
@@ -584,7 +586,7 @@ struct r_vec {
                   "reduce_while: `pred` must be callable with the accumulator and return bool");
     return reduce([&](const auto& acc, T x){
       auto next = fn(acc, x);
-      return pred(next) ? next : done(next);
+      return pred(next) ? keep(next) : done(next);
     }, init, na_skip, from);
   }
 
