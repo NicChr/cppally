@@ -127,6 +127,8 @@ auto pmap_parallel_simd(F fn, const r_vec<Ts>&... vecs) {
   return pmap_impl<true, true>([&](r_size_t, Ts... vs){ return fn(vs...); }, vecs...);
 }
 
+namespace internal {
+
 template <RVal T>
 struct cursor {
   const r_vec<T>* src;
@@ -138,24 +140,26 @@ struct cursor {
   }
 };
 
+}
+
 template <RVal T>
-T lag(const cursor<T>& c, r_size_t k = 1, const T& default_value = na<T>()) {
+T lag(const internal::cursor<T>& c, r_size_t k = 1, const T& default_value = na<T>()) {
   r_size_t idx = c.i - k;
   return c.oob(idx) ? default_value : c.src->view(idx);
 }
 template <RVal T>
-T lead(const cursor<T>& c, r_size_t k = 1, const T& default_value = na<T>()) {
+T lead(const internal::cursor<T>& c, r_size_t k = 1, const T& default_value = na<T>()) {
   return lag(c, -k, default_value);
 }
 template <RVal T>
-T curr(const cursor<T>& c) { 
+T curr(const internal::cursor<T>& c) { 
   return c.src->view(c.i);
 }
 
 // pmap but positional helpers like `lag()`, `lead()` and `curr()` must be used
 // e.g. [](auto a){ return curr(a); } instead of [](auto a){ return a; }
 template <typename F, RVal... Ts>
-  requires std::invocable<F&, cursor<Ts>...>
+  requires std::invocable<F&, internal::cursor<Ts>...>
 auto pmap_with_shift(F fn, const r_vec<Ts>&... vecs) {
   const std::array<r_size_t, sizeof...(Ts)> lens{ vecs.length()... };
   for (r_size_t l : lens) {
@@ -164,7 +168,7 @@ auto pmap_with_shift(F fn, const r_vec<Ts>&... vecs) {
     }
   }
   return pmap_with_index([&](r_size_t i, Ts...){
-    return fn(cursor<Ts>{ &vecs, i, lens[0] }...);
+    return fn(internal::cursor<Ts>{ &vecs, i, lens[0] }...);
   }, vecs...);
 }
 
