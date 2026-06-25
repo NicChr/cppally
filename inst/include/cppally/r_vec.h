@@ -628,22 +628,6 @@ struct r_vec {
     return out;
   }
 
-  bool any_val(const T& val) const {
-    r_size_t n = length();
-    for (r_size_t i = 0; i < n; ++i){
-      if (identical(view(i), val)) return true;
-    }
-    return false;
-  }
-
-  bool all_val(const T& val) const {
-    r_size_t n = length();
-    for (r_size_t i = 0; i < n; ++i){
-      if (!identical(view(i), val)) return false;
-    }
-    return true;
-  } 
-
   // Count the number of NAs in a vector
   // It is marked noexcept because all `is_na()` functions are noexcept and there are no R vector allocations
   r_size_t na_count() const noexcept {
