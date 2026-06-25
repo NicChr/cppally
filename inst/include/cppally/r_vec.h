@@ -562,6 +562,32 @@ struct r_vec {
     return reduce(fn, /*init = */ view(0), /*na_skip = */ false, /*from = */ 1);
   }
 
+  // Like `reduce` but stops once `pred(acc)` is true, where `acc` is the accumulator
+  template <typename Acc, typename F, typename Pred>
+  requires std::invocable<F&, Acc, T>
+  auto reduce_until(F fn, Acc init, Pred pred, bool na_skip = false, r_size_t from = 0) const {
+    using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>;
+    static_assert(std::predicate<Pred&, acc_t>,
+                  "reduce_until: `pred` must be callable with the accumulator and return bool");
+    return reduce([&](const auto& acc, T x){
+      auto next = fn(acc, x);
+      return pred(next) ? done(next) : next;
+    }, init, na_skip, from);
+  }
+
+  // Like `reduce` but folds *while* `pred(acc)` is true
+  template <typename Acc, typename F, typename Pred>
+  requires std::invocable<F&, Acc, T>
+  auto reduce_while(F fn, Acc init, Pred pred, bool na_skip = false, r_size_t from = 0) const {
+    using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>;
+    static_assert(std::predicate<Pred&, acc_t>,
+                  "reduce_while: `pred` must be callable with the accumulator and return bool");
+    return reduce([&](const auto& acc, T x){
+      auto next = fn(acc, x);
+      return pred(next) ? next : done(next);
+    }, init, na_skip, from);
+  }
+
   template <typename Acc, typename F>
   requires std::invocable<F&, Acc, T>
   auto cumulative_reduce(F fn, Acc init, bool na_skip = false, r_size_t from = 0) const {
