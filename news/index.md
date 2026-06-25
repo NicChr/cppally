@@ -217,6 +217,9 @@ vectors up front, otherwise use `list_pmap`.
   generated C++ code. Not including it caused issues when trying to
   compile functions that constructed factors
 
+- Zero-length `r_vec` vectors can now be constructed unambiguously via
+  `r_vec<T>(0)`.
+
 ## cppally 0.1.0
 
 CRAN release: 2026-04-28
