@@ -207,7 +207,7 @@ r_dbl var(const r_vec<T>& x, bool na_rm = false){
         N = n;
     }
 
-    if (N < 2){
+    if (N < 2 || n < 2){
         return na<r_dbl>();
     }
 
