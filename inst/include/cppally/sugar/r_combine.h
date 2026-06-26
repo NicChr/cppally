@@ -95,9 +95,7 @@ T flatten(const r_vec<r_sexp>& x) {
 inline r_sexp flatten(const r_vec<r_sexp>& x) {
 
     r_vec<r_sexp> vectors = x.remove(r_null);
-
     r_size_t n = vectors.length();
-
     if (n == 0){
         return r_null;
     }
@@ -107,37 +105,18 @@ inline r_sexp flatten(const r_vec<r_sexp>& x) {
         out_size += length(vectors.view(i));
     }
 
-    // Grab first vector from list and resize it to final size
-    // resize is best here as it resizes, doesn't initialise extra memory
-    // and preserves attributes
-    r_sexp out = resize(vectors.get(0), out_size);
+    r_sexp ptype = common_ptype(x);
 
-    r_size_t k = length(vectors.view(0)), m;
-    for (r_size_t i = 1; i < n; k += m, ++i){
-        r_sexp next = vectors.view(i);
-        m = length(next);
-        // Rolling common type
-        out = internal::view_sexp(out, [&]<typename out_t>(const out_t& out_vec) -> r_sexp {
-            return internal::view_sexp(next, [&]<typename next_t>(const next_t& next_vec) -> r_sexp {
-                if constexpr (RComposite<out_t> && RComposite<next_t>){
-                    using common_t = common_r_t<out_t, next_t>;
-                    if constexpr (is<out_t, common_t>){
-                        common_t acc(std::move(out));
-                        r_copy_n(acc, as<common_t>(next_vec), k, m);
-                        return as<r_sexp>(acc);
-                    } else {
-                        // Promote out to common type (fresh vector), then write
-                        common_t out_promoted = as<common_t>(out_vec);
-                        r_copy_n(out_promoted, next_vec, k, m);
-                        return as<r_sexp>(out_promoted);
-                    }
-                } else {
-                    abort("flatten: unsupported element type %s", internal::type_str<next_t>());
-                }
-            });
-        });
-    }
-    return out;
+    return r_sexp_view(ptype, [&]<RComposite out_t>(const out_t&){
+        out_t out = resize(as<out_t>(vectors.view(0)), out_size);
+        r_size_t k = 0, m;
+        for (r_size_t i = 0; i < n; k += m, ++i){
+            out_t curr = as<out_t>(vectors.view(i));
+            m = length(curr);
+            r_copy_n(out, curr, k, m);
+        }
+        return static_cast<r_sexp>(out);
+    });
 }
   
 template <typename... Args>
