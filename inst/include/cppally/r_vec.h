@@ -789,7 +789,7 @@ struct r_vec {
 
   r_vec<T> resize(r_size_t n) const {
     r_size_t vec_size = length();
-    if (n == vec_size){
+    if (n == vec_size || is_null()){
       return *this;
     } else {
       r_vec<T> resized_vec(n);
@@ -802,6 +802,7 @@ struct r_vec {
           resized_vec.set(i, view(i)); 
         }
       }
+      resized_vec.set_names(names().resize(n));
       return resized_vec;
     }
   }
@@ -810,7 +811,7 @@ struct r_vec {
 
     r_size_t size = length();
 
-    if (size == n){
+    if (size == n || is_null()){
       return *this;
     }
 
@@ -837,9 +838,11 @@ struct r_vec {
         out.fill(na<T>());
       }
     }
+    out.set_names(names().rep_len(n));
     return out;
   }
 
+  // Reverse vector in-place
   void rev() {
     if (is_null()){
       return;
@@ -887,6 +890,9 @@ struct r_vec {
         set(i, fill_value);
       }
     }
+    r_vec<r_str_view> nms = names();
+    nms.shift(k, r_str_view());
+    set_names(nms);
   }
 
   void iota(T init = T(0)) requires (any<T, r_int, r_int64>) {
@@ -921,6 +927,7 @@ struct r_vec {
   r_vec<r_int> lengths() const requires is<T, r_sexp> {
     r_size_t n = length();
     r_vec<r_int> out(n);
+    out.set_names(names());
   
     for (r_size_t i = 0; i < n; ++i){
       r_size_t len = cppally::length(view(i));
