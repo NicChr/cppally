@@ -555,6 +555,7 @@ struct r_vec {
 
   // From left-to-right: recursively apply a binary function to pairs of elements across *this
   // the result of each fn is used the first argument of the next call
+  // use `done(x)` and `keep(x)` to break early and/or continue,  where x is the result to escape or carry forward
   template <typename F>
   requires std::invocable<F&, T, T>
   auto reduce(F fn) const {
@@ -562,32 +563,6 @@ struct r_vec {
       abort("`reduce`: cannot reduce an empty vector without an `init` starting value");
     }
     return reduce(fn, /*init = */ view(0), /*na_skip = */ false, /*from = */ 1);
-  }
-
-  // Like `reduce` but stops once `pred(acc)` is true, where `acc` is the accumulator
-  template <typename Acc, typename F, typename Pred>
-  requires std::invocable<F&, Acc, T>
-  auto reduce_until(F fn, Acc init, Pred pred, bool na_skip = false, r_size_t from = 0) const {
-    using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>;
-    static_assert(std::predicate<Pred&, acc_t>,
-                  "reduce_until: `pred` must be callable with the accumulator and return bool");
-    return reduce([&](const auto& acc, T x){
-      auto next = fn(acc, x);
-      return pred(next) ? done(next) : keep(next);
-    }, init, na_skip, from);
-  }
-
-  // Like `reduce` but folds *while* `pred(acc)` is true
-  template <typename Acc, typename F, typename Pred>
-  requires std::invocable<F&, Acc, T>
-  auto reduce_while(F fn, Acc init, Pred pred, bool na_skip = false, r_size_t from = 0) const {
-    using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>;
-    static_assert(std::predicate<Pred&, acc_t>,
-                  "reduce_while: `pred` must be callable with the accumulator and return bool");
-    return reduce([&](const auto& acc, T x){
-      auto next = fn(acc, x);
-      return pred(next) ? keep(next) : done(next);
-    }, init, na_skip, from);
   }
 
   template <typename Acc, typename F>
