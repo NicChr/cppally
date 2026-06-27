@@ -400,24 +400,8 @@ test_subset <- function(x, i, invert) {
   .Call(`_cppallytest_test_subset`, x, i, invert)
 }
 
-test_fill <- function(x, where, with) {
-  .Call(`_cppallytest_test_fill`, x, where, with)
-}
-
-test_counts <- function(x, y) {
-  .Call(`_cppallytest_test_counts`, x, y)
-}
-
-test_remove <- function(x, y) {
-  .Call(`_cppallytest_test_remove`, x, y)
-}
-
 test_find <- function(x, y) {
   .Call(`_cppallytest_test_find`, x, y)
-}
-
-test_replace <- function(x, y, z) {
-  .Call(`_cppallytest_test_replace`, x, y, z)
 }
 
 test_valgrind <- function() {

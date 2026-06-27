@@ -865,13 +865,8 @@ struct r_vec {
     apply_with_index([init](r_size_t i, auto){ return init + i; }, /*simd = */ true);
   }
 
-  r_size_t count(const r_vec<T>& values) const;
-  template <internal::RNumericSubscript V = r_int>
-  r_vec<V> find(const r_vec<T>& values, bool invert = false) const;
-  r_vec<T> remove(const r_vec<T>& values) const;
   template <internal::RSubscript U>
   void fill(const r_vec<U>& where, const r_vec<T>& with);
-  void replace(const r_vec<T>& old_values, const r_vec<T>& new_values);
 
 
   // Conditional member functions (only available for certain types)

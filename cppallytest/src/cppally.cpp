@@ -946,57 +946,13 @@ extern "C" SEXP _cppallytest_test_subset(SEXP x, SEXP i, SEXP invert) {
   END_CPPALLY
 }
 // test_subset.h
-extern "C" SEXP _cppallytest_test_fill(SEXP x, SEXP where, SEXP with) {
-  BEGIN_CPPALLY
-  return dispatch_template_impl<2, 3, std::array<int, 3>{0, -1, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP where_internal, SEXP with_internal) -> decltype(cpp_to_r(::test_fill(std::declval<r_vec<T>>(), std::declval<r_vec<r_int>>(), std::declval<r_vec<U>>()))) {
-        return cpp_to_r(::test_fill(as<r_vec<T>>(x_internal), as<r_vec<r_int>>(where_internal), as<r_vec<U>>(with_internal)));
-    },
-    x, where, with
-  );
-  END_CPPALLY
-}
-// test_subset.h
-extern "C" SEXP _cppallytest_test_counts(SEXP x, SEXP y) {
-  BEGIN_CPPALLY
-  return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_r(::test_counts(std::declval<r_vec<T>>(), std::declval<r_vec<U>>()))) {
-        return cpp_to_r(::test_counts(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)));
-    },
-    x, y
-  );
-  END_CPPALLY
-}
-// test_subset.h
-extern "C" SEXP _cppallytest_test_remove(SEXP x, SEXP y) {
-  BEGIN_CPPALLY
-  return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_r(::test_remove(std::declval<r_vec<T>>(), std::declval<r_vec<U>>()))) {
-        return cpp_to_r(::test_remove(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)));
-    },
-    x, y
-  );
-  END_CPPALLY
-}
-// test_subset.h
 extern "C" SEXP _cppallytest_test_find(SEXP x, SEXP y) {
   BEGIN_CPPALLY
   return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_r(::test_find(std::declval<r_vec<T>>(), std::declval<r_vec<U>>()))) {
-        return cpp_to_r(::test_find(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal)));
+    []<typename T, typename U>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_r(::test_find(std::declval<r_vec<T>>(), std::declval<U>()))) {
+        return cpp_to_r(::test_find(as<r_vec<T>>(x_internal), as<U>(y_internal)));
     },
     x, y
-  );
-  END_CPPALLY
-}
-// test_subset.h
-extern "C" SEXP _cppallytest_test_replace(SEXP x, SEXP y, SEXP z) {
-  BEGIN_CPPALLY
-  return dispatch_template_impl<2, 3, std::array<int, 3>{0, 1, 1}>(
-    []<typename T, typename U>(SEXP x_internal, SEXP y_internal, SEXP z_internal) -> decltype(cpp_to_r(::test_replace(std::declval<r_vec<T>>(), std::declval<r_vec<U>>(), std::declval<r_vec<U>>()))) {
-        return cpp_to_r(::test_replace(as<r_vec<T>>(x_internal), as<r_vec<U>>(y_internal), as<r_vec<U>>(z_internal)));
-    },
-    x, y, z
   );
   END_CPPALLY
 }
@@ -1044,7 +1000,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_combine2",                     (DL_FUNC) &_cppallytest_test_combine2,                     2},
     {"_cppallytest_test_construct_date",               (DL_FUNC) &_cppallytest_test_construct_date,               1},
     {"_cppallytest_test_copy",                         (DL_FUNC) &_cppallytest_test_copy,                         1},
-    {"_cppallytest_test_counts",                       (DL_FUNC) &_cppallytest_test_counts,                       2},
     {"_cppallytest_test_dates1",                       (DL_FUNC) &_cppallytest_test_dates1,                       1},
     {"_cppallytest_test_dates2",                       (DL_FUNC) &_cppallytest_test_dates2,                       1},
     {"_cppallytest_test_deduced_scalar_type",          (DL_FUNC) &_cppallytest_test_deduced_scalar_type,          1},
@@ -1055,7 +1010,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_factor1",                      (DL_FUNC) &_cppallytest_test_factor1,                      1},
     {"_cppallytest_test_factor2",                      (DL_FUNC) &_cppallytest_test_factor2,                      1},
     {"_cppallytest_test_factor3",                      (DL_FUNC) &_cppallytest_test_factor3,                      1},
-    {"_cppallytest_test_fill",                         (DL_FUNC) &_cppallytest_test_fill,                         3},
     {"_cppallytest_test_find",                         (DL_FUNC) &_cppallytest_test_find,                         2},
     {"_cppallytest_test_group_counts",                 (DL_FUNC) &_cppallytest_test_group_counts,                 2},
     {"_cppallytest_test_group_id",                     (DL_FUNC) &_cppallytest_test_group_id,                     2},
@@ -1085,8 +1039,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_null",                         (DL_FUNC) &_cppallytest_test_null,                         0},
     {"_cppallytest_test_order",                        (DL_FUNC) &_cppallytest_test_order,                        2},
     {"_cppallytest_test_range",                        (DL_FUNC) &_cppallytest_test_range,                        2},
-    {"_cppallytest_test_remove",                       (DL_FUNC) &_cppallytest_test_remove,                       2},
-    {"_cppallytest_test_replace",                      (DL_FUNC) &_cppallytest_test_replace,                      3},
     {"_cppallytest_test_rval_identity",                (DL_FUNC) &_cppallytest_test_rval_identity,                1},
     {"_cppallytest_test_scalar",                       (DL_FUNC) &_cppallytest_test_scalar,                       2},
     {"_cppallytest_test_scalar2",                      (DL_FUNC) &_cppallytest_test_scalar2,                      2},

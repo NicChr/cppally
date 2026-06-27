@@ -14,10 +14,7 @@
 #include <cppally/sugar/r_hash.h>
 #include <cppally/sugar/r_groups.h>
 #include <cppally/sugar/r_match.h>
-#include <cppally/sugar/r_find.h>
-#include <cppally/sugar/r_remove.h>
 #include <cppally/sugar/r_fill.h>
-#include <cppally/sugar/r_replace.h>
 #include <cppally/r_copy.h>
 #include <cppally/r_identical.h>
 
@@ -70,18 +67,6 @@ inline r_vec<r_int> match(const T& x, const U& y, r_int no_match) {
     return CPPALLY_VIEW_PAIR_AND_APPLY(x, y, r_vec<r_int>, match, no_match);
 }
 
-template <typename T, typename U>
-requires (is<T, r_sexp> || is<U, r_sexp>)
-inline T remove(const T& x, const U& values) {
-    return as<T>(CPPALLY_VIEW_PAIR_AND_APPLY(x, values, SEXP, remove));
-}
-
-template <typename T, typename U, internal::RNumericSubscript V>
-requires (is<T, r_sexp> || is<U, r_sexp>)
-inline r_vec<V> find(const T& x, const U& values, bool invert) {
-    return CPPALLY_VIEW_PAIR_AND_APPLY(x, values, r_vec<V>, find, invert);
-}
-
 template <internal::RSubscript U, typename V>
 void fill(r_sexp& x, const r_vec<U>& where, const V& with) {
     r_sexp_mutate(x, [&]<typename x_t> requires (!is<x_t, r_sexp>) (x_t& x_){
@@ -100,19 +85,6 @@ void fill(r_sexp& x, const r_vec<U>& where, const r_sexp& with) {
             abort("fill: unsupported `with` type %s", internal::type_str<with_t>());
         } else {
             fill(x, where, with_);
-        }
-    });
-}
-
-template <typename U>
-inline void replace(r_sexp& x, const U& old_values, const U& new_values) {
-    r_sexp_mutate(x, [&]<typename x_t> requires (!is<x_t, r_sexp>) (x_t& x_) {
-        x_t oldv = x_t(static_cast<SEXP>(old_values));
-        x_t newv = x_t(static_cast<SEXP>(new_values));
-        if constexpr (requires { replace(x_, oldv, newv); }){
-            replace(x_, oldv, newv);
-        } else {
-            abort("No available method for type %s in `replace`", internal::type_str<x_t>());
         }
     });
 }
