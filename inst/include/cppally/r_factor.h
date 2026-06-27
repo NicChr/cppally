@@ -113,11 +113,12 @@ struct r_factors {
     r_size_t n = codes.length();
     // Max code
     int max_code = unwrap(r_limits<r_int>::min());
+    const auto *p_codes = codes.data();
 
     OMP_SIMD_REDUCTION1(max:max_code)
     for (r_size_t i = 0; i < n; ++i){
         // No need to ignore NA for max() because NA is defined as lowest representable value
-        max_code = std::max(max_code, codes.data()[i]);
+        max_code = std::max(max_code, p_codes[i]);
     }
 
     // If max is still the same value as when initialised, this either means the vector was full of NAs, or the max really is max int
