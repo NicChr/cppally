@@ -5,7 +5,7 @@
 #include <cppally/sugar/r_sort.h>
 #include <cppally/sugar/r_groups.h>
 #include <cppally/sugar/r_subset.h>
-#include <cppally/sugar/r_fill.h>
+#include <cppally/sugar/r_replace_at.h>
 
 namespace cppally {
 
@@ -26,7 +26,7 @@ r_vec<r_lgl> duplicated(const T& x, bool all = false){
     return is_dup.subset(g.ids, false);
   } else {
     r_vec<r_lgl> out(x.length(), r_true);
-    out.fill(g.starts(), r_vec<r_lgl>(1, r_false));
+    replace_at(out, g.starts(), r_vec<r_lgl>(1, r_false));
     return out;
   }
 }

@@ -865,10 +865,6 @@ struct r_vec {
     apply_with_index([init](r_size_t i, auto){ return init + i; }, /*simd = */ true);
   }
 
-  template <internal::RSubscript U>
-  void fill(const r_vec<U>& where, const r_vec<T>& with);
-
-
   // Conditional member functions (only available for certain types)
 
   // POSIXct-only members
