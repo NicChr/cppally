@@ -13,34 +13,39 @@ namespace cppally {
 namespace internal {
 
 // Concatenate all character vectors of a list together
-inline r_vec<r_str> str_paste_list(const r_vec<r_sexp>& x, const char* sep = ""){
+inline r_vec<r_str> str_paste_list(const std::vector<r_vec<r_str_view>>& x, const char* sep = ""){
     
-    r_vec<r_sexp> characters = x.remove(r_null);
-    r_size_t n_vecs = characters.length();
+    r_size_t n_vecs = x.size();
     if (n_vecs == 0){
         return r_vec<r_str>();
     }
 
-    r_size_t n = recycle_size(characters);
+    std::vector<r_size_t> lens;
+    lens.reserve(n_vecs);
+
+    r_size_t n = 0;
+    for (const auto& v : x){
+        r_size_t l = v.length();
+        lens.push_back(l);
+        if (l == 0){
+            n = 0; 
+            break; 
+        }
+        n = std::max(n, l);
+    }
+
     if (n == 0){
         return r_vec<r_str>();
     }
 
-    // Pre-cast to character vectors and recycle all to common length
-    std::vector<r_vec<r_str_view>> vecs;
-    vecs.reserve(n_vecs);
-    for (r_size_t i = 0; i < n_vecs; ++i){
-        r_vec<r_str_view> v = as<r_vec<r_str_view>>(characters.view(i)).rep_len(n);
-        vecs.push_back(std::move(v));
-    }
-
+    std::vector<r_size_t> idx(n_vecs, 0);
     std::string buf = "";
     r_str_view e;
     r_vec<r_str_view> out(n);
 
     for (r_size_t j = 0; j < n; ++j){
         for (r_size_t i = 0; i < n_vecs; ++i){
-            e = vecs[i].view(j);
+            e = x[i].view(idx[i]);
             if (is_na(e)){
                 break;
             }
@@ -51,6 +56,10 @@ inline r_vec<r_str> str_paste_list(const r_vec<r_sexp>& x, const char* sep = "")
         }
         out.set(j, is_na(e) ? na<r_str_view>() : c_str_to_r_str_view(buf.c_str()));
         buf.clear();
+        // Advance every counter, even on early break, to keep recycling aligned
+        for (r_size_t i = 0; i < n_vecs; ++i){
+            recycle_index(idx[i], lens[i]);
+        }
     }
     return as<r_vec<r_str>>(out);
 }
@@ -59,7 +68,9 @@ inline r_vec<r_str> str_paste_list(const r_vec<r_sexp>& x, const char* sep = "")
 
 template <typename... Args>
 r_vec<r_str> str_paste(Args... args){
-    return internal::str_paste_list(make_vec<r_sexp>(args...));
+    r_vec<r_sexp> vectors = make_vec<r_sexp>(args...).remove(r_null);
+    std::vector<r_vec<r_str_view>> characters = as<std::vector<r_vec<r_str_view>>>(vectors);
+    return internal::str_paste_list(characters);
 }
 inline r_str str_collapse(const r_vec<r_str>& x, const char* sep = ""){
     r_size_t n = x.length();

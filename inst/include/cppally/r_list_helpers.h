@@ -10,19 +10,14 @@ namespace cppally {
 
 // Recycle helper functions
 
-namespace internal {
-
-inline r_size_t recycle_size(const r_vec<r_sexp>& x){
-    r_size_t n = x.length();
-    r_size_t out = 0;
-
-    for (r_size_t i = 0; i < n; ++i){
-        r_size_t size = length(x.view(i));
-        if (size == 0) return 0;
-        out = std::max(out, size);
-    }
-    return out;
+inline r_size_t common_length(const r_vec<r_sexp>& x){
+    return x.reduce([](r_size_t acc, const r_sexp& curr) {
+        r_size_t n = length(curr);
+        return n == 0 ? done(r_size_t{0}) : keep(std::max(acc, n));
+     }, r_size_t{0});
 }
+
+namespace internal {
 
 inline void recycle_impl(r_vec<r_sexp>& x, r_size_t common_size) {
     r_size_t n = x.length();
@@ -30,7 +25,6 @@ inline void recycle_impl(r_vec<r_sexp>& x, r_size_t common_size) {
         x.set(i, rep_len(x.view(i), common_size));
     }
 }
-
 }
 
 inline r_size_t unlisted_length(const r_vec<r_sexp>& x){
