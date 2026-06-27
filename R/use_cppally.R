@@ -57,7 +57,14 @@ use_cppally <- function(){
   proj_path <- utils::getFromNamespace("proj_path", "usethis")
   utils::getFromNamespace("check_is_package", "usethis")("use_cppally()")
   stop_unless_installed("cppally")
-  utils::getFromNamespace("check_uses_roxygen", "usethis")("use_cppally()")
+  d <- desc::desc()
+  has_roxygen <- !is.null(d$get("RoxygenNote")[[1]]) || !is.null(d$get("Config/roxygen2/version")[[1]])
+  if (!has_roxygen) {
+    cli::cli_abort(c(
+      "x" = "Package does not appear to use roxygen2.",
+      "i" = "Add {.code Roxygen: list(markdown = TRUE)} to DESCRIPTION, then run {.run devtools::document()}."
+    ))
+  }
   utils::getFromNamespace("check_has_package_doc", "usethis")("use_cppally()")
   suppressMessages(utils::getFromNamespace("use_src", "usethis")())
   suppressMessages(utils::getFromNamespace("use_dependency", "usethis")("cppally", "LinkingTo"))
