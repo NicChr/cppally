@@ -359,3 +359,42 @@ inline T lcm(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
 }
 
 #endif
+
+// Example of how to use structs to lessen the need for lambdas
+// struct max_fn {
+
+//   template <NumericType T, NumericType U>
+//   requires (RNumericType<T> || RNumericType<U>)
+//   constexpr common_r_t<T, U> operator()(T a, U b) const noexcept {
+//     using common_t = common_r_t<T, U>;
+
+//     return internal::either_na(a, b) ? na<common_t>() : 
+//     common_t(std::max(
+//       static_cast<unwrap_t<common_t>>(unwrap(a)), 
+//       static_cast<unwrap_t<common_t>>(unwrap(b))
+//     ));
+//   }
+
+//   r_str_view operator()(r_str_view x, r_str_view y) const {
+//     r_lgl res = x < y;
+//     if (is_na(res)){
+//       return na<r_str_view>();
+//     } else {
+//       return res ? y : x;
+//     }
+//   }
+
+//   r_str_view operator()(const r_str& x, const r_str& y) const {
+//       r_lgl res = x < y;
+//       if (is_na(res)){
+//         return na<r_str>();
+//       } else {
+//         return res ? y : x;
+//       }
+//   }
+// };
+
+// inline constexpr max_fn max{};
+
+// We can then write easily write a vectorised max function like so
+// x.reduce(max);
