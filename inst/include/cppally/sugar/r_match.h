@@ -5,6 +5,7 @@
 #include <cppally/sugar/r_hash.h>
 #include <cppally/sugar/r_stats.h>
 #include <cppally/r_vec_ops.h>
+#include <cppally/r_pmap.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 #include <functional>
 #include <vector>
@@ -242,6 +243,32 @@ r_factors::r_factors(const r_vec<T>& x, const r_vec<T>& levels) : value(match(x,
   }
   init_factor(str_levels, false);
 }
+
+namespace internal {
+
+struct in_tag {};
+
+template <RVal T>
+struct in_lhs {
+  const r_vec<T>& needles;
+};
+
+// x IN table  expands to  x < in_tag{} > table, parsed as (x < in_tag{}) > table
+template <RVal T>
+in_lhs<T> operator<(const r_vec<T>& needles, in_tag) noexcept {
+  return in_lhs<T>{ needles };
+}
+
+template <RVal T>
+r_vec<r_lgl> operator>(in_lhs<T> lhs, const r_vec<T>& table) {
+  auto matches = match(lhs.needles, table);
+  return pmap_parallel_simd([](auto a) noexcept { return r_lgl(!is_na(a)); }, matches);
+}
+
+}
+
+// Named infix operator
+#define IS_IN < cppally::internal::in_tag{} >
 
 }
 
