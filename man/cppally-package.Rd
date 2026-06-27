@@ -19,6 +19,11 @@ Useful links:
 \author{
 \strong{Maintainer}: Nick Christofides \email{nick.christofides.r@gmail.com} (\href{https://orcid.org/0000-0002-9743-7342}{ORCID}) [copyright holder]
 
+Authors:
+\itemize{
+  \item Nick Christofides \email{nick.christofides.r@gmail.com} (\href{https://orcid.org/0000-0002-9743-7342}{ORCID}) [copyright holder]
+}
+
 Other contributors:
 \itemize{
   \item Martin Leitner-Ankerl (Author of bundled ankerl::unordered_dense library) [copyright holder]
