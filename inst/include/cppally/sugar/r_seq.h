@@ -5,11 +5,12 @@
 #include <cppally/r_vec.h>
 #include <cppally/sugar/r_stats.h>
 #include <cppally/r_coerce.h>
+#include <vector>
 
 namespace cppally {
 
 template <RNumericType T, RNumericType U>
-r_vec<r_sexp> sequences(const r_vec<r_int>& size, const r_vec<T>& from, const r_vec<U>& by){
+std::vector<common_r_t<r_vec<T>, r_vec<U>>> sequences(const r_vec<r_int>& size, const r_vec<T>& from, const r_vec<U>& by){
 
     using common_t = common_r_t<T, U>;
     using commont_cpp_t = unwrap_t<common_t>;
@@ -33,7 +34,8 @@ r_vec<r_sexp> sequences(const r_vec<r_int>& size, const r_vec<T>& from, const r_
     
     r_size_t interrupt_counter = 0;
     
-    r_vec<r_sexp> out(size_n);
+    std::vector<r_vec<common_t>> out;
+    out.reserve(size_n);
 
     if (size_n > 0){
         
@@ -71,9 +73,8 @@ r_vec<r_sexp> sequences(const r_vec<r_int>& size, const r_vec<T>& from, const r_
                 } else {
                     curr_seq.set(j, common_t( start + (j * increment) ));
                 }
-
             }
-            out.set(i, curr_seq.value);
+            out.push_back(curr_seq);
         }
     }
     return out;
