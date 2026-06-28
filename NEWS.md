@@ -16,6 +16,8 @@
 
 - Setting attributes on plain `SEXP` is now unsupported, e.g. via `cppally::attr::set_attr()`. Use cppally types such as `r_vector`, `r_factors`, `r_df` and in some cases `r_sexp` for attribute manipulation.
 
+- Various out-of-place or trivial to implement `r_vec` member functions have been removed.
+
 - `visit_vector`, `visit_sexp` and `view_sexp` have been deprecated in favour of the more flexible constrained `r_sexp` visitors: `r_sexp_visit`, `r_sexp_view` and `r_sexp_mutate`. These allow concepts and custom constraints to be applied directly on the lambda's template parameter, e.g. `r_sexp_visit(x, [&]<RVector T>(T vec){})` — here `x` is dispatched as its concrete vector type and aborts at runtime if the underlying type isn't an `RVector`. `r_sexp_view` is the non-owning sibling: the wrapper handed to the lambda is a view (no extra protect), so it must not outlive `x`. `r_sexp_mutate` is for in-place mutation: it moves `x` into the typed wrapper (making it the sole owner), calls `f`, then writes the result back.
 
 - `r_factors` elements are now treated as `r_str` in member functions like `get()` and `set()`
