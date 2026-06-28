@@ -3,9 +3,10 @@ pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   cppally: cppally.html
+  functionals: functionals.html
   protection: protection.html
   vector_name_hashing: vector_name_hashing.html
-last_built: 2026-06-26T07:06Z
+last_built: 2026-06-28T09:17Z
 urls:
   reference: https://nicchr.github.io/cppally/reference
   article: https://nicchr.github.io/cppally/articles
