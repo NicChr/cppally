@@ -14,15 +14,12 @@ concept RPlainNumber = any<T, r_int, r_int64, r_dbl>;
 }
 
 template <internal::RPlainNumber T, internal::RPlainNumber U>
-r_vec<common_r_t<T, U>> sequence(r_int size, T from, U by){
+r_vec<common_r_t<T, U>> sequence(int size, T from, U by){
 
     using common_t   = common_r_t<T, U>;
     using common_cpp = unwrap_t<common_t>;
 
-    if (is_na(size)){
-        abort("size must not be NA");
-    }
-    if ( (size < 0).is_true() ){
+    if (size < 0){
         abort("size must be non-negative");
     }
 
@@ -63,42 +60,57 @@ r_vec<common_r_t<T, U>> sequence(r_int size, T from, U by){
 
 // size of the sequence from..to stepping by `by`
 template <internal::RPlainNumber T, internal::RPlainNumber U, internal::RPlainNumber V>
-r_int seq_size(T from, U to, V by){
+int seq_size(T from, U to, V by){
     auto del = to - from;
     // from == to with a zero increment is a well-defined length-1 sequence
     r_dbl ratio = ( ((del == 0) && (by == 0)).is_true() ) ? r_dbl(0.0) : del / by;
     if ( (ratio < 0).is_true() ){
         abort("sequence length is negative, please check the sign of `by`");
     }
+    auto out_size = trunc(ratio + r_dbl(1e-10)) + r_dbl(1.0);
+    if (is_na(out_size)){
+        abort("`seq_size`: Invalid size");
+    }
     // + 1e-10 absorbs floating point error before truncating
-    return as<r_int>( trunc(ratio + r_dbl(1e-10)) + r_dbl(1.0) );
+    return as<int>(out_size);
 }
 
 // first value given a size, an end point and an increment
 template <internal::RPlainNumber T, internal::RPlainNumber U>
-auto seq_start(r_int size, T to, U by){
+auto seq_start(int size, T to, U by){
     return to - max(size - r_int(1), r_int(0)) * by;
 }
 
 // last value given a size, a start point and an increment
 template <internal::RPlainNumber T, internal::RPlainNumber U>
-auto seq_end(r_int size, T from, U by){
+auto seq_end(int size, T from, U by){
     return from + max(size - r_int(1), r_int(0)) * by;
 }
 
 // increment given a size and the two end points
 template <internal::RPlainNumber T, internal::RPlainNumber U>
-r_dbl seq_increment(r_int size, T from, U to){
-    if ( (from == to).is_true() || (size == r_int(1)).is_true() ){
+r_dbl seq_increment(int size, T from, U to){
+    if ( (from == to).is_true() || (size == 1) ){
         return r_dbl(0.0);
     }
     return (to - from) / max(size - r_int(1), r_int(0));
 }
 
 // build the sequence from..to stepping by `by`
+// `to` only sets the length; widen from/by to its type so the right vector is built directly
 template <internal::RPlainNumber T, internal::RPlainNumber U, internal::RPlainNumber V>
-r_vec<common_r_t<T, V>> seq(T from, U to, V by){
-    return sequence(seq_size(from, to, by), from, by);
+r_vec<common_r_t<T, U, V>> seq(T from, U to, V by){
+    using out_t = common_r_t<T, U, V>;
+    return sequence(seq_size(from, to, by), as<out_t>(from), as<out_t>(by));
+}
+template <internal::RPlainNumber T, internal::RPlainNumber U>
+r_vec<common_r_t<T, U>> seq(T from, U to){
+    using out_t = common_r_t<T, U>;
+    out_t by = as<out_t>(sign(to - from));
+    return sequence(seq_size(from, to, by), as<out_t>(from), by);
+}
+inline r_vec<r_int> seq(int size){
+    return sequence(size, r_int(0), r_int(1));
 }
 
 }
