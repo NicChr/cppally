@@ -249,23 +249,27 @@ T gcd(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
   T ax = abs(x);
   T ay = abs(y);
 
-  if (is_na(ax) || is_na(ay)){
-    if (na_rm){ 
-      if (is_na(ax)){
-        return ay;
-      } else {
-        return ax;
-      }
-    } else {
-      return na<T>();
-    }
-  }
-
   unwrapped_t ax_ = unwrap(ax);
   unwrapped_t ay_ = unwrap(ay);
   unwrapped_t tol_ = unwrap(tol);
 
   if constexpr (RIntegerType<T>){
+
+    if (identical(ax, T(1)) || identical(ay, T(1))){
+      return T(1);
+    }
+
+    if (is_na(ax) || is_na(ay)){
+      if (na_rm){
+        if (is_na(ax)){
+          return ay;
+        } else {
+          return ax;
+        }
+      } else {
+        return na<T>();
+      }
+    }
 
     // Taken from number theory lecture notes
 
@@ -291,6 +295,18 @@ T gcd(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
     }
     return T(ax_);
   } else {
+
+    if (is_na(ax) || is_na(ay)){
+      if (na_rm){ 
+        if (is_na(ax)){
+          return ay;
+        } else {
+          return ax;
+        }
+      } else {
+        return na<T>();
+      }
+    }
 
     // GCD(0,0)=0
     if (ax_ <= tol_ && ay_ <= tol_){
