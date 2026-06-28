@@ -25,6 +25,9 @@
   `r_factors`, `r_df` and in some cases `r_sexp` for attribute
   manipulation.
 
+- Various out-of-place or trivial to implement `r_vec` member functions
+  have been removed.
+
 - `visit_vector`, `visit_sexp` and `view_sexp` have been deprecated in
   favour of the more flexible constrained `r_sexp` visitors:
   `r_sexp_visit`, `r_sexp_view` and `r_sexp_mutate`. These allow
@@ -127,65 +130,6 @@ auto cpp_pmax2(T x, U y){
 }
 ```
 
-While `pmap()` is a powerful iterator, as with all variadic functions,
-the number of inputs must be known at compile-time, therefore we can’t
-write an exact [`base::pmax()`](https://rdrr.io/r/base/Extremes.html)
-equivalent using `pmap()` because the number of vectors is only known at
-runtime.
-
-`list_pmap()` doesn’t have this limitation and can iterate over n
-vectors where n is known at runtime. This comes with other trade-offs
-which are detailed below.
-
-|  | pmap | list_pmap |
-|----|----|----|
-| Inputs | Function in arg-1, variadic-supplied vectors thereafter | List of vectors in arg-1, function in arg-2 |
-| Return type deduced at compile-time | Yes | No - defaults to `r_sexp` but can also be specified |
-| SIMD-enabled loops | Yes | No |
-| Parallel loops (\>1 thread) | Yes | No |
-| Speed | Very fast | Fast with some overhead |
-| Lambda requirements | Scalar inputs expressed explicitly | Container whose size is known at runtime like `std::span` (recommended) or `std::vector` |
-| Accepted R objects | Vectors only | Vectors only |
-
-The biggest and perhaps most surprising limitation of `list_pmap` is
-that it coerces all its vectors to a common type. Visiting all `r_sexp`
-objects simultaneously (via `r_sexp_view`) would incur a combinatorial
-explosion of instantiation size, roughly 15^k for k vectors, therefore
-this is practically impossible for any reasonably-sized list.
-
-Example of C++ version of
-[`base::pmax`](https://rdrr.io/r/base/Extremes.html)
-
-``` cpp
-[[cppally::register]]
-SEXP list_pmax(r_vec<r_sexp> vectors){
-  return list_pmap<r_vec<r_dbl>>(vectors, []<RMathType elem>(std::span<elem> r) {
-    elem m = r[0];
-    for (size_t i = 1; i < r.size(); ++i){
-      m = max(m, r[i]);
-    }
-    return m;
-  });
-}
-```
-
-``` r
-
-cpp_pmax <- function(...){
-  list_pmax(list(...))
-}
-```
-
-``` r
-cpp_pmax2(c(0, 2, 4), c(1, 2, 3)) # Parallel max across 2 vectors
-1 2 4
-cpp_pmax(c(0, 2, 4), c(1, 2, 3), c(-5, 0, 5)) # Parallel max across k vectors
-1 2 5
-```
-
-For performance reasons, always use `pmap` if you know the number of
-vectors up front, otherwise use `list_pmap`.
-
 ##### Other improvements
 
 - New alias of `r_vec`, `r_vector`
@@ -211,6 +155,8 @@ vectors up front, otherwise use `list_pmap`.
 - New concept `RVectorisable` which encompasses types that are OMP
   friendly.
 
+- New infix operator `IS_IN`, identical to R’s `%in%`.
+
 #### Bug fixes
 
 - When registering C++ functions, cppally.hpp is now included in the
@@ -219,6 +165,9 @@ vectors up front, otherwise use `list_pmap`.
 
 - Zero-length `r_vec` vectors can now be constructed unambiguously via
   `r_vec<T>(0)`.
+
+- Math operations involving mixed types that included `r_dbl` are now
+  correct when involving `NA` values.
 
 ## cppally 0.1.0
 

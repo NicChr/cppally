@@ -52,6 +52,7 @@
 <ul><li><p><code>r_sexp.length()</code> has been deprecated, in favour of the free function <code><a href="https://rdrr.io/r/base/length.html" class="external-link">length()</a></code></p></li>
 <li><p><code>length(r_df)</code> now returns the number of rows instead of the number of cols, marking a shift in how cppally treats data frames. They are now seen as row-wise vectors</p></li>
 <li><p>Setting attributes on plain <code>SEXP</code> is now unsupported, e.g. via <code>cppally::attr::set_attr()</code>. Use cppally types such as <code>r_vector</code>, <code>r_factors</code>, <code>r_df</code> and in some cases <code>r_sexp</code> for attribute manipulation.</p></li>
+<li><p>Various out-of-place or trivial to implement <code>r_vec</code> member functions have been removed.</p></li>
 <li><p><code>visit_vector</code>, <code>visit_sexp</code> and <code>view_sexp</code> have been deprecated in favour of the more flexible constrained <code>r_sexp</code> visitors: <code>r_sexp_visit</code>, <code>r_sexp_view</code> and <code>r_sexp_mutate</code>. These allow concepts and custom constraints to be applied directly on the lambda’s template parameter, e.g. <code>r_sexp_visit(x, [&amp;]&lt;RVector T&gt;(T vec){})</code> — here <code>x</code> is dispatched as its concrete vector type and aborts at runtime if the underlying type isn’t an <code>RVector</code>. <code>r_sexp_view</code> is the non-owning sibling: the wrapper handed to the lambda is a view (no extra protect), so it must not outlive <code>x</code>. <code>r_sexp_mutate</code> is for in-place mutation: it moves <code>x</code> into the typed wrapper (making it the sole owner), calls <code>f</code>, then writes the result back.</p></li>
 <li><p><code>r_factors</code> elements are now treated as <code>r_str</code> in member functions like <code><a href="https://rdrr.io/r/base/get.html" class="external-link">get()</a></code> and <code>set()</code></p></li>
 <li><p><code>r_sexp_visit()</code> now visit <code>r_null</code> as <code>r_vec&lt;r_sexp&gt;(r_null)</code>, essentially treating <code>NULL</code> as an empty list but without changing the underlying data</p></li>
@@ -98,54 +99,6 @@
 <span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="kw">auto</span> cpp_pmax2<span class="op">(</span>T x<span class="op">,</span> U y<span class="op">){</span></span>
 <span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="cf">return</span> pmap<span class="op">([](</span><span class="kw">auto</span> a<span class="op">,</span> <span class="kw">auto</span> b<span class="op">){</span> <span class="cf">return</span> max<span class="op">(</span>a<span class="op">,</span> b<span class="op">);</span> <span class="op">},</span> x<span class="op">,</span> y<span class="op">);</span></span>
 <span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>While <code>pmap()</code> is a powerful iterator, as with all variadic functions, the number of inputs must be known at compile-time, therefore we can’t write an exact <code><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">base::pmax()</a></code> equivalent using <code>pmap()</code> because the number of vectors is only known at runtime.</p>
-<p><code>list_pmap()</code> doesn’t have this limitation and can iterate over n vectors where n is known at runtime. This comes with other trade-offs which are detailed below.</p>
-<table class="table"><colgroup><col width="41%"><col width="29%"><col width="29%"></colgroup><thead><tr><th></th>
-<th>pmap</th>
-<th>list_pmap</th>
-</tr></thead><tbody><tr><td>Inputs</td>
-<td>Function in arg-1, variadic-supplied vectors thereafter</td>
-<td>List of vectors in arg-1, function in arg-2</td>
-</tr><tr><td>Return type deduced at compile-time</td>
-<td>Yes</td>
-<td>No - defaults to <code>r_sexp</code> but can also be specified</td>
-</tr><tr><td>SIMD-enabled loops</td>
-<td>Yes</td>
-<td>No</td>
-</tr><tr><td>Parallel loops (&gt;1 thread)</td>
-<td>Yes</td>
-<td>No</td>
-</tr><tr><td>Speed</td>
-<td>Very fast</td>
-<td>Fast with some overhead</td>
-</tr><tr><td>Lambda requirements</td>
-<td>Scalar inputs expressed explicitly</td>
-<td>Container whose size is known at runtime like <code>std::span</code> (recommended) or <code>std::vector</code>
-</td>
-</tr><tr><td>Accepted R objects</td>
-<td>Vectors only</td>
-<td>Vectors only</td>
-</tr></tbody></table><p>The biggest and perhaps most surprising limitation of <code>list_pmap</code> is that it coerces all its vectors to a common type. Visiting all <code>r_sexp</code> objects simultaneously (via <code>r_sexp_view</code>) would incur a combinatorial explosion of instantiation size, roughly 15^k for k vectors, therefore this is practically impossible for any reasonably-sized list.</p>
-<p>Example of C++ version of <code><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">base::pmax</a></code></p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>SEXP list_pmax<span class="op">(</span>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> vectors<span class="op">){</span></span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="cf">return</span> list_pmap<span class="op">&lt;</span>r_vec<span class="op">&lt;</span>r_dbl<span class="op">&gt;&gt;(</span>vectors<span class="op">,</span> <span class="op">[]&lt;</span>RMathType elem<span class="op">&gt;(</span><span class="bu">std::</span>span<span class="op">&lt;</span>elem<span class="op">&gt;</span> r<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>    elem m <span class="op">=</span> r<span class="op">[</span><span class="dv">0</span><span class="op">];</span></span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>    <span class="cf">for</span> <span class="op">(</span><span class="dt">size_t</span> i <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> i <span class="op">&lt;</span> r<span class="op">.</span>size<span class="op">();</span> <span class="op">++</span>i<span class="op">){</span></span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>      m <span class="op">=</span> max<span class="op">(</span>m<span class="op">,</span> r<span class="op">[</span>i<span class="op">]);</span></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>    <span class="cf">return</span> m<span class="op">;</span></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  <span class="op">});</span></span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cpp_pmax</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">{</span></span>
-<span>  <span class="fu">list_pmax</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">cpp_pmax2</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">4</span>), <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)) <span class="co"># Parallel max across 2 vectors</span></span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="dv">1</span> <span class="dv">2</span> <span class="dv">4</span></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">cpp_pmax</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">4</span>), <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>), <span class="fu">c</span>(<span class="sc">-</span><span class="dv">5</span>, <span class="dv">0</span>, <span class="dv">5</span>)) <span class="co"># Parallel max across k vectors</span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="dv">1</span> <span class="dv">2</span> <span class="dv">5</span></span></code></pre></div>
-<p>For performance reasons, always use <code>pmap</code> if you know the number of vectors up front, otherwise use <code>list_pmap</code>.</p>
 </div>
 <div class="section level5">
 <h5 id="other-improvements-development-version">Other improvements<a class="anchor" aria-label="anchor" href="#other-improvements-development-version"></a></h5>
@@ -155,12 +108,14 @@
 <li><p>Many functions that were originally <code>r_vec</code>-only members are now free functions that also work on <code>r_sexp</code> as well as <code>RComposite</code> types, allowing for easier manipulation of lists.</p></li>
 <li><p>All C++ reference qualifiers (T&amp;, T&amp;&amp;, const T&amp;) are now supported for registered functions, including templated ones.</p></li>
 <li><p>New concept <code>RVectorisable</code> which encompasses types that are OMP friendly.</p></li>
+<li><p>New infix operator <code>IS_IN</code>, identical to R’s <code>%in%</code>.</p></li>
 </ul></div>
 </div>
 <div class="section level4">
 <h4 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h4>
 <ul><li><p>When registering C++ functions, cppally.hpp is now included in the generated C++ code. Not including it caused issues when trying to compile functions that constructed factors</p></li>
 <li><p>Zero-length <code>r_vec</code> vectors can now be constructed unambiguously via <code>r_vec&lt;T&gt;(0)</code>.</p></li>
+<li><p>Math operations involving mixed types that included <code>r_dbl</code> are now correct when involving <code>NA</code> values.</p></li>
 </ul></div>
 </div>
     <div class="section level2">
