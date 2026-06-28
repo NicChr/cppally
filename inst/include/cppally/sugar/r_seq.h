@@ -66,7 +66,7 @@ template <internal::RPlainNumber T, internal::RPlainNumber U, internal::RPlainNu
 r_int seq_size(T from, U to, V by){
     auto del = to - from;
     // from == to with a zero increment is a well-defined length-1 sequence
-    r_dbl ratio = ( (del == 0).is_true() && (by == 0).is_true() ) ? r_dbl(0.0) : del / by;
+    r_dbl ratio = ( ((del == 0) && (by == 0)).is_true() ) ? r_dbl(0.0) : del / by;
     if ( (ratio < 0).is_true() ){
         abort("sequence length is negative, please check the sign of `by`");
     }
