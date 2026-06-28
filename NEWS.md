@@ -61,7 +61,7 @@ Inspired by `purrr::pmap` and `base::mapply`, `cppally::pmap` is a C++ variadic 
 
 With `pmap()` it is trivial to calculate parallel statistics like max, min, etc. Example of C++ version of `base::pmax()` applied to two vectors
 
-``` cpp
+```cpp
 template <RVector T, RVector U>
 requires requires(typename T::data_type a, typename U::data_type b) { max(a, b); }
 [[cppally::register]]
@@ -69,52 +69,6 @@ auto cpp_pmax2(T x, U y){
   return pmap([](auto a, auto b){ return max(a, b); }, x, y);
 }
 ```
-
-While `pmap()` is a powerful iterator, as with all variadic functions, the number of inputs must be known at compile-time, therefore we can't write an exact `base::pmax()` equivalent using `pmap()` because the number of vectors is only known at runtime.
-
-`list_pmap()` doesn't have this limitation and can iterate over n vectors where n is known at runtime. This comes with other trade-offs which are detailed below.
-
-|   | pmap | list_pmap |
-|------------------------------|---------------------|---------------------|
-| Inputs | Function in arg-1, variadic-supplied vectors thereafter | List of vectors in arg-1, function in arg-2 |
-| Return type deduced at compile-time | Yes | No - defaults to `r_sexp` but can also be specified |
-| SIMD-enabled loops | Yes | No |
-| Parallel loops (\>1 thread) | Yes | No |
-| Speed | Very fast | Fast with some overhead |
-| Lambda requirements | Scalar inputs expressed explicitly | Container whose size is known at runtime like `std::span` (recommended) or `std::vector` |
-| Accepted R objects | Vectors only | Vectors only |
-
-The biggest and perhaps most surprising limitation of `list_pmap` is that it coerces all its vectors to a common type. Visiting all `r_sexp` objects simultaneously (via `r_sexp_view`) would incur a combinatorial explosion of instantiation size, roughly 15\^k for k vectors, therefore this is practically impossible for any reasonably-sized list.
-
-Example of C++ version of `base::pmax`
-
-``` cpp
-[[cppally::register]]
-SEXP list_pmax(r_vec<r_sexp> vectors){
-  return list_pmap<r_vec<r_dbl>>(vectors, []<RMathType elem>(std::span<elem> r) {
-    elem m = r[0];
-    for (size_t i = 1; i < r.size(); ++i){
-      m = max(m, r[i]);
-    }
-    return m;
-  });
-}
-```
-
-``` r
-cpp_pmax <- function(...){
-  list_pmax(list(...))
-}
-```
-
-``` r
-cpp_pmax2(c(0, 2, 4), c(1, 2, 3)) # Parallel max across 2 vectors
-1 2 4
-cpp_pmax(c(0, 2, 4), c(1, 2, 3), c(-5, 0, 5)) # Parallel max across k vectors
-1 2 5
-```
-
-For performance reasons, always use `pmap` if you know the number of vectors up front, otherwise use `list_pmap`.
 
 #### Other improvements
 
