@@ -86,11 +86,15 @@ auto cpp_pmax2(T x, U y){
 
 - New concept `RVectorisable` which encompasses types that are OMP friendly.
 
+- New infix operator `IS_IN`, identical to R's `%in%`.
+
 ### Bug fixes
 
 - When registering C++ functions, cppally.hpp is now included in the generated C++ code. Not including it caused issues when trying to compile functions that constructed factors
 
 - Zero-length `r_vec` vectors can now be constructed unambiguously via `r_vec<T>(0)`.
+
+- Math operations involving mixed types that included `r_dbl` are now correct when involving `NA` values.
 
 # cppally 0.1.0
 
