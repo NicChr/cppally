@@ -62,16 +62,16 @@ r_vec<common_r_t<T, U>> sequence(int size, T from, U by){
 template <internal::RPlainNumber T, internal::RPlainNumber U, internal::RPlainNumber V>
 int seq_size(T from, U to, V by){
     auto del = to - from;
+    if (is_na(del)){
+        abort("seq_size: `to` and `from` must both be non-NA");
+    }
     // from == to with a zero increment is a well-defined length-1 sequence
     r_dbl ratio = ( ((del == 0) && (by == 0)).is_true() ) ? r_dbl(0.0) : del / by;
     if ( (ratio < 0).is_true() ){
         abort("sequence length is negative, please check the sign of `by`");
     }
-    auto out_size = trunc(ratio + r_dbl(1e-10)) + r_dbl(1.0);
-    if (is_na(out_size)){
-        abort("`seq_size`: Invalid size");
-    }
     // + 1e-10 absorbs floating point error before truncating
+    r_dbl out_size = trunc(ratio + r_dbl(1e-10)) + r_dbl(1.0);
     return as<int>(out_size);
 }
 
