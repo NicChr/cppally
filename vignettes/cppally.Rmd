@@ -139,6 +139,39 @@ void also_good_lgl_print(r_lgl condition){
   }
 }
 ',
+cppally_equality = '
+[[cppally::register]]
+void cppally_equality(){
+
+  r_int x = na<r_int>();
+  r_int y = na<r_int>();
+  
+  r_lgl x_equal_to_y = x == y;
+  
+  if ( x_equal_to_y.is_true() ){ // NA so not printed
+    print("x is equal to y\\n");
+  }
+  
+  if ( x_equal_to_y.is_false() ){ // NA so not printed
+    print("x is not equal to y\\n");
+  }
+  
+  if (is_na(x_equal_to_y)){
+    print("`x == y` produces `NA`\\n");
+  }
+  
+  if (identical(x, y)){
+    print("x is identical to y\\n");
+  }
+}
+',
+cppally_identical = '
+template <typename T, typename U>
+[[cppally::register]]
+bool cpp_identical(T x, U y){
+  return identical(x, y);
+}
+',
   new_integer_vector = '
 // Integer vector of size n
 [[cppally::register]]
@@ -168,9 +201,9 @@ r_vec<r_sexp> all_vectors(){
 template <RMathType T>
 [[cppally::register]]
 T cpp_abs(T x){
-  if (is_na(x)) return na<T>();
-
-  if (x < 0){
+  if (is_na(x)){
+    return na<T>();
+  } else if (x < 0){
     return -x;
   } else {
     return x;
@@ -209,6 +242,14 @@ r_vec<r_sexp> coercions(){
         as<r_int>(b),
         as<r_dbl>(b)
     );
+}
+',
+to_from_cpp_vec = '
+[[cppally::register]]
+r_vector<r_int> cpp_vectors_example(r_vector<r_int> x){
+  std::vector x_cpp = as<std::vector<r_int>>(x);
+  x_cpp.push_back(r_int(42));
+  return as<r_vector<r_int>>(x_cpp);
 }
 ',
   str_concatenate = '
@@ -389,6 +430,8 @@ This will automatically add the necessary package content needed to start workin
 
 cppally offers a rich set of R types in C++ that are NA-aware. This means that common arithmetic and logical operations will account for `NA` in a similar fashion to R.
 
+## Scalars
+
 ### logical scalar - `r_lgl`
 
 cppally's scalar version of `logical`, `r_lgl` can represent true, false or NA.
@@ -495,8 +538,40 @@ All cppally scalar types are implemented as structs that contain the underlying 
 | `r_sym`                  | Not applicable        | Not applicable | No             |
 | `r_sexp`[^4]<br><br><br> | `na<r_sexp>`/`r_null` | `R_NilValue`   | No             |
 
-[^3]: In C++ constexpr is used as a keyword to declare that it's possible to evaluate values at compile-time, meaning they are known before any code is run by the user. Since `r_na` internally is the largest possible `int` which does not change and is known a priori, it is therefore a compile-time constant.
+[^3]: In C++ constexpr is used as a keyword to declare that it's at least sometimes possible to evaluate values at compile-time, meaning they are known before any code is run by the user.
 [^4]: Having an `NA` sentinel for `r_sexp` is very useful when writing templates involving vectors. For this reason the `NA` sentinel is `r_null`. This doesn't mean `is_na(r_null)` is true, and is intentionally not true because it is not a scalar and therefore cannot be `NA`.  As `r_null` represents the absence of a tangible R object, it can be thought of as a zero-length object and since all `NA` values are represented as length-1 vectors (in R), `is_na(r_null)` should not return true.
+
+## Checking equality
+
+There are two ways to check for equality of cppally scalars - 
+with the `==` operator or with `identical()`.
+
+The cppally `==` operator always returns `r_lgl` and `identical()` always 
+returns `bool`, which is a particularly important distinction 
+when dealing with `NA` values.
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["cppally_equality"]])
+```
+
+```{r}
+cppally_equality()
+```
+
+`identical()` can compare scalars, vectors, lists, factors, and data frames
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["cppally_identical"]])
+```
+
+```{r}
+cpp_identical(3L, 3L)
+cpp_identical(NA, NA)
+cpp_identical(3L, 3) # int != double
+cpp_identical(1:10, 1:10)
+cpp_identical(list(1, 2, 3), list(3, 2, 1))
+cpp_identical(iris, iris)
+```
 
 
 ## Vectors
@@ -558,111 +633,6 @@ as_cpp_chunk(examples[["all_vectors"]])
 all_vectors()
 ```
 
-## Concepts and Templates
-
-One of the most powerful features of C++20 are concepts. These allow users to write human-readable templates and constraints.
-
-When writing your own templates, it is highly encouraged to place them in headers
-for cppally registration to work correctly.
-
-Let's practice by creating an absolute function in C++ using templates
-and the `RMathType` concept.
-
-```{r, echo=FALSE, results = 'asis'}
-as_cpp_chunk(examples[["cpp_abs"]])
-```
-
-Works correctly for doubles
-
-```{r}
-cpp_abs(-5)
-cpp_abs(0)
-cpp_abs(100)
-cpp_abs(NA_real_)
-```
-
-It also works for integers
-
-```{r}
-cpp_abs(-3L)
-cpp_abs(NA_integer_)
-```
-
-The top-line `template <RMathType T>` declares a template that encapsulates `T`, an `RMathType` - a concept that contains `r_lgl`, `r_int`, `r_int64` and `r_dbl`
-
-If x is NA then we immediately also return NA via `na<T>()` which is a templated
-function that returns NA of the input type `T`.
-
-Without templates, writing C++ functions that accept flexible inputs
-is quite difficult because C++ is a statically-typed language. Usually one would
-write one absolute function for doubles and another for integers whereas here we
-don't have to.
-
-### Notes on templates
-
-To correctly register templates, the '[[cppally::register]]' tag must
-always go above the function name.
-
-```cpp
-template <typename T>
-[[cppally::register]] // <--- Here
-T foo(T x){
-  return x;
-}
-```
-
-Explicit instantiation (from R) is unfortunately not possible and template
-types must be deduced from supplied arguments.
-
-```cpp
-template <typename T>
-[[cppally::register]]
-T foo(){
-	return T();
-}
-```
-
-You may get a cryptic compiler error like this
-
-```cpp
-error: no matching function for call to 'foo()'
-[]<typename T>() -> decltype(cpp_to_r(::foo())) {
-```
-
-along with an equally cryptic note
-
-```cpp
-note:   couldn't deduce template parameter 'T'
-[]<typename T>() -> decltype(cpp_to_r(::foo())) {
-```
-
-This is because the parameter `T` cannot be automatically deduced from any
-of the function inputs.
-Even though these kinds of templates can be written with cppally,
-they cannot be exported to R.
-
-An obvious and somewhat ugly workaround is to include a prototype argument that
-allows the template parameter to be deduced from.
-
-```{r, echo=FALSE, results = 'asis'}
-as_cpp_chunk(examples[["scalar_default"]])
-```
-
-
-```{r}
-scalar_default(integer(1)) # Default is 0L
-scalar_default(numeric(1)) # Default is 0.0
-scalar_default(character(1)) # Default is ""
-```
-
-
-Exporting variadic templates are also not supported. The best alternative is
-to use lists (`r_vec<r_sexp>`).
-
-In the above example we used the `RScalar` concept which includes
-all cppally scalar types (excluding `r_sexp`).
-For a list of all cppally concepts, please see the **Annex**
-
 ## Coercion
 
 To coerce from one scalar to another we can use `as<T>`
@@ -696,6 +666,19 @@ as_cpp_chunk(examples[["coercions"]])
 ```{r}
 coercions()
 ```
+
+We can even coerce to and from C++ vectors
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["to_from_cpp_vec"]])
+```
+
+```{r}
+cpp_vectors_example(41L)
+```
+
+While coercing to a `std::vector` just to push back an element before coercing back might not be the most efficient, it does showcase how easy it is to work with 
+cppally vectors and C++ vectors.
 
 ## Strings
 
@@ -833,6 +816,111 @@ letter_fct |>
     factor_codes()
 ```
 
+## Concepts and Templates
+
+One of the most powerful features of C++20 are concepts. These allow users to write human-readable templates and constraints.
+
+When writing your own templates, it is necessary to place them in headers
+for cppally registration to work correctly.
+
+Let's practice by creating the `abs()` function in C++ using templates
+and the `RMathType` concept.
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["cpp_abs"]])
+```
+
+What's nice is that it works correctly for integers and doubles 
+while simultaneously preserving their type
+
+```{r}
+cpp_abs(-4.2)
+cpp_abs(-3L)
+
+class(cpp_abs(-4.2)) # Double preserved
+class(cpp_abs(-3L)) # Integer preserved
+```
+
+This type of programming is historically tricky within the R C API and 
+typically necessitates a switch statement that switches on the object's type, 
+handling each type separately. With our `abs()` template, the logic is 
+correctly handled with one set of operations.
+
+### How it works
+
+The top-line `template <RMathType T>` declares a template that encapsulates `T`, an `RMathType` - a concept that contains `r_lgl`, `r_int`, `r_int64` and `r_dbl`
+
+If x is NA then we immediately also return NA via `na<T>()` which is a templated
+function that returns NA of the input type `T`.
+
+To correctly register templates, the '[[cppally::register]]' tag must
+always go above the function name.
+
+```cpp
+template <typename T>
+[[cppally::register]] // <--- Here
+T foo(T x){
+  return x;
+}
+```
+
+### Templates without function arguments
+
+Explicit instantiation (from R) is unfortunately not possible and template
+types must be deduced from supplied arguments.
+
+```cpp
+template <typename T>
+[[cppally::register]]
+T foo(){
+	return T();
+}
+```
+
+Here `foo()` will not be compiled because the function has no arguments that let 
+the compiler automatically deduce what `T` is. In C++ you would call always 
+call this function like so: `foo<T>()`. 
+Unfortunately we can't do that from R directly.
+
+You may get a cryptic compiler error like this
+
+```cpp
+error: no matching function for call to 'foo()'
+[]<typename T>() -> decltype(cpp_to_r(::foo())) {
+```
+
+along with an equally cryptic note
+
+```cpp
+note:   couldn't deduce template parameter 'T'
+[]<typename T>() -> decltype(cpp_to_r(::foo())) {
+```
+
+Even though these kinds of templates can be written with cppally in C++,
+they cannot be exported to R.
+
+An obvious and somewhat ugly workaround is to include a prototype argument that
+allows the template parameter to be deduced from.
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["scalar_default"]])
+```
+
+
+```{r}
+scalar_default(integer(1)) # Default is 0L
+scalar_default(numeric(1)) # Default is 0.0
+scalar_default(character(1)) # Default is ""
+```
+
+
+Exporting variadic templates are also not supported. The best alternative is
+to use lists (`r_vec<r_sexp>`).
+
+In the above example we used the `RScalar` concept which includes
+all cppally scalar types (excluding `r_sexp`).
+For a list of all cppally concepts, please see the **Annex**
+
 
 ## Attributes
 
@@ -888,11 +976,7 @@ More useful sugar functions
 
 - `unique()` - Like R's `unique()` but with a `sort` argument to return sorted unique values
 
-- `identical()` - A very fast identical function that works for scalars and vectors. Use this for exact equality of any scalar or vector.
-
 - `match()` - Like R's match, but also faster
-
-- `sequences()` - Like `sequence()` but it returns a list of sequences and also works with doubles.
 
 - `order()` - Like base R's order but it internally uses a hybrid approach of ska sort, count sorting, quick sort, etc.
 
@@ -956,6 +1040,13 @@ symbol_to_string(hello_world_symbol)
 - RVal - Includes anything a cppally vector (`r_vec<>`) can contain: RScalar +`r_sexp`
 
 - RVector - Includes `r_vec<T>` where `T` is an RVal
+
+- RFactor - Factors
+
+- RDataFrame - Data frames
+
+- RComposite - Includes vectors, factors and data frames
+
 - RTimeType - Includes `r_date` and `r_psxct`
 - RNumericType - Numeric types, including RMathType and RTimeType
 - RSortableType - Includes RNumericType and RStringType (strings can also be sorted)
@@ -963,15 +1054,13 @@ symbol_to_string(hello_world_symbol)
 - CppallyType - Any R type defined by R, including RVal, RVector, RFactor, RDataFrame, RSymbol
 - CppType - Anything that is not an CppallyType
 - CastableToRScalar - Anything that can be constructed or cast into an RScalar (which also includes RScalar)
-- CastableToRVal (**questioning**) - Anything that can be constructed or cast into an RVal. This is more complicated as it includes vectors, factors and data frames which can be cast to `r_sexp`
 
 Other useful type traits
 
 - `unwrap_t` - Returns the underlying unwrapped type
 - `as_r_scalar_t` - Returns the equivalent RScalar type
-- `as_r_val_t` - Returns the equivalent RVal type
-- `common_r_t` - Returns the common RVal type between 2 types. Generally this is a hierarchy where the common type is the type that both values can be coerced to without complete loss of information
-
+- `as_r_composite_t` - Returns the equivalent RComposite type
+- `common_r_t` - Returns the common cppally type between 2 types
 
 ### Accessing the underlying types and values
 
