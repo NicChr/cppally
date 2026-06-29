@@ -146,7 +146,7 @@ template <RMathType T, RMathType U>
 r_vec<T> scalar_vec2(r_vec<T> a, U b){
   return as<r_vec<T>>(a + b);
 }
-// scalar and vector args 
+// scalar and vector args
 template <RMathType T, RMathType U>
 [[cppally::register]]
 r_vec<T> scalar_vec3(r_vec<T> z, T x, U y, r_vec<U> a){
@@ -175,12 +175,12 @@ inline r_vec<r_str> test_str4(T x){
 template <RMathType T>
 [[cppally::register]]
 r_vec<T> test_specialisation(r_vec<T> x) {
-  return r_vec<T>(1, T(0)); 
+  return r_vec<T>(1, T(0));
 }
 
-template <> 
-inline r_vec<r_int> test_specialisation<r_int>(r_vec<r_int> x) { 
-  return r_vec<r_int>(1, r_int(1)); 
+template <>
+inline r_vec<r_int> test_specialisation<r_int>(r_vec<r_int> x) {
+  return r_vec<r_int>(1, r_int(1));
 }
 
 
@@ -188,7 +188,7 @@ template <RVal T, typename U>
 [[cppally::register]]
 auto test_coerce(r_vec<T> x, U ptype) {
   return as<U>(x);
-} 
+}
 
 [[cppally::register]]
 SEXP test_list_to_scalars(r_vec<r_sexp> x){
@@ -214,12 +214,6 @@ template <RVector T>
 [[cppally::register]]
 T test_unique(T x){
   return unique(x);
-}
-
-template <RNumericType U, RNumericType V>
-[[cppally::register]]
-r_vec<r_sexp> test_seqs(r_vec<r_int> size, r_vec<U> from, r_vec<V> by){
-  return sequences(size, from, by);
 }
 
 // r_vec<r_sexp> test_time_coerce(){
@@ -278,7 +272,7 @@ int test_n_unique(T x){
 }
 
 [[cppally::register]]
-SEXP test_copy(SEXP x){ 
+SEXP test_copy(SEXP x){
   return deep_copy(r_sexp(x));
 }
 
@@ -288,8 +282,8 @@ bool test_identical(SEXP x, SEXP y){
 }
 
 template <
-RMathType T,
-RMathType U
+  RMathType T,
+  RMathType U
 >
 [[cppally::register]]
 T test_multiline_template_add(T x, U y){
@@ -298,8 +292,8 @@ T test_multiline_template_add(T x, U y){
 
 template
 <
-RMathType T,
-RMathType U
+  RMathType T,
+  RMathType U
 >
 [[cppally::register]]
 T test_multiline_template_add2(T x, U y){
@@ -307,8 +301,8 @@ T test_multiline_template_add2(T x, U y){
 }
 
 template <
-RMathType T,
-RMathType U
+  RMathType T,
+  RMathType U
 >
 // [[cppally::register]]
 T test_multiline_template_add3(T x, U y){
