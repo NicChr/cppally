@@ -10,7 +10,7 @@ namespace cppally {
 
 namespace internal {
 template <typename T>
-concept RPlainNumber = RIntegerType<T> || RFloatType<T>;
+concept RPlainNumber = RShortIntegerType<T> || RLongIntegerType<T> || RFloatType<T>;
 }
 
 template <internal::RPlainNumber T, internal::RPlainNumber U>
@@ -62,11 +62,11 @@ auto sequence(int size, T from, U by){
 template <internal::RPlainNumber T, internal::RPlainNumber U, internal::RPlainNumber V>
 int seq_size(T from, U to, V by){
     auto del = to - from;
-    if (is_na(del)){
-        abort("seq_size: `to` and `from` must both be non-NA");
-    }
     // from == to with a zero increment is a well-defined length-1 sequence
     r_dbl ratio = ( ((del == 0) && (by == 0)).is_true() ) ? r_dbl(0.0) : del / by;
+    if (is_na(ratio)){
+        abort("seq_size: `to`, `from` and `by` must all be non-NA");
+    }
     if ( (ratio < 0).is_true() ){
         abort("sequence length is negative, please check the sign of `by`");
     }
