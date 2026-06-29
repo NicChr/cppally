@@ -10,7 +10,7 @@ namespace cppally {
 
 namespace internal {
 template <typename T>
-concept RPlainNumber = any<T, r_int, r_int64, r_dbl>;
+concept RPlainNumber = RIntegerType<T> || RFloatType<T>;
 }
 
 template <internal::RPlainNumber T, internal::RPlainNumber U>
@@ -102,15 +102,6 @@ template <internal::RPlainNumber T, internal::RPlainNumber U, internal::RPlainNu
 r_vec<common_r_t<T, U, V>> seq(T from, U to, V by){
     using out_t = common_r_t<T, U, V>;
     return sequence(seq_size(from, to, by), as<out_t>(from), as<out_t>(by));
-}
-template <internal::RPlainNumber T, internal::RPlainNumber U>
-r_vec<common_r_t<T, U>> seq(T from, U to){
-    using out_t = common_r_t<T, U>;
-    out_t by = as<out_t>(sign(to - from));
-    return sequence(seq_size(from, to, by), as<out_t>(from), by);
-}
-inline r_vec<r_int> seq(int size){
-    return sequence(size, r_int(0), r_int(1));
 }
 
 }
