@@ -14,7 +14,7 @@ concept RPlainNumber = RIntegerType<T> || RFloatType<T>;
 }
 
 template <internal::RPlainNumber T, internal::RPlainNumber U>
-r_vec<common_r_t<T, U>> sequence(int size, T from, U by){
+auto sequence(int size, T from, U by){
 
     using common_t   = common_r_t<T, U>;
     using common_cpp = unwrap_t<common_t>;
@@ -99,7 +99,7 @@ r_dbl seq_increment(int size, T from, U to){
 // build the sequence from..to stepping by `by`
 // `to` only sets the length; widen from/by to its type so the right vector is built directly
 template <internal::RPlainNumber T, internal::RPlainNumber U, internal::RPlainNumber V>
-r_vec<common_r_t<T, U, V>> seq(T from, U to, V by){
+auto seq(T from, U to, V by){
     using out_t = common_r_t<T, U, V>;
     return sequence(seq_size(from, to, by), as<out_t>(from), as<out_t>(by));
 }
