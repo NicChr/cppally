@@ -489,17 +489,6 @@ extern "C" SEXP _cppallytest_test_unique(SEXP x) {
   END_CPPALLY
 }
 // test.h
-extern "C" SEXP _cppallytest_test_seqs(SEXP size, SEXP from, SEXP by) {
-  BEGIN_CPPALLY
-  return dispatch_template_impl<2, 3, std::array<int, 3>{-1, 0, 1}>(
-    []<typename U, typename V>(SEXP size_internal, SEXP from_internal, SEXP by_internal) -> decltype(cpp_to_r(::test_seqs(std::declval<r_vec<r_int>>(), std::declval<r_vec<U>>(), std::declval<r_vec<V>>()))) {
-        return cpp_to_r(::test_seqs(as<r_vec<r_int>>(size_internal), as<r_vec<U>>(from_internal), as<r_vec<V>>(by_internal)));
-    },
-    size, from, by
-  );
-  END_CPPALLY
-}
-// test.h
 extern "C" SEXP _cppallytest_test_group_id(SEXP x, SEXP order) {
   BEGIN_CPPALLY
   return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
@@ -1043,7 +1032,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_scalar",                       (DL_FUNC) &_cppallytest_test_scalar,                       2},
     {"_cppallytest_test_scalar2",                      (DL_FUNC) &_cppallytest_test_scalar2,                      2},
     {"_cppallytest_test_scalar3",                      (DL_FUNC) &_cppallytest_test_scalar3,                      2},
-    {"_cppallytest_test_seqs",                         (DL_FUNC) &_cppallytest_test_seqs,                         3},
     {"_cppallytest_test_sexp",                         (DL_FUNC) &_cppallytest_test_sexp,                         1},
     {"_cppallytest_test_sexp2",                        (DL_FUNC) &_cppallytest_test_sexp2,                        1},
     {"_cppallytest_test_sexp3",                        (DL_FUNC) &_cppallytest_test_sexp3,                        1},

@@ -200,10 +200,6 @@ test_unique <- function(x) {
   .Call(`_cppallytest_test_unique`, x)
 }
 
-test_seqs <- function(size, from, by) {
-  .Call(`_cppallytest_test_seqs`, size, from, by)
-}
-
 test_group_id <- function(x, order) {
   .Call(`_cppallytest_test_group_id`, x, order)
 }
