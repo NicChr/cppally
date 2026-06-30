@@ -906,6 +906,72 @@ More useful attribute helpers
 - `modify_attrs()` - Modifies current attributes but doesn’t remove any
   existing ones
 
+## Regular sequences
+
+There are two core functions for generating regular sequences -
+[`sequence()`](https://rdrr.io/r/base/sequence.html) and
+[`seq()`](https://rdrr.io/r/base/seq.html).
+[`seq()`](https://rdrr.io/r/base/seq.html) behaves exactly like the R
+equivalent [`base::seq()`](https://rdrr.io/r/base/seq.html), and
+[`sequence()`](https://rdrr.io/r/base/sequence.html) behaves like the R
+equivalent [`base::sequence()`](https://rdrr.io/r/base/sequence.html),
+with the exception that it accepts scalar arguments instead of vector
+ones.
+
+``` cpp
+seq(r_dbl(1), r_dbl(5), r_dbl(0.5))
+```
+
+    #> [1] 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0
+
+``` cpp
+sequence(5, /*from = */ r_int(0), /*by = */ r_int(-1))
+```
+
+    #> [1]  0 -1 -2 -3 -4
+
+Easily replicate [`base::seq_len()`](https://rdrr.io/r/base/seq.html)
+
+``` cpp
+
+[[cppally::register]]
+r_vec<r_int> cpp_seq_len(r_size_t n){
+  return sequence(n, /* from = */ r_int(1), /* by = */ r_int(1));
+}
+```
+
+``` r
+
+cpp_seq_len(5)
+#> [1] 1 2 3 4 5
+```
+
+It is also straightforward to replicate
+[`base::sequence()`](https://rdrr.io/r/base/sequence.html) with `pmap()`
+
+``` cpp
+
+template <typename T>
+requires (any<T, r_int, r_int64, r_dbl>)
+[[cppally::register]]
+r_vec<r_sexp> cpp_sequences(r_vec<r_int> size, r_vec<T> from, r_vec<T> by){
+    return pmap([](auto a, auto b, auto c){
+        return as<r_sexp>(sequence(a, b, c));
+    }, size, from, by);
+}
+```
+
+``` r
+
+cpp_sequences(1:3, from = 0L, by = 1L) |> 
+  unlist()
+#> [1] 0 0 1 0 1 2
+
+# Same as base R
+sequence(1:3, from = 0L, by = 1L)
+#> [1] 0 0 1 0 1 2
+```
+
 ## Sugar functions
 
 cppally also offers many useful and high-performance common functions in
@@ -933,8 +999,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique         1ms   1.12ms      894.    1.38MB     24.9
-#> 2 cppally_n_unique    257µs 257.45µs     3833.        0B      0
+#> 1 base_n_unique       717µs    789µs     1214.    1.38MB     36.4
+#> 2 cppally_n_unique    279µs    281µs     3508.        0B      0
 ```
 
 More useful sugar functions

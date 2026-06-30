@@ -924,19 +924,61 @@ doesn’t remove any existing ones</li>
 </ul>
 </div>
 <div class="section level2">
+<h2 id="regular-sequences">Regular sequences<a class="anchor" aria-label="anchor" href="#regular-sequences"></a>
+</h2>
+<p>There are two core functions for generating regular sequences -
+<code><a href="https://rdrr.io/r/base/sequence.html" class="external-link">sequence()</a></code> and <code><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq()</a></code>. <code><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq()</a></code>
+behaves exactly like the R equivalent <code><a href="https://rdrr.io/r/base/seq.html" class="external-link">base::seq()</a></code>, and
+<code><a href="https://rdrr.io/r/base/sequence.html" class="external-link">sequence()</a></code> behaves like the R equivalent
+<code><a href="https://rdrr.io/r/base/sequence.html" class="external-link">base::sequence()</a></code>, with the exception that it accepts scalar
+arguments instead of vector ones.</p>
+<div class="sourceCode" id="cb70"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb70-1"><a href="#cb70-1" tabindex="-1"></a>seq<span class="op">(</span>r_dbl<span class="op">(</span><span class="dv">1</span><span class="op">),</span> r_dbl<span class="op">(</span><span class="dv">5</span><span class="op">),</span> r_dbl<span class="op">(</span><span class="fl">0.5</span><span class="op">))</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0</span></span></code></pre>
+<div class="sourceCode" id="cb72"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb72-1"><a href="#cb72-1" tabindex="-1"></a>sequence<span class="op">(</span><span class="dv">5</span><span class="op">,</span> <span class="co">/*from = */</span> r_int<span class="op">(</span><span class="dv">0</span><span class="op">),</span> <span class="co">/*by = */</span> r_int<span class="op">(-</span><span class="dv">1</span><span class="op">))</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1]  0 -1 -2 -3 -4</span></span></code></pre>
+<p>Easily replicate <code><a href="https://rdrr.io/r/base/seq.html" class="external-link">base::seq_len()</a></code></p>
+<div class="sourceCode" id="cb74"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb74-1"><a href="#cb74-1" tabindex="-1"></a></span>
+<span id="cb74-2"><a href="#cb74-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb74-3"><a href="#cb74-3" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_int<span class="op">&gt;</span> cpp_seq_len<span class="op">(</span><span class="dt">r_size_t</span> n<span class="op">){</span></span>
+<span id="cb74-4"><a href="#cb74-4" tabindex="-1"></a>  <span class="cf">return</span> sequence<span class="op">(</span>n<span class="op">,</span> <span class="co">/* from = */</span> r_int<span class="op">(</span><span class="dv">1</span><span class="op">),</span> <span class="co">/* by = */</span> r_int<span class="op">(</span><span class="dv">1</span><span class="op">));</span></span>
+<span id="cb74-5"><a href="#cb74-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb75"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">cpp_seq_len</span><span class="op">(</span><span class="fl">5</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 1 2 3 4 5</span></span></code></pre></div>
+<p>It is also straightforward to replicate <code><a href="https://rdrr.io/r/base/sequence.html" class="external-link">base::sequence()</a></code>
+with <code>pmap()</code></p>
+<div class="sourceCode" id="cb76"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb76-1"><a href="#cb76-1" tabindex="-1"></a></span>
+<span id="cb76-2"><a href="#cb76-2" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> T<span class="op">&gt;</span></span>
+<span id="cb76-3"><a href="#cb76-3" tabindex="-1"></a><span class="kw">requires</span> <span class="op">(</span>any<span class="op">&lt;</span>T<span class="op">,</span> r_int<span class="op">,</span> r_int64<span class="op">,</span> r_dbl<span class="op">&gt;)</span></span>
+<span id="cb76-4"><a href="#cb76-4" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb76-5"><a href="#cb76-5" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> cpp_sequences<span class="op">(</span>r_vec<span class="op">&lt;</span>r_int<span class="op">&gt;</span> size<span class="op">,</span> r_vec<span class="op">&lt;</span>T<span class="op">&gt;</span> from<span class="op">,</span> r_vec<span class="op">&lt;</span>T<span class="op">&gt;</span> by<span class="op">){</span></span>
+<span id="cb76-6"><a href="#cb76-6" tabindex="-1"></a>    <span class="cf">return</span> pmap<span class="op">([](</span><span class="kw">auto</span> a<span class="op">,</span> <span class="kw">auto</span> b<span class="op">,</span> <span class="kw">auto</span> c<span class="op">){</span></span>
+<span id="cb76-7"><a href="#cb76-7" tabindex="-1"></a>        <span class="cf">return</span> as<span class="op">&lt;</span>r_sexp<span class="op">&gt;(</span>sequence<span class="op">(</span>a<span class="op">,</span> b<span class="op">,</span> c<span class="op">));</span></span>
+<span id="cb76-8"><a href="#cb76-8" tabindex="-1"></a>    <span class="op">},</span> size<span class="op">,</span> from<span class="op">,</span> by<span class="op">);</span></span>
+<span id="cb76-9"><a href="#cb76-9" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb77"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">cpp_sequences</span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, from <span class="op">=</span> <span class="fl">0L</span>, by <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0 0 1 0 1 2</span></span>
+<span></span>
+<span><span class="co"># Same as base R</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/sequence.html" class="external-link">sequence</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, from <span class="op">=</span> <span class="fl">0L</span>, by <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0 0 1 0 1 2</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="sugar-functions">Sugar functions<a class="anchor" aria-label="anchor" href="#sugar-functions"></a>
 </h2>
 <p>cppally also offers many useful and high-performance common functions
 in cppally/sugar</p>
 <p><strong>Example:</strong> <code>n_unique()</code> - fast calculation
 of number of unique values.</p>
-<div class="sourceCode" id="cb70"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb70-1"><a href="#cb70-1" tabindex="-1"></a></span>
-<span id="cb70-2"><a href="#cb70-2" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RVector T<span class="op">&gt;</span></span>
-<span id="cb70-3"><a href="#cb70-3" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb70-4"><a href="#cb70-4" tabindex="-1"></a>r_int cpp_n_unique<span class="op">(</span>T x<span class="op">){</span></span>
-<span id="cb70-5"><a href="#cb70-5" tabindex="-1"></a>  <span class="cf">return</span> as<span class="op">&lt;</span>r_int<span class="op">&gt;(</span>n_unique<span class="op">(</span>x<span class="op">));</span></span>
-<span id="cb70-6"><a href="#cb70-6" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb71"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb78"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb78-1"><a href="#cb78-1" tabindex="-1"></a></span>
+<span id="cb78-2"><a href="#cb78-2" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RVector T<span class="op">&gt;</span></span>
+<span id="cb78-3"><a href="#cb78-3" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb78-4"><a href="#cb78-4" tabindex="-1"></a>r_int cpp_n_unique<span class="op">(</span>T x<span class="op">){</span></span>
+<span id="cb78-5"><a href="#cb78-5" tabindex="-1"></a>  <span class="cf">return</span> as<span class="op">&lt;</span>r_int<span class="op">&gt;(</span>n_unique<span class="op">(</span>x<span class="op">));</span></span>
+<span id="cb78-6"><a href="#cb78-6" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb79"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bench.r-lib.org/" class="external-link">bench</a></span><span class="op">)</span></span>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">100</span>, <span class="fl">10</span><span class="op">^</span><span class="fl">5</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
@@ -946,8 +988,8 @@ of number of unique values.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression            min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_n_unique         1ms   1.12ms      894.    1.38MB     24.9</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_n_unique    257µs 257.45µs     <span style="text-decoration: underline;">3</span>833.        0B      0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_n_unique       717µs    789µs     <span style="text-decoration: underline;">1</span>214.    1.38MB     36.4</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_n_unique    279µs    281µs     <span style="text-decoration: underline;">3</span>508.        0B      0</span></span></code></pre></div>
 <p>More useful sugar functions</p>
 <ul>
 <li><p><code><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique()</a></code> - Like R’s <code><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique()</a></code> but with a
@@ -1014,15 +1056,15 @@ for speed</p>
 <p><code>r_sym</code> is unsupported in templates when it’s part of a
 template argument but is supported when the argument is explicitly an
 <code>r_sym</code>.</p>
-<div class="sourceCode" id="cb72"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb72-1"><a href="#cb72-1" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb72-2"><a href="#cb72-2" tabindex="-1"></a>r_str symbol_to_string<span class="op">(</span>r_sym x<span class="op">){</span></span>
-<span id="cb72-3"><a href="#cb72-3" tabindex="-1"></a>    <span class="cf">return</span> as<span class="op">&lt;</span>r_str<span class="op">&gt;(</span>x<span class="op">);</span></span>
-<span id="cb72-4"><a href="#cb72-4" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb73"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" tabindex="-1"></a>hello_world_symbol <span class="ot">&lt;-</span> <span class="fu">as.symbol</span>(<span class="st">"hello world!"</span>)</span>
-<span id="cb73-2"><a href="#cb73-2" tabindex="-1"></a>hello_world_symbol</span>
-<span id="cb73-3"><a href="#cb73-3" tabindex="-1"></a><span class="st">`</span><span class="at">hello world!</span><span class="st">`</span></span>
-<span id="cb73-4"><a href="#cb73-4" tabindex="-1"></a><span class="fu">symbol_to_string</span>(hello_world_symbol)</span>
-<span id="cb73-5"><a href="#cb73-5" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"hello world!"</span></span></code></pre></div>
+<div class="sourceCode" id="cb80"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb80-1"><a href="#cb80-1" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb80-2"><a href="#cb80-2" tabindex="-1"></a>r_str symbol_to_string<span class="op">(</span>r_sym x<span class="op">){</span></span>
+<span id="cb80-3"><a href="#cb80-3" tabindex="-1"></a>    <span class="cf">return</span> as<span class="op">&lt;</span>r_str<span class="op">&gt;(</span>x<span class="op">);</span></span>
+<span id="cb80-4"><a href="#cb80-4" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb81"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" tabindex="-1"></a>hello_world_symbol <span class="ot">&lt;-</span> <span class="fu">as.symbol</span>(<span class="st">"hello world!"</span>)</span>
+<span id="cb81-2"><a href="#cb81-2" tabindex="-1"></a>hello_world_symbol</span>
+<span id="cb81-3"><a href="#cb81-3" tabindex="-1"></a><span class="st">`</span><span class="at">hello world!</span><span class="st">`</span></span>
+<span id="cb81-4"><a href="#cb81-4" tabindex="-1"></a><span class="fu">symbol_to_string</span>(hello_world_symbol)</span>
+<span id="cb81-5"><a href="#cb81-5" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"hello world!"</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="all-core-cppally-concepts">All core cppally concepts<a class="anchor" aria-label="anchor" href="#all-core-cppally-concepts"></a>
@@ -1085,26 +1127,26 @@ be optimisation and so <code>unwrap()</code> and <code>unwrap_t</code>
 allow this to be done consistently.</p>
 <p><strong>Example:</strong> Summing a double vector using
 <code>r_vec&lt;T&gt;::data()</code> member</p>
-<div class="sourceCode" id="cb74"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb74-1"><a href="#cb74-1" tabindex="-1"></a></span>
-<span id="cb74-2"><a href="#cb74-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb74-3"><a href="#cb74-3" tabindex="-1"></a><span class="dt">double</span> primitive_sum<span class="op">(</span><span class="at">const</span> r_vec<span class="op">&lt;</span>r_dbl<span class="op">&gt;&amp;</span> x<span class="op">){</span></span>
-<span id="cb74-4"><a href="#cb74-4" tabindex="-1"></a></span>
-<span id="cb74-5"><a href="#cb74-5" tabindex="-1"></a>  <span class="co">// r_vec&lt;T&gt;::data_type always returns typename T</span></span>
-<span id="cb74-6"><a href="#cb74-6" tabindex="-1"></a>  <span class="kw">using</span> <span class="dt">data_t</span> <span class="op">=</span> <span class="kw">typename</span> <span class="bu">std::</span>remove_cvref_t<span class="op">&lt;</span><span class="kw">decltype</span><span class="op">(</span>x<span class="op">)&gt;::</span><span class="dt">data_type</span><span class="op">;</span></span>
-<span id="cb74-7"><a href="#cb74-7" tabindex="-1"></a></span>
-<span id="cb74-8"><a href="#cb74-8" tabindex="-1"></a>  <span class="kw">using</span> <span class="dt">primitive_t</span> <span class="op">=</span> <span class="dt">unwrap_t</span><span class="op">&lt;</span><span class="dt">data_t</span><span class="op">&gt;;</span></span>
-<span id="cb74-9"><a href="#cb74-9" tabindex="-1"></a>  <span class="dt">primitive_t</span> <span class="op">*</span>p_x <span class="op">=</span> x<span class="op">.</span>data<span class="op">();</span></span>
-<span id="cb74-10"><a href="#cb74-10" tabindex="-1"></a></span>
-<span id="cb74-11"><a href="#cb74-11" tabindex="-1"></a>  <span class="dt">r_size_t</span> n <span class="op">=</span> x<span class="op">.</span>length<span class="op">();</span></span>
-<span id="cb74-12"><a href="#cb74-12" tabindex="-1"></a>  <span class="dt">double</span> sum <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb74-13"><a href="#cb74-13" tabindex="-1"></a></span>
-<span id="cb74-14"><a href="#cb74-14" tabindex="-1"></a>  OMP_SIMD_REDUCTION1<span class="op">(+:</span>sum<span class="op">)</span></span>
-<span id="cb74-15"><a href="#cb74-15" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="dt">r_size_t</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> n<span class="op">;</span> <span class="op">++</span>i<span class="op">){</span></span>
-<span id="cb74-16"><a href="#cb74-16" tabindex="-1"></a>    sum <span class="op">+=</span> p_x<span class="op">[</span>i<span class="op">];</span></span>
-<span id="cb74-17"><a href="#cb74-17" tabindex="-1"></a>  <span class="op">}</span></span>
-<span id="cb74-18"><a href="#cb74-18" tabindex="-1"></a>  <span class="cf">return</span> sum<span class="op">;</span></span>
-<span id="cb74-19"><a href="#cb74-19" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb75"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb82"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb82-1"><a href="#cb82-1" tabindex="-1"></a></span>
+<span id="cb82-2"><a href="#cb82-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb82-3"><a href="#cb82-3" tabindex="-1"></a><span class="dt">double</span> primitive_sum<span class="op">(</span><span class="at">const</span> r_vec<span class="op">&lt;</span>r_dbl<span class="op">&gt;&amp;</span> x<span class="op">){</span></span>
+<span id="cb82-4"><a href="#cb82-4" tabindex="-1"></a></span>
+<span id="cb82-5"><a href="#cb82-5" tabindex="-1"></a>  <span class="co">// r_vec&lt;T&gt;::data_type always returns typename T</span></span>
+<span id="cb82-6"><a href="#cb82-6" tabindex="-1"></a>  <span class="kw">using</span> <span class="dt">data_t</span> <span class="op">=</span> <span class="kw">typename</span> <span class="bu">std::</span>remove_cvref_t<span class="op">&lt;</span><span class="kw">decltype</span><span class="op">(</span>x<span class="op">)&gt;::</span><span class="dt">data_type</span><span class="op">;</span></span>
+<span id="cb82-7"><a href="#cb82-7" tabindex="-1"></a></span>
+<span id="cb82-8"><a href="#cb82-8" tabindex="-1"></a>  <span class="kw">using</span> <span class="dt">primitive_t</span> <span class="op">=</span> <span class="dt">unwrap_t</span><span class="op">&lt;</span><span class="dt">data_t</span><span class="op">&gt;;</span></span>
+<span id="cb82-9"><a href="#cb82-9" tabindex="-1"></a>  <span class="dt">primitive_t</span> <span class="op">*</span>p_x <span class="op">=</span> x<span class="op">.</span>data<span class="op">();</span></span>
+<span id="cb82-10"><a href="#cb82-10" tabindex="-1"></a></span>
+<span id="cb82-11"><a href="#cb82-11" tabindex="-1"></a>  <span class="dt">r_size_t</span> n <span class="op">=</span> x<span class="op">.</span>length<span class="op">();</span></span>
+<span id="cb82-12"><a href="#cb82-12" tabindex="-1"></a>  <span class="dt">double</span> sum <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb82-13"><a href="#cb82-13" tabindex="-1"></a></span>
+<span id="cb82-14"><a href="#cb82-14" tabindex="-1"></a>  OMP_SIMD_REDUCTION1<span class="op">(+:</span>sum<span class="op">)</span></span>
+<span id="cb82-15"><a href="#cb82-15" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="dt">r_size_t</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> n<span class="op">;</span> <span class="op">++</span>i<span class="op">){</span></span>
+<span id="cb82-16"><a href="#cb82-16" tabindex="-1"></a>    sum <span class="op">+=</span> p_x<span class="op">[</span>i<span class="op">];</span></span>
+<span id="cb82-17"><a href="#cb82-17" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb82-18"><a href="#cb82-18" tabindex="-1"></a>  <span class="cf">return</span> sum<span class="op">;</span></span>
+<span id="cb82-19"><a href="#cb82-19" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb83"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">10</span><span class="op">^</span><span class="fl">5</span><span class="op">)</span></span>
 <span><span class="fu">primitive_sum</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] -467.8787</span></span></code></pre></div>
