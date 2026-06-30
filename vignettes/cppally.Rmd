@@ -302,6 +302,22 @@ r_vec<r_sexp> set_list_names(r_vec<r_sexp> x, r_vec<r_str> names){
   x.set_names(names);
   return x;
 }
+',
+cpp_seq_len = '
+[[cppally::register]]
+r_vec<r_int> cpp_seq_len(r_size_t n){
+  return sequence(n, /* from = */ r_int(1), /* by = */ r_int(1));
+}
+',
+cpp_sequences = '
+template <typename T>
+requires (any<T, r_int, r_int64, r_dbl>)
+[[cppally::register]]
+r_vec<r_sexp> cpp_sequences(r_vec<r_int> size, r_vec<T> from, r_vec<T> by){
+    return pmap([](auto a, auto b, auto c){
+        return as<r_sexp>(sequence(a, b, c));
+    }, size, from, by);
+}
 '
 )
 
@@ -360,7 +376,9 @@ make_vec<r_dbl>(
   r_sym_new           = 'r_sym("new_symbol")',
   r_sym_from_str      = 'r_sym(r_str("symbol_from_string"))',
   cached_str_demo     = 'cached_str<"cached_string">()',
-  cached_sym_demo     = 'cached_sym<"cached_symbol">()'
+  cached_sym_demo     = 'cached_sym<"cached_symbol">()',
+  cpp_seq             = 'seq(r_dbl(1), r_dbl(5), r_dbl(0.5))',
+  cpp_sequence        = 'sequence(5, /*from = */ r_int(0), /*by = */ r_int(-1))'
 )
 
 register_single_exprs(single_exprs, debug = TRUE)
@@ -951,6 +969,55 @@ More useful attribute helpers
 - `inherits_any()` - Does object inherit at least one of the specified classes?
 - `inherits_all()` - Does object inherit all of the specified classes?
 - `modify_attrs()` - Modifies current attributes but doesn't remove any existing ones
+
+## Regular sequences
+
+There are two core functions for generating regular sequences - `sequence()` and
+`seq()`. `seq()` behaves exactly like the R equivalent `base::seq()`, and `sequence()` 
+behaves like the R equivalent `base::sequence()`, with the exception that it 
+accepts scalar arguments instead of vector ones.
+
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(single_exprs[["cpp_seq"]])
+```
+
+```{r, echo=FALSE}
+cpp_seq()
+```
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(single_exprs[["cpp_sequence"]])
+```
+
+```{r, echo=FALSE}
+cpp_sequence()
+```
+
+Easily replicate `base::seq_len()`
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["cpp_seq_len"]])
+```
+
+```{r}
+cpp_seq_len(5)
+```
+
+It is also straightforward to replicate `base::sequence()` with `pmap()`
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["cpp_sequences"]])
+```
+
+```{r}
+cpp_sequences(1:3, from = 0L, by = 1L) |> 
+  unlist()
+
+# Same as base R
+sequence(1:3, from = 0L, by = 1L)
+```
+
 
 ## Sugar functions
 
