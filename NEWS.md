@@ -1,7 +1,7 @@
 # cppally 1.0.0
 
 First stable release. cppally's public API is now considered stable. 
-This release also includes substantial breaking changes from the 0.x series — see below.
+This release also includes substantial breaking changes from the previous release, cppally 0.1.0.
 
 ## Breaking changes
 
