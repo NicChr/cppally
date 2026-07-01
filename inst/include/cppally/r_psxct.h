@@ -64,9 +64,9 @@ struct r_psxct : r_dbl {
     r_str datetime_str() const {
         auto ymd = chrono_ymd();
         auto hms = chrono_hms();
-        char buf[30];
+        char buf[34];
         std::snprintf(buf, sizeof(buf),
-            "%04d-%02u-%02u %02u:%02u:%02u",
+            "%04d-%02u-%02u %02u:%02u:%02u UTC",
             static_cast<int32_t>(ymd.year()),
             static_cast<uint32_t>(ymd.month()),
             static_cast<uint32_t>(ymd.day()),
