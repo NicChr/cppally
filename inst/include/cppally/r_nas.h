@@ -133,6 +133,12 @@ inline constexpr bool is_nan(const r_dbl& x) noexcept {
   return is_na(x) && !internal::is_na_real(unwrap(x));
 }
 
+template<typename T>
+requires requires (const T& v) { is_na(v); }
+inline constexpr T coalesce(const T& x, const T& y) noexcept {
+  return is_na(x) ? y : x;
+}
+
 namespace internal {
 template <typename T, typename U>
 constexpr bool either_na(const T& x, const U& y) noexcept {
