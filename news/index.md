@@ -1,27 +1,23 @@
 # Changelog
 
-## cppally (development version)
+## cppally 1.0.0
 
-#### Data frames
+First major release. cppally’s public API is now considered stable.
+While there may be structural changes to the `r_df` and `r_raw` classes
+in the future, cppally’s vector and scalar classes are considered
+stable.
 
-- `r_df` is now fully integrated into cppally
+### Breaking changes
 
-- New variadic function `make_df()` to create in-line data frames
-
-- Various `r_df` members have been added to allow easier data frame
-  manipulation
-
-#### Breaking changes
-
-- `r_sexp.length()` has been deprecated, in favour of the free function
-  [`length()`](https://rdrr.io/r/base/length.html)
+- `r_sexp.length` has been deprecated, in favour of the free function
+  `length`
 
 - `length(r_df)` now returns the number of rows instead of the number of
   cols, marking a shift in how cppally treats data frames. They are now
-  seen as row-wise vectors
+  seen as row-wise vectors.
 
 - Setting attributes on plain `SEXP` is now unsupported, e.g. via
-  `cppally::attr::set_attr()`. Use cppally types such as `r_vector`,
+  `cppally::attr::set_attr`. Use cppally types such as `r_vector`,
   `r_factors`, `r_df` and in some cases `r_sexp` for attribute
   manipulation.
 
@@ -41,14 +37,14 @@
   sole owner), calls `f`, then writes the result back.
 
 - `r_factors` elements are now treated as `r_str` in member functions
-  like [`get()`](https://rdrr.io/r/base/get.html) and `set()`
+  like `get` and `set`
 
-- `r_sexp_visit()` now visit `r_null` as `r_vec<r_sexp>(r_null)`,
+- `r_sexp_visit` now visits `r_null` as `r_vec<r_sexp>(r_null)`,
   essentially treating `NULL` as an empty list but without changing the
-  underlying data
+  underlying data.
 
 For example, in the below pseudo-code, when x is `r_null` of type
-`r_sexp`, `r_sexp_visit()` will disambiguate it as
+`r_sexp`, `r_sexp_visit` will disambiguate it as
 `r_vec<r_sexp>(r_null)`, preserving its data as R’s `NULL` but assigning
 its type as `r_vec<r_sexp>` (list).
 
@@ -64,7 +60,16 @@ manipulation with vectors that may or may not be `r_null`. What is new
 is that previously `r_null` was not a visitable `r_sexp` object and now
 it is.
 
-#### std::vector
+### Data frames
+
+- `r_df` is now fully integrated into cppally.
+
+- New variadic function `make_df` to create in-line data frames.
+
+- Various `r_df` members have been added to allow easier data frame
+  manipulation.
+
+### std::vector
 
 - Partial support for `std::vector` coercion. The following
   `std::vector` coercion directions are supported:
@@ -75,9 +80,16 @@ it is.
 Any coercion between `std::vector` and `cppally::r_vec` is possible so
 long as the element coercions are supported by `cppally::as`
 
-#### Improvements and New Features
+### Regular sequences
 
-##### Named vector hash lookups
+- New function `seq` which behaves similarly to
+  [`base::seq`](https://rdrr.io/r/base/seq.html).
+
+- New function `sequence` which is similar to
+  [`base::sequence`](https://rdrr.io/r/base/sequence.html) but accepts
+  only scalar inputs.
+
+### Named vector hash lookups
 
 For named vectors, lookup by name has been dramatically improved in C++
 by introducing a hashing approach. It works in the following way: the
@@ -92,14 +104,13 @@ A similar hashing approach is also used for `r_factors`, making
 conversions of strings to and from factor codes fast and analytically
 viable.
 
-##### Copy-on-modify
+### Copy-on-modify
 
 cppally now supports copy-on-modify as an opt-in feature. This feature
 prevents accidentally overwriting data between shared objects, just like
 R. To opt-in, run
-[`cppally::use_copy_on_modify()`](https://nicchr.github.io/cppally/reference/use_copy_on_modify.md)
-or set the `copy_on_modify` to `TRUE` in
-[`cpp_source()`](https://nicchr.github.io/cppally/reference/cpp_source.md).
+[`cppally::use_copy_on_modify`](https://nicchr.github.io/cppally/reference/use_copy_on_modify.md)
+or set the `copy_on_modify` to `TRUE` in `cpp_source`.
 
 The major downside of this feature is significantly slower element
 setting as every set must verify the object is not referenced by another
@@ -108,7 +119,7 @@ cppally code is disabled as a safety precaution. If using
 copy-on-modify, it is recommended to avoid writing cppally registered R
 functions that rely on in-place modification.
 
-##### pmap
+### pmap
 
 Inspired by
 [`purrr::pmap`](https://purrr.tidyverse.org/reference/pmap.html) and
@@ -116,10 +127,10 @@ Inspired by
 a C++ variadic function that supports applying custom C++ lambda
 functions across corresponding elements of multiple vectors.
 
-With `pmap()` it is trivial to calculate parallel statistics like max,
+With `pmap` it is trivial to calculate parallel statistics like max,
 min, etc. Example of C++ version of
-[`base::pmax()`](https://rdrr.io/r/base/Extremes.html) applied to two
-vectors
+[`base::pmax`](https://rdrr.io/r/base/Extremes.html) applied to two
+vectors.
 
 ``` cpp
 template <RVector T, RVector U>
@@ -130,20 +141,32 @@ auto cpp_pmax2(T x, U y){
 }
 ```
 
-##### Other improvements
+### reduce
+
+A left-fold reduction functional that successively applies a binary
+function along the elements of the vector (from left-to-right).
+
+Example: maximum value across vector of doubles
+
+``` cpp
+[[cppally::register]]
+r_dbl cpp_max(r_vec<r_dbl> x){
+  return x.reduce([](auto acc, auto curr){ return max(acc, curr); });
+}
+```
+
+### Other changes
 
 - New alias of `r_vec`, `r_vector`
 
-- Named-vector subsetting is now supported
+- Named-vector subsetting is now supported.
 
-- New C++ functions `combine()` and `flatten()`. `combine()` is a
-  variadic function that allows for combining multiple vectors into one,
-  similar to [`base::c()`](https://rdrr.io/r/base/c.html) but always
-  casts vectors to the common type among them. `flatten()` allows one to
-  flatten a list of vectors into one vector of a specified type. Similar
-  to `unlist(recursive = FALSE)` but it differs in that only the return
-  type must be specified,
-  e.g. `flatten<r_vector<r_int>>(make_vec<r_sexp>(1, 2, 3))`
+- New C++ functions `combine` and `flatten`. `combine` is a variadic
+  function that allows for combining multiple vectors into one, similar
+  to [`base::c`](https://rdrr.io/r/base/c.html) but always casts vectors
+  to the common type among them. `flatten` allows one to flatten a list
+  of vectors into one vector of a specified type, similar to
+  `unlist(recursive = FALSE)`.
 
 - Many functions that were originally `r_vec`-only members are now free
   functions that also work on `r_sexp` as well as `RComposite` types,
@@ -157,11 +180,14 @@ auto cpp_pmax2(T x, U y){
 
 - New infix operator `IS_IN`, identical to R’s `%in%`.
 
-#### Bug fixes
+- `r_psxct.datetime_str()` always appends “UTC” at the end to avoid
+  time-zone ambiguity.
+
+### Bug fixes
 
 - When registering C++ functions, cppally.hpp is now included in the
   generated C++ code. Not including it caused issues when trying to
-  compile functions that constructed factors
+  compile functions that constructed factors.
 
 - Zero-length `r_vec` vectors can now be constructed unambiguously via
   `r_vec<T>(0)`.

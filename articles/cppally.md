@@ -1,7 +1,10 @@
 # Getting started with cppally
 
-Let’s briefly show some of the capabilities of cppally, from its custom
+Below we explore some of the capabilities of cppally, from its custom
 C++ scalar and vectors, to using templates and concepts.
+
+**Note:** The classes `r_vec` and `r_vector` are aliases of one another
+and thus can be used interchangeably.
 
 ## Setup
 
@@ -12,7 +15,7 @@ Let’s start by loading cppally
 library(cppally)
 ```
 
-## Registering R functions
+## Registering C++ functions (to R)
 
 To make a C++ function available to R we use the `[[cppally::register]]`
 tag.
@@ -223,19 +226,20 @@ also_good_lgl_print(NA) # Falls into 'not true' branch here as expected
 All cppally scalar types are implemented as structs that contain the
 underlying C/C++ types as well as other member functions.
 
-| cppally type  | Description                 | Implicitly converts to           |
-|:--------------|-----------------------------|:---------------------------------|
-| `r_lgl`       | Scalar logical              | `bool` **only** in if-statements |
-| `r_int`       | Scalar integer              | `int`                            |
-| `r_int64`     | Scalar 64-bit integer       | `int64_t`                        |
-| `r_dbl`       | Scalar double               | `double`                         |
-| `r_str`       | Scalar string               | `SEXP`                           |
-| `r_cplx`      | Scalar double complex       | `std::complex<double>`           |
-| `r_raw`       | Scalar raw                  | `unsigned char`                  |
-| `r_sym`       | Symbol                      | `SEXP`                           |
-| `r_date` [^1] | Scalar date                 | `double`                         |
-| `r_psxct`     | Scalar date-time            | `double`                         |
-| `r_sexp`      | Generic R object (SEXP)[^2] | `SEXP`                           |
+| cppally type  | Description                 | Built on               |
+|:--------------|-----------------------------|:-----------------------|
+| `r_lgl`       | Scalar logical              | `int`                  |
+| `r_int`       | Scalar integer              | `int`                  |
+| `r_int64`     | Scalar 64-bit integer       | `int64_t`              |
+| `r_dbl`       | Scalar double               | `double`               |
+| `r_str`       | Scalar string               | `r_sexp`               |
+| `r_str_view`  | Scalar string (view)        | `SEXP`                 |
+| `r_cplx`      | Scalar double complex       | `std::complex<double>` |
+| `r_raw`       | Scalar raw                  | `unsigned char`        |
+| `r_sym`       | Symbol                      | `SEXP`                 |
+| `r_date` [^1] | Scalar date                 | `r_dbl`                |
+| `r_psxct`     | Scalar date-time            | `r_dbl`                |
+| `r_sexp`      | Generic R object (SEXP)[^2] | `SEXP`                 |
 
 `NA` values can be accessed via the template function `na<T>`
 
@@ -245,14 +249,14 @@ underlying C/C++ types as well as other member functions.
 
 ## Checking equality
 
-There are two ways to check for equality of cppally scalars - with the
-`==` operator or with
+There are two ways to check for exact equality of cppally scalars - with
+the `==` operator or with
 [`identical()`](https://rdrr.io/r/base/identical.html).
 
 The cppally `==` operator always returns `r_lgl` and
 [`identical()`](https://rdrr.io/r/base/identical.html) always returns
 `bool`, which is a particularly important distinction when dealing with
-`NA` values.
+`NA` values as the former can represent `NA` while the latter cannot.
 
 ``` cpp
 
@@ -263,20 +267,25 @@ void cppally_equality(){
   r_int y = na<r_int>();
   
   r_lgl x_equal_to_y = x == y;
+  bool x_identical_to_y = identical(x, y);
   
-  if ( x_equal_to_y.is_true() ){ // NA so not printed
+  // NA so not printed
+  if ( x_equal_to_y.is_true() ){
     print("x is equal to y\n");
   }
   
-  if ( x_equal_to_y.is_false() ){ // NA so not printed
+  // NA so not printed
+  if ( x_equal_to_y.is_false() ){
     print("x is not equal to y\n");
   }
   
+  // NA so printed
   if (is_na(x_equal_to_y)){
     print("`x == y` produces `NA`\n");
   }
   
-  if (identical(x, y)){
+  // Both na<r_int>() therefore they are identical to each other
+  if (x_identical_to_y){
     print("x is identical to y\n");
   }
 }
@@ -289,8 +298,8 @@ cppally_equality()
 #> x is identical to y
 ```
 
-[`identical()`](https://rdrr.io/r/base/identical.html) can compare
-scalars, vectors, lists, factors, and data frames
+[`identical()`](https://rdrr.io/r/base/identical.html) can not only
+compare scalars, but also vectors, lists, factors, and data frames.
 
 ``` cpp
 
@@ -317,12 +326,151 @@ cpp_identical(iris, iris)
 #> [1] TRUE
 ```
 
+## Scalar operators
+
+cppally also defines arithmetic and relational comparison operators for
+its scalar types. Like the logical and equality operators seen earlier,
+they are all `NA`-aware.
+
+### Scalar arithmetic operators
+
+**Addition**
+
+``` cpp
+r_int(0) + r_dbl(2.5)
+```
+
+    #> [1] 2.5
+
+**Subtraction**
+
+``` cpp
+r_int(0) - r_int(1)
+```
+
+    #> [1] -1
+
+**Multiplication**
+
+``` cpp
+r_int(2) * r_int(3)
+```
+
+    #> [1] 6
+
+**Division**
+
+``` cpp
+r_dbl(9) / 3
+```
+
+    #> [1] 3
+
+**Addition with `NA`**
+
+``` cpp
+na<r_int>() + r_dbl(2.5)
+```
+
+    #> [1] NA
+
+**Subtraction with `NA`**
+
+``` cpp
+na<r_int>() - r_int(1)
+```
+
+    #> [1] NA
+
+**Multiplication with `NA`**
+
+``` cpp
+na<r_int>() * r_int(3)
+```
+
+    #> [1] NA
+
+**Division with `NA`**
+
+``` cpp
+na<r_dbl>() / 3
+```
+
+    #> [1] NA
+
+### Scalar relational operators
+
+**Less than**
+
+``` cpp
+r_int(1) < r_int(2)
+```
+
+    #> [1] TRUE
+
+**Less than or equal to**
+
+``` cpp
+r_dbl(2) <= r_dbl(2)
+```
+
+    #> [1] TRUE
+
+**Greater than**
+
+``` cpp
+r_int(3) > r_int(2)
+```
+
+    #> [1] TRUE
+
+**Greater than or equal to**
+
+``` cpp
+r_dbl(2) >= r_dbl(3)
+```
+
+    #> [1] FALSE
+
+**Less than with `NA`**
+
+``` cpp
+na<r_int>() < r_int(2)
+```
+
+    #> [1] NA
+
+**Less than or equal to with `NA`**
+
+``` cpp
+na<r_dbl>() <= r_dbl(2)
+```
+
+    #> [1] NA
+
+**Greater than with `NA`**
+
+``` cpp
+na<r_int>() > r_int(2)
+```
+
+    #> [1] NA
+
+**Greater than or equal to with `NA`**
+
+``` cpp
+na<r_dbl>() >= r_dbl(3)
+```
+
+    #> [1] NA
+
+Other defined operators not showcased: `++`, `--`, `+=`, `-=`, `*=`,
+`/=`, `%=`, `-`, `%`, `|`, `&`, `!`
+
 ## Vectors
 
 cppally vectors are templated and can be thought of as containers of
 scalar elements like `r_int`, `r_dbl`, etc.
-
-**Note:** `r_vector` is an alias of `r_vec` so both can be used.
 
 We can create vectors like so
 
@@ -436,6 +584,50 @@ all_vectors()
 #> 
 #> $list
 #> list()
+```
+
+## Scalar math
+
+There is a rich suite of math functions that accept cppally types.
+
+``` cpp
+
+[[cppally::register]]
+r_vector<r_dbl> cppally_math(r_dbl x){
+    return make_vec<r_dbl>(
+        arg("abs")          = abs(x),
+        arg("floor")        = floor(x),
+        arg("ceiling")      = ceiling(x),
+        arg("trunc")        = trunc(x),
+        arg("round")        = round(x),
+        arg("signif")       = signif(x, 3),
+        arg("sign")         = sign(x),
+        arg("min")          = min(0, x),
+        arg("max")          = max(0, x),
+        arg("sqrt")         = sqrt(x),
+        arg("pow")          = pow(x, 2),
+        arg("exp")          = exp(x),
+        arg("log")          = log(x),
+        arg("log_base")     = log(x, 2),
+        arg("log10")        = log10(x)
+    );
+}
+```
+
+``` r
+
+cppally_math(2.5)
+#>        abs      floor    ceiling      trunc      round     signif       sign 
+#>  2.5000000  2.0000000  3.0000000  2.0000000  2.0000000  2.5000000  1.0000000 
+#>        min        max       sqrt        pow        exp        log   log_base 
+#>  0.0000000  2.5000000  1.5811388  6.2500000 12.1824940  0.9162907  1.3219281 
+#>      log10 
+#>  0.3979400
+cppally_math(NA)
+#>      abs    floor  ceiling    trunc    round   signif     sign      min 
+#>       NA       NA       NA       NA       NA       NA       NA       NA 
+#>      max     sqrt      pow      exp      log log_base    log10 
+#>       NA       NA       NA       NA       NA       NA       NA
 ```
 
 ## Coercion
@@ -713,6 +905,98 @@ letter_fct |>
 #> [26] 26
 ```
 
+## Value matching
+
+Use `r_vec` member [`find()`](https://rdrr.io/r/utils/apropos.html) to
+find the **0-indexed** locations of a scalar value.
+
+``` cpp
+
+[[cppally::register]]
+r_vector<r_int> find_empty_string(r_vector<r_str> x){
+    return x.find(r_str(""));
+}
+```
+
+``` r
+
+x <- c("zero", "one", "two", "three", "four")
+
+find_empty_string(x)
+#> integer(0)
+
+# Add empty strings
+x[c(1, 3)] <- ""
+
+find_empty_string(x)
+#> [1] 0 2
+```
+
+To find the locations of multiple values (first match), use
+[`match()`](https://bit64.r-lib.org/reference/bit64S3.html). It works
+like R’s [`base::match()`](https://rdrr.io/r/base/match.html) but is
+0-indexed.
+
+``` cpp
+
+[[cppally::register]]
+r_vector<r_int> match_strs(r_vector<r_str> x, r_vector<r_str> table){
+    return match(x, table);
+}
+```
+
+``` r
+
+letters
+#>  [1] "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s"
+#> [20] "t" "u" "v" "w" "x" "y" "z"
+
+vowels <- c("a", "e", "i", "o", "u")
+
+# cppally::match is 0-indexed
+match_strs(vowels, letters)
+#> [1]  0  4  8 14 20
+```
+
+cppally provides the `IS_IN` infix operator, identical to R’s `%in%`
+
+``` cpp
+
+[[cppally::register]]
+r_vector<r_lgl> cpp_in(r_vector<r_str> x, r_vector<r_str> table){
+    return x IS_IN table;
+}
+```
+
+``` r
+
+cpp_in(c("a", "A", NA), letters)
+#> [1]  TRUE FALSE FALSE
+```
+
+To mimic R’s new `%notin%` operator, simply use the logical negation
+operator.
+
+``` cpp
+
+[[cppally::register]]
+r_vector<r_lgl> cpp_not_in(r_vector<r_str> x, r_vector<r_str> table){
+    return !(x IS_IN table);
+}
+```
+
+**Technical note:** cppally internally negates the intermediate result
+of `x IS_IN table` in-place in this particular case because it satisfies
+specific properties of exclusivity which while not covered here, may be
+covered in a later vignette. This in-place negation is naturally
+efficient as it avoids allocating a new vector.
+
+``` r
+
+cpp_not_in(c("a", "A", NA), letters)
+#> [1] FALSE  TRUE  TRUE
+```
+
 ## Concepts and Templates
 
 One of the most powerful features of C++20 are concepts. These allow
@@ -797,8 +1081,8 @@ T foo(){
 
 Here `foo()` will not be compiled because the function has no arguments
 that let the compiler automatically deduce what `T` is. In C++ you would
-call always call this function like so: `foo<T>()`. Unfortunately we
-can’t do that from R directly.
+always call this function like so: `foo<T>()`. Unfortunately we can’t do
+that from R directly.
 
 You may get a cryptic compiler error like this
 
@@ -930,7 +1214,8 @@ sequence(5, /*from = */ r_int(0), /*by = */ r_int(-1))
 
     #> [1]  0 -1 -2 -3 -4
 
-Easily replicate [`base::seq_len()`](https://rdrr.io/r/base/seq.html)
+We can also use [`sequence()`](https://rdrr.io/r/base/sequence.html) to
+easily replicate [`base::seq_len()`](https://rdrr.io/r/base/seq.html)
 
 ``` cpp
 
@@ -999,8 +1284,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique       717µs    789µs     1214.    1.38MB     36.4
-#> 2 cppally_n_unique    279µs    281µs     3508.        0B      0
+#> 1 base_n_unique       705µs    723µs     1235.    1.38MB     34.9
+#> 2 cppally_n_unique    307µs    310µs     3178.        0B      0
 ```
 
 More useful sugar functions
@@ -1008,9 +1293,6 @@ More useful sugar functions
 - [`unique()`](https://rdrr.io/r/base/unique.html) - Like R’s
   [`unique()`](https://rdrr.io/r/base/unique.html) but with a `sort`
   argument to return sorted unique values
-
-- [`match()`](https://bit64.r-lib.org/reference/bit64S3.html) - Like R’s
-  match, but also faster
 
 - [`order()`](https://bit64.r-lib.org/reference/bit64S3.html) - Like
   base R’s order but it internally uses a hybrid approach of ska sort,
@@ -1020,34 +1302,24 @@ More useful sugar functions
   containing group IDs and number of groups (i.e number of unique group
   IDs). The `groups` struct contains the following members:
 
-  - r_vec ids - The cached group IDs
-  - int n_groups - Number of unique groups
-  - bool ordered - Do the group IDs specify a sorting order, or are they
-    by order-of-first-appearance?
-  - bool sorted - Are the group IDs sorted? (This can also be true for
+  - `r_vec<r_int> ids` - The cached group IDs
+  - `int n_groups` - Number of unique groups
+  - `bool ordered` - Do the group IDs specify a sorting order, or are
+    they by order-of-first-appearance?
+  - `bool sorted` - Are the group IDs sorted? (This can also be true for
     order-of-first-appearance IDs)
-  - r_vec start() - Returns an r_vec(n_groups) vector of start locations
-    of each unique group, signifying the location in the data at which
-    each group initially appeared
-  - r_vec counts() - Returns an r_vec(n_groups) vector of frequency
-    counts of each unique group
-  - r_vec order() - Returns an r_vec(ids.length()) order vector. This is
-    a 0-indexed permutation vector that can be used to return sorted
-    group IDs
+  - `r_vec<r_int> start()` - Returns an r_vec(n_groups) vector of start
+    locations of each unique group, signifying the location in the data
+    at which each group initially appeared
+  - `r_vec<r_int> counts()` - Returns an r_vec(n_groups) vector of
+    frequency counts of each unique group
+  - `r_vec<r_int> order()` - Returns an r_vec(ids.length()) order
+    vector. This is a 0-indexed permutation vector that can be used to
+    return sorted group IDs
 
 - `recycle()` - Recycles supplied vectors to common length
 
-- `r_vec<T>::subset()` - Fast subsetting of vectors
-
-**Scalar math functions**
-
-There is a rich suite of math functions. Some examples include
-[`min()`](https://rdrr.io/r/base/Extremes.html),
-[`max()`](https://rdrr.io/r/base/Extremes.html),
-[`round()`](https://rdrr.io/r/base/Round.html),
-[`log()`](https://rdrr.io/r/base/Log.html),
-[`floor()`](https://rdrr.io/r/base/Round.html),
-[`ceiling()`](https://rdrr.io/r/base/Round.html) and more.
+- `r_vec::subset()` - Fast subsetting of vectors
 
 **Stats sugar functions**
 
