@@ -1,13 +1,14 @@
 # cppally 1.0.0
 
-First stable release. cppally's public API is now considered stable. 
-This release also includes substantial breaking changes from the previous release, cppally 0.1.0.
+First major release. cppally's public API is now considered stable. 
+While there may be structural changes to the `r_df` and `r_raw` classes in the future, 
+cppally's vector and scalar classes are considered stable.
 
 ## Breaking changes
 
 - `r_sexp.length` has been deprecated, in favour of the free function `length`
 
-- `length(r_df)` now returns the number of rows instead of the number of cols, marking a shift in how cppally treats data frames. They are now seen as row-wise vectors
+- `length(r_df)` now returns the number of rows instead of the number of cols, marking a shift in how cppally treats data frames. They are now seen as row-wise vectors.
 
 - Setting attributes on plain `SEXP` is now unsupported, e.g. via `cppally::attr::set_attr`. Use cppally types such as `r_vector`, `r_factors`, `r_df` and in some cases `r_sexp` for attribute manipulation.
 
@@ -17,7 +18,7 @@ This release also includes substantial breaking changes from the previous releas
 
 - `r_factors` elements are now treated as `r_str` in member functions like `get` and `set`
 
-- `r_sexp_visit` now visits `r_null` as `r_vec<r_sexp>(r_null)`, essentially treating `NULL` as an empty list but without changing the underlying data
+- `r_sexp_visit` now visits `r_null` as `r_vec<r_sexp>(r_null)`, essentially treating `NULL` as an empty list but without changing the underlying data.
 
 For example, in the below pseudo-code, when x is `r_null` of type `r_sexp`, `r_sexp_visit` will disambiguate it as `r_vec<r_sexp>(r_null)`, preserving its data as R's `NULL` but assigning its type as `r_vec<r_sexp>` (list).
 
@@ -31,11 +32,11 @@ This preservation behaviour is not new, in fact all `r_vec<T>` vectors preserve 
 
 ## Data frames
 
-- `r_df` is now fully integrated into cppally
+- `r_df` is now fully integrated into cppally.
 
-- New variadic function `make_df` to create in-line data frames
+- New variadic function `make_df` to create in-line data frames.
 
-- Various `r_df` members have been added to allow easier data frame manipulation
+- Various `r_df` members have been added to allow easier data frame manipulation.
 
 ## std::vector
 
@@ -68,7 +69,7 @@ The major downside of this feature is significantly slower element setting as ev
 
 Inspired by `purrr::pmap` and `base::mapply`, `cppally::pmap` is a C++ variadic function that supports applying custom C++ lambda functions across corresponding elements of multiple vectors.
 
-With `pmap` it is trivial to calculate parallel statistics like max, min, etc. Example of C++ version of `base::pmax` applied to two vectors
+With `pmap` it is trivial to calculate parallel statistics like max, min, etc. Example of C++ version of `base::pmax` applied to two vectors.
 
 ```cpp
 template <RVector T, RVector U>
@@ -97,7 +98,7 @@ r_dbl cpp_max(r_vec<r_dbl> x){
 
 - New alias of `r_vec`, `r_vector`
 
-- Named-vector subsetting is now supported
+- Named-vector subsetting is now supported.
 
 - New C++ functions `combine` and `flatten`. `combine` is a variadic function that allows for combining multiple vectors into one, similar to `base::c` but always casts vectors to the common type among them. `flatten` allows one to flatten a list of vectors into one vector of a specified type, similar to `unlist(recursive = FALSE)`.
 
@@ -109,9 +110,11 @@ r_dbl cpp_max(r_vec<r_dbl> x){
 
 - New infix operator `IS_IN`, identical to R's `%in%`.
 
+- `r_psxct.datetime_str()` always appends "UTC" at the end to avoid time-zone ambiguity. 
+
 ## Bug fixes
 
-- When registering C++ functions, cppally.hpp is now included in the generated C++ code. Not including it caused issues when trying to compile functions that constructed factors
+- When registering C++ functions, cppally.hpp is now included in the generated C++ code. Not including it caused issues when trying to compile functions that constructed factors.
 
 - Zero-length `r_vec` vectors can now be constructed unambiguously via `r_vec<T>(0)`.
 
