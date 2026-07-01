@@ -20,9 +20,9 @@ inline constexpr r_dbl round_to_even(r_dbl x){
 
 template <NumericType T, NumericType U>
 requires (RNumericType<T> || RNumericType<U>)
-inline constexpr common_r_t<T, U> min(T x, U y) noexcept {
+inline constexpr common_r_t<as_r_scalar_t<T>, as_r_scalar_t<U>> min(T x, U y) noexcept {
   
-  using common_t = common_r_t<T, U>;
+  using common_t = common_r_t<as_r_scalar_t<T>, as_r_scalar_t<U>>;
 
   return internal::either_na(x, y) ? na<common_t>() : 
   common_t(std::min(
@@ -33,9 +33,9 @@ inline constexpr common_r_t<T, U> min(T x, U y) noexcept {
 
 template <NumericType T, NumericType U>
 requires (RNumericType<T> || RNumericType<U>)
-inline constexpr common_r_t<T, U> max(T x, U y) noexcept {
+inline constexpr common_r_t<as_r_scalar_t<T>, as_r_scalar_t<U>> max(T x, U y) noexcept {
   
-  using common_t = common_r_t<T, U>;
+  using common_t = common_r_t<as_r_scalar_t<T>, as_r_scalar_t<U>>;
 
   return internal::either_na(x, y) ? na<common_t>() : 
   common_t(std::max(
