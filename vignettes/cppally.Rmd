@@ -581,6 +581,11 @@ also_good_lgl_print(FALSE)
 also_good_lgl_print(NA) # Falls into 'not true' branch here as expected
 ```
 
+**Important:** The `&&` and `||` operators for `r_lgl` do **NOT short-circuit** 
+like they do for `bool`. Both sides of the expression are always evaluated. 
+If you specifically require short-circuiting behaviour, 
+use `is_true()` and `is_false()` before using `&&` and `||`. 
+
 All cppally scalar types are implemented as structs that contain the underlying C/C++ types as well as other member functions.
 
 | cppally type  | Description                 | Built on               |
