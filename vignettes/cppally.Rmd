@@ -321,6 +321,30 @@ r_vec<r_int> factor_codes(r_factors x){
 	return x.codes();
 }
 ',
+find_empty_string = '
+[[cppally::register]]
+r_vector<r_int> find_empty_string(r_vector<r_str> x){
+    return x.find(r_str(""));
+}
+',
+match_strs = '
+[[cppally::register]]
+r_vector<r_int> match_strs(r_vector<r_str> x, r_vector<r_str> table){
+    return match(x, table);
+}
+',
+cpp_in = '
+[[cppally::register]]
+r_vector<r_lgl> cpp_in(r_vector<r_str> x, r_vector<r_str> table){
+    return x IS_IN table;
+}
+',
+cpp_not_in = '
+[[cppally::register]]
+r_vector<r_lgl> cpp_not_in(r_vector<r_str> x, r_vector<r_str> table){
+    return !(x IS_IN table);
+}
+',
   setnames = '
 [[cppally::register]]
 r_vec<r_sexp> set_list_names(r_vec<r_sexp> x, r_vec<r_str> names){
@@ -1040,6 +1064,64 @@ letter_fct |>
     factor_codes()
 ```
 
+## Value matching
+
+Use `r_vec` member `find()` to find the **0-indexed** locations of a scalar value.
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["find_empty_string"]])
+```
+
+```{r}
+x <- c("zero", "one", "two", "three", "four")
+
+find_empty_string(x)
+
+# Add empty strings
+x[c(1, 3)] <- ""
+
+find_empty_string(x)
+```
+
+To find the locations of multiple values (first match), use `match()`. It works like R's
+`base::match()` but is 0-indexed.
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["match_strs"]])
+```
+
+```{r}
+letters
+
+vowels <- c("a", "e", "i", "o", "u")
+
+# cppally::match is 0-indexed
+match_strs(vowels, letters)
+```
+
+cppally provides the `IS_IN` infix operator, identical to R's `%in%`
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["cpp_in"]])
+```
+
+```{r}
+cpp_in(c("a", "A", NA), letters)
+```
+
+To mimic R's new `%notin%` operator, simply use the logical negation operator.
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["cpp_not_in"]])
+```
+
+**Technical note:** cppally internally negates the intermediate result of `x IS_IN table` in-place in this particular case because it satisfies specific properties of exclusivity which while not covered here, may be covered in a later vignette. 
+This in-place negation is naturally efficient as it avoids allocating a new vector.
+
+```{r}
+cpp_not_in(c("a", "A", NA), letters)
+```
+
 ## Concepts and Templates
 
 One of the most powerful features of C++20 are concepts. These allow users to write human-readable templates and constraints.
@@ -1220,8 +1302,6 @@ mark(
 More useful sugar functions
 
 - `unique()` - Like R's `unique()` but with a `sort` argument to return sorted unique values
-
-- `match()` - Like R's match, but also faster
 
 - `order()` - Like base R's order but it internally uses a hybrid approach of ska sort, count sorting, quick sort, etc.
 
