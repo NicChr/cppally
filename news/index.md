@@ -1,6 +1,13 @@
 # Changelog
 
+## cppally (development version)
+
+- Fixed bug where exclusion of concepts header was affecting vignette
+  creation on macos.
+
 ## cppally 1.0.0 (2026-07-02)
+
+CRAN release: 2026-07-02
 
 First major release. cppally’s public API is now considered stable.
 While there may be structural changes to the `r_df` and `r_raw` classes

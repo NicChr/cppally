@@ -17,15 +17,15 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/NicChr/cppally/blob/v1.0.0/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/NicChr/cppally/blob/main/DESCRIPTION)
 
 Christofides N (2026). *cppally: A 'C++20' API for R*. R package version
-1.0.0, <https://nicchr.github.io/cppally/>.
+1.0.0.9000, <https://nicchr.github.io/cppally/>.
 
     @Manual{,
       title = {cppally: A 'C++20' API for R},
       author = {Nick Christofides},
       year = {2026},
-      note = {R package version 1.0.0},
+      note = {R package version 1.0.0.9000},
       url = {https://nicchr.github.io/cppally/},
     }
