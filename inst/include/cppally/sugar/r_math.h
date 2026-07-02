@@ -335,40 +335,37 @@ T gcd(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
 // Lowest common multiple
 template <RMathType T>
 T lcm(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
+
+  T ax = abs(x);
+  T ay = abs(y);
+
+  if ( (ax <= tol || ay <= tol).is_true() ){
+    return T(0);
+  }
+
   if (is_na(x) || is_na(y)){
     if (na_rm){
-      if (is_na(x)){
-        return y;
-      } else {
-        return x;
-      }
+      return coalesce(ax, ay);
     } else {
       return na<T>();
     }
   }
 
-  
-  T ax = abs(x);
-  T ay = abs(y);
+  using unwrapped_t = unwrap_t<T>;
 
+  // Use unwrapped values so that `/` preserves integer types so we don't lose precision for large values
+  // Since by definition GCD(a, b) always produces a number that exactly divides both a b (no fractions)
+  // this is well-defined
+  unwrapped_t res = unwrap(ax) / unwrap(gcd(ax, ay, false, tol));
+
+  // Check for overflow
   if constexpr (RIntegerType<T>){
-    if (ax == 0 && ay == 0){
-      return T(0);
+    if ( res > (unwrap(r_limits<T>::max()) / unwrap(ay)) ) [[unlikely]] {
+      abort("lcm: Integer overflow detected");
     }
-    // Because `/` for RMath types returns r_dbl and the C++ version doesn't
-    // we must use the C++ version
-    // We should always expect res to be an integer because the x is always divisible by gcd(x, y) exactly
-    T res = T(unwrap(ax) / unwrap(gcd(x, y, na_rm)));
-    if (y != 0 && (res > (r_limits<T>::max() / ay))){
-      return na<T>();
-    }
-    return res * ay;
-  } else {
-    if (ax <= tol && ay <= tol){
-      return T(0.0);
-    }
-    return ( ax / gcd(x, y, na_rm, tol) ) * ay;
   }
+
+  return T(res * unwrap(ay));
 }
 
 
