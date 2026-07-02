@@ -1,4 +1,4 @@
-## cppally (development version)
+# cppally (development version)
 
 - Fixed bug where exclusion of concepts header was affecting vignette creation on macos.
 
