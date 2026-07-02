@@ -223,6 +223,11 @@ also_good_lgl_print(NA) # Falls into 'not true' branch here as expected
 #> not true
 ```
 
+**Important:** The `&&` and `||` operators for `r_lgl` do **NOT
+short-circuit** like they do for `bool`. Both sides of the expression
+are always evaluated. If you specifically require short-circuiting
+behaviour, use `is_true()` and `is_false()` before using `&&` and `||`.
+
 All cppally scalar types are implemented as structs that contain the
 underlying C/C++ types as well as other member functions.
 
@@ -241,7 +246,16 @@ underlying C/C++ types as well as other member functions.
 | `r_psxct`     | Scalar date-time            | `r_dbl`                |
 | `r_sexp`      | Generic R object (SEXP)[^2] | `SEXP`                 |
 
-`NA` values can be accessed via the template function `na<T>`
+### NA values
+
+Use `is_na()` to check that a value is NA and `na<T>()` to generate NA
+values.
+
+``` cpp
+is_na(na<r_int>())
+```
+
+    #> [1] TRUE
 
 ### C++ NA values and their R C API equivalents
 
@@ -997,6 +1011,92 @@ cpp_not_in(c("a", "A", NA), letters)
 #> [1] FALSE  TRUE  TRUE
 ```
 
+## Subsetting
+
+Subsetting is 0-indexed in cppally, as is all other indexing.
+
+``` cpp
+
+template <RVector T, typename subscript_t>
+requires any<subscript_t, r_lgl, r_int, r_str>
+[[cppally::register]]
+T cpp_subset(T x, r_vector<subscript_t> y){
+    return subset(x, y);
+}
+```
+
+Subsetting with **integer** indices
+
+``` r
+
+x <- 1:10
+cpp_subset(x, 0L) # index 0 is 1st value
+#> [1] 1
+cpp_subset(x, 9L) # index 9 is last value here
+#> [1] 10
+cpp_subset(x, 10L) # index 10 is out-of-bounds so NA is returned
+#> [1] NA
+cpp_subset(x, NA_integer_) # NA is returned with integer NA index
+#> [1] NA
+```
+
+Subsetting with **logical** indices
+
+``` r
+
+cpp_subset(x, x > 5)
+#> [1]  6  7  8  9 10
+cpp_subset(x, x > 100)
+#> integer(0)
+
+# It differs to base subsetting (via `[`)
+cpp_subset(x, rep(NA, 10)) # cppally only returns values associated with TRUE
+#> integer(0)
+x[rep(NA, 10)] # base R returns NA values when subsetting with NA logicals
+#>  [1] NA NA NA NA NA NA NA NA NA NA
+```
+
+base R performs negative subsetting by using negative numbers. This is
+not possible with our 0-indexed subset as we would have to also
+represent negative zero to subset everything except the first element at
+index 0. Instead cppally has an `invert` argument.
+
+``` cpp
+
+template <RVector T, typename subscript_t>
+requires any<subscript_t, r_lgl, r_int, r_str>
+[[cppally::register]]
+T cpp_negative_subset(T x, r_vector<subscript_t> y){
+    return subset(x, y, /*invert=*/ true);
+}
+```
+
+``` r
+
+cpp_negative_subset(x, 0L) # Everything but 1st
+#> [1]  2  3  4  5  6  7  8  9 10
+cpp_negative_subset(x, x > 5) # Everything except where x > 5
+#> [1] 1 2 3 4 5
+cpp_negative_subset(x, integer()) # Everything
+#>  [1]  1  2  3  4  5  6  7  8  9 10
+```
+
+Named subsetting is also supported. cppally internally hashes the vector
+names and performs hash lookups. For more info, see the ‘Vector Names
+Hashing’ vignette.
+
+``` r
+
+names(x) <- LETTERS[seq_along(x)]
+
+cpp_subset(x, c("A", "J", "Z"))
+#>    A    J <NA> 
+#>    1   10   NA
+cpp_negative_subset(x, "A")
+#>  B  C  D  E  F  G  H  I  J 
+#>  2  3  4  5  6  7  8  9 10
+```
+
 ## Concepts and Templates
 
 One of the most powerful features of C++20 are concepts. These allow
@@ -1284,8 +1384,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique       705µs    723µs     1235.    1.38MB     34.9
-#> 2 cppally_n_unique    307µs    310µs     3178.        0B      0
+#> 1 base_n_unique      1.07ms    1.2ms      832.    1.38MB     23.5
+#> 2 cppally_n_unique 256.83µs  257.6µs     3818.        0B      0
 ```
 
 More useful sugar functions

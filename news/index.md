@@ -157,7 +157,7 @@ r_dbl cpp_max(r_vec<r_dbl> x){
 
 ### Other changes
 
-- New alias of `r_vec`, `r_vector`
+- New alias of `r_vec`, `r_vector`.
 
 - Named-vector subsetting is now supported.
 
@@ -179,6 +179,8 @@ r_dbl cpp_max(r_vec<r_dbl> x){
   friendly.
 
 - New infix operator `IS_IN`, identical to R’s `%in%`.
+
+- New C++ function `coalesce()`.
 
 - `r_psxct.datetime_str()` always appends “UTC” at the end to avoid
   time-zone ambiguity.

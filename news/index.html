@@ -115,13 +115,14 @@
 </div>
 <div class="section level3">
 <h3 id="other-changes-1-0-0">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-1-0-0"></a></h3>
-<ul><li><p>New alias of <code>r_vec</code>, <code>r_vector</code></p></li>
+<ul><li><p>New alias of <code>r_vec</code>, <code>r_vector</code>.</p></li>
 <li><p>Named-vector subsetting is now supported.</p></li>
 <li><p>New C++ functions <code>combine</code> and <code>flatten</code>. <code>combine</code> is a variadic function that allows for combining multiple vectors into one, similar to <code><a href="https://rdrr.io/r/base/c.html" class="external-link">base::c</a></code> but always casts vectors to the common type among them. <code>flatten</code> allows one to flatten a list of vectors into one vector of a specified type, similar to <code>unlist(recursive = FALSE)</code>.</p></li>
 <li><p>Many functions that were originally <code>r_vec</code>-only members are now free functions that also work on <code>r_sexp</code> as well as <code>RComposite</code> types, allowing for easier manipulation of lists.</p></li>
 <li><p>All C++ reference qualifiers (T&amp;, T&amp;&amp;, const T&amp;) are now supported for registered functions, including templated ones.</p></li>
 <li><p>New concept <code>RVectorisable</code> which encompasses types that are OMP friendly.</p></li>
 <li><p>New infix operator <code>IS_IN</code>, identical to R’s <code>%in%</code>.</p></li>
+<li><p>New C++ function <code>coalesce()</code>.</p></li>
 <li><p><code>r_psxct.datetime_str()</code> always appends “UTC” at the end to avoid time-zone ambiguity.</p></li>
 </ul></div>
 <div class="section level3">
