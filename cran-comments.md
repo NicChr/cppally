@@ -1,5 +1,5 @@
-## cppally 1.0.0
+## cppally 1.0.1
 
-- First major release for cppally.
+- Fixed bug where exclusion of concepts header was affecting macos installation.
 
 
