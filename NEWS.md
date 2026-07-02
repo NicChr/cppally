@@ -1,3 +1,5 @@
+## cppally (development version)
+
 # cppally 1.0.0 (2026-07-02)
 
 First major release. cppally's public API is now considered stable. 
