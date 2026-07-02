@@ -1,7 +1,8 @@
 #ifndef CPPALLY_R_CONCEPTS_H
 #define CPPALLY_R_CONCEPTS_H
 
-#include <type_traits> // For concepts
+#include <type_traits>
+#include <concepts>
 #include <cstdint> // For uint32_t and similar
 #include <complex> // For complex<double>
 #include <limits>
