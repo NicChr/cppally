@@ -41,8 +41,8 @@ inline r_sexp rep_each(const r_sexp& x, const r_vec<r_int>& each) {
 }
 
 template <internal::RSubscript U>
-inline r_sexp subset(const r_sexp& x, const r_vec<U>& indices, bool check, bool invert) {
-    return r_sexp(CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ SEXP, /*fn = */ subset, /*rest of args = */ indices, check, invert));
+inline r_sexp subset(const r_sexp& x, const r_vec<U>& indices, bool invert, bool check) {
+    return r_sexp(CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ SEXP, /*fn = */ subset, /*rest of args = */ indices, invert, check));
 }
 
 inline r_vec<r_int> order(const r_sexp& x, bool preserve_ties) {

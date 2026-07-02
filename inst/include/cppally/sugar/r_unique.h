@@ -23,7 +23,7 @@ r_vec<r_lgl> duplicated(const T& x, bool all = false){
   if (all){
     r_vec<r_int> sizes = g.counts();
     r_vec<r_lgl> is_dup = sizes > r_int(1);
-    return is_dup.subset(g.ids, false);
+    return is_dup.subset(g.ids, /*invert=*/ false, /*check=*/ false);
   } else {
     r_vec<r_lgl> out(x.length(), r_true);
     replace_at(out, g.starts(), r_vec<r_lgl>(1, r_false));

@@ -7,7 +7,7 @@ template <RVector T, typename U>
 requires (any<U, r_int, r_lgl, r_str, r_str_view>)
 [[cppally::register]]
 T test_subset(T x, r_vec<U> i, bool invert){
-    return x.subset(i, true, invert);
+    return x.subset(i, invert, true);
 }
 
 template <RVal T, RVal U>

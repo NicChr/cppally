@@ -113,7 +113,7 @@ r_vec<V> clean_locs(const r_vec<U>& locs, const T& x){
 
 template <RVal T>
 template <internal::RSubscript U>
-inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check, bool invert) const {
+inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool invert, bool check) const {
 
   if (indices.is_null()){
     return *this;
@@ -132,19 +132,19 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check, bool inver
       do_check = do_check || cppally::is_na(name_idx);
       matches.set(i, name_idx);
     }
-    return subset(matches, /*check=*/ do_check, /*invert=*/ invert);
+    return subset(matches, /*invert=*/ invert, /*check=*/ do_check);
   } else if constexpr (RLogicalType<U>){
     if (is_long()){
-      return subset(internal::clean_locs<r_int64>(indices, *this), /*check=*/ false, /*invert=*/ invert);
+      return subset(internal::clean_locs<r_int64>(indices, *this), /*invert=*/ invert, /*check=*/ false);
     } else {
-      return subset(internal::clean_locs<r_int>(indices, *this), /*check=*/ false, /*invert=*/ invert);
+      return subset(internal::clean_locs<r_int>(indices, *this), /*invert=*/ invert, /*check=*/ false);
     }
   } else {
     if (invert){
       if (is_long()){
-        return subset(internal::exclude_locs<r_int64>(indices, length()), false, false);
+        return subset(internal::exclude_locs<r_int64>(indices, length()), /*invert=*/ false, /*check=*/ false);
       } else {
-        return subset(internal::exclude_locs<r_int>(indices, length()), false, false);
+        return subset(internal::exclude_locs<r_int>(indices, length()), /*invert=*/ false, /*check=*/ false);
       }
     }
 
@@ -178,7 +178,7 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check, bool inver
   }
   r_vec<r_str_view> nms = names();
   if (!nms.is_null()){
-    r_vec<r_str_view> new_nms = nms.subset(indices, check, invert);
+    r_vec<r_str_view> new_nms = nms.subset(indices, invert, check);
     out.set_names(new_nms);
   }
   return out;
@@ -189,18 +189,18 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool check, bool inver
 // Free subset functions
 
 template <RVector T, internal::RSubscript U>
-inline T subset(const T& x, const r_vec<U>& indices, bool check = true, bool invert = false) {
-  return x.subset(indices, check, invert);
+inline T subset(const T& x, const r_vec<U>& indices, bool invert = false, bool check = true) {
+  return x.subset(indices, invert, check);
 }
 template <internal::RSubscript U>
-inline r_factors subset(const r_factors& x, const r_vec<U>& indices, bool check = true, bool invert = false) {
-  return x.subset(indices, check, invert);
+inline r_factors subset(const r_factors& x, const r_vec<U>& indices, bool invert = false, bool check = true) {
+  return x.subset(indices, invert, check);
 }
 
 template <internal::RSubscript U>
-inline r_sexp subset(const r_sexp& x, const r_vec<U>& indices, bool check = true, bool invert = false);
+inline r_sexp subset(const r_sexp& x, const r_vec<U>& indices, bool invert = false, bool check = true);
 
-inline r_df subset(const r_df& x, const r_vec<r_int>& indices, bool check = true, bool invert = false){
+inline r_df subset(const r_df& x, const r_vec<r_int>& indices, bool invert = false, bool check = true){
 
   int ncol = x.ncol();
 
@@ -208,11 +208,11 @@ inline r_df subset(const r_df& x, const r_vec<r_int>& indices, bool check = true
     // We don't have a function atm that tells us what the resulting size should be here
     // So subset a dummy vector
     r_vec<r_int> dummy(x.nrow()); // Uninitialised dummy vector
-    return r_df(r_vec<r_sexp>(), false, subset(dummy, indices, check, invert).length());
+    return r_df(r_vec<r_sexp>(), false, subset(dummy, indices, invert, check).length());
   }
   r_vec<r_sexp> out(ncol);
   for (int i = 0; i < ncol; ++i){
-    out.set(i, subset(x.value.view(i), indices, check, invert));
+    out.set(i, subset(x.value.view(i), indices, invert, check));
   }
   out.set_names(x.colnames());
   return r_df(out, false, length(out.view(0)));
