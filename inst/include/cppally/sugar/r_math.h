@@ -261,11 +261,7 @@ T gcd(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
 
     if (is_na(ax) || is_na(ay)){
       if (na_rm){
-        if (is_na(ax)){
-          return ay;
-        } else {
-          return ax;
-        }
+        return coalesce(ax, ay);
       } else {
         return na<T>();
       }
@@ -298,11 +294,7 @@ T gcd(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
 
     if (is_na(ax) || is_na(ay)){
       if (na_rm){ 
-        if (is_na(ax)){
-          return ay;
-        } else {
-          return ax;
-        }
+        return coalesce(ax, ay);
       } else {
         return na<T>();
       }
