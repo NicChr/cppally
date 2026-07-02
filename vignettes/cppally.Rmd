@@ -345,6 +345,22 @@ r_vector<r_lgl> cpp_not_in(r_vector<r_str> x, r_vector<r_str> table){
     return !(x IS_IN table);
 }
 ',
+cpp_subset = '
+template <RVector T, typename subscript_t>
+requires any<subscript_t, r_lgl, r_int, r_str>
+[[cppally::register]]
+T cpp_subset(T x, r_vector<subscript_t> y){
+    return subset(x, y);
+}
+',
+cpp_negative_subset = '
+template <RVector T, typename subscript_t>
+requires any<subscript_t, r_lgl, r_int, r_str>
+[[cppally::register]]
+T cpp_negative_subset(T x, r_vector<subscript_t> y){
+    return subset(x, y, /*invert=*/ true);
+}
+',
   setnames = '
 [[cppally::register]]
 r_vec<r_sexp> set_list_names(r_vec<r_sexp> x, r_vec<r_str> names){
@@ -1136,6 +1152,61 @@ This in-place negation is naturally efficient as it avoids allocating a new vect
 
 ```{r}
 cpp_not_in(c("a", "A", NA), letters)
+```
+
+## Subsetting
+
+Subsetting is 0-indexed in cppally, as is all other indexing.
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["cpp_subset"]])
+```
+
+Subsetting with **integer** indices
+
+```{r}
+x <- 1:10
+cpp_subset(x, 0L) # index 0 is 1st value
+cpp_subset(x, 9L) # index 9 is last value here
+cpp_subset(x, 10L) # index 10 is out-of-bounds so NA is returned
+cpp_subset(x, NA_integer_) # NA is returned with integer NA index
+```
+
+Subsetting with **logical** indices
+
+```{r}
+cpp_subset(x, x > 5)
+cpp_subset(x, x > 100)
+
+# It differs to base subsetting (via `[`)
+cpp_subset(x, rep(NA, 10)) # cppally only returns values associated with TRUE
+x[rep(NA, 10)] # base R returns NA values when subsetting with NA logicals
+```
+
+base R performs negative subsetting by using negative numbers. 
+This is not possible with our 0-indexed subset as we would have to also represent
+negative zero to subset everything except the first element at index 0. Instead 
+cppally has an `invert` argument.
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["cpp_negative_subset"]])
+```
+
+```{r}
+cpp_negative_subset(x, 0L) # Everything but 1st
+cpp_negative_subset(x, x > 5) # Everything except where x > 5
+cpp_negative_subset(x, integer()) # Everything
+```
+
+Named subsetting is also supported. cppally internally hashes the vector names 
+and performs hash lookups. For more info, see the 'Vector Names Hashing' 
+vignette.
+
+```{r}
+names(x) <- LETTERS[seq_along(x)]
+
+cpp_subset(x, c("A", "J", "Z"))
+cpp_negative_subset(x, "A")
 ```
 
 ## Concepts and Templates
