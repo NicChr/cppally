@@ -1,5 +1,7 @@
 ## cppally (development version)
 
+- Fixed bug where exclusion of concepts header was affecting vignette creation on macos.
+
 # cppally 1.0.0 (2026-07-02)
 
 First major release. cppally's public API is now considered stable. 
