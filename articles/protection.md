@@ -88,13 +88,13 @@ double bench_protect_insert_release_cppally(int n) {
 
 insert_release_cpp11 <- replicate(10^4, bench_protect_insert_release_cpp11(10^4)) 
 mean(insert_release_cpp11)
-#> [1] 40.53103
+#> [1] 40.43567
 insert_release_cppally <- replicate(10^4, bench_protect_insert_release_cppally(10^4))
 mean(insert_release_cppally)
-#> [1] 18.01213
+#> [1] 17.66169
 ```
 
-On my machine, cpp11 performs an insert & release every ~41 nanoseconds.
+On my machine, cpp11 performs an insert & release every ~40 nanoseconds.
 cppally performs better, with ~18 nanoseconds per insert & release.
 
 **Copy benchmark**
@@ -150,10 +150,10 @@ double bench_protect_copy_cppally(int n) {
 
 copy_sexp_cpp11 <- replicate(10^4, bench_protect_copy_cpp11(10^4))
 mean(copy_sexp_cpp11)
-#> [1] 37.845
+#> [1] 37.58044
 copy_sexp_cppally <- replicate(10^4, bench_protect_copy_cppally(10^4))
 mean(copy_sexp_cppally)
-#> [1] 0.3168131
+#> [1] 0.3170283
 ```
 
 In these benchmark results we can see a drastic difference, with cpp11
@@ -233,7 +233,7 @@ mark(C_na_count(x))
 #> # A tibble: 1 × 6
 #>   expression         min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>    <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 C_na_count(x)     34µs   63.6µs    16337.        0B        0
+#> 1 C_na_count(x)     34µs   63.4µs    17242.        0B        0
 ```
 
 **cpp11 results**
@@ -244,7 +244,7 @@ mark(cpp11_na_count(x))
 #> # A tibble: 1 × 6
 #>   expression             min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>        <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cpp11_na_count(x)   6.72ms   6.89ms      144.        0B     42.4
+#> 1 cpp11_na_count(x)   6.85ms   7.01ms      141.        0B     43.1
 ```
 
 **cppally results**
@@ -255,7 +255,7 @@ mark(cppally_na_count(x))
 #> # A tibble: 1 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_na_count(x)   1.43ms   1.44ms      691.        0B        0
+#> 1 cppally_na_count(x)   1.43ms   1.44ms      692.        0B        0
 ```
 
 Counting values is a simple operation and because of its simplicity, the
@@ -302,7 +302,7 @@ mark(cppally_fast_na_count(x))
 #> # A tibble: 1 × 6
 #>   expression                    min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>               <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_fast_na_count(x)   34.2µs   63.7µs    15614.        0B        0
+#> 1 cppally_fast_na_count(x)   35.5µs   63.7µs    15625.        0B        0
 ```
 
 Looking at the benchmark results, we have effectively eliminated the
@@ -335,7 +335,7 @@ mark(cppally_fast_na_count_v2(x))
 #> # A tibble: 1 × 6
 #>   expression                       min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>                  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_fast_na_count_v2(x)   79.4µs   80.3µs    12194.        0B        0
+#> 1 cppally_fast_na_count_v2(x)   79.3µs   79.8µs    12245.        0B     2.01
 ```
 
 The results are similar to that of `cppally_fast_na_count()`.

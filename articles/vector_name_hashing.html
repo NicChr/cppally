@@ -62,7 +62,7 @@
       <h1>Vector Names Hashing</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/NicChr/cppally/blob/main/vignettes/vector_name_hashing.Rmd" class="external-link"><code>vignettes/vector_name_hashing.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NicChr/cppally/blob/v1.0.0/vignettes/vector_name_hashing.Rmd" class="external-link"><code>vignettes/vector_name_hashing.Rmd</code></a></small>
       <div class="d-none name"><code>vector_name_hashing.Rmd</code></div>
     </div>
 
@@ -120,12 +120,12 @@ index</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
 <span><span class="co">#&gt;   expression      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> large[[1]]    140ns    160ns  5<span style="text-decoration: underline;">899</span>675.        0B     590.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> large[[1]]    130ns    150ns  6<span style="text-decoration: underline;">126</span>899.        0B     613.</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="va">large</span><span class="op">[[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">large</span><span class="op">)</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
 <span><span class="co">#&gt;   expression                  min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> large[[length(large)]]    220ns    250ns  3<span style="text-decoration: underline;">756</span>267.        0B        0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> large[[length(large)]]    210ns    240ns  3<span style="text-decoration: underline;">933</span>534.        0B        0</span></span></code></pre></div>
 <p>Since R scans the names each time, lookup by name is O(n) and can be
 slow if names happen to be near the end of the vector</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -136,8 +136,8 @@ slow if names happen to be near the end of the vector</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> by_name       150ns    180ns  5<span style="text-decoration: underline;">253</span>441.        0B     525.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> by_index      140ns    160ns  6<span style="text-decoration: underline;">030</span>669.        0B       0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> by_name       140ns    170ns  5<span style="text-decoration: underline;">530</span>169.        0B     553.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> by_index      130ns    150ns  6<span style="text-decoration: underline;">202</span>791.        0B       0</span></span>
 <span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
 <span>    by_name <span class="op">=</span> <span class="va">large</span><span class="op">[[</span><span class="st">"name_100000"</span><span class="op">]</span><span class="op">]</span>, </span>
@@ -146,8 +146,8 @@ slow if names happen to be near the end of the vector</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> by_name       550µs    565µs     <span style="text-decoration: underline;">1</span>757.        0B        0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> by_index      130ns    151ns  6<span style="text-decoration: underline;">127</span>649.        0B        0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> by_name       543µs    556µs     <span style="text-decoration: underline;">1</span>795.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> by_index      130ns    150ns  6<span style="text-decoration: underline;">408</span>093.        0B        0</span></span></code></pre></div>
 <p>If we created a hash table of names-values, we could speedup repeated
 lookups</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
@@ -171,9 +171,9 @@ hashed name</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 6</span></span></span>
 <span><span class="co">#&gt;   expression          min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> by_name           548µs    561µs     <span style="text-decoration: underline;">1</span>783.        0B        0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> by_index          131ns    151ns  5<span style="text-decoration: underline;">980</span>524.        0B        0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> by_hashed_name    881ns    922ns   <span style="text-decoration: underline;">780</span>041.        0B        0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> by_name           543µs    558µs     <span style="text-decoration: underline;">1</span>785.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> by_index          130ns    150ns  6<span style="text-decoration: underline;">092</span>510.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> by_hashed_name    851ns    892ns   <span style="text-decoration: underline;">795</span>264.        0B        0</span></span></code></pre></div>
 <p>That worked! Extracting the value associated with the last name using
 the hash table was almost as fast as looking it up by location.</p>
 <p>cppally uses this same approach internally, attaching a lazy hash map
@@ -305,8 +305,8 @@ R and C++</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression              min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_one_lookup   64.6µs   65.6µs    <span style="text-decoration: underline;">14</span>925.        0B        0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_one_lookup       552µs  566.5µs     <span style="text-decoration: underline;">1</span>757.    21.6KB        0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_one_lookup   64.5µs   65.5µs    <span style="text-decoration: underline;">14</span>853.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_one_lookup     547.3µs  566.3µs     <span style="text-decoration: underline;">1</span>748.    21.6KB        0</span></span></code></pre></div>
 <p>While I’m not sure why cppally’s linear scan is faster than R’s, it
 may be due to the fact that direct data access is used to compare
 elements instead of <code>STRING_ELT()</code></p>
