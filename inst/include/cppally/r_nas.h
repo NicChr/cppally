@@ -133,6 +133,8 @@ inline constexpr bool is_nan(const r_dbl& x) noexcept {
   return is_na(x) && !internal::is_na_real(unwrap(x));
 }
 
+// Inspired by SQL COALESCE: returns x, or y if x is NA.
+// NOT intended for R's NULL (r_null in cppally).
 template<typename T>
 requires requires (const T& v) { is_na(v); }
 inline constexpr T coalesce(const T& x, const T& y) noexcept {
