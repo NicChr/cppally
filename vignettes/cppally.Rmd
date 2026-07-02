@@ -410,6 +410,7 @@ single_exprs <- c(
   r_true_val          = 'r_true',
   r_false_val         = 'r_false',
   r_na_val            = 'r_na',
+  r_na_check          = 'is_na(na<r_int>())',
   r_plus              = 'r_int(0) + r_dbl(2.5)',
   r_plus_na           = 'na<r_int>() + r_dbl(2.5)',
   r_minus             = 'r_int(0) - r_int(1)',
@@ -607,7 +608,17 @@ All cppally scalar types are implemented as structs that contain the underlying 
 
 [^2]: `r_sexp` represents a generic R object which can include cppally vectors. We will explain how to disambiguate `r_sexp` later which is most useful when working with lists and data frames
 
-`NA` values can be accessed via the template function `na<T>`
+### NA values
+
+Use `is_na()` to check that a value is NA and `na<T>()` to generate NA values.
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(single_exprs[["r_na_check"]])
+```
+
+```{r, echo=FALSE}
+r_na_check()
+```
 
 ### C++ NA values and their R C API equivalents
 
