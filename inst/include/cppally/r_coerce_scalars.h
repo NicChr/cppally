@@ -265,19 +265,19 @@ inline T scalar_coerce_impl(const U& x) {
   } else if constexpr (is<T, r_raw>){
     return as_raw(x);
   } else if constexpr (RTimeType<T>){
-    using inherited_t = inherited_type_t<T>;
+    using value_t = typename T::value_type;
     if constexpr (RDateType<T> && RPsxctType<U>){
       double days = std::floor(static_cast<double>(unwrap(x)) / 86400.0);
-      return T(scalar_coerce_impl<inherited_t, r_dbl>(r_dbl(days)));
+      return T(scalar_coerce_impl<value_t, r_dbl>(r_dbl(days)));
     } else if constexpr (RPsxctType<T> && RDateType<U>){
       auto seconds = unwrap(x) * 86400;
       using scalar_t = as_r_scalar_t<decltype(seconds)>;
-      return T(scalar_coerce_impl<inherited_t, scalar_t>(scalar_t(seconds)));
+      return T(scalar_coerce_impl<value_t, scalar_t>(scalar_t(seconds)));
     } else if constexpr (RTimeType<U>){
       using scalar_t = as_r_scalar_t<unwrap_t<U>>;
-      return T(scalar_coerce_impl<inherited_t, scalar_t>(scalar_t(unwrap(x))));
+      return T(scalar_coerce_impl<value_t, scalar_t>(scalar_t(unwrap(x))));
     } else {
-      return T(scalar_coerce_impl<inherited_t, U>(x));
+      return T(scalar_coerce_impl<value_t, U>(x));
     }
   } else {
     static_assert(always_false<T>);

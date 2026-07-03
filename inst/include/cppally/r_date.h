@@ -23,9 +23,14 @@ inline int64_t get_days_since_epoch(int32_t year, uint32_t month, uint32_t day) 
 }
 
 // R date that captures the number of days since epoch (1st Jan 1970)
-struct r_date : r_dbl {
+struct r_date {
 
-    using inherited_type = r_dbl;
+    r_dbl value;
+    using value_type = r_dbl;
+
+    constexpr r_date() noexcept : value{0.0} {}
+    constexpr explicit operator r_dbl() const noexcept { return value; }
+    constexpr operator double() const noexcept { return static_cast<double>(value); }
     
     private: 
 
@@ -35,14 +40,12 @@ struct r_date : r_dbl {
     };
     }
 
-    public: 
+    public:
 
-    constexpr r_date() noexcept : r_dbl{0.0} {}
-
-    explicit constexpr r_date(double days_since_epoch) noexcept : r_dbl{days_since_epoch} {}
+    explicit constexpr r_date(double days_since_epoch) noexcept : value{days_since_epoch} {}
 
     // Construct r_date year/month/day
-    explicit r_date(int32_t year, uint32_t month, uint32_t day) : r_dbl(internal::get_days_since_epoch(year, month, day)) {}
+    explicit r_date(int32_t year, uint32_t month, uint32_t day) : value(internal::get_days_since_epoch(year, month, day)) {}
 
     r_str date_str() const {
     auto ymd = chrono_ymd();

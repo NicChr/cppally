@@ -83,10 +83,10 @@ struct r_limits<r_dbl>{
 template <RTimeType T>
 struct r_limits<T> {
     static constexpr T min() noexcept {
-        return T{r_limits<internal::inherited_type_t<T>>::min()};
+        return T{r_limits<typename T::value_type>::min()};
     }
     static constexpr T max() noexcept {
-        return T{r_limits<internal::inherited_type_t<T>>::max()};
+        return T{r_limits<typename T::value_type>::max()};
     }
 };
 

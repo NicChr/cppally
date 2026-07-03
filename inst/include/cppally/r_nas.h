@@ -57,7 +57,7 @@ inline constexpr r_dbl na_value_impl<r_dbl>() noexcept {
 
 template <RTimeType T>
 inline constexpr T na_value_impl() noexcept {
-  return T(na_value_impl<inherited_type_t<T>>());
+  return T(na_value_impl<typename T::value_type>());
 }
 
 template<>
@@ -100,7 +100,11 @@ inline constexpr T na() noexcept {
 template<typename T>
 inline constexpr bool is_na(const T& x) noexcept {
   if constexpr (RScalar<T>){
-    return unwrap(x) == unwrap(na<T>());
+    if constexpr (RScalar<typename T::value_type>){
+      return is_na(x.value);
+    } else {
+      return unwrap(x) == unwrap(na<T>());
+    }
   } else if constexpr (CastableToRScalar<T>){
     return is_na(as_r_scalar_t<T>(x));
   } else {

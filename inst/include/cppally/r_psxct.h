@@ -23,18 +23,22 @@ inline int64_t get_seconds_since_epoch(int32_t year, uint32_t month, uint32_t da
 }
     
 // R date-time that captures the number of seconds since epoch (1st Jan 1970)
-struct r_psxct : r_dbl {
+struct r_psxct {
 
-    using inherited_type = r_dbl;
+    r_dbl value;
+    using value_type = r_dbl;
 
-    constexpr r_psxct() noexcept : r_dbl{0.0} {}
-    explicit constexpr r_psxct(double seconds_since_epoch) noexcept : r_dbl{seconds_since_epoch} {}
+    constexpr r_psxct() noexcept : value{0.0} {}
+    constexpr explicit operator r_dbl() const noexcept { return value; }
+    constexpr operator double() const noexcept { return static_cast<double>(value); }
+
+    explicit constexpr r_psxct(double seconds_since_epoch) noexcept : value{seconds_since_epoch} {}
 
     // Construct r_date year/month/day
     explicit r_psxct(
     int32_t year, uint32_t month, uint32_t day, 
     uint32_t hour, uint32_t minute, uint32_t second
-    ) : r_dbl(internal::get_seconds_since_epoch(year, month, day, hour, minute, second)) {}
+    ) : value(internal::get_seconds_since_epoch(year, month, day, hour, minute, second)) {}
 
     private: 
     
