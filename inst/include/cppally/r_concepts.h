@@ -382,19 +382,6 @@ using as_r_composite_t = typename internal::r_composite_mapping<std::remove_cvre
 namespace internal {
 
 template <typename T>
-struct inherited_type_impl { 
-    using type = T; 
-};
-template <RScalar T>
-requires requires { typename std::remove_cvref_t<T>::inherited_type; }
-struct inherited_type_impl<T> { 
-    using type = typename std::remove_cvref_t<T>::inherited_type; 
-};
-
-template <RScalar T>
-using inherited_type_t = typename internal::inherited_type_impl<std::remove_cvref_t<T>>::type;
-
-template <typename T>
 struct unwrapped_type {
     using type = T;
 };

@@ -21,7 +21,11 @@ inline bool identical_impl(const T& a, const T& b) noexcept {
 
 template <RScalar T>
 inline bool identical_impl(const T& a, const T& b) noexcept {
-    return unwrap(a) == unwrap(b);
+    if constexpr (RScalar<typename T::value_type>){
+        return identical_impl(a.value, b.value);
+      } else {
+        return unwrap(a) == unwrap(b);
+      }
 }
 
 template<>

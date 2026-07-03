@@ -42,7 +42,7 @@ inline consteval uint64_t nan_hash() noexcept {
 template <typename T>
 uint64_t r_hash_impl(const T& x) noexcept {
     if constexpr (RTimeType<T>){
-        return r_hash_impl(inherited_type_t<T>(x));
+        return r_hash_impl(typename T::value_type(x));
     } else if constexpr (RIntegerType<T>){
         return mix_u64(static_cast<uint64_t>(unwrap(x)));
     } else {
