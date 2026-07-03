@@ -155,12 +155,12 @@ inline unwrap_t<r_raw> elt<r_raw>(SEXP x, r_size_t i) {
 }
 template <>
 inline unwrap_t<r_date> elt<r_date>(SEXP x, r_size_t i) {
-  return static_cast<unwrap_t<r_date>>(elt<r_date::value_type>(x, i));
+  return static_cast<unwrap_t<r_date>>(elt<typename r_date::value_type>(x, i));
 }
 
 template <>
 inline unwrap_t<r_psxct> elt<r_psxct>(SEXP x, r_size_t i) {
-  return static_cast<unwrap_t<r_psxct>>(elt<r_psxct::value_type>(x, i));
+  return static_cast<unwrap_t<r_psxct>>(elt<typename r_psxct::value_type>(x, i));
 }
 template<>
 inline unwrap_t<r_str> elt<r_str>(SEXP x, r_size_t i) {
@@ -265,12 +265,12 @@ inline r_sexp new_scalar_vec(r_raw default_value){
   return r_sexp(Rf_ScalarRaw(static_cast<Rbyte>(unwrap(default_value))));
 }
 inline r_sexp new_scalar_vec(r_date default_value){
-  r_sexp out = new_scalar_vec(static_cast<r_date::value_type>(default_value));
+  r_sexp out = new_scalar_vec(static_cast<typename r_date::value_type>(default_value));
   Rf_setAttrib(out, symbol::class_sym, new_scalar_vec(cached_str<"Date">()));
   return out;
 }
 inline r_sexp new_scalar_vec(r_psxct default_value){
-  r_sexp out = new_scalar_vec(static_cast<r_psxct::value_type>(default_value));
+  r_sexp out = new_scalar_vec(static_cast<typename r_psxct::value_type>(default_value));
   r_sexp cls = new_vec(STRSXP, 2);
   SET_STRING_ELT(cls, 0, cached_str<"POSIXct">());
   SET_STRING_ELT(cls, 1, cached_str<"POSIXt">());
