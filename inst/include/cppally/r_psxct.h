@@ -40,6 +40,10 @@ struct r_psxct {
     uint32_t hour, uint32_t minute, uint32_t second
     ) : value(internal::get_seconds_since_epoch(year, month, day, hour, minute, second)) {}
 
+    constexpr bool is_na() const noexcept {
+        return value.is_na();
+    }
+
     private: 
     
     auto chrono_tp() const {

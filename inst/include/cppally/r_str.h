@@ -48,6 +48,11 @@ struct r_str {
   // Explicit conversions
   explicit operator const char*() const noexcept { return c_str(); }
   explicit operator std::string_view() const noexcept { return cpp_str(); }
+
+  bool is_na() const noexcept {
+    return value.value == NA_STRING;
+  }
+
 };
 
 inline r_str r_sexp::address() const {
@@ -86,6 +91,11 @@ struct r_str_view {
   // Explicit conversions
   explicit operator const char*() const noexcept { return c_str(); }
   explicit operator std::string_view() const noexcept { return cpp_str(); }
+
+  bool is_na() const noexcept {
+    return value == NA_STRING;
+  }
+
 };
 
 inline r_str::r_str(r_str_view x) : value(static_cast<SEXP>(x)) {}

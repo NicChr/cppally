@@ -47,6 +47,10 @@ struct r_date {
     // Construct r_date year/month/day
     explicit r_date(int32_t year, uint32_t month, uint32_t day) : value(internal::get_days_since_epoch(year, month, day)) {}
 
+    constexpr bool is_na() const noexcept {
+        return value.is_na();
+    }
+
     r_str date_str() const {
     auto ymd = chrono_ymd();
     char buf[16];

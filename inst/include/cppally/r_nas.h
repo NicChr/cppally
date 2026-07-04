@@ -101,30 +101,15 @@ template<typename T>
 inline constexpr bool is_na(const T& x) noexcept {
   if constexpr (RScalar<T>){
     if constexpr (RScalar<typename T::value_type>){
-      return is_na(x.value);
+      return x.value.is_na();
     } else {
-      return unwrap(x) == unwrap(na<T>());
+      return x.is_na();
     }
   } else if constexpr (CastableToRScalar<T>){
-    return is_na(as_r_scalar_t<T>(x));
+    return as_r_scalar_t<T>(x).is_na();
   } else {
     return false;
   }
-}
-
-template<>
-inline constexpr bool is_na(const r_dbl& x) noexcept {
-  return unwrap(x) != unwrap(x);
-}
-
-template<>
-inline constexpr bool is_na(const r_cplx& x) noexcept {
-  return is_na(x.re()) || is_na(x.im());  
-}
-
-template<>
-inline constexpr bool is_na(const r_raw& x) noexcept {
-  return false;
 }
 
 template <typename T>

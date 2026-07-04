@@ -14,6 +14,11 @@ struct r_dbl {
   explicit constexpr r_dbl(T x) noexcept : value{static_cast<double>(x)} {}
   template <typename U> requires (is<U, double>)
   constexpr operator U() const noexcept { return value; }
+
+  constexpr bool is_na() const noexcept {
+    return value != value;
+  }
+
 };
 
 }

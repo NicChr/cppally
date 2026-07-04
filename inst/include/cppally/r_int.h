@@ -15,6 +15,10 @@ struct r_int {
     explicit constexpr r_int(T x) noexcept : value{static_cast<int>(x)} {}
     template <typename U> requires (is<U, int>)
     constexpr operator U() const noexcept { return value; }
+
+    constexpr bool is_na() const noexcept {
+        return value == std::numeric_limits<int>::min();
+    }
 };
 
 }

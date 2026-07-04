@@ -16,6 +16,10 @@ struct r_raw {
     // Conversion handling
     explicit constexpr r_raw(unsigned char x) noexcept : value{x} {}
     constexpr operator unsigned char() const noexcept { return value; }
+
+    constexpr bool is_na() const noexcept {
+        return false;
+      }
 };
 
 }

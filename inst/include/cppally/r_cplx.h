@@ -22,6 +22,10 @@ struct r_cplx {
     // Get real and imaginary parts
     constexpr r_dbl re() const noexcept { return r_dbl{value.real()}; }
     constexpr r_dbl im() const noexcept { return r_dbl{value.imag()}; }
+
+    constexpr bool is_na() const noexcept {
+        return re().is_na() || im().is_na();
+      }
 };
 
 }

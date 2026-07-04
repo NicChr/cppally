@@ -16,6 +16,10 @@ struct r_int64 {
     explicit constexpr r_int64(T x) noexcept : value{static_cast<int64_t>(x)} {}
     template <typename U> requires (is<U, int64_t>)
     constexpr operator U() const noexcept { return value; }
+
+    constexpr bool is_na() const noexcept {
+        return value == std::numeric_limits<int64_t>::min();
+    }
 };
 
 }
