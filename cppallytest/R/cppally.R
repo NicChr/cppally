@@ -260,6 +260,46 @@ test_as_str <- function(a, b, c, d, e, f) {
   .Call(`_cppallytest_test_as_str`, a, b, c, d, e, f)
 }
 
+test_to_int <- function() {
+  invisible(.Call(`_cppallytest_test_to_int`))
+}
+
+test_to_int64 <- function() {
+  invisible(.Call(`_cppallytest_test_to_int64`))
+}
+
+test_to_double <- function() {
+  invisible(.Call(`_cppallytest_test_to_double`))
+}
+
+test_to_uint <- function() {
+  invisible(.Call(`_cppallytest_test_to_uint`))
+}
+
+test_to_r_size_t <- function() {
+  invisible(.Call(`_cppallytest_test_to_r_size_t`))
+}
+
+test_to_bool <- function() {
+  invisible(.Call(`_cppallytest_test_to_bool`))
+}
+
+test_to_r_int <- function() {
+  invisible(.Call(`_cppallytest_test_to_r_int`))
+}
+
+test_to_r_int64 <- function() {
+  invisible(.Call(`_cppallytest_test_to_r_int64`))
+}
+
+test_to_r_dbl <- function() {
+  invisible(.Call(`_cppallytest_test_to_r_dbl`))
+}
+
+test_to_r_lgl <- function() {
+  invisible(.Call(`_cppallytest_test_to_r_lgl`))
+}
+
 test_factor1 <- function(x) {
   .Call(`_cppallytest_test_factor1`, x)
 }

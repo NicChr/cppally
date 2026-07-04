@@ -36,7 +36,7 @@ struct r_date {
 
     auto chrono_ymd() const {
     return std::chrono::year_month_day{
-        std::chrono::sys_days{std::chrono::days{static_cast<int32_t>(value)}}
+        std::chrono::sys_days{std::chrono::days{static_cast<int32_t>(value.value)}}
     };
     }
 
