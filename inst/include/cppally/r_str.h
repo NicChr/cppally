@@ -100,9 +100,6 @@ struct r_str_view {
 
 inline r_str::r_str(r_str_view x) : value(static_cast<SEXP>(x)) {}
 
-// NA
-inline const r_str na_str = r_str(NA_STRING);
-
 template <internal::name T>
 inline r_str cached_str() {
     return r_str(internal::lazy_str_impl<T>());
@@ -117,6 +114,8 @@ namespace internal {
 inline r_str_view c_str_to_r_str_view(const char* x){
   return r_str_view(Rf_mkCharCE(x, CE_UTF8));
 }
+// NA
+inline const r_str na_str = r_str(NA_STRING);
 }
 
 }

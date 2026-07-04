@@ -70,6 +70,7 @@ struct r_psxct {
     public: 
 
     r_str datetime_str() const {
+        if (is_na()) return internal::na_str;
         auto ymd = chrono_ymd();
         auto hms = chrono_hms();
         char buf[34];

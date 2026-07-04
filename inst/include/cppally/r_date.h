@@ -52,10 +52,11 @@ struct r_date {
     }
 
     r_str date_str() const {
-    auto ymd = chrono_ymd();
-    char buf[16];
-    std::snprintf(buf, sizeof(buf), "%04d-%02u-%02u", static_cast<int32_t>(ymd.year()), static_cast<uint32_t>(ymd.month()), static_cast<uint32_t>(ymd.day()));
-    return r_str(static_cast<const char*>(buf));
+        if (is_na()) return internal::na_str;
+        auto ymd = chrono_ymd();
+        char buf[16];
+        std::snprintf(buf, sizeof(buf), "%04d-%02u-%02u", static_cast<int32_t>(ymd.year()), static_cast<uint32_t>(ymd.month()), static_cast<uint32_t>(ymd.day()));
+        return r_str(static_cast<const char*>(buf));
     }
 };
 
