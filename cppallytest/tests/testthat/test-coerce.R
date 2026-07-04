@@ -23,4 +23,15 @@ test_that("Coercion", {
       "3.5", "1", "2.5", "1.7", "7", "7.7")
   )
 
+  expect_no_error(test_to_int())
+  expect_no_error(test_to_int64())
+  expect_no_error(test_to_double())
+  expect_no_error(test_to_uint())
+  expect_no_error(test_to_r_size_t())
+  expect_no_error(test_to_bool())
+  expect_no_error(test_to_r_int())
+  expect_no_error(test_to_r_int64())
+  expect_no_error(test_to_r_dbl())
+  expect_no_error(test_to_r_lgl())
+
 })
