@@ -168,8 +168,8 @@ inline constexpr r_lgl operator>=(T lhs, U rhs) noexcept {
   return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) >= unwrap(rhs)};
 }
 
-template<NumericType T, NumericType U>
-  requires (RNumericType<T> || RNumericType<U>)
+template <MathType T, MathType U>
+  requires (RMathType<T> || RMathType<U>)
 inline constexpr auto operator+(T lhs, U rhs) noexcept {
 
   using common_t = common_math_t<T, U>;
@@ -183,8 +183,8 @@ inline constexpr auto operator+(T lhs, U rhs) noexcept {
   }
 }
 
-template<NumericType T, NumericType U>
-  requires (RNumericType<T> || RNumericType<U>)
+template<MathType T, MathType U>
+  requires (RMathType<T> || RMathType<U>)
 inline constexpr auto operator-(T lhs, U rhs) noexcept {
 
   using common_t = common_math_t<T, U>;
@@ -198,8 +198,8 @@ inline constexpr auto operator-(T lhs, U rhs) noexcept {
   }
 }
 
-template<NumericType T, NumericType U>
-  requires (RNumericType<T> || RNumericType<U>)
+template<MathType T, MathType U>
+  requires (RMathType<T> || RMathType<U>)
 inline constexpr auto operator*(T lhs, U rhs) noexcept {
 
   using common_t = common_math_t<T, U>;
@@ -213,8 +213,8 @@ inline constexpr auto operator*(T lhs, U rhs) noexcept {
   }
 }
 
-template<NumericType T, NumericType U>
-  requires (RNumericType<T> || RNumericType<U>)
+template<MathType T, MathType U>
+  requires (RMathType<T> || RMathType<U>)
 inline constexpr r_dbl operator/(T lhs, U rhs) noexcept {
   return ( internal::either_na(lhs, rhs) ) ? na<r_dbl>() : r_dbl(static_cast<double>(unwrap(lhs)) / static_cast<double>(unwrap(rhs)));
 }
@@ -254,7 +254,7 @@ inline constexpr auto operator%(T lhs, U rhs) noexcept {
   }
 }
 
-template <RNumericType T, NumericType U>
+template <RMathType T, MathType U>
 inline constexpr T& operator+=(T &lhs, U rhs) noexcept {
   if (internal::either_na(lhs, rhs)) {
     lhs = na<T>();
@@ -271,7 +271,7 @@ inline constexpr r_dbl& operator+=(r_dbl &lhs, r_dbl rhs) noexcept {
   return lhs;
 }
 
-template <RNumericType T, NumericType U>
+template <RMathType T, MathType U>
 inline constexpr T& operator-=(T &lhs, U rhs) noexcept {
   if (internal::either_na(lhs, rhs)) {
     lhs = na<T>();
@@ -287,7 +287,7 @@ inline constexpr r_dbl& operator-=(r_dbl &lhs, r_dbl rhs) noexcept {
   return lhs;
 }
 
-template <RNumericType T, NumericType U>
+template <RMathType T, MathType U>
 inline constexpr T& operator*=(T &lhs, U rhs) noexcept {
   if (internal::either_na(lhs, rhs)) {
     lhs = na<T>();
@@ -302,7 +302,7 @@ inline constexpr r_dbl& operator*=(r_dbl &lhs, r_dbl rhs) noexcept {
   return lhs;
 }
 
-template <RNumericType T, NumericType U>
+template <RMathType T, MathType U>
 inline constexpr T& operator/=(T &lhs, U rhs) {
   if (internal::either_na(lhs, rhs)) {
     lhs = na<T>();
@@ -339,24 +339,24 @@ inline constexpr r_dbl operator-(r_dbl x) noexcept {
   return r_dbl{-unwrap(x)};
 }
 
-template <RNumericType T>
+template <RMathType T>
 inline constexpr T& operator++(T &lhs) noexcept {
   lhs += T(1);
   return lhs;
 }
-template <RNumericType T>
+template <RMathType T>
 inline constexpr T operator++(T& lhs, int) noexcept {
   T tmp = lhs;
   ++lhs; 
   return tmp;
 }
 
-template <RNumericType T>
+template <RMathType T>
 inline constexpr T& operator--(T &lhs) noexcept {
   lhs -= T(1);
   return lhs;
 }
-template <RNumericType T>
+template <RMathType T>
 inline constexpr T operator--(T& lhs, int) noexcept {
   T tmp = lhs;
   --lhs; 
