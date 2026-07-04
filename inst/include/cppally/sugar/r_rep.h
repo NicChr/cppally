@@ -71,18 +71,18 @@ T rep(const T& x, const r_vec<r_int>& times){
     r_size_t n_times = length(times);
     
     if (n_times == 1){
-        out_size = n * times.data()[0];
+        out_size = n * unwrap(times.get(0));
         return rep_len(x, out_size);
     } else if (n_times == n){
-        r_dbl out_size = sum(times, false);
-        if (is_na(out_size)){
+        r_dbl s = sum(times, false);
+        if (is_na(s)){
             abort("%s: `times` contains `NA` values", __func__);
         }
-        T out(static_cast<r_size_t>(out_size));
+        T out(static_cast<r_size_t>(unwrap(s)));
         r_size_t k = 0;
         for (r_size_t i = 0; i < n; ++i){
-          out.fill(k, times.data()[i], x.view(i));
-          k += times.data()[i];
+          out.fill(k, unwrap(times.get(i)), x.view(i));
+          k += unwrap(times.get(i));
         }
         return out;
     } else {
