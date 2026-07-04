@@ -44,7 +44,7 @@ struct r_psxct {
     
     auto chrono_tp() const {
         return std::chrono::time_point{
-            std::chrono::sys_seconds{std::chrono::seconds{static_cast<int64_t>(value)}}
+            std::chrono::sys_seconds{std::chrono::seconds{static_cast<int64_t>(value.value)}}
         };
     }
 
