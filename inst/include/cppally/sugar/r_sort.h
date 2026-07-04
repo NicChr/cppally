@@ -140,7 +140,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
                 bool has_nas = false;
                 for (uint32_t i = 0; i < n; ++i) {
                     if (!is_na(px[i])) {
-                        size_t idx = static_cast<size_t>(unwrap(px[i]) - min_val);
+                        size_t idx = static_cast<size_t>(px[i] - unwrap(min_val));
                         counts[idx]++;
                     } else {
                         has_nas = true;
@@ -162,7 +162,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
                 // For each element, place it at counts[value], then increment
                 for (uint32_t i = 0; i < n; ++i) {
                     if (!is_na(px[i])) {
-                        size_t idx = static_cast<size_t>(unwrap(px[i]) - min_val);
+                        size_t idx = static_cast<size_t>(px[i] - unwrap(min_val));
                         p_out[counts[idx]++] = static_cast<int>(i);
                     }
                 }
