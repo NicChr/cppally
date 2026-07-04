@@ -235,7 +235,7 @@ r_dbl signif(T x, U digits){
   }
 }
 
-inline r_lgl is_whole_number(r_dbl x, r_dbl tolerance){
+inline r_lgl is_whole_number(r_dbl x, r_dbl tolerance = sqrt(r_limits<r_dbl>::epsilon())){
   return abs(x - round(x)) <= tolerance;
 }
 
