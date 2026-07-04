@@ -621,6 +621,86 @@ extern "C" SEXP _cppallytest_test_as_str(SEXP a, SEXP b, SEXP c, SEXP d, SEXP e,
   return cpp_to_r(::test_as_str(as<SEXP>(a), as<r_int>(b), as<r_dbl>(c), as<r_sym>(d), as<r_vec<r_int>>(e), as<r_vec<r_dbl>>(f)));
   END_CPPALLY
 }
+// test_coerce.cpp
+void test_to_int();
+extern "C" SEXP _cppallytest_test_to_int() {
+  BEGIN_CPPALLY
+  ::test_to_int();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_to_int64();
+extern "C" SEXP _cppallytest_test_to_int64() {
+  BEGIN_CPPALLY
+  ::test_to_int64();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_to_double();
+extern "C" SEXP _cppallytest_test_to_double() {
+  BEGIN_CPPALLY
+  ::test_to_double();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_to_uint();
+extern "C" SEXP _cppallytest_test_to_uint() {
+  BEGIN_CPPALLY
+  ::test_to_uint();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_to_r_size_t();
+extern "C" SEXP _cppallytest_test_to_r_size_t() {
+  BEGIN_CPPALLY
+  ::test_to_r_size_t();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_to_bool();
+extern "C" SEXP _cppallytest_test_to_bool() {
+  BEGIN_CPPALLY
+  ::test_to_bool();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_to_r_int();
+extern "C" SEXP _cppallytest_test_to_r_int() {
+  BEGIN_CPPALLY
+  ::test_to_r_int();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_to_r_int64();
+extern "C" SEXP _cppallytest_test_to_r_int64() {
+  BEGIN_CPPALLY
+  ::test_to_r_int64();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_to_r_dbl();
+extern "C" SEXP _cppallytest_test_to_r_dbl() {
+  BEGIN_CPPALLY
+  ::test_to_r_dbl();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_to_r_lgl();
+extern "C" SEXP _cppallytest_test_to_r_lgl() {
+  BEGIN_CPPALLY
+  ::test_to_r_lgl();
+  return R_NilValue;
+  END_CPPALLY
+}
 // test_factor.cpp
 r_vec<r_sexp> test_factor1(r_factors x);
 extern "C" SEXP _cppallytest_test_factor1(SEXP x) {
@@ -1050,6 +1130,16 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_temp_by_rvalue_ref",           (DL_FUNC) &_cppallytest_test_temp_by_rvalue_ref,           1},
     {"_cppallytest_test_temp_by_value",                (DL_FUNC) &_cppallytest_test_temp_by_value,                1},
     {"_cppallytest_test_template_null",                (DL_FUNC) &_cppallytest_test_template_null,                1},
+    {"_cppallytest_test_to_bool",                      (DL_FUNC) &_cppallytest_test_to_bool,                      0},
+    {"_cppallytest_test_to_double",                    (DL_FUNC) &_cppallytest_test_to_double,                    0},
+    {"_cppallytest_test_to_int",                       (DL_FUNC) &_cppallytest_test_to_int,                       0},
+    {"_cppallytest_test_to_int64",                     (DL_FUNC) &_cppallytest_test_to_int64,                     0},
+    {"_cppallytest_test_to_r_dbl",                     (DL_FUNC) &_cppallytest_test_to_r_dbl,                     0},
+    {"_cppallytest_test_to_r_int",                     (DL_FUNC) &_cppallytest_test_to_r_int,                     0},
+    {"_cppallytest_test_to_r_int64",                   (DL_FUNC) &_cppallytest_test_to_r_int64,                   0},
+    {"_cppallytest_test_to_r_lgl",                     (DL_FUNC) &_cppallytest_test_to_r_lgl,                     0},
+    {"_cppallytest_test_to_r_size_t",                  (DL_FUNC) &_cppallytest_test_to_r_size_t,                  0},
+    {"_cppallytest_test_to_uint",                      (DL_FUNC) &_cppallytest_test_to_uint,                      0},
     {"_cppallytest_test_tz",                           (DL_FUNC) &_cppallytest_test_tz,                           1},
     {"_cppallytest_test_unique",                       (DL_FUNC) &_cppallytest_test_unique,                       1},
     {"_cppallytest_test_valgrind",                     (DL_FUNC) &_cppallytest_test_valgrind,                     0},
