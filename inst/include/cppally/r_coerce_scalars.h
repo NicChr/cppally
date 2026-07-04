@@ -49,14 +49,16 @@ SEXP cpp_to_r(const T& x) {
 // Assumes no NAs at all
 template<typename T>
 inline constexpr bool can_be_int(const T& x){
+  using unwrapped_t = unwrap_t<T>;
+
   constexpr int max_int = std::numeric_limits<int>::max();
   constexpr int min_int = -max_int; // Doesn't include lowest int (reserved for NA)
 
-  if constexpr (can_definitely_be_int<T>()){
+  if constexpr (can_definitely_be_int<unwrapped_t>()){
     return true;
-  } else if constexpr (MathType<T>){
+  } else if constexpr (MathType<unwrapped_t>){
     // This should be a 'practical' way to get the wider type of the 2
-    using common_t = std::common_type_t<unwrap_t<T>, int>;
+    using common_t = std::common_type_t<unwrapped_t, int>;
     return between_impl<common_t>(unwrap(x), min_int, max_int);
   } else {
     return false;
@@ -64,13 +66,16 @@ inline constexpr bool can_be_int(const T& x){
 }
 template<typename T>
 inline constexpr bool can_be_int64(const T& x){
+
+  using unwrapped_t = unwrap_t<T>;
+
   constexpr int64_t max_int64 = std::numeric_limits<int64_t>::max();
   constexpr int64_t min_int64 = -max_int64; // Doesn't include lowest int (reserved for NA)
 
-  if constexpr (can_definitely_be_int64<T>()){
+  if constexpr (can_definitely_be_int64<unwrapped_t>()){
     return true;
-  } else if constexpr (MathType<T>){
-    using common_t = std::common_type_t<unwrap_t<T>, int64_t>;
+  } else if constexpr (MathType<unwrapped_t>){
+    using common_t = std::common_type_t<unwrapped_t, int64_t>;
     return between_impl<common_t>(unwrap(x), min_int64, max_int64);
   } else {
     return false;
@@ -110,9 +115,12 @@ inline r_dbl parse_double(const char* x){
 // Coerce functions that account for NA
 template <RScalar T>
 inline r_lgl as_bool(const T& x){
-  if constexpr (is<unwrap_t<T>, int>){
+  
+  using unwrapped_t = unwrap_t<T>;
+
+  if constexpr (is<unwrapped_t, int>){
     return unwrap(x) == 0 ? r_false : (is_na(x) ? r_na : r_true);
-  } else if constexpr (RMathType<T>){
+  } else if constexpr (MathType<unwrapped_t>){
     return is_na(x) ? na<r_lgl>() : r_lgl(static_cast<bool>(unwrap(x)));
   } else if constexpr (RStringType<T>){
     const char* str = x.c_str();
@@ -129,9 +137,12 @@ inline r_lgl as_bool(const T& x){
 }
 template <RScalar T>
 inline r_int as_int(const T& x){
-  if constexpr (is<unwrap_t<T>, int>){
+
+  using unwrapped_t = unwrap_t<T>;
+
+  if constexpr (is<unwrapped_t, int>){
     return r_int(unwrap(x));
-  } else if constexpr (RMathType<T>){
+  } else if constexpr (MathType<unwrapped_t>){
     return is_na(x) || !can_be_int(x) ? na<r_int>() : r_int(static_cast<int>(unwrap(x)));
   } else if constexpr (RStringType<T>){
     return as_int(parse_double(x.c_str()));
@@ -141,9 +152,12 @@ inline r_int as_int(const T& x){
 }
 template <RScalar T>
 inline r_int64 as_int64(const T& x){
-  if constexpr (is<unwrap_t<T>, int64_t>){
+
+  using unwrapped_t = unwrap_t<T>;
+
+  if constexpr (is<unwrapped_t, int64_t>){
     return r_int64(unwrap(x));
-  } else if constexpr (RMathType<T>){
+  } else if constexpr (MathType<unwrapped_t>){
     return is_na(x) || !can_be_int64(x) ? na<r_int64>() : r_int64(static_cast<int64_t>(unwrap(x)));
   } else if constexpr (RStringType<T>){
     return as_int64(parse_double(x.c_str()));
@@ -153,9 +167,12 @@ inline r_int64 as_int64(const T& x){
 }
 template <RScalar T>
 inline r_dbl as_double(const T& x){
-  if constexpr (is<unwrap_t<T>, double>){
+
+  using unwrapped_t = unwrap_t<T>;
+
+  if constexpr (is<unwrapped_t, double>){
     return r_dbl(unwrap(x));
-  } else if constexpr (RMathType<T>){
+  } else if constexpr (MathType<unwrapped_t>){
     return is_na(x) ? na<r_dbl>() : r_dbl(static_cast<double>(unwrap(x)));
   } else if constexpr (RStringType<T>){
     return parse_double(x.c_str());
@@ -165,9 +182,12 @@ inline r_dbl as_double(const T& x){
 }
 template <RScalar T>
 inline r_cplx as_complex(const T& x){
-  if constexpr (is<unwrap_t<T>, std::complex<double>>){
+
+  using unwrapped_t = unwrap_t<T>;
+
+  if constexpr (is<unwrapped_t, std::complex<double>>){
     return r_cplx(unwrap(x));
-  } else if constexpr (RMathType<T>){
+  } else if constexpr (MathType<unwrapped_t>){
     return r_cplx{as_double(x), r_dbl(0.0)};
   } else {
     return na<r_cplx>();
@@ -175,9 +195,12 @@ inline r_cplx as_complex(const T& x){
 }
 template <RScalar T>
 inline r_raw as_raw(const T& x){
-  if constexpr (is<unwrap_t<T>, unsigned char>){
+  
+  using unwrapped_t = unwrap_t<T>;
+
+  if constexpr (is<unwrapped_t, unsigned char>){
     return r_raw(unwrap(x));
-  } else if constexpr (RMathType<T>){
+  } else if constexpr (MathType<unwrapped_t>){
     using r_t = unwrap_t<T>;
     return is_na(x) || !between_impl(unwrap(x), r_t(0), r_t(255)) ? na<r_raw>() : r_raw(static_cast<unsigned char>(unwrap(x)));
   } else {
