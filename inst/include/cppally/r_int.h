@@ -13,7 +13,8 @@ struct r_int {
     template <CppMathType T>
     requires (internal::can_definitely_be_int<T>())
     explicit constexpr r_int(T x) noexcept : value{static_cast<int>(x)} {}
-    constexpr operator int() const noexcept { return value; }
+    template <typename U> requires (is<U, int>)
+    constexpr operator U() const noexcept { return value; }
 };
 
 }

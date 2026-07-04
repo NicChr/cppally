@@ -14,7 +14,8 @@ struct r_int64 {
     template <CppMathType T>
     requires (internal::can_definitely_be_int64<T>())
     explicit constexpr r_int64(T x) noexcept : value{static_cast<int64_t>(x)} {}
-    constexpr operator int64_t() const noexcept { return value; }
+    template <typename U> requires (is<U, int64_t>)
+    constexpr operator U() const noexcept { return value; }
 };
 
 }

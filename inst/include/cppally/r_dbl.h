@@ -12,7 +12,8 @@ struct r_dbl {
   constexpr r_dbl() noexcept : value{0.0} {}
   template <CppMathType T>
   explicit constexpr r_dbl(T x) noexcept : value{static_cast<double>(x)} {}
-  constexpr operator double() const noexcept { return value; }
+  template <typename U> requires (is<U, double>)
+  constexpr operator U() const noexcept { return value; }
 };
 
 }
