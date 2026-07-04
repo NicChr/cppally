@@ -2,6 +2,24 @@
 
 - Fixed bug where exclusion of concepts header was affecting vignette creation on macos.
 
+- Fixed incorrect NA handling of `r_date` and `r_psxct`. 
+
+- Improved type-safety regarding implicit coercion of RScalar types. They now 
+can implicitly coerce **only** to their wrapped types, whereas before they 
+could implicitly coerce to that as well as other C types.
+
+- `r_lgl` can now implicitly coerce to `int` (and only `int`), consistent with 
+the other RScalar types.
+
+- New member `is_na` for RScalar types, in addition to the equivalent 
+`is_na` free function.
+
+- Fixed bug where checking exact equality (via `identical`) for C/C++ types 
+was not compiling due to template ordering issue.
+
+- All arithmetic scalar operations have been restricted to types under the 
+RMathType umbrella.
+
 # cppally 1.0.0 (2026-07-02)
 
 First major release. cppally's public API is now considered stable. 
