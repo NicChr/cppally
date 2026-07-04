@@ -8,17 +8,18 @@
 
 namespace cppally {
 
-// bool type, similar to Rboolean
-// Can only implicitly convert to bool in if statements
-// If during implicit conversion, an NA is detected, an error is thrown
-// Detect NA manually via the `is_na` member function
+// R bool type with 3 states, similar to Rboolean.
+// Can only implicitly convert to bool in if statements.
+// If during implicit conversion to bool, an NA is detected, an error is thrown.
+// It can implicitly coerce to int.
 struct r_lgl {
   int value;
   using value_type = int;
   constexpr r_lgl() noexcept : value{0} {}
   explicit constexpr r_lgl(int x) noexcept : value{x} {} 
   explicit constexpr r_lgl(bool x) noexcept : value{x} {}
-  explicit constexpr operator int() const noexcept { return value; }
+  template <typename U> requires (is<U, int>)
+  constexpr operator U() const noexcept { return value; }
 
   explicit operator bool() const;
   constexpr bool is_true() const noexcept;
