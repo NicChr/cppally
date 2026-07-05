@@ -196,7 +196,7 @@ inline constexpr auto operator+(T lhs, U rhs) noexcept {
   }
 }
 
-template<MathType T, MathType U>
+template <MathType T, MathType U>
   requires (RMathType<T> || RMathType<U>)
 inline constexpr auto operator-(T lhs, U rhs) noexcept {
 
@@ -224,22 +224,29 @@ inline constexpr auto operator-(T lhs, U rhs) noexcept {
   }
 }
 
-template<MathType T, MathType U>
+template <MathType T, MathType U>
   requires (RMathType<T> || RMathType<U>)
 inline constexpr auto operator*(T lhs, U rhs) noexcept {
 
   using common_t = common_math_t<T, U>;
 
-  if constexpr (is<T, r_dbl> && is<U, r_dbl>){
+  if constexpr (RIntegerType<common_t>){
+    using I = unwrap_t<common_t>;
+    I a = static_cast<I>(unwrap(lhs));
+    I b = static_cast<I>(unwrap(rhs));
+    I p;
+    bool bad = internal::either_na(lhs, rhs) || __builtin_mul_overflow(a, b, &p);
+    return bad ? na<common_t>() : common_t(p);
+  } else if constexpr (is<T, r_dbl> && is<U, r_dbl>){
     return r_dbl(static_cast<double>(unwrap(lhs)) * static_cast<double>(unwrap(rhs)));
   } else {
-    return ( internal::either_na(lhs, rhs) ) ? 
-    na<common_t>() : 
+    return ( internal::either_na(lhs, rhs) ) ?
+    na<common_t>() :
     common_t(static_cast<unwrap_t<common_t>>(unwrap(lhs)) * static_cast<unwrap_t<common_t>>(unwrap(rhs)));
   }
 }
 
-template<MathType T, MathType U>
+template <MathType T, MathType U>
   requires (RMathType<T> || RMathType<U>)
 inline constexpr r_dbl operator/(T lhs, U rhs) noexcept {
   return ( internal::either_na(lhs, rhs) ) ? na<r_dbl>() : r_dbl(static_cast<double>(unwrap(lhs)) / static_cast<double>(unwrap(rhs)));
@@ -294,32 +301,25 @@ inline constexpr T& operator+=(T &lhs, U rhs) noexcept {
 
 template <RMathType T, MathType U>
 inline constexpr T& operator-=(T &lhs, U rhs) noexcept {
-  if (internal::either_na(lhs, rhs)) {
-    lhs = na<T>();
+  auto res = lhs - rhs;
+  if constexpr (is<T, decltype(res)>){
+    lhs = res;
   } else {
-    lhs.value -= unwrap(rhs);
+    // Narrowing back from common_t: map NA explicitly so it survives the cast
+    lhs = is_na(res) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
   }
-  return lhs;
-}
-
-template<>
-inline constexpr r_dbl& operator-=(r_dbl &lhs, r_dbl rhs) noexcept {
-  lhs.value -= rhs.value;
   return lhs;
 }
 
 template <RMathType T, MathType U>
 inline constexpr T& operator*=(T &lhs, U rhs) noexcept {
-  if (internal::either_na(lhs, rhs)) {
-    lhs = na<T>();
+  auto res = lhs * rhs;
+  if constexpr (is<T, decltype(res)>){
+    lhs = res;
   } else {
-    lhs.value *= unwrap(rhs);
+    // Narrowing back from common_t: map NA explicitly so it survives the cast
+    lhs = is_na(res) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
   }
-  return lhs;
-}
-template<>
-inline constexpr r_dbl& operator*=(r_dbl &lhs, r_dbl rhs) noexcept { 
-  lhs.value *= rhs.value;
   return lhs;
 }
 
