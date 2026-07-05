@@ -314,7 +314,7 @@ inline constexpr auto operator%(T lhs, U rhs) noexcept {
 }
 
 template <RMathType T, MathType U>
-inline constexpr T& operator+=(T &lhs, U rhs) noexcept {
+inline constexpr T& operator+=(T& lhs, U rhs) noexcept {
   auto res = lhs + rhs;
   if constexpr (is<T, decltype(res)>){
     lhs = res;
@@ -326,7 +326,7 @@ inline constexpr T& operator+=(T &lhs, U rhs) noexcept {
 }
 
 template <RMathType T, MathType U>
-inline constexpr T& operator-=(T &lhs, U rhs) noexcept {
+inline constexpr T& operator-=(T& lhs, U rhs) noexcept {
   auto res = lhs - rhs;
   if constexpr (is<T, decltype(res)>){
     lhs = res;
@@ -338,7 +338,7 @@ inline constexpr T& operator-=(T &lhs, U rhs) noexcept {
 }
 
 template <RMathType T, MathType U>
-inline constexpr T& operator*=(T &lhs, U rhs) noexcept {
+inline constexpr T& operator*=(T& lhs, U rhs) noexcept {
   auto res = lhs * rhs;
   if constexpr (is<T, decltype(res)>){
     lhs = res;
@@ -357,7 +357,7 @@ inline constexpr r_dbl& operator/=(r_dbl &lhs, U rhs) noexcept {
 
 // Integer /= behaves like R's `%/%`
 template <RIntegerType T, IntegerType U>
-inline constexpr T& operator/=(T &lhs, U rhs) noexcept {
+inline constexpr T& operator/=(T& lhs, U rhs) noexcept {
   using unwrapped_t = unwrap_t<common_math_t<T, U>>;
 
   if (internal::either_na(lhs, rhs) || unwrap(rhs) == 0){
@@ -373,14 +373,14 @@ inline constexpr T& operator/=(T &lhs, U rhs) noexcept {
   return lhs;
 }
 
-template <MathType T, MathType U>
-requires (is<unwrap_t<T>, unwrap_t<U>>)
-inline constexpr T& operator%=(T &lhs, U rhs) noexcept {
+template <RMathType T, MathType U>
+inline constexpr T& operator%=(T& lhs, U rhs) noexcept {
   auto res = lhs % rhs;
-  if constexpr (RMathType<T>){
-    lhs.value = static_cast<unwrap_t<T>>(unwrap(res));
+  if constexpr (is<T, decltype(res)>){
+    lhs = res;
   } else {
-    lhs = static_cast<unwrap_t<T>>(unwrap(res));
+    // Narrowing back from common_t: map NA explicitly so it survives the cast
+    lhs = is_na(res) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
   }
   return lhs;
 }
