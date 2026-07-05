@@ -252,7 +252,7 @@ inline constexpr r_dbl operator/(T lhs, U rhs) noexcept {
   return ( internal::either_na(lhs, rhs) ) ? na<r_dbl>() : r_dbl(static_cast<double>(unwrap(lhs)) / static_cast<double>(unwrap(rhs)));
 }
 
-template<MathType T, MathType U>
+template <MathType T, MathType U>
   requires (RFloatType<T> || RFloatType<U>)
 inline constexpr r_dbl operator%(T lhs, U rhs) noexcept {
   if (unwrap(rhs) == 0){
@@ -274,7 +274,7 @@ inline constexpr auto operator%(T lhs, U rhs) noexcept {
   using out_t = common_math_t<T, U>;
   using unwrapped_t = unwrap_t<out_t>;
 
-  if ( unwrap(rhs) == 0 || internal::either_na(lhs, rhs) ){
+  if ( internal::either_na(lhs, rhs) || unwrap(rhs) == 0 ){
     return na<out_t>();
   } else {
     unwrapped_t a = static_cast<unwrapped_t>(unwrap(lhs));
@@ -323,19 +323,29 @@ inline constexpr T& operator*=(T &lhs, U rhs) noexcept {
   return lhs;
 }
 
-template <RMathType T, MathType U>
-inline constexpr T& operator/=(T &lhs, U rhs) {
-  if (internal::either_na(lhs, rhs)) {
-    lhs = na<T>();
-  } else {
-    lhs.value /= unwrap(rhs);
-  }
+template <MathType U>
+inline constexpr r_dbl& operator/=(r_dbl &lhs, U rhs) noexcept {
+  lhs = lhs / rhs;
   return lhs;
 }
 
-template<>
-inline constexpr r_dbl& operator/=(r_dbl &lhs, r_dbl rhs) {
-  lhs.value /= rhs.value;
+// Integer /= behaves like R's `%/%`
+template <RIntegerType T, IntegerType U>
+inline constexpr T& operator/=(T &lhs, U rhs) noexcept {
+  using W = unwrap_t<common_math_t<T, U>>;
+
+  if (internal::either_na(lhs, rhs) || unwrap(rhs) == 0){
+    lhs = na<T>();
+  } else {
+    W a = static_cast<W>(unwrap(lhs));
+    W b = static_cast<W>(unwrap(rhs));
+    W q = a / b;
+    if ((a % b) != 0 && ((a > 0) != (b > 0))){
+      --q;  // Floor to match R's %/% and cppally's %
+    }
+    // |q| <= |a| so the quotient always fits back in T
+    lhs.value = static_cast<unwrap_t<T>>(q);
+  }
   return lhs;
 }
 
