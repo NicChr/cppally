@@ -252,6 +252,40 @@ inline constexpr r_dbl operator/(T lhs, U rhs) noexcept {
   return ( internal::either_na(lhs, rhs) ) ? na<r_dbl>() : r_dbl(static_cast<double>(unwrap(lhs)) / static_cast<double>(unwrap(rhs)));
 }
 
+namespace internal {
+
+// Floored quotient, matching R's %/%
+template <CppIntegerType I>
+inline constexpr I floor_div(I a, I b) noexcept {
+  I q = a / b;
+  if ((a % b) != 0 && ((a > 0) != (b > 0))){
+    --q;
+  }
+  return q;
+}
+
+template <CppFloatType F>
+inline constexpr F floor_div(F a, F b) noexcept {
+  return std::floor(a / b);
+}
+
+// Floored remainder, matching R's %%
+template <CppIntegerType I>
+inline constexpr I floor_mod(I a, I b) noexcept {
+  I r = a % b;
+  if (r != 0 && ((a > 0) != (b > 0))){
+    r += b;
+  }
+  return r;
+}
+
+template <CppFloatType F>
+inline constexpr F floor_mod(F a, F b) noexcept {
+  return a - (b * floor_div(a, b));
+}
+
+}
+
 template <MathType T, MathType U>
   requires (RFloatType<T> || RFloatType<U>)
 inline constexpr r_dbl operator%(T lhs, U rhs) noexcept {
@@ -260,11 +294,9 @@ inline constexpr r_dbl operator%(T lhs, U rhs) noexcept {
   } else if (internal::either_na(lhs, rhs)){
     return na<r_dbl>();
   } else {
-    // Donald Knuth floor division
     double a = static_cast<double>(unwrap(lhs));
     double b = static_cast<double>(unwrap(rhs));
-    double q = std::floor(a / b);
-    return r_dbl(a - (b * q));
+    return r_dbl(internal::floor_mod(a, b));
   }
 }
 
@@ -279,11 +311,7 @@ inline constexpr auto operator%(T lhs, U rhs) noexcept {
   } else {
     unwrapped_t a = static_cast<unwrapped_t>(unwrap(lhs));
     unwrapped_t b = static_cast<unwrapped_t>(unwrap(rhs));
-    unwrapped_t out = a % b;
-    if (out != 0 && ((a > 0) != (b > 0))) {
-      out += b;  // Adjust to match R's sign convention
-    }
-    return out_t(out);
+    return out_t(internal::floor_mod(a, b));
   }
 }
 
@@ -332,17 +360,15 @@ inline constexpr r_dbl& operator/=(r_dbl &lhs, U rhs) noexcept {
 // Integer /= behaves like R's `%/%`
 template <RIntegerType T, IntegerType U>
 inline constexpr T& operator/=(T &lhs, U rhs) noexcept {
-  using W = unwrap_t<common_math_t<T, U>>;
+  using unwrapped_t = unwrap_t<common_math_t<T, U>>;
 
   if (internal::either_na(lhs, rhs) || unwrap(rhs) == 0){
     lhs = na<T>();
   } else {
-    W a = static_cast<W>(unwrap(lhs));
-    W b = static_cast<W>(unwrap(rhs));
-    W q = a / b;
-    if ((a % b) != 0 && ((a > 0) != (b > 0))){
-      --q;  // Floor to match R's %/% and cppally's %
-    }
+    unwrapped_t a = static_cast<unwrapped_t>(unwrap(lhs));
+    unwrapped_t b = static_cast<unwrapped_t>(unwrap(rhs));
+    
+    unwrapped_t q = internal::floor_div(a, b);
     // |q| <= |a| so the quotient always fits back in T
     lhs.value = static_cast<unwrap_t<T>>(q);
   }
