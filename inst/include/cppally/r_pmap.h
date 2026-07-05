@@ -57,10 +57,11 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
 
     if constexpr (vectorisable_or_parallelisable && (simd || parallel)) {
 
-      auto* p_out = out.data();
-
-      // Unpack the data pointers once; only the pragma on each for-loop varies between branches.
-      std::apply([&](auto*... ps){
+      // Unpack the output + input pointers once as parameters so RESTRICT is honoured
+      // and the loops read no closure state; only the pragma on each for-loop varies between branches.
+      // RESTRICT is sound: inputs are read-only in the loops and out is freshly allocated.
+      // Revisit if pmap ever writes through ps or reuses an input as out.
+      std::apply([&](auto* RESTRICT p_out, auto* RESTRICT ... ps){
         if constexpr (parallel){
           const int n_threads = internal::calc_threads(n);
           if constexpr (simd){
@@ -84,7 +85,7 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
           OMP_SIMD
           CPPALLY_DO_MAP_WITH_DATA
         }
-      }, std::tuple{ vecs.data()... });
+      }, std::tuple{ out.data(), vecs.data()... });
 
     } else {
       CPPALLY_DO_MAP
