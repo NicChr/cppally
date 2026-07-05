@@ -174,7 +174,20 @@ inline constexpr auto operator+(T lhs, U rhs) noexcept {
 
   using common_t = common_math_t<T, U>;
 
-  if constexpr (is<T, r_dbl> && is<U, r_dbl>){
+  if constexpr (RIntegerType<common_t>){
+    using I  = unwrap_t<common_t>;
+    using UI = std::make_unsigned_t<I>;
+
+    I a = static_cast<I>(unwrap(lhs));
+    I b = static_cast<I>(unwrap(rhs));
+
+    // Wraparound sum via unsigned: defined behaviour, no CPU flags
+    I s = static_cast<I>(static_cast<UI>(a) + static_cast<UI>(b));
+
+    // Overflowed iff a and b share a sign that s does not
+    bool bad = (((a ^ s) & (b ^ s)) < 0) | internal::either_na(lhs, rhs);
+    return bad ? na<common_t>() : common_t(s);
+  } else if constexpr (is<T, r_dbl> && is<U, r_dbl>){
     return r_dbl(static_cast<double>(unwrap(lhs)) + static_cast<double>(unwrap(rhs)));
   } else {
     return ( internal::either_na(lhs, rhs) ) ? 
@@ -189,11 +202,24 @@ inline constexpr auto operator-(T lhs, U rhs) noexcept {
 
   using common_t = common_math_t<T, U>;
 
-  if constexpr (is<T, r_dbl> && is<U, r_dbl>){
+  if constexpr (RIntegerType<common_t>){
+    using I  = unwrap_t<common_t>;
+    using UI = std::make_unsigned_t<I>;
+
+    I a = static_cast<I>(unwrap(lhs));
+    I b = static_cast<I>(unwrap(rhs));
+
+    // Wraparound difference via unsigned: defined behaviour, no CPU flags
+    I s = static_cast<I>(static_cast<UI>(a) - static_cast<UI>(b));
+
+    // Overflowed iff a and b differ in sign and s does not share a's sign
+    bool bad = (((a ^ b) & (a ^ s)) < 0) | internal::either_na(lhs, rhs);
+    return bad ? na<common_t>() : common_t(s);
+  } else if constexpr (is<T, r_dbl> && is<U, r_dbl>){
     return r_dbl(static_cast<double>(unwrap(lhs)) - static_cast<double>(unwrap(rhs)));
   } else {
-    return ( internal::either_na(lhs, rhs) ) ? 
-    na<common_t>() : 
+    return ( internal::either_na(lhs, rhs) ) ?
+    na<common_t>() :
     common_t(static_cast<unwrap_t<common_t>>(unwrap(lhs)) - static_cast<unwrap_t<common_t>>(unwrap(rhs)));
   }
 }
@@ -256,18 +282,13 @@ inline constexpr auto operator%(T lhs, U rhs) noexcept {
 
 template <RMathType T, MathType U>
 inline constexpr T& operator+=(T &lhs, U rhs) noexcept {
-  if (internal::either_na(lhs, rhs)) {
-    lhs = na<T>();
+  auto res = lhs + rhs;
+  if constexpr (is<T, decltype(res)>){
+    lhs = res;
   } else {
-    lhs.value += unwrap(rhs);
+    // Narrowing back from common_t: map NA explicitly so it survives the cast
+    lhs = is_na(res) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
   }
-  return lhs;
-}
-
-// Fast specialisation for r_dbl
-template<>
-inline constexpr r_dbl& operator+=(r_dbl &lhs, r_dbl rhs) noexcept {
-  lhs.value += rhs.value;
   return lhs;
 }
 
