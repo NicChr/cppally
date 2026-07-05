@@ -287,31 +287,29 @@ inline constexpr F floor_mod(F a, F b) noexcept {
 }
 
 template <MathType T, MathType U>
-  requires (RFloatType<T> || RFloatType<U>)
-inline constexpr r_dbl operator%(T lhs, U rhs) noexcept {
-  if (unwrap(rhs) == 0){
-    return r_dbl(R_NaN);
-  } else if (internal::either_na(lhs, rhs)){
-    return na<r_dbl>();
+  requires (RMathType<T> || RMathType<U>)
+inline constexpr auto operator%(T lhs, U rhs) noexcept {
+
+  using common_t = common_math_t<T, U>;
+
+  if constexpr (RIntegerType<common_t>){
+    using I = unwrap_t<common_t>;
+
+    if (internal::either_na(lhs, rhs) || unwrap(rhs) == 0){
+      return na<common_t>();
+    }
+    I a = static_cast<I>(unwrap(lhs));
+    I b = static_cast<I>(unwrap(rhs));
+    return common_t(internal::floor_mod(a, b));
   } else {
+    if (unwrap(rhs) == 0){
+      return r_dbl(R_NaN);
+    } else if (internal::either_na(lhs, rhs)){
+      return na<r_dbl>();
+    }
     double a = static_cast<double>(unwrap(lhs));
     double b = static_cast<double>(unwrap(rhs));
     return r_dbl(internal::floor_mod(a, b));
-  }
-}
-
-template<IntegerType T, IntegerType U>
-  requires (RIntegerType<T> || RIntegerType<U>)
-inline constexpr auto operator%(T lhs, U rhs) noexcept {
-  using out_t = common_math_t<T, U>;
-  using unwrapped_t = unwrap_t<out_t>;
-
-  if ( internal::either_na(lhs, rhs) || unwrap(rhs) == 0 ){
-    return na<out_t>();
-  } else {
-    unwrapped_t a = static_cast<unwrapped_t>(unwrap(lhs));
-    unwrapped_t b = static_cast<unwrapped_t>(unwrap(rhs));
-    return out_t(internal::floor_mod(a, b));
   }
 }
 
