@@ -351,7 +351,7 @@ inline constexpr T& operator/=(T &lhs, U rhs) noexcept {
 
 template <MathType T, MathType U>
 requires (is<unwrap_t<T>, unwrap_t<U>>)
-inline constexpr T& operator%=(T &lhs, U rhs) {
+inline constexpr T& operator%=(T &lhs, U rhs) noexcept {
   auto res = lhs % rhs;
   if constexpr (RMathType<T>){
     lhs.value = static_cast<unwrap_t<T>>(unwrap(res));
