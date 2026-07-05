@@ -71,31 +71,31 @@ if constexpr (RAtomicVector<U>){                                                
 
 template<RAtomicVector T, typename U>
 inline T& operator+=(T& lhs, const U& rhs) {
-    CPPALLY_BINARY_OP_IN_PLACE(+)
+    CPPALLY_BINARY_OP_IN_PLACE(+=)
     return lhs;
 }
 
 template<RAtomicVector T, typename U>
 inline T& operator-=(T& lhs, const U& rhs) {
-    CPPALLY_BINARY_OP_IN_PLACE(-)
+    CPPALLY_BINARY_OP_IN_PLACE(-=)
     return lhs;
 }
 
 template<RAtomicVector T, typename U>
 inline T& operator*=(T& lhs, const U& rhs) {
-    CPPALLY_BINARY_OP_IN_PLACE(*)
+    CPPALLY_BINARY_OP_IN_PLACE(*=)
     return lhs;
 }
 
 template<RAtomicVector T, typename U>
 inline T& operator/=(T& lhs, const U& rhs) {
-    CPPALLY_BINARY_OP_IN_PLACE(/)
+    CPPALLY_BINARY_OP_IN_PLACE(/=)
     return lhs;
 }
 
 template<RAtomicVector T, typename U>
 inline T& operator%=(T& lhs, const U& rhs) {
-    CPPALLY_BINARY_OP_IN_PLACE(%)
+    CPPALLY_BINARY_OP_IN_PLACE(%=)
     return lhs;
 }
 
