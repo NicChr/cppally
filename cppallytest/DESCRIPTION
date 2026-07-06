@@ -1,5 +1,5 @@
 Package: cppallytest
-Title: A Package For Testing cppally
+Title: A Package For Testing 'cppally'
 Version: 0.1.0
 Authors@R: 
     person("Nick", "Christofides", , "nick.christofides.r@gmail.com", role = c("aut", "cre"),
