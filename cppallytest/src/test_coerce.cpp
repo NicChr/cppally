@@ -1,13 +1,5 @@
-#include <cppally.hpp>
+#include "cppallytest.h"
 using namespace cppally;
-
-template <typename T, typename U>
-void expect_identical(const T& x, const U& target){
-    bool test_passed = identical(x, target);
-    if (!test_passed){
-        abort("expect_identical: `x` is not identical to `target`");
-    }
-}
 
 [[cppally::register]]
 SEXP test_as_sym(SEXP a, r_str b, r_dbl c, r_sym d, r_vec<r_str> e, r_vec<r_dbl> f){
