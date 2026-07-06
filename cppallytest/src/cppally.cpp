@@ -579,6 +579,30 @@ extern "C" SEXP _cppallytest_test_multiline_template_add2(SEXP x, SEXP y) {
   );
   END_CPPALLY
 }
+// test_arithmetic.cpp
+void test_arithmetic();
+extern "C" SEXP _cppallytest_test_arithmetic() {
+  BEGIN_CPPALLY
+  ::test_arithmetic();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_arithmetic.cpp
+void test_overflow();
+extern "C" SEXP _cppallytest_test_overflow() {
+  BEGIN_CPPALLY
+  ::test_overflow();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_arithmetic.cpp
+void test_arithmetic_edge_cases();
+extern "C" SEXP _cppallytest_test_arithmetic_edge_cases() {
+  BEGIN_CPPALLY
+  ::test_arithmetic_edge_cases();
+  return R_NilValue;
+  END_CPPALLY
+}
 // test_attrs.cpp
 r_vec<r_sexp> test_attrs(SEXP x);
 extern "C" SEXP _cppallytest_test_attrs(SEXP x) {
@@ -1053,6 +1077,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_scalar_vec1",                       (DL_FUNC) &_cppallytest_scalar_vec1,                       2},
     {"_cppallytest_scalar_vec2",                       (DL_FUNC) &_cppallytest_scalar_vec2,                       2},
     {"_cppallytest_scalar_vec3",                       (DL_FUNC) &_cppallytest_scalar_vec3,                       4},
+    {"_cppallytest_test_arithmetic",                   (DL_FUNC) &_cppallytest_test_arithmetic,                   0},
+    {"_cppallytest_test_arithmetic_edge_cases",        (DL_FUNC) &_cppallytest_test_arithmetic_edge_cases,        0},
     {"_cppallytest_test_as_date",                      (DL_FUNC) &_cppallytest_test_as_date,                      1},
     {"_cppallytest_test_as_date2",                     (DL_FUNC) &_cppallytest_test_as_date2,                     1},
     {"_cppallytest_test_as_dbl",                       (DL_FUNC) &_cppallytest_test_as_dbl,                       6},
@@ -1107,6 +1133,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_nas",                          (DL_FUNC) &_cppallytest_test_nas,                          1},
     {"_cppallytest_test_null",                         (DL_FUNC) &_cppallytest_test_null,                         0},
     {"_cppallytest_test_order",                        (DL_FUNC) &_cppallytest_test_order,                        2},
+    {"_cppallytest_test_overflow",                     (DL_FUNC) &_cppallytest_test_overflow,                     0},
     {"_cppallytest_test_range",                        (DL_FUNC) &_cppallytest_test_range,                        2},
     {"_cppallytest_test_rval_identity",                (DL_FUNC) &_cppallytest_test_rval_identity,                1},
     {"_cppallytest_test_scalar",                       (DL_FUNC) &_cppallytest_test_scalar,                       2},

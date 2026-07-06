@@ -32,18 +32,18 @@ using rhs_t = decltype(rhs);                                                    
 if constexpr (RAtomicVector<lhs_t> && RAtomicVector<rhs_t>){                                                                    \
   if (rhs.length() == 1){                                                                                                       \
     auto val = rhs.view(0);                                                                                                     \
-    return pmap_parallel_simd([&val](auto a) noexcept { return a OP val; }, lhs);                                               \
+    return pmap_parallel_simd([val](auto a) noexcept { return a OP val; }, lhs);                                                \
   } else if (lhs.length() == 1){                                                                                                \
     auto val = lhs.view(0);                                                                                                     \
-    return pmap_parallel_simd([&val](auto b) noexcept { return val OP b; }, rhs);                                               \
+    return pmap_parallel_simd([val](auto b) noexcept { return val OP b; }, rhs);                                                \
   } else {                                                                                                                      \
     return pmap_parallel_simd([](auto a, auto b) noexcept { return a OP b; }, lhs, rhs);                                        \
   }                                                                                                                             \
   /*Cases where one is a scalar*/                                                                                               \
 } else if constexpr (RAtomicVector<lhs_t>) {                                                                                    \
-  return pmap_parallel_simd([&rhs](auto a) noexcept { return a OP rhs; }, lhs);                                                 \
+  return pmap_parallel_simd([rhs](auto a) noexcept { return a OP rhs; }, lhs);                                                  \
 } else {                                                                                                                        \
-  return pmap_parallel_simd([&lhs](auto b) noexcept { return lhs OP b; }, rhs);                                                 \
+  return pmap_parallel_simd([lhs](auto b) noexcept { return lhs OP b; }, rhs);                                                  \
 }
 
 #define CPPALLY_BINARY_OP_IN_PLACE(OP)                                                                                                               \
@@ -52,11 +52,11 @@ if constexpr (RAtomicVector<U>){                                                
   r_size_t rhs_size = rhs.length();                                                                                                                  \
   if (rhs_size == 1){                                                                                                                                \
     auto val = rhs.view(0);                                                                                                                          \
-    lhs.apply([&val](auto a) noexcept { return a OP val; }, true, true);                                                                             \
+    lhs.apply([val](auto a) noexcept { return a OP val; }, true, true);                                                                              \
   } else if (lhs_size == rhs_size){                                                                                                                  \
     const auto *p_rhs = rhs.data();                                                                                                                  \
     using rhs_data_t = typename std::remove_cvref_t<U>::data_type;                                                                                   \
-    lhs.apply_with_index([&](r_size_t i, auto a) noexcept { return a OP rhs_data_t(p_rhs[i]); }, true, true);                                        \
+    lhs.apply_with_index([p_rhs](r_size_t i, auto a) noexcept { return a OP rhs_data_t(p_rhs[i]); }, true, true);                                    \
   } else {                                                                                                                                           \
     r_size_t rhsi = 0;                                                                                                                               \
     lhs.apply_with_index([&rhs, &rhsi, rhs_size](r_size_t i, auto a) noexcept {                                                                      \
@@ -66,36 +66,36 @@ if constexpr (RAtomicVector<U>){                                                
     });                                                                                                                                              \
   }                                                                                                                                                  \
 } else {                                                                                                                                             \
-  lhs.apply([&rhs](auto a) noexcept { return a OP rhs; }, true, true);                                                                               \
+  lhs.apply([rhs](auto a) noexcept { return a OP rhs; }, true, true);                                                                                \
 }
 
 template<RAtomicVector T, typename U>
 inline T& operator+=(T& lhs, const U& rhs) {
-    CPPALLY_BINARY_OP_IN_PLACE(+)
+    CPPALLY_BINARY_OP_IN_PLACE(+=)
     return lhs;
 }
 
 template<RAtomicVector T, typename U>
 inline T& operator-=(T& lhs, const U& rhs) {
-    CPPALLY_BINARY_OP_IN_PLACE(-)
+    CPPALLY_BINARY_OP_IN_PLACE(-=)
     return lhs;
 }
 
 template<RAtomicVector T, typename U>
 inline T& operator*=(T& lhs, const U& rhs) {
-    CPPALLY_BINARY_OP_IN_PLACE(*)
+    CPPALLY_BINARY_OP_IN_PLACE(*=)
     return lhs;
 }
 
 template<RAtomicVector T, typename U>
 inline T& operator/=(T& lhs, const U& rhs) {
-    CPPALLY_BINARY_OP_IN_PLACE(/)
+    CPPALLY_BINARY_OP_IN_PLACE(/=)
     return lhs;
 }
 
 template<RAtomicVector T, typename U>
 inline T& operator%=(T& lhs, const U& rhs) {
-    CPPALLY_BINARY_OP_IN_PLACE(%)
+    CPPALLY_BINARY_OP_IN_PLACE(%=)
     return lhs;
 }
 

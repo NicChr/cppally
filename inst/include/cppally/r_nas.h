@@ -23,8 +23,12 @@ inline consteval uint64_t na_real_bits() noexcept {
   return std::bit_cast<uint64_t>(make_na_real());
 }
 
-inline constexpr bool is_na_real(double x) noexcept {
-  return std::bit_cast<uint64_t>(x) == na_real_bits();
+// Important: assumes x is already NA (via x != x)
+// Matches R's R_IsNA: a NaN carrying NA_real_'s payload (1954) in its low word.
+// Checks the payload rather than the full bit pattern so NA survives FP operations
+// (add/sub/mul, negation) that quiet the signaling NaN or flip its sign bit.
+inline constexpr bool has_na_real_payload(double x) noexcept {
+  return (std::bit_cast<uint64_t>(x) & 0xFFFFFFFFULL) == 1954ULL;
 }
 
 // Different NaN have different bit representations, so use with care
@@ -119,7 +123,7 @@ inline constexpr bool is_nan(const T& x) noexcept {
 // NaN but not NA_REAL
 template <>
 inline constexpr bool is_nan(const r_dbl& x) noexcept {
-  return is_na(x) && !internal::is_na_real(unwrap(x));
+  return is_na(x) && !internal::has_na_real_payload(unwrap(x));
 }
 
 // Inspired by SQL COALESCE: returns x, or y if x is NA.

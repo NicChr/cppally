@@ -236,6 +236,18 @@ test_multiline_template_add2 <- function(x, y) {
   .Call(`_cppallytest_test_multiline_template_add2`, x, y)
 }
 
+test_arithmetic <- function() {
+  invisible(.Call(`_cppallytest_test_arithmetic`))
+}
+
+test_overflow <- function() {
+  invisible(.Call(`_cppallytest_test_overflow`))
+}
+
+test_arithmetic_edge_cases <- function() {
+  invisible(.Call(`_cppallytest_test_arithmetic_edge_cases`))
+}
+
 test_attrs <- function(x) {
   .Call(`_cppallytest_test_attrs`, x)
 }
