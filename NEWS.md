@@ -41,6 +41,9 @@ was not compiling due to template ordering issue.
 - All arithmetic scalar operations have been restricted to types under the 
 RMathType umbrella.
 
+- Arithmetic involving `r_lgl` is now always promoted to `r_int`, matching R's
+own semantics.
+
 # cppally 1.0.0 (2026-07-02)
 
 First major release. cppally's public API is now considered stable. 
