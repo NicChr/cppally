@@ -242,7 +242,7 @@ inline r_lgl is_whole_number(r_dbl x, r_dbl tolerance = sqrt(r_limits<r_dbl>::ep
 
 // Greatest common divisor
 template <RMathType T>
-T gcd(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
+T gcd(T x, T y, T tol = r_limits<T>::tolerance()) noexcept {
 
   using unwrapped_t = unwrap_t<T>;
 
@@ -259,12 +259,8 @@ T gcd(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
       return T(1);
     }
 
-    if (is_na(ax) || is_na(ay)){
-      if (na_rm){
-        return coalesce(ax, ay);
-      } else {
-        return na<T>();
-      }
+    if (internal::either_na(x, y)){
+      return na<T>();
     }
 
     // Taken from number theory lecture notes
@@ -292,12 +288,8 @@ T gcd(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
     return T(ax_);
   } else {
 
-    if (is_na(ax) || is_na(ay)){
-      if (na_rm){ 
-        return coalesce(ax, ay);
-      } else {
-        return na<T>();
-      }
+    if (internal::either_na(x, y)){
+      return na<T>();
     }
 
     // GCD(0,0)=0
@@ -325,8 +317,9 @@ T gcd(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
 
 
 // Lowest common multiple
+// LCM(x, y) = (|x| / GCD(x, y)) * |y|
 template <RMathType T>
-T lcm(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
+T lcm(T x, T y, T tol = r_limits<T>::tolerance()) noexcept {
 
   T ax = abs(x);
   T ay = abs(y);
@@ -335,29 +328,13 @@ T lcm(T x, T y, bool na_rm = false, T tol = r_limits<T>::tolerance()){
     return T(0);
   }
 
-  if (is_na(x) || is_na(y)){
-    if (na_rm){
-      return coalesce(ax, ay);
-    } else {
-      return na<T>();
-    }
+  if (internal::either_na(x, y)){
+    return na<T>();
   }
 
-  using unwrapped_t = unwrap_t<T>;
-
-  // Use unwrapped values so that `/` preserves integer types so we don't lose precision for large values
-  // Since by definition GCD(a, b) always produces a number that exactly divides both a b (no fractions)
-  // this is well-defined
-  unwrapped_t res = unwrap(ax) / unwrap(gcd(ax, ay, false, tol));
-
-  // Check for overflow
-  if constexpr (RIntegerType<T>){
-    if ( res > (unwrap(r_limits<T>::max()) / unwrap(ay)) ) [[unlikely]] {
-      abort("lcm: Integer overflow detected");
-    }
-  }
-
-  return T(res * unwrap(ay));
+  T out = ax;
+  out /= gcd(ax, ay, tol);
+  return out * ay;
 }
 
 
