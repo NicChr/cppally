@@ -19,9 +19,9 @@
 
 namespace cppally {
 
-// Methods for custom R types
 
-// operators for r_lgl
+// Logical operators
+
 inline constexpr r_lgl operator!(r_lgl x) noexcept {
   return is_na(x) ? r_na : r_lgl(x.value == 0);
 }
@@ -59,6 +59,8 @@ inline constexpr r_lgl operator|(r_lgl lhs, r_lgl rhs) noexcept {
 inline constexpr r_lgl operator&(r_lgl lhs, r_lgl rhs) noexcept {
   return lhs && rhs;
 }
+
+// Relational operators
 
 // Operators for r_str_view
 
@@ -177,6 +179,8 @@ requires (RMathType<T> || RMathType<U>)
 inline constexpr r_lgl operator>=(T lhs, U rhs) noexcept {
   return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) >= unwrap(rhs)};
 }
+
+// Arithmetic operators
 
 template <MathType T, MathType U>
   requires (RMathType<T> || RMathType<U>)
@@ -329,7 +333,6 @@ inline constexpr T& operator+=(T& lhs, U rhs) noexcept {
   if constexpr (is<T, decltype(res)>){
     lhs = res;
   } else {
-    // Narrowing back from common_t: map NA explicitly so it survives the cast
     lhs = is_na(res) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
   }
   return lhs;
@@ -341,7 +344,6 @@ inline constexpr T& operator-=(T& lhs, U rhs) noexcept {
   if constexpr (is<T, decltype(res)>){
     lhs = res;
   } else {
-    // Narrowing back from common_t: map NA explicitly so it survives the cast
     lhs = is_na(res) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
   }
   return lhs;
@@ -353,7 +355,6 @@ inline constexpr T& operator*=(T& lhs, U rhs) noexcept {
   if constexpr (is<T, decltype(res)>){
     lhs = res;
   } else {
-    // Narrowing back from common_t: map NA explicitly so it survives the cast
     lhs = is_na(res) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
   }
   return lhs;
@@ -389,7 +390,6 @@ inline constexpr T& operator%=(T& lhs, U rhs) noexcept {
   if constexpr (is<T, decltype(res)>){
     lhs = res;
   } else {
-    // Narrowing back from common_t: map NA explicitly so it survives the cast
     lhs = is_na(res) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
   }
   return lhs;
