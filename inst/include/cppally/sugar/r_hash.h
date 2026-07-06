@@ -54,7 +54,7 @@ template <>
 inline uint64_t r_hash_impl(const r_dbl& x) noexcept {
     if (is_na(x)){
         // Checks that x matches exactly to R's NA_REAL
-        return is_na_real(x) ? na_real_hash() : nan_hash();
+        return has_na_real_payload(x) ? na_real_hash() : nan_hash();
     } else {
         // Hash normal double
         // +0.0 to normalise -0.0 and 0.0 
