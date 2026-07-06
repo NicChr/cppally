@@ -108,35 +108,6 @@ requires (CppScalar<T>)
 inline constexpr uint16_t r_cpp_boundary_map_v<T> = r_cpp_boundary_map_v<as_r_scalar_t<T>>;
 
 
-// ArgToTemplateMap maps argument positions to template parameter indices
-// e.g., {0, 0, 1} means args 0 and 1 share template param T, arg 2 uses U.
-// -1 means the argument is not templated (fixed type)
-// This function finds the first argument that "drives" template param TemplateParamIdx
-template <size_t TemplateParamIdx, size_t NumArgs, auto ArgToTemplateMap>
-constexpr size_t first_arg_for_template() {
-    for (size_t i = 0; i < NumArgs; ++i)
-        if (ArgToTemplateMap[i] == static_cast<int>(TemplateParamIdx)) return i;
-    return NumArgs;
-}
-
-
-// When multiple arguments share the same template parameter (e.g., f(T x, T y)),
-// they must all have the same R TYPEOF at runtime
-template <size_t TemplateParamIdx, size_t NumArgs, auto ArgToTemplateMap>
-void check_template_homogeneity(uint16_t expected_type, SEXP* args) {
-    for (size_t i = 0; i < NumArgs; ++i) {
-        if (ArgToTemplateMap[i] == static_cast<int>(TemplateParamIdx)) {
-            if (CPPALLY_TYPEOF(args[i]) != expected_type) {
-                abort(
-                    "R type: %s for arg %zu does not match the first instance: %s for this template arg",
-                    r_type_to_str(CPPALLY_TYPEOF(args[i])), i + 1, r_type_to_str(expected_type)
-                );
-            }
-        }
-    }
-}
-
-
 // ── FLAT FUNCTION POINTER TABLE ───────────────────────────────────────────────
 
 // The dispatcher pre-builds two flat arrays at compile time, indexed by a
@@ -149,6 +120,16 @@ void check_template_homogeneity(uint16_t expected_type, SEXP* args) {
 // At runtime, a linear scan finds the first entry where:
 //   - dispatch_table[I] is non-null (combination is valid for the lambda's concepts)
 //   - type_table[I][K] matches the actual CPPALLY_TYPEOF of the K-th template arg
+//
+// ArgToTemplateMap maps argument positions to template parameter indices
+// e.g., {0, 0, 1} means args 0 and 1 share template param T, arg 2 uses U.
+// -1 means the argument is not templated (fixed type)
+//
+// NULL (NILSXP) never drives deduction: a template param's runtime type comes from
+// its first non-NULL argument. A param whose args are all NULL is undeduced and acts
+// as a wildcard in a second scan pass (the runtime mirror of the r_sexp sentinel),
+// landing on the first instantiation that satisfies the constraints — with the NULL
+// itself preserved through the as<> conversion.
 //
 // Crucially, the final call is through a function pointer.
 //
@@ -337,44 +318,72 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
 
     // Collect runtime types — plain loops to avoid Clang 22 ICE
     // with NTTP std::array forwarded through nested templates
+    // NULL args are skipped for both deduction and the homogeneity check
     uint32_t runtime_types[NumTemplateParams > 0 ? NumTemplateParams : 1]{};
+    bool has_undeduced = false;
     for (size_t k = 0; k < NumTemplateParams; ++k) {
-        size_t first_arg = NumArgs;
+        uint16_t param_type = NILSXP;
         for (size_t i = 0; i < NumArgs; ++i) {
-            if (ArgToTemplateMap[i] == static_cast<int>(k)) {
-                first_arg = i;
-                break;
+            if (ArgToTemplateMap[i] != static_cast<int>(k)) {
+                continue;
+            }
+            uint16_t arg_type = static_cast<uint16_t>(CPPALLY_TYPEOF(args[i]));
+            if (arg_type == NILSXP) {
+                continue;
+            }
+            if (param_type == NILSXP) {
+                param_type = arg_type;
+            } else if (arg_type != param_type) {
+                abort(
+                    "R type: %s for arg %zu does not match the first instance: %s for this template arg",
+                    r_type_to_str(arg_type), i + 1, r_type_to_str(param_type)
+                );
             }
         }
-        runtime_types[k] = static_cast<uint32_t>(CPPALLY_TYPEOF(args[first_arg]));
-        for (size_t i = 0; i < NumArgs; ++i) {
-            if (ArgToTemplateMap[i] == static_cast<int>(k)) {
-                if (CPPALLY_TYPEOF(args[i]) != static_cast<uint16_t>(runtime_types[k])) {
-                    abort(
-                        "R type: %s for arg %zu does not match the first instance: %s for this template arg",
-                        r_type_to_str(CPPALLY_TYPEOF(args[i])), i + 1,
-                        r_type_to_str(static_cast<uint16_t>(runtime_types[k]))
-                    );
-                }
-            }
+        runtime_types[k] = static_cast<uint32_t>(param_type);
+        if (param_type == NILSXP) {
+            has_undeduced = true;
         }
     }
 
 
     // Linear scan — one indirect call through void*, no inlining possible
-    for (size_t I = 0; I < Total; ++I) {
-        erased_fn_t fn = dispatch_table[I];
-        if (!fn) continue;
-
-
-        bool match = true;
-        for (size_t K = 0; K < NumTemplateParams; ++K) {
-            if (type_table[I][K] != std::numeric_limits<uint32_t>::max() && type_table[I][K] != runtime_types[K]) {
-                match = false;
-                break;
+    auto find_match = [&](bool null_wildcard) -> erased_fn_t {
+        for (size_t I = 0; I < Total; ++I) {
+            erased_fn_t fn = dispatch_table[I];
+            if (!fn) {
+                continue;
+            }
+            bool match = true;
+            for (size_t K = 0; K < NumTemplateParams; ++K) {
+                if (type_table[I][K] == std::numeric_limits<uint32_t>::max()) {
+                    continue;
+                }
+                if (null_wildcard && runtime_types[K] == NILSXP) {
+                    continue;
+                }
+                if (type_table[I][K] != runtime_types[K]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) {
+                return fn;
             }
         }
-        if (match) return fn(static_cast<void*>(&functor), args);
+        return nullptr;
+    };
+
+
+    if (erased_fn_t fn = find_match(false)) {
+        return fn(static_cast<void*>(&functor), args);
+    }
+    // Second pass so that an r_sexp instantiation, when the constraints admit one,
+    // still claims NULL in pass 1
+    if (has_undeduced) {
+        if (erased_fn_t fn = find_match(true)) {
+            return fn(static_cast<void*>(&functor), args);
+        }
     }
 
 
