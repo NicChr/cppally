@@ -12,7 +12,7 @@ T test_range(T x, bool na_rm){
 template <RMathType T>
 [[cppally::register]]
 r_dbl test_sum(r_vec<T> x, bool na_rm){
-  return sum(x, na_rm);
+  return as<r_dbl>(sum(x, na_rm));
 }
 
 template <RMathType T>

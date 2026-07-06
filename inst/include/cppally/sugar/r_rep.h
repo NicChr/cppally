@@ -74,7 +74,7 @@ T rep(const T& x, const r_vec<r_int>& times){
         out_size = n * unwrap(times.get(0));
         return rep_len(x, out_size);
     } else if (n_times == n){
-        r_dbl s = sum(times, false);
+        auto s = sum(times, false);
         if (is_na(s)){
             abort("%s: `times` contains `NA` values", __func__);
         }
