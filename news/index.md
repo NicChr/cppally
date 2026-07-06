@@ -15,10 +15,34 @@
 - `r_lgl` can now implicitly coerce to `int` (and only `int`),
   consistent with the other RScalar types.
 
+- Integer overflow is now explicitly handled in all cppally arithmetic,
+  returning `NA` when detected. Integer addition and subtraction in
+  particular are written using branchless or vectorisable code, enabling
+  SIMD vectorisation.
+
+- Integer in-place division `/=` now matches R’s `%/%` (floored
+  division), instead of C’s truncating division, e.g. `-7L /= 2L` now
+  gives `-4` instead of `-3`. Division by zero or `NA` now correctly
+  returns `NA` instead of crashing the R session. Precision is also
+  preserved for large `r_int64` values that previously round-tripped
+  through `double`.
+
+- `%` now accepts mixed integer/float operands (e.g. `r_int(7) % 2.5`),
+  promoting and flooring consistent with R’s `%%`.
+
+- Vector in-place arithmetic (`+=`, `-=`, `*=`, `%=`) now routes through
+  the scalar operators, fixing a bug where mixed-width operations (e.g. 
+  `r_vec<r_int> += r_vec<r_int64>`) could silently truncate values,
+  including turning `NA` into `0`.
+
 - New member `is_na` for RScalar types, in addition to the equivalent
   `is_na` free function.
 
-- Fixed bug where checking exact equality (via `identical`) for C/C++
+- Fixed a bug where
+  [`identical()`](https://rdrr.io/r/base/identical.html) would return
+  `false` for two genuinely identical `NA_real_` values.
+
+- Fixed a bug where checking exact equality (via `identical`) for C/C++
   types was not compiling due to template ordering issue.
 
 - All arithmetic scalar operations have been restricted to types under

@@ -45,8 +45,13 @@
 <li><p>Fixed incorrect NA handling of <code>r_date</code> and <code>r_psxct</code>.</p></li>
 <li><p>Improved type-safety regarding implicit coercion of RScalar types. They now can implicitly coerce <strong>only</strong> to their wrapped types, whereas before they could implicitly coerce to that as well as other C types.</p></li>
 <li><p><code>r_lgl</code> can now implicitly coerce to <code>int</code> (and only <code>int</code>), consistent with the other RScalar types.</p></li>
+<li><p>Integer overflow is now explicitly handled in all cppally arithmetic, returning <code>NA</code> when detected. Integer addition and subtraction in particular are written using branchless or vectorisable code, enabling SIMD vectorisation.</p></li>
+<li><p>Integer in-place division <code>/=</code> now matches R’s <code>%/%</code> (floored division), instead of C’s truncating division, e.g. <code>-7L /= 2L</code> now gives <code>-4</code> instead of <code>-3</code>. Division by zero or <code>NA</code> now correctly returns <code>NA</code> instead of crashing the R session. Precision is also preserved for large <code>r_int64</code> values that previously round-tripped through <code>double</code>.</p></li>
+<li><p><code>%</code> now accepts mixed integer/float operands (e.g. <code>r_int(7) % 2.5</code>), promoting and flooring consistent with R’s <code>%%</code>.</p></li>
+<li><p>Vector in-place arithmetic (<code>+=</code>, <code>-=</code>, <code>*=</code>, <code>%=</code>) now routes through the scalar operators, fixing a bug where mixed-width operations (e.g.  <code>r_vec&lt;r_int&gt; += r_vec&lt;r_int64&gt;</code>) could silently truncate values, including turning <code>NA</code> into <code>0</code>.</p></li>
 <li><p>New member <code>is_na</code> for RScalar types, in addition to the equivalent <code>is_na</code> free function.</p></li>
-<li><p>Fixed bug where checking exact equality (via <code>identical</code>) for C/C++ types was not compiling due to template ordering issue.</p></li>
+<li><p>Fixed a bug where <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code> would return <code>false</code> for two genuinely identical <code>NA_real_</code> values.</p></li>
+<li><p>Fixed a bug where checking exact equality (via <code>identical</code>) for C/C++ types was not compiling due to template ordering issue.</p></li>
 <li><p>All arithmetic scalar operations have been restricted to types under the RMathType umbrella.</p></li>
 </ul></div>
     <div class="section level2">

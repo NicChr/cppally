@@ -1384,8 +1384,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique       928µs   1.09ms      926.    1.38MB     25.5
-#> 2 cppally_n_unique    239µs 240.23µs     4108.        0B      0
+#> 1 base_n_unique      1.22ms   1.38ms      724.    1.38MB     20.8
+#> 2 cppally_n_unique 307.06µs  309.7µs     3067.        0B      0
 ```
 
 More useful sugar functions
