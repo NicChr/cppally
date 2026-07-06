@@ -1,6 +1,16 @@
 #ifndef CPPALLY_R_SCALAR_OPS_H
 #define CPPALLY_R_SCALAR_OPS_H
 
+// ------- Custom operators for cppally scalars -------
+// NA handling mirrors R's NA handling.
+// Integer overflow is never undefined behaviour (UB) - NA is always returned when overflow is detected.
+// License: MIT License
+// Author: Nick Christofides
+
+// Arithmetic operators: +,-,*,/,%,+=,-=,*=,/=,%=,-,++,--
+// Relational operators: ==,!=,<=,<,>=,>
+// Logical operators: &,|,&&,||,!
+
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
 #include <cppally/r_types.h>
@@ -131,19 +141,19 @@ inline constexpr r_lgl operator==(const T& lhs, const U& rhs) noexcept {
 
 template <RScalar T, RScalar U>
 requires (requires (unwrap_t<T> a, unwrap_t<U> b) { a != b; })
-inline constexpr r_lgl operator!=(const T &lhs, const U &rhs) noexcept {
+inline constexpr r_lgl operator!=(const T& lhs, const U& rhs) noexcept {
   return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) != unwrap(rhs)};
 }
 
 template <RScalar T, CppScalar U>
 requires (requires (unwrap_t<T> a, unwrap_t<U> b) { a != b; })
-inline constexpr r_lgl operator!=(const T &lhs, const U &rhs) noexcept {
+inline constexpr r_lgl operator!=(const T& lhs, const U& rhs) noexcept {
   return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) != unwrap(rhs)};
 }
 
 template <CppScalar T, RScalar U>
 requires (requires (unwrap_t<T> a, unwrap_t<U> b) { a != b; })
-inline constexpr r_lgl operator!=(const T &lhs, const U &rhs) noexcept {
+inline constexpr r_lgl operator!=(const T& lhs, const U& rhs) noexcept {
   return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) != unwrap(rhs)};
 }
 
@@ -350,7 +360,7 @@ inline constexpr T& operator*=(T& lhs, U rhs) noexcept {
 }
 
 template <MathType U>
-inline constexpr r_dbl& operator/=(r_dbl &lhs, U rhs) noexcept {
+inline constexpr r_dbl& operator/=(r_dbl& lhs, U rhs) noexcept {
   lhs = lhs / rhs;
   return lhs;
 }
@@ -395,7 +405,7 @@ inline constexpr r_dbl operator-(r_dbl x) noexcept {
 }
 
 template <RMathType T>
-inline constexpr T& operator++(T &lhs) noexcept {
+inline constexpr T& operator++(T& lhs) noexcept {
   lhs += T(1);
   return lhs;
 }
@@ -407,7 +417,7 @@ inline constexpr T operator++(T& lhs, int) noexcept {
 }
 
 template <RMathType T>
-inline constexpr T& operator--(T &lhs) noexcept {
+inline constexpr T& operator--(T& lhs) noexcept {
   lhs -= T(1);
   return lhs;
 }
