@@ -32,7 +32,10 @@ turning `NA` into `0`.
 - New member `is_na` for RScalar types, in addition to the equivalent 
 `is_na` free function.
 
-- Fixed bug where checking exact equality (via `identical`) for C/C++ types 
+- Fixed a bug where `identical()` would return `false` for two genuinely 
+identical `NA_real_` values.
+
+- Fixed a bug where checking exact equality (via `identical`) for C/C++ types 
 was not compiling due to template ordering issue.
 
 - All arithmetic scalar operations have been restricted to types under the 
