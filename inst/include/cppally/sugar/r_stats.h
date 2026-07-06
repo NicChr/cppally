@@ -44,6 +44,34 @@ r_int64 sum(const r_vec<T>& x, bool na_rm = false){
     return r_int64(static_cast<int64_t>(res));
 }
 
+template <RLongIntegerType T> 
+r_int64 sum(const r_vec<T>& x, bool na_rm = false){
+    r_size_t n = x.length();
+
+    int128_otherwise_64_t out_ = 0;
+
+    if (na_rm){
+        internal::simd_reduce_add(x, out_, [](auto v){ return is_na(v) ? 0 : unwrap(v); });
+    } else {
+        for (r_size_t i = 0; i < n; ++i){
+            if (is_na(x.get(i))){
+                return na<r_int64>();
+            }
+            if constexpr (int128_available){
+                out_ += unwrap(x.get(i));
+            } else {
+                r_int64 temp = r_int64(out_) + x.get(i);
+                out_ = unwrap(temp);
+            }
+        }
+    }
+    // [INT64_MIN+1, INT64_MAX] because NA is reserved for INT64_MIN
+    if (out_ > std::numeric_limits<int64_t>::max() || out_ <= std::numeric_limits<int64_t>::min()){
+        return na<r_int64>();
+    }
+    return r_int64(static_cast<int64_t>(out_));
+}
+
 template <RMathType T> 
 r_dbl sum(const r_vec<T>& x, bool na_rm = false){
     r_size_t n = x.length();
