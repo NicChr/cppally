@@ -521,7 +521,7 @@ struct r_vec {
   // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
   // parallel - Should loop be exected using multiple threads? Only applicable for RVectorisable types. Threads are set via `set_threads()`
   void apply(std::invocable<T> auto fn, bool simd = false, bool parallel = false) {
-    apply_with_index([&](r_size_t, auto v){ return fn(v); }, simd, parallel);
+    apply_with_index([fn = std::move(fn)](r_size_t, auto v){ return fn(v); }, simd, parallel);
   }
 
   // From left-to-right: recursively apply a binary function to pairs of elements across *this
