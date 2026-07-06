@@ -28,6 +28,7 @@
 
 #include <Rinternals.h>
 #include <iosfwd> // Forward declarations for strings
+#include <cstdint>
 
 // clang-format off
 #ifdef __clang__
@@ -89,6 +90,14 @@
 #endif
 
 #define OMP_DO_NOTHING // Placeholder for no OMP operations
+
+#ifdef __SIZEOF_INT128__
+using int128_otherwise_64_t = __int128_t;
+inline constexpr bool int128_available = true;
+#else
+using int128_otherwise_64_t = int64_t;
+inline constexpr bool int128_available = false;
+#endif
 
 namespace cppally {
 
