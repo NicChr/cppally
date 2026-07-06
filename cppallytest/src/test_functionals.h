@@ -6,7 +6,7 @@ using namespace cppally;
 template <RMathType T>
 [[cppally::register]]
 auto reduce_sum(r_vec<T> x, bool na_rm){
-    return x.reduce(std::plus<>{}, T(0), na_rm);
+    return x.reduce(std::plus<>{}, +T(0), na_rm);
 }
 template <RMathType T>
 [[cppally::register]]
