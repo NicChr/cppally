@@ -17,12 +17,12 @@ struct r_lgl {
   using value_type = int;
   constexpr r_lgl() noexcept : value{0} {}
   explicit constexpr r_lgl(int x) noexcept : value{x} {} 
-  explicit constexpr r_lgl(bool x) noexcept : value{x} {}
+  explicit constexpr r_lgl(bool x) noexcept : value{static_cast<int>(x)} {}
   template <typename U> requires (is<U, int>)
   constexpr operator U() const noexcept { return value; }
 
   constexpr bool is_true() const noexcept {
-    return value == 1;
+    return (static_cast<unsigned int>(value) * 2u) != 0u;   // nonzero AND not NA
   }
   constexpr bool is_false() const noexcept {
     return value == 0;
