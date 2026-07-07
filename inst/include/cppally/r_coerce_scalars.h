@@ -119,7 +119,7 @@ inline r_lgl as_bool(const T& x){
   using unwrapped_t = unwrap_t<T>;
 
   if constexpr (is<unwrapped_t, int>){
-    return unwrap(x) == 0 ? r_false : (is_na(x) ? r_na : r_true);
+    return r_lgl(unwrap(x));
   } else if constexpr (MathType<unwrapped_t>){
     return is_na(x) ? na<r_lgl>() : r_lgl(static_cast<bool>(unwrap(x)));
   } else if constexpr (RStringType<T>){

@@ -16,7 +16,7 @@ struct r_lgl {
   int value;
   using value_type = int;
   constexpr r_lgl() noexcept : value{0} {}
-  explicit constexpr r_lgl(int x) noexcept : value{x} {} 
+  explicit constexpr r_lgl(int x) noexcept : value{(static_cast<unsigned int>(x) * 2u) != 0u ? 1 : x} {}
   explicit constexpr r_lgl(bool x) noexcept : value{static_cast<int>(x)} {}
   template <typename U> requires (is<U, int>)
   constexpr operator U() const noexcept { return value; }

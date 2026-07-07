@@ -210,6 +210,12 @@ inline constexpr auto operator+(T lhs, U rhs) noexcept {
   }
 }
 
+// // Normalise into {0, 1, NA}
+// inline constexpr auto operator+(r_lgl lhs, r_lgl rhs) noexcept {
+//   r_int res = r_int(unwrap(lhs)) + r_int(unwrap(rhs));
+//   return is_na(res) ? r_na : r_lgl(unwrap(res) != 0);
+// }
+
 template <MathType T, MathType U>
   requires (RMathType<T> || RMathType<U>)
 inline constexpr auto operator-(T lhs, U rhs) noexcept {
@@ -237,6 +243,12 @@ inline constexpr auto operator-(T lhs, U rhs) noexcept {
     common_t(static_cast<unwrap_t<common_t>>(unwrap(lhs)) - static_cast<unwrap_t<common_t>>(unwrap(rhs)));
   }
 }
+
+// // Normalise into {0, 1, NA}
+// inline constexpr auto operator-(r_lgl lhs, r_lgl rhs) noexcept {
+//   r_int res = r_int(unwrap(lhs)) - r_int(unwrap(rhs));
+//   return is_na(res) ? r_na : r_lgl(unwrap(res) != 0);
+// }
 
 template <MathType T, MathType U>
   requires (RMathType<T> || RMathType<U>)
