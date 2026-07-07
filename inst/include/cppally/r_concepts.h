@@ -433,7 +433,8 @@ struct common_r_math_impl {
 
     static constexpr uint8_t rank_t = r_type_rank<lhs_math_t>();
     static constexpr uint8_t rank_u = r_type_rank<rhs_math_t>();
-    using type = std::conditional_t<is<lhs_math_t, r_lgl> && is<rhs_math_t, r_lgl>, r_int, std::conditional_t<(rank_t >= rank_u), lhs_math_t, rhs_math_t>>;
+    using type = std::conditional_t<(rank_t >= rank_u), lhs_math_t, rhs_math_t>;
+    // using type = std::conditional_t<is<lhs_math_t, r_lgl> && is<rhs_math_t, r_lgl>, r_int, std::conditional_t<(rank_t >= rank_u), lhs_math_t, rhs_math_t>>;
 
 };
 

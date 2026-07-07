@@ -396,22 +396,20 @@ inline constexpr T& operator%=(T& lhs, U rhs) noexcept {
 }
 
 template <RMathType T>
-inline constexpr auto operator-(T x) noexcept {
-  using out_t = common_math_t<T, r_lgl>;
-  return is_na(x) ? na<out_t>() : out_t{-unwrap(x)};
+inline constexpr T operator-(T x) noexcept {
+  return is_na(x) ? x : T{-unwrap(x)};
 }
 template<>
-inline constexpr auto operator-(r_dbl x) noexcept {
+inline constexpr r_dbl operator-(r_dbl x) noexcept {
   return r_dbl{-unwrap(x)};
 }
 
 template <RMathType T>
-inline constexpr auto operator+(T x) noexcept {
-  using out_t = common_math_t<T, r_lgl>;
-  return is_na(x) ? na<out_t>() : out_t{unwrap(x)};
+inline constexpr T operator+(T x) noexcept {
+  return x;
 }
 template<>
-inline constexpr auto operator+(r_dbl x) noexcept {
+inline constexpr r_dbl operator+(r_dbl x) noexcept {
   return x;
 }
 
