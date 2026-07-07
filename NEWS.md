@@ -41,8 +41,8 @@ was not compiling due to template ordering issue.
 - All arithmetic scalar operations have been restricted to types under the 
 RMathType umbrella.
 
-- Arithmetic involving `r_lgl` is now always promoted to `r_int`, matching R's
-own semantics.
+- `r_lgl` values are now always normalised on construction internally to either 
+0, 1, or `NA`.
 
 # cppally 1.0.0 (2026-07-02)
 
