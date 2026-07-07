@@ -55,6 +55,28 @@ namespace cppally {
 
 namespace internal {
 
+// RScalar -> RVector
+// Everything else -> SEXP
+template <typename T>
+SEXP cpp_to_r(const T& x) {
+    if constexpr (RScalar<T>){
+      return static_cast<SEXP>(r_vec<T>(1, x));
+    } else {
+      return as<SEXP>(x);
+    }
+}
+
+// NULL is left alone where RComposite is concerned to allow passing optional arguments
+template <typename T>
+T r_to_cpp(SEXP x) {
+    if constexpr (RComposite<T>){
+        if (x == R_NilValue){
+            return T(r_null);
+        }
+    }
+    return as<T>(x);
+}
+
 
 template <typename> struct fn_traits;
 
@@ -129,7 +151,9 @@ inline constexpr uint16_t r_cpp_boundary_map_v<T> = r_cpp_boundary_map_v<as_r_sc
 // its first non-NULL argument. A param whose args are all NULL is undeduced and acts
 // as a wildcard in a second scan pass (the runtime mirror of the r_sexp sentinel),
 // landing on the first instantiation that satisfies the constraints — with the NULL
-// itself preserved through the as<> conversion.
+// itself preserved by the r_to_cpp boundary conversion. The wildcard follows
+// candidate order, so a constraint admitting both classed and plain types hands an
+// all-NULL param to the classed type first (r_factors before r_vec<r_lgl>).
 //
 // Crucially, the final call is through a function pointer.
 //
@@ -398,10 +422,10 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
 template <auto Fn, typename Ret, typename... Args, size_t... Is>
 SEXP invoke_impl(SEXP* sexp_args, std::index_sequence<Is...>) {
     if constexpr (std::is_void_v<Ret>) {
-        Fn(as<Args>(sexp_args[Is])...);
+        Fn(r_to_cpp<Args>(sexp_args[Is])...);
         return R_NilValue;
     } else {
-        return cpp_to_r(Fn(as<Args>(sexp_args[Is])...));
+        return cpp_to_r(Fn(r_to_cpp<Args>(sexp_args[Is])...));
     }
 }
 

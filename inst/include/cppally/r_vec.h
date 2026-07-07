@@ -121,10 +121,12 @@ struct r_vec {
     // data() will materialise on first call
     if (is_altrep()) return;
 #endif
-    if constexpr (is_write_barrier_protected){
-      m_ptr = is_altrep() ? safe[internal::vector_ptr_ro<T>](value) : internal::vector_ptr_ro<T>(value);
-    } else {
-      m_ptr = is_altrep() ? safe[internal::vector_ptr<T>](value) : internal::vector_ptr<T>(value);
+    if (!is_null()){
+      if constexpr (is_write_barrier_protected){
+        m_ptr = is_altrep() ? safe[internal::vector_ptr_ro<T>](value) : internal::vector_ptr_ro<T>(value);
+      } else {
+        m_ptr = is_altrep() ? safe[internal::vector_ptr<T>](value) : internal::vector_ptr<T>(value);
+      }
     }
   }
 
@@ -225,6 +227,9 @@ struct r_vec {
   #ifdef CPPALLY_PRESERVE_ALTREP
   ptr_t data() const {
     if (!m_ptr) [[unlikely]] {
+      if (is_null()){
+        return m_ptr;
+      }
       if constexpr (is_write_barrier_protected) {
         m_ptr = safe[internal::vector_ptr_ro<T>](value);
       } else {

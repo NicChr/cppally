@@ -33,19 +33,6 @@ r_sexp as_list_element(const T& x) {
     }
 }
 
-// Bit of duplication here but is done to avoid unncecessary protections when dealing with e.g. r_str & r_str_view
-
-// RScalar -> RVector
-// Everything else -> SEXP
-template <typename T>
-SEXP cpp_to_r(const T& x) {
-    if constexpr (RScalar<T>){
-      return static_cast<SEXP>(r_vec<T>(1, x));
-    } else {
-      return as<SEXP>(x);
-    }
-}
-
 // Assumes no NAs at all
 template<typename T>
 inline constexpr bool can_be_int(const T& x){

@@ -282,9 +282,9 @@ wrap_call <- function(name, return_type, args, is_template, template_params) {
   call_args <- ifelse(
     is_lval_ref,
     glue::glue_data(args, "{name}_arg"),
-    glue::glue_data(args, "as<{type}>({name})")
+    glue::glue_data(args, "r_to_cpp<{type}>({name})")
   )
-  decls <- glue::glue_data(args, "auto {name}_arg = as<{type}>({name});")[is_lval_ref]
+  decls <- glue::glue_data(args, "auto {name}_arg = r_to_cpp<{type}>({name});")[is_lval_ref]
 
   list_params <- glue::glue_collapse(call_args, ", ")
   call <- glue::glue("::{name}({list_params})")
@@ -325,7 +325,7 @@ wrap_call_template <- function(name, return_type, args, template_params) {
   # Construct the lambda parameters (ALL args)
   lambda_params <- glue::glue_collapse(glue::glue("SEXP {args$name}_internal"), ", ")
 
-  conversions <- glue::glue("as<{args$type}>({args$name}_internal)")
+  conversions <- glue::glue("r_to_cpp<{args$type}>({args$name}_internal)")
 
   # Only an lvalue-reference param needs a named lvalue to bind to, since `as<>()`
   # returns a prvalue. By-value and `&&` bind the prvalue directly, so they are
@@ -574,6 +574,7 @@ cpp_register <- function(path = ".", quiet = !is_interactive(), extension = c(".
 
       using namespace cppally;
       using internal::cpp_to_r;
+      using internal::r_to_cpp;
       using internal::dispatch_template_impl;
 
       {cpp_functions_definitions}
