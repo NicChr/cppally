@@ -44,6 +44,10 @@ RMathType umbrella.
 - `r_lgl` values are now always normalised on construction internally to either 
 0, 1, or `NA`.
 
+- `NULL` optional arguments are now correctly handled. 
+Vector, factor and data frame arguments can now be `NULL` to allow for optional 
+argument programming from R.
+
 # cppally 1.0.0 (2026-07-02)
 
 First major release. cppally's public API is now considered stable. 
