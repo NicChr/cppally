@@ -22,7 +22,7 @@ struct r_lgl {
   constexpr operator U() const noexcept { return value; }
 
   constexpr bool is_true() const noexcept {
-    return (static_cast<unsigned int>(value) * 2u) != 0u;   // nonzero AND not NA
+    return value == 1;
   }
   constexpr bool is_false() const noexcept {
     return value == 0;
