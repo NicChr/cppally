@@ -68,13 +68,14 @@ SEXP cpp_to_r(const T& x) {
 
 // NULL is left alone where RComposite is concerned to allow passing optional arguments
 template <typename T>
-T r_to_cpp(SEXP x) {
-    if constexpr (RComposite<T>){
+auto r_to_cpp(SEXP x) {
+    using out_t = std::remove_cvref_t<T>;
+    if constexpr (RComposite<out_t>){
         if (x == R_NilValue){
-            return T(r_null);
+            return out_t(r_null);
         }
     }
-    return as<T>(x);
+    return as<out_t>(x);
 }
 
 
