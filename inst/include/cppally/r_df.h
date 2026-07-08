@@ -102,7 +102,7 @@ struct r_df {
 
         if (value.is_null()) return;
 
-        if (!Rf_isDataFrame(value)) [[unlikely]] {
+        if (!Rf_inherits(value, "data.frame")) [[unlikely]] {
           abort("SEXP must be of class 'data.frame' to be constructed as a data frame");
         }
         r_vec<r_str_view> names = value.names();

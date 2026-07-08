@@ -45,7 +45,7 @@ inline SEXPTYPE CPPALLY_TYPEOF(SEXP x) noexcept {
         return xtype;
     }
     case VECSXP: {
-        if (Rf_isDataFrame(x)) return CPPALLY_DFSXP;
+        if (Rf_inherits(x, "data.frame")) return CPPALLY_DFSXP;
         return xtype;
     }
     default: {
