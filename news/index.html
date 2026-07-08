@@ -58,6 +58,8 @@
 <li><p><code>NULL</code> optional arguments are now correctly handled. Vector, factor and data frame arguments can now be <code>NULL</code> to allow for optional argument programming from R.</p></li>
 <li><p>New concept <code>RNumber</code> to represent number-based types like <code>r_int</code> and <code>r_dbl</code>.</p></li>
 <li><p><code>common_math_t&lt;T, U&gt;</code> now never returns <code>r_lgl</code>, effectively treating <code>r_lgl</code> as <code>r_int</code>.</p></li>
+<li><p>Constructing invalid dates and date-times now returns <code>NA</code> instead of an error.</p></li>
+<li><p>New member function <code>na()</code> for RScalar classes.</p></li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.0" id="cppally-100-2026-07-02">cppally 1.0.0 (2026-07-02)<a class="anchor" aria-label="anchor" href="#cppally-100-2026-07-02"></a></h2><p class="text-muted">CRAN release: 2026-07-02</p>
