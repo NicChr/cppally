@@ -52,7 +52,12 @@
 <li><p>New member <code>is_na</code> for RScalar types, in addition to the equivalent <code>is_na</code> free function.</p></li>
 <li><p>Fixed a bug where <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code> would return <code>false</code> for two genuinely identical <code>NA_real_</code> values.</p></li>
 <li><p>Fixed a bug where checking exact equality (via <code>identical</code>) for C/C++ types was not compiling due to template ordering issue.</p></li>
-<li><p>All arithmetic scalar operations have been restricted to types under the RMathType umbrella.</p></li>
+<li><p><code>RTimeType</code> arithmetic has been deprecated and removed.</p></li>
+<li><p><code>r_lgl</code> values are now always normalised on construction internally to either 0, 1, or <code>NA</code>.</p></li>
+<li><p>Arithmetic involving <code>r_lgl</code> is now always promoted to <code>r_int</code>, matching R’s own semantics.</p></li>
+<li><p><code>NULL</code> optional arguments are now correctly handled. Vector, factor and data frame arguments can now be <code>NULL</code> to allow for optional argument programming from R.</p></li>
+<li><p>New concept <code>RNumber</code> to represent number-based types like <code>r_int</code> and <code>r_dbl</code>.</p></li>
+<li><p><code>common_math_t&lt;T, U&gt;</code> now never returns <code>r_lgl</code>, effectively treating <code>r_lgl</code> as <code>r_int</code>.</p></li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.0" id="cppally-100-2026-07-02">cppally 1.0.0 (2026-07-02)<a class="anchor" aria-label="anchor" href="#cppally-100-2026-07-02"></a></h2><p class="text-muted">CRAN release: 2026-07-02</p>
@@ -160,7 +165,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

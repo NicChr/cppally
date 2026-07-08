@@ -1107,11 +1107,11 @@ headers for cppally registration to work correctly.
 
 Let’s practice by creating the
 [`abs()`](https://rdrr.io/r/base/MathFun.html) function in C++ using
-templates and the `RMathType` concept.
+templates and the `RNumber` concept.
 
 ``` cpp
 
-template <RMathType T>
+template <RNumber T>
 [[cppally::register]]
 T cpp_abs(T x){
   if (is_na(x)){
@@ -1148,9 +1148,9 @@ correctly handled with one set of operations.
 
 ### How it works
 
-The top-line `template <RMathType T>` declares a template that
-encapsulates `T`, an `RMathType` - a concept that contains `r_lgl`,
-`r_int`, `r_int64` and `r_dbl`
+The top-line `template <RNumber T>` declares a template that
+encapsulates `T`, an `RNumber` - a concept that contains `r_int`,
+`r_int64` and `r_dbl`
 
 If x is NA then we immediately also return NA via `na<T>()` which is a
 templated function that returns NA of the input type `T`.
@@ -1384,8 +1384,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique      1.22ms   1.38ms      724.    1.38MB     20.8
-#> 2 cppally_n_unique 307.06µs  309.7µs     3067.        0B      0
+#> 1 base_n_unique       717µs    793µs     1144.    1.38MB     34.3
+#> 2 cppally_n_unique    264µs    266µs     3692.        0B      0
 ```
 
 More useful sugar functions
@@ -1456,13 +1456,16 @@ symbol_to_string(hello_world_symbol)
 
 ### All core cppally concepts
 
+- RNumber - Includes `r_int`, `r_int64` and `r_dbl`
+
 - RIntegerType - Includes `r_lgl`, `r_int`, `r_int64`
 
 - RMathType - Includes `r_lgl`, `r_int`, `r_int64` and `r_dbl`
 
 - RStringType - Includes `r_str` and `r_str_view`
 
-- RScalar - Includes all cppally specific scalar types
+- RScalar - Includes `r_lgl`, `r_int`, `r_int64`, `r_dbl`, `r_str`,
+  `r_str_view`, `r_cplx`, `r_raw`, `r_date` and `r_psxct`
 
 - RVal - Includes anything a cppally vector (`r_vec<>`) can contain:
   RScalar +`r_sexp`

@@ -1004,9 +1004,9 @@ users to write human-readable templates and constraints.</p>
 <p>When writing your own templates, it is necessary to place them in
 headers for cppally registration to work correctly.</p>
 <p>Let’s practice by creating the <code><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs()</a></code> function in C++
-using templates and the <code>RMathType</code> concept.</p>
+using templates and the <code>RNumber</code> concept.</p>
 <div class="sourceCode" id="cb110"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb110-1"><a href="#cb110-1" tabindex="-1"></a></span>
-<span id="cb110-2"><a href="#cb110-2" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RMathType T<span class="op">&gt;</span></span>
+<span id="cb110-2"><a href="#cb110-2" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RNumber T<span class="op">&gt;</span></span>
 <span id="cb110-3"><a href="#cb110-3" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
 <span id="cb110-4"><a href="#cb110-4" tabindex="-1"></a>T cpp_abs<span class="op">(</span>T x<span class="op">){</span></span>
 <span id="cb110-5"><a href="#cb110-5" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>is_na<span class="op">(</span>x<span class="op">)){</span></span>
@@ -1037,10 +1037,10 @@ of operations.</p>
 <div class="section level3">
 <h3 id="how-it-works">How it works<a class="anchor" aria-label="anchor" href="#how-it-works"></a>
 </h3>
-<p>The top-line <code>template &lt;RMathType T&gt;</code> declares a
-template that encapsulates <code>T</code>, an <code>RMathType</code> - a
-concept that contains <code>r_lgl</code>, <code>r_int</code>,
-<code>r_int64</code> and <code>r_dbl</code></p>
+<p>The top-line <code>template &lt;RNumber T&gt;</code> declares a
+template that encapsulates <code>T</code>, an <code>RNumber</code> - a
+concept that contains <code>r_int</code>, <code>r_int64</code> and
+<code>r_dbl</code></p>
 <p>If x is NA then we immediately also return NA via
 <code>na&lt;T&gt;()</code> which is a templated function that returns NA
 of the input type <code>T</code>.</p>
@@ -1227,8 +1227,8 @@ of number of unique values.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression            min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_n_unique      1.22ms   1.38ms      724.    1.38MB     20.8</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_n_unique 307.06µs  309.7µs     <span style="text-decoration: underline;">3</span>067.        0B      0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_n_unique       717µs    793µs     <span style="text-decoration: underline;">1</span>144.    1.38MB     34.3</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_n_unique    264µs    266µs     <span style="text-decoration: underline;">3</span>692.        0B      0</span></span></code></pre></div>
 <p>More useful sugar functions</p>
 <ul>
 <li><p><code><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique()</a></code> - Like R’s <code><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique()</a></code> but with a
@@ -1311,13 +1311,18 @@ template argument but is supported when the argument is explicitly an
 <h3 id="all-core-cppally-concepts">All core cppally concepts<a class="anchor" aria-label="anchor" href="#all-core-cppally-concepts"></a>
 </h3>
 <ul>
+<li><p>RNumber - Includes <code>r_int</code>, <code>r_int64</code> and
+<code>r_dbl</code></p></li>
 <li><p>RIntegerType - Includes <code>r_lgl</code>, <code>r_int</code>,
 <code>r_int64</code></p></li>
 <li><p>RMathType - Includes <code>r_lgl</code>, <code>r_int</code>,
 <code>r_int64</code> and <code>r_dbl</code></p></li>
 <li><p>RStringType - Includes <code>r_str</code> and
 <code>r_str_view</code></p></li>
-<li><p>RScalar - Includes all cppally specific scalar types</p></li>
+<li><p>RScalar - Includes <code>r_lgl</code>, <code>r_int</code>,
+<code>r_int64</code>, <code>r_dbl</code>, <code>r_str</code>,
+<code>r_str_view</code>, <code>r_cplx</code>, <code>r_raw</code>,
+<code>r_date</code> and <code>r_psxct</code></p></li>
 <li><p>RVal - Includes anything a cppally vector
 (<code>r_vec&lt;&gt;</code>) can contain: RScalar
 +<code>r_sexp</code></p></li>
@@ -1405,7 +1410,7 @@ allow this to be done consistently.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>
