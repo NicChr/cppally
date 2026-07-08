@@ -245,7 +245,7 @@ r_dbl var(const r_vec<T>& x, bool na_rm = false){
     }
     // Sum of squared differences
 
-    r_dbl sum_sq_diff = x.reduce([mu, na_rm](auto acc, auto curr) {
+    r_dbl sum_sq_diff = x.reduce([mu](auto acc, auto curr) {
         r_dbl diff = curr - mu;
         return acc + (diff * diff);
     }, 
