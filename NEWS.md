@@ -38,8 +38,7 @@ identical `NA_real_` values.
 - Fixed a bug where checking exact equality (via `identical`) for C/C++ types 
 was not compiling due to template ordering issue.
 
-- All arithmetic scalar operations have been restricted to types under the 
-RMathType umbrella.
+- `RTimeType` arithmetic has been deprecated and removed.
 
 - `r_lgl` values are now always normalised on construction internally to either 
 0, 1, or `NA`.
@@ -50,6 +49,11 @@ own semantics.
 - `NULL` optional arguments are now correctly handled. 
 Vector, factor and data frame arguments can now be `NULL` to allow for optional 
 argument programming from R.
+
+- New concept `RNumber` to represent number-based types like `r_int` and `r_dbl`.
+
+- `common_math_t<T, U>` now never returns `r_lgl`, effectively treating `r_lgl` 
+as `r_int`. 
 
 # cppally 1.0.0 (2026-07-02)
 
