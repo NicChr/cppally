@@ -2,6 +2,7 @@
 #define CPPALLY_R_ATTRS_H
 
 #include <cppally/r_setup.h>
+#include <Rversion.h>
 #include <cppally/r_vec.h>
 #include <cppally/r_utils.h>
 
@@ -80,24 +81,33 @@ inline bool inherits1(SEXP x, const char *r_cls){
   return Rf_inherits(x, r_cls);
 }
 
-inline bool has_attrs(SEXP x){
-  return ANY_ATTRIB(x);
-}
-
 // Attributes of x as a list
 template <RObject T>
 inline r_vec<r_sexp> get_attrs(const T& x) {
-  if (can_have_attributes(x) && has_attrs(x)){
+  if (can_have_attributes(x)){
+    #if R_VERSION >= R_Version(4, 6, 0)
+    return r_vec<r_sexp>(R_getAttributes(x));
+    #else
     SEXP x_ = x;
     SEXP expr = Rf_protect(Rf_lang2(cppally::cached_sym<"attributes">(), x_));
     SEXP res = Rf_protect(Rf_eval(expr, R_BaseEnv));
     r_vec<r_sexp> out(res);
     Rf_unprotect(2);
     return out;
+    #endif
   } else {
     return r_vec<r_sexp>(r_null);
   }
 }
+
+inline bool has_attrs(SEXP x){
+  #if R_VERSION >= R_Version(4, 5, 0)
+  return ANY_ATTRIB(x);
+  #else
+  return !get_attrs(x).is_null();
+  #endif
+}
+
 inline r_sexp get_attr(SEXP x, const r_sym& sym){
   return r_sexp(Rf_getAttrib(x, sym));
 }
@@ -166,7 +176,15 @@ template <RObject T>
 requires requires(T& x) { x.maybe_ensure_exclusive(); }
 inline void clear_attrs(T& x){
   x.maybe_ensure_exclusive();
+  #if R_VERSION >= R_Version(4, 5, 0)
   CLEAR_ATTRIB(x);
+  #else
+  r_vec<r_str_view> nms = get_attrs(x).names();
+  r_size_t n_attrs = nms.length();
+  for (r_size_t i = 0; i < n_attrs; ++i) {
+    safe[Rf_setAttrib](x, r_sym(nms.view(i)), r_null);
+  }
+  #endif
   // Cached attributes (names, levels) have just been removed from x —
   // invalidate any wrapper caches that point at them.
   if (auto sp = internal::name_cache().try_lookup(x)) sp->invalidate();
