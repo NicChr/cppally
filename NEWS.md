@@ -44,6 +44,9 @@ RMathType umbrella.
 - `r_lgl` values are now always normalised on construction internally to either 
 0, 1, or `NA`.
 
+- Arithmetic involving `r_lgl` is now always promoted to `r_int`, matching R's
+own semantics.
+
 - `NULL` optional arguments are now correctly handled. 
 Vector, factor and data frame arguments can now be `NULL` to allow for optional 
 argument programming from R.
