@@ -267,7 +267,10 @@ inline r_sexp new_scalar_vec(const r_str& default_value){
   return r_sexp(Rf_ScalarString(unwrap(default_value)));
 }
 inline r_sexp new_scalar_vec(const r_cplx& default_value){
-  return r_sexp(Rf_ScalarComplex(Rcomplex{{default_value.re(), default_value.im()}}));
+  Rcomplex z;
+  z.r = default_value.re();
+  z.i = default_value.im();
+  return r_sexp(Rf_ScalarComplex(z));
 }
 inline r_sexp new_scalar_vec(r_raw default_value){
   return r_sexp(Rf_ScalarRaw(static_cast<Rbyte>(unwrap(default_value))));
