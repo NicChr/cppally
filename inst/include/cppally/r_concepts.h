@@ -59,6 +59,9 @@ template <typename T>
 concept RObject = std::is_convertible_v<T, SEXP>;
 
 template <typename T>
+concept CppCharType = any<T, char, signed char, unsigned char, wchar_t, char8_t, char16_t, char32_t>;
+
+template <typename T>
 concept RLogicalType = is<T, r_lgl>; 
 
 template <typename T>
@@ -84,6 +87,15 @@ concept CppFloatType = std::is_floating_point_v<std::remove_cvref_t<T>>;
 
 template <typename T>
 concept FloatType = RFloatType<T> || CppFloatType<T>;
+
+template <typename T>
+concept RNumber = RShortIntegerType<T> || RLongIntegerType<T> || RFloatType<T>;
+
+template <typename T>
+concept CppNumber = std::is_arithmetic_v<std::remove_cvref_t<T>> && !is<T, bool> && !CppCharType<T>;
+
+template <typename T>
+concept Number = RNumber<T> || CppNumber<T>;
 
 namespace internal {
 
@@ -117,7 +129,7 @@ template <typename T>
 concept RTimeType = RDateType<T> || RPsxctType<T>;
 
 template <typename T>
-concept RMathType = RIntegerType<T> || RFloatType<T>;
+concept RMathType = RLogicalType<T> || RNumber<T>;
 
 template <typename T>
 concept CppMathType = std::is_arithmetic_v<std::remove_cvref_t<T>>;
@@ -173,7 +185,7 @@ concept AtLeastOneRMathType =
 (RMathType<T> || RMathType<U>) && (MathType<T> && MathType<U>);
 
 // Forward declare vector-based structs
-template<RVal T>
+template <RVal T>
 struct r_vec;
 struct r_factors;
 struct r_df;
