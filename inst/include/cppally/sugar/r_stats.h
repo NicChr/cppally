@@ -69,20 +69,19 @@ inline r_int64 sum(const r_vec<r_int64>& x, bool na_rm){
     r_size_t n = x.length();
 
     int128_otherwise_64_t out_ = 0;
-
-    if (na_rm){
-        internal::simd_reduce_add(x, out_, [](auto v){ return is_na(v) ? 0 : unwrap(v); });
-    } else {
-        for (r_size_t i = 0; i < n; ++i){
-            if (is_na(x.get(i))){
+    for (r_size_t i = 0; i < n; ++i){
+        if (is_na(x.get(i))){
+            if (na_rm){
+                continue;
+            } else {
                 return na<r_int64>();
             }
-            if constexpr (int128_available){
-                out_ += unwrap(x.get(i));
-            } else {
-                r_int64 temp = r_int64(static_cast<int64_t>(out_)) + x.get(i);
-                out_ = unwrap(temp);
-            }
+        }
+        if constexpr (int128_available){
+            out_ += unwrap(x.get(i));
+        } else {
+            r_int64 temp = r_int64(static_cast<int64_t>(out_)) + x.get(i);
+            out_ = unwrap(temp);
         }
     }
     // [INT64_MIN+1, INT64_MAX] because NA is reserved for INT64_MIN
