@@ -103,15 +103,23 @@ inline const unsigned char* vector_ptr_ro<r_raw>(SEXP x) {
 
 template<>
 inline const SEXP* vector_ptr_ro<r_str>(SEXP x) {
+  #ifdef STRING_PTR_RO
   return STRING_PTR_RO(x);
+  #else
+  return ((const SEXP *) DATAPTR_RO(x));
+  #endif
 }
 template<>
 inline const SEXP* vector_ptr_ro<r_str_view>(SEXP x) {
-  return STRING_PTR_RO(x);
+  return vector_ptr_ro<r_str>(x);
 }
 template<>
 inline const SEXP* vector_ptr_ro<r_sexp>(SEXP x) {
+  #ifdef VECTOR_PTR_RO
   return VECTOR_PTR_RO(x);
+  #else
+  return ((const SEXP *) DATAPTR_RO(x));
+  #endif
 }
 
 
