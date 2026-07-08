@@ -65,6 +65,12 @@ template <typename T>
 concept RLogicalType = is<T, r_lgl>; 
 
 template <typename T>
+concept CppLogicalType = is<T, bool>;
+
+template <typename T>
+concept LogicalType = RLogicalType<T> || CppLogicalType<T>;
+
+template <typename T>
 concept RShortIntegerType = is<T, r_int>;
 
 template <typename T>
