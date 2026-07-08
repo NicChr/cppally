@@ -55,6 +55,11 @@ argument programming from R.
 - `common_math_t<T, U>` now never returns `r_lgl`, effectively treating `r_lgl` 
 as `r_int`. 
 
+- Constructing invalid dates and date-times now returns `NA` instead of 
+an error.
+
+- New member function `na()` for RScalar classes.
+
 # cppally 1.0.0 (2026-07-02)
 
 First major release. cppally's public API is now considered stable. 
