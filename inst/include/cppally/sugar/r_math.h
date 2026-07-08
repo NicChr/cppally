@@ -78,17 +78,19 @@ inline r_str max(const r_str& x, const r_str& y){
   }
 }
 
-template <RMathType T>
+template <RNumber T>
 T abs(T x) noexcept {
   return is_na(x) ? x : T{std::abs(unwrap(x))};
 }
-
 template <>
 inline r_dbl abs(r_dbl x) noexcept {
   return r_dbl(std::abs(unwrap(x)));
 }
+inline r_int abs(r_lgl x) noexcept {
+  return abs(r_int(unwrap(x)));
+}
 
-template <RMathType T>
+template <RNumber T>
 T floor(T x) noexcept {
   return is_na(x) ? x : T{std::floor(unwrap(x))};
 }
@@ -100,8 +102,11 @@ template <RIntegerType T>
 constexpr T floor(T x) noexcept {
   return x;
 }
+inline r_int floor(r_lgl x) noexcept {
+  return r_int(unwrap(x));
+}
 
-template <RMathType T>
+template <RNumber T>
 T ceiling(T x) noexcept {
   return is_na(x) ? x : T{std::ceil(unwrap(x))};
 }
@@ -113,8 +118,11 @@ template <RIntegerType T>
 constexpr T ceiling(T x) noexcept {
   return x;
 }
+inline r_int ceiling(r_lgl x) noexcept {
+  return r_int(unwrap(x));
+}
 
-template <RMathType T>
+template <RNumber T>
 T trunc(T x) noexcept {
   return is_na(x) ? x : T{std::trunc(unwrap(x))};
 }
@@ -127,6 +135,9 @@ template <RIntegerType T>
 constexpr T trunc(T x) noexcept {
   return x;
 }
+inline r_int trunc(r_lgl x) noexcept {
+  return r_int(unwrap(x));
+}
 
 template <RMathType T>
 constexpr r_int sign(T x) {
@@ -135,11 +146,11 @@ constexpr r_int sign(T x) {
 
 template <RMathType T>
 r_dbl sqrt(T x){
-  return r_dbl(std::sqrt(as<r_dbl>(x).value));
+  return r_dbl(std::sqrt(unwrap(as<r_dbl>(x))));
 }
 
 template <MathType T, MathType U>
-  requires (AtLeastOneRMathType<T, U>)
+  requires (RMathType<T> || RMathType<U>)
 r_dbl pow(T x, U y){
   if ((y == r_dbl(0.0)).is_true()){
      return r_dbl(1.0);
@@ -164,8 +175,8 @@ r_dbl exp(T x){
   return r_dbl(std::exp(as<r_dbl>(x).value));
 }
 
-template<MathType T, MathType U>
-requires (AtLeastOneRMathType<T, U>)
+template <MathType T, MathType U>
+requires (RMathType<T> || RMathType<U>)
 r_dbl log(T x, U base){
   return r_dbl(std::log(as<r_dbl>(x)) / std::log(as<r_dbl>(base)));
 }
@@ -184,25 +195,23 @@ inline r_cplx log(r_cplx x){
 
 
 template <MathType T, MathType U>
-requires (AtLeastOneRMathType<T, U>)
+requires (RMathType<T> || RMathType<U>)
 r_dbl round(T x, U digits){
   if (is_na(x)){
     return as<r_dbl>(x);
   } else if (is_na(digits)){
     return na<r_dbl>();
-  } else if (identical(x, pos_inf)){
-    return x;
+  } else if (identical(x, pos_inf) || identical(digits, pos_inf)){
+    return as<r_dbl>(x);
   } else if (identical(digits, neg_inf)){
     return r_dbl(0.0);
-  } else if (identical(digits, pos_inf)){
-    return x;
   } else {
     r_dbl scale = r_dbl(std::pow(10.0, as<r_dbl>(digits)));
     return internal::round_to_even(as<r_dbl>(x) * scale) / scale;
   }
 }
 
-template <RMathType T>
+template <RNumber T>
 T round(T x){
   if (is_na(x)){
     return x;
@@ -218,8 +227,12 @@ constexpr T round(T x){
   return x;
 }
 
+inline constexpr r_int round(r_lgl x){
+  return r_int(unwrap(x));
+}
+
 template <MathType T, MathType U>
-requires (AtLeastOneRMathType<T, U>)
+requires (RMathType<T> || RMathType<U>)
 r_dbl signif(T x, U digits){
   as_r_scalar_t<U> new_digits = max(as_r_scalar_t<U>(1), as<as_r_scalar_t<U>>(digits));
   if (is_na(x)){
@@ -241,7 +254,7 @@ inline r_lgl is_whole_number(r_dbl x, r_dbl tolerance = sqrt(r_limits<r_dbl>::ep
 
 
 // Greatest common divisor
-template <RMathType T>
+template <RNumber T>
 T gcd(T x, T y, T tol = r_limits<T>::tolerance()) noexcept {
 
   using unwrapped_t = unwrap_t<T>;
@@ -315,10 +328,14 @@ T gcd(T x, T y, T tol = r_limits<T>::tolerance()) noexcept {
   }
 }
 
+inline r_int gcd(r_lgl x, r_lgl y, r_lgl tol = r_limits<r_lgl>::tolerance()) noexcept {
+  return gcd(r_int(unwrap(x)), r_int(unwrap(y)), r_int(unwrap(tol)));
+}
+
 
 // Lowest common multiple
 // LCM(x, y) = (|x| / GCD(x, y)) * |y|
-template <RMathType T>
+template <RNumber T>
 T lcm(T x, T y, T tol = r_limits<T>::tolerance()) noexcept {
 
   T ax = abs(x);
@@ -335,6 +352,10 @@ T lcm(T x, T y, T tol = r_limits<T>::tolerance()) noexcept {
   T out = ax;
   out /= gcd(ax, ay, tol);
   return out * ay;
+}
+
+inline r_int lcm(r_lgl x, r_lgl y, r_lgl tol = r_limits<r_lgl>::tolerance()) noexcept {
+  return lcm(r_int(unwrap(x)), r_int(unwrap(y)), r_int(unwrap(tol)));
 }
 
 

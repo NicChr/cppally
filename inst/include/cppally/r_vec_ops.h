@@ -69,31 +69,36 @@ if constexpr (RAtomicVector<U>){                                                
   lhs.apply([rhs](auto a) noexcept { return a OP rhs; }, true, true);                                                                                \
 }
 
-template<RAtomicVector T, typename U>
+template <RAtomicVector T, typename U>
+requires (RNumber<typename T::data_type>)
 inline T& operator+=(T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP_IN_PLACE(+=)
     return lhs;
 }
 
-template<RAtomicVector T, typename U>
+template <RAtomicVector T, typename U>
+requires (RNumber<typename T::data_type>)
 inline T& operator-=(T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP_IN_PLACE(-=)
     return lhs;
 }
 
-template<RAtomicVector T, typename U>
+template <RAtomicVector T, typename U>
+requires (RNumber<typename T::data_type>)
 inline T& operator*=(T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP_IN_PLACE(*=)
     return lhs;
 }
 
-template<RAtomicVector T, typename U>
+template <RAtomicVector T, typename U>
+requires (RNumber<typename T::data_type>)
 inline T& operator/=(T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP_IN_PLACE(/=)
     return lhs;
 }
 
-template<RAtomicVector T, typename U>
+template <RAtomicVector T, typename U>
+requires (RNumber<typename T::data_type>)
 inline T& operator%=(T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP_IN_PLACE(%=)
     return lhs;

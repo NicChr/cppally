@@ -186,10 +186,6 @@ concept RVal = RScalar<T> || is<T, r_sexp>;
 template <typename T>
 concept RVectorisable = RScalar<T> && !RObject<T>;
 
-template <typename T, typename U>
-concept AtLeastOneRMathType =
-(RMathType<T> || RMathType<U>) && (MathType<T> && MathType<U>);
-
 // Forward declare vector-based structs
 template <RVal T>
 struct r_vec;
@@ -440,7 +436,7 @@ consteval uint8_t r_type_rank() {
     if constexpr (is<T, r_psxct>)                   return 7;
     if constexpr (is<T, r_str>)                     return 8;
     if constexpr (is<T, r_str_view>)                return 9;
-    if constexpr (is<T, r_sexp>)                    return std::numeric_limits<uint8_t>::max()  - 1;
+    if constexpr (is<T, r_sexp>)                    return std::numeric_limits<uint8_t>::max() - 1;
 }
 
 template <MathType T, MathType U>
@@ -451,8 +447,7 @@ struct common_r_math_impl {
 
     static constexpr uint8_t rank_t = r_type_rank<lhs_math_t>();
     static constexpr uint8_t rank_u = r_type_rank<rhs_math_t>();
-    using type = std::conditional_t<(rank_t >= rank_u), lhs_math_t, rhs_math_t>;
-    // using type = std::conditional_t<is<lhs_math_t, r_lgl> && is<rhs_math_t, r_lgl>, r_int, std::conditional_t<(rank_t >= rank_u), lhs_math_t, rhs_math_t>>;
+    using type = std::conditional_t<is<lhs_math_t, r_lgl> && is<rhs_math_t, r_lgl>, r_int, std::conditional_t<(rank_t >= rank_u), lhs_math_t, rhs_math_t>>;
 
 };
 
