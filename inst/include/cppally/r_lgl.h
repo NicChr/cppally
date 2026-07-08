@@ -21,6 +21,10 @@ struct r_lgl {
   template <typename U> requires (is<U, int>)
   constexpr operator U() const noexcept { return value; }
 
+  static constexpr r_lgl na() noexcept {
+    return r_lgl(std::numeric_limits<int>::min());
+  }
+
   constexpr bool is_true() const noexcept {
     return value == 1;
   }
@@ -28,7 +32,7 @@ struct r_lgl {
     return value == 0;
   }
   constexpr bool is_na() const noexcept {
-    return value == std::numeric_limits<int>::min();
+    return value == na().value;
   }
 
   explicit operator bool() const {
@@ -42,7 +46,11 @@ struct r_lgl {
 // The 3 possible values of r_lgl
 inline constexpr r_lgl r_true{1};
 inline constexpr r_lgl r_false{0};
-inline constexpr r_lgl r_na{std::numeric_limits<int>::min()};
+inline constexpr r_lgl r_na = r_lgl::na();
+
+namespace internal {
+inline constexpr r_lgl na_lgl = r_lgl::na();
+}
 
 }
 

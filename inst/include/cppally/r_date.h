@@ -4,6 +4,7 @@
 #include <cppally/r_concepts.h>
 #include <cppally/r_protect.h>
 #include <cppally/r_dbl.h>
+#include <cppally/r_int64.h>
 #include <cppally/r_str.h>
 #include <cstdint>
 #include <chrono> // For r_date/r_psxt
@@ -12,13 +13,13 @@ namespace cppally {
     
 namespace internal {
 // Construct r_date from year/month/day
-inline int64_t get_days_since_epoch(int32_t year, uint32_t month, uint32_t day) {
+inline r_int64 get_days_since_epoch(int32_t year, uint32_t month, uint32_t day) {
     namespace chrono = std::chrono;
     auto ymd = chrono::year{year} / chrono::month{month} / chrono::day{day};
     if (!ymd.ok()) {
-        abort("Invalid date: %d-%u-%u", year, month, day);
+        return r_int64::na();
     }
-    return chrono::sys_days{ymd}.time_since_epoch().count();
+    return r_int64(static_cast<int64_t>(chrono::sys_days{ymd}.time_since_epoch().count()));
 }
 }
 
@@ -45,7 +46,15 @@ struct r_date {
     explicit constexpr r_date(double days_since_epoch) noexcept : value{days_since_epoch} {}
 
     // Construct r_date year/month/day
-    explicit r_date(int32_t year, uint32_t month, uint32_t day) : value(internal::get_days_since_epoch(year, month, day)) {}
+    explicit r_date(int32_t year, uint32_t month, uint32_t day) {
+        r_int64 res = internal::get_days_since_epoch(year, month, day);
+        r_dbl out = res.is_na() ? r_dbl::na() : r_dbl(static_cast<double>(res.value));
+        value = out;
+    }
+
+    static constexpr r_date na() noexcept {
+        return r_date(r_dbl::na());
+    }
 
     constexpr bool is_na() const noexcept {
         return value.is_na();
@@ -59,6 +68,10 @@ struct r_date {
         return r_str(static_cast<const char*>(buf));
     }
 };
+
+namespace internal {
+inline constexpr r_date na_date = r_date::na();
+}
 
 // A more flexible templated version that allows for more integer storage
 // template <typename T>

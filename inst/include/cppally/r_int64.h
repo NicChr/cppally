@@ -17,10 +17,19 @@ struct r_int64 {
     template <typename U> requires (is<U, int64_t>)
     constexpr operator U() const noexcept { return value; }
 
+    static constexpr r_int64 na() noexcept {
+        return r_int64(std::numeric_limits<int64_t>::min());
+    }
+
     constexpr bool is_na() const noexcept {
-        return value == std::numeric_limits<int64_t>::min();
+        return value == na().value;
     }
 };
+
+namespace internal {
+inline constexpr r_int64 na_int64 = r_int64::na();
+
+}
 
 }
 

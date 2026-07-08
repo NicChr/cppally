@@ -4,6 +4,7 @@
 #include <cppally/r_concepts.h>
 #include <cppally/r_protect.h>
 #include <cppally/r_dbl.h>
+#include <cppally/r_int64.h>
 #include <cppally/r_str.h>
 #include <cstdint>
 #include <chrono> // For r_date/r_psxt
@@ -11,14 +12,14 @@
 namespace cppally {
 
 namespace internal {
-inline int64_t get_seconds_since_epoch(int32_t year, uint32_t month, uint32_t day, uint64_t hour, uint64_t min, uint64_t sec) {
+inline r_int64 get_seconds_since_epoch(int32_t year, uint32_t month, uint32_t day, uint64_t hour, uint64_t min, uint64_t sec) {
     namespace chrono = std::chrono;
     auto ymd = chrono::year{year} / chrono::month{month} / chrono::day{day};
     if (!ymd.ok()) {
-        abort("Invalid date: %d-%u-%u", year, month, day);
+        return r_int64::na();
     }
     auto tp = chrono::sys_days{ymd} + chrono::hours{hour} + chrono::minutes{min} + chrono::seconds{sec};
-    return tp.time_since_epoch().count();
+    return r_int64(static_cast<int64_t>(tp.time_since_epoch().count()));
 }
 }
     
@@ -38,7 +39,15 @@ struct r_psxct {
     explicit r_psxct(
     int32_t year, uint32_t month, uint32_t day, 
     uint32_t hour, uint32_t minute, uint32_t second
-    ) : value(internal::get_seconds_since_epoch(year, month, day, hour, minute, second)) {}
+    ) {
+        r_int64 res = internal::get_seconds_since_epoch(year, month, day, hour, minute, second);
+        r_dbl out = res.is_na() ? r_dbl::na() : r_dbl(static_cast<double>(res.value));
+        value = out;
+    }
+
+    static constexpr r_psxct na() noexcept {
+        return r_psxct(r_dbl::na());
+    }
 
     constexpr bool is_na() const noexcept {
         return value.is_na();
@@ -86,6 +95,10 @@ struct r_psxct {
         return r_str(static_cast<const char*>(buf));
     }
 };
+
+namespace internal {
+inline constexpr r_psxct na_psxct = r_psxct::na();
+}
 
 
 // template <typename T>

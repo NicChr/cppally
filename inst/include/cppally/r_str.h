@@ -49,6 +49,10 @@ struct r_str {
   explicit operator const char*() const noexcept { return c_str(); }
   explicit operator std::string_view() const noexcept { return cpp_str(); }
 
+  static r_str na() noexcept {
+    return r_str(NA_STRING, internal::view_tag{});
+  }
+
   bool is_na() const noexcept {
     return value.value == NA_STRING;
   }
@@ -92,6 +96,10 @@ struct r_str_view {
   explicit operator const char*() const noexcept { return c_str(); }
   explicit operator std::string_view() const noexcept { return cpp_str(); }
 
+  static r_str_view na() noexcept {
+    return r_str_view(NA_STRING);
+  }
+
   bool is_na() const noexcept {
     return value == NA_STRING;
   }
@@ -115,7 +123,7 @@ inline r_str_view c_str_to_r_str_view(const char* x){
   return r_str_view(Rf_mkCharCE(x, CE_UTF8));
 }
 // NA
-inline const r_str na_str = r_str(NA_STRING);
+inline const r_str na_str = r_str::na();
 }
 
 }

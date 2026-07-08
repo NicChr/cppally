@@ -17,10 +17,18 @@ struct r_raw {
     explicit constexpr r_raw(unsigned char x) noexcept : value{x} {}
     constexpr operator unsigned char() const noexcept { return value; }
 
+    static constexpr r_raw na() noexcept {
+        return r_raw(0);
+    }
+
     constexpr bool is_na() const noexcept {
         return false;
       }
 };
+
+namespace internal {
+inline constexpr r_raw na_raw = r_raw::na();
+}
 
 }
 

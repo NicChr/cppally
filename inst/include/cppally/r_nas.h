@@ -12,15 +12,8 @@ namespace cppally {
 
 namespace internal {
 
-// Constructs R's NA_REAL: a signaling NaN with payload 1954 (0x7a2).
-// Bit 51 (quiet bit) = 0, so technically signaling NaN — a pattern R chose deliberately
-// Hex: 0x7ff00000 (Exp, bit51=0) << 32 | 0x7a2 (Payload).
-inline consteval double make_na_real() noexcept {
-  return std::bit_cast<double>(0x7ff00000000007a2ULL);
-}
-
 inline consteval uint64_t na_real_bits() noexcept {
-  return std::bit_cast<uint64_t>(make_na_real());
+  return std::bit_cast<uint64_t>(na_real);
 }
 
 // Important: assumes x is already NA (via x != x)
@@ -46,37 +39,37 @@ inline constexpr T na_value_impl() noexcept;
 
 template<>
 inline constexpr r_lgl na_value_impl<r_lgl>() noexcept {
-  return r_na;
+  return na_lgl;
 }
 
 template<>
 inline constexpr r_int na_value_impl<r_int>() noexcept {
-  return r_int(std::numeric_limits<int>::min());
+  return na_int;
 }
 
 template<>
 inline constexpr r_dbl na_value_impl<r_dbl>() noexcept {
-  return r_dbl(make_na_real());
+  return na_real;
 }
 
 template <RTimeType T>
 inline constexpr T na_value_impl() noexcept {
-  return T(na_value_impl<typename T::value_type>());
+  return T::na();
 }
 
 template<>
 inline constexpr r_int64 na_value_impl<r_int64>() noexcept {
-  return r_int64(std::numeric_limits<int64_t>::min());
+  return na_int64;
 }
 
 template<>
 inline constexpr r_cplx na_value_impl<r_cplx>() noexcept {
-  return r_cplx(std::complex<double>{make_na_real(), make_na_real()});
+  return na_cplx;
 }
 
 template<>
 inline constexpr r_raw na_value_impl<r_raw>() noexcept {
-  return r_raw{0};
+  return na_raw;
 }
 
 template<>
