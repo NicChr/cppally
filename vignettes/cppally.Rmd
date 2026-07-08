@@ -223,7 +223,7 @@ r_vector<r_dbl> cppally_math(r_dbl x){
     );
 }', 
   cpp_abs = '
-template <RMathType T>
+template <RNumber T>
 [[cppally::register]]
 T cpp_abs(T x){
   if (is_na(x)){
@@ -1215,7 +1215,7 @@ One of the most powerful features of C++20 are concepts. These allow users to wr
 
 When writing your own templates, it is necessary to place them in headers for cppally registration to work correctly.
 
-Let's practice by creating the `abs()` function in C++ using templates and the `RMathType` concept.
+Let's practice by creating the `abs()` function in C++ using templates and the `RNumber` concept.
 
 ```{r, echo=FALSE, results = 'asis'}
 as_cpp_chunk(examples[["cpp_abs"]])
@@ -1235,7 +1235,7 @@ This type of programming is historically tricky within the R C API and typically
 
 ### How it works
 
-The top-line `template <RMathType T>` declares a template that encapsulates `T`, an `RMathType` - a concept that contains `r_lgl`, `r_int`, `r_int64` and `r_dbl`
+The top-line `template <RNumber T>` declares a template that encapsulates `T`, an `RNumber` - a concept that contains `r_int`, `r_int64` and `r_dbl`
 
 If x is NA then we immediately also return NA via `na<T>()` which is a templated function that returns NA of the input type `T`.
 
@@ -1438,13 +1438,15 @@ symbol_to_string(hello_world_symbol)
 
 ### All core cppally concepts
 
+- RNumber - Includes `r_int`, `r_int64` and `r_dbl`
+
 - RIntegerType - Includes `r_lgl`, `r_int`, `r_int64`
 
 - RMathType - Includes `r_lgl`, `r_int`, `r_int64` and `r_dbl`
 
 - RStringType - Includes `r_str` and `r_str_view`
 
-- RScalar - Includes all cppally specific scalar types
+- RScalar - Includes `r_lgl`, `r_int`, `r_int64`, `r_dbl`, `r_str`, `r_str_view`, `r_cplx`, `r_raw`, `r_date` and `r_psxct`
 
 - RVal - Includes anything a cppally vector (`r_vec<>`) can contain: RScalar +`r_sexp`
 
