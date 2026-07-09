@@ -8,6 +8,8 @@ Maintainer: Nick Christofides <nick.christofides.r@gmail.com>
 Description: Unit tests for the R package cppally.
 License: MIT + file LICENSE
 BugReports: https://github.com/NicChr/cppally/issues
+Imports: 
+    cppally
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

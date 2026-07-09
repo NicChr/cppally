@@ -18,7 +18,7 @@ test_that("copy-on-modify preserves the caller's vector", {
   skip_if_cannot_cpp_source()
 
   env <- new.env()
-  cppally::cpp_source(
+  cpp_source(
     code = reverse_src,
     copy_on_modify = TRUE,
     env = env,
@@ -38,7 +38,7 @@ test_that("without copy-on-modify, in-place mutation reaches the caller", {
   skip_if_cannot_cpp_source()
 
   env <- new.env()
-  cppally::cpp_source(
+  cpp_source(
     code = reverse_src,
     copy_on_modify = FALSE,
     env = env,
@@ -74,7 +74,7 @@ test_that("copy-on-modify still mutates in place when the wrapper is sole owner"
     }
   '
   env <- new.env()
-  cppally::cpp_source(
+  cpp_source(
     code = src,
     copy_on_modify = TRUE,
     env = env,

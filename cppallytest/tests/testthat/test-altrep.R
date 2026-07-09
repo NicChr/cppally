@@ -47,7 +47,7 @@ test_that("preserve_altrep keeps ALTREP inputs lazy but correct", {
   skip_if_cannot_cpp_source()
 
   env <- new.env()
-  cppally::cpp_source(
+  cpp_source(
     code = altrep_src,
     preserve_altrep = TRUE,
     env = env,
@@ -76,7 +76,7 @@ test_that("without preserve_altrep, ALTREP inputs are materialised eagerly", {
   skip_if_cannot_cpp_source()
 
   env <- new.env()
-  cppally::cpp_source(
+  cpp_source(
     code = altrep_src,
     preserve_altrep = FALSE,
     env = env,
