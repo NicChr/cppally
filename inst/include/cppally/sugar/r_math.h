@@ -184,15 +184,6 @@ template <RMathType T>
 r_dbl log(T x){
   return r_dbl(std::log(as<r_dbl>(x).value));
 }
-inline r_cplx log(r_cplx x){
-  if (is_na(x)){
-    return x;
-  }
-  r_dbl real = r_dbl(0.5 * (log(pow(x.re(), 2.0) + pow(x.im(), 2.0))));
-  r_dbl imag = r_dbl(std::atan2(as<r_dbl>(x.im()), as<r_dbl>(x.re())));
-  return r_cplx{real, imag};
-}
-
 
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>)
