@@ -79,63 +79,50 @@ inline r_str max(const r_str& x, const r_str& y){
 }
 
 template <RNumber T>
-T abs(T x) noexcept {
+constexpr T abs(T x) noexcept {
   return is_na(x) ? x : T{std::abs(unwrap(x))};
 }
 template <>
-inline r_dbl abs(r_dbl x) noexcept {
+inline constexpr r_dbl abs(r_dbl x) noexcept {
   return r_dbl(std::abs(unwrap(x)));
 }
-inline r_int abs(r_lgl x) noexcept {
+inline constexpr r_int abs(r_lgl x) noexcept {
   return abs(r_int(unwrap(x)));
 }
 
 template <RNumber T>
-T floor(T x) noexcept {
-  return is_na(x) ? x : T{std::floor(unwrap(x))};
-}
-template<>
-inline r_dbl floor(r_dbl x) noexcept {
-  return r_dbl(std::floor(unwrap(x)));
-}
-template <RIntegerType T>
 constexpr T floor(T x) noexcept {
-  return x;
+  if constexpr (RIntegerType<T>){
+    return x;
+  } else {
+    return is_na(x) ? x : T{std::floor(unwrap(x))};
+  }
 }
-inline r_int floor(r_lgl x) noexcept {
+inline constexpr r_int floor(r_lgl x) noexcept {
   return r_int(unwrap(x));
 }
 
 template <RNumber T>
-T ceiling(T x) noexcept {
-  return is_na(x) ? x : T{std::ceil(unwrap(x))};
-}
-template<>
-inline r_dbl ceiling(r_dbl x) noexcept {
-  return r_dbl(std::ceil(unwrap(x)));
-}
-template <RIntegerType T>
 constexpr T ceiling(T x) noexcept {
-  return x;
+  if constexpr (RIntegerType<T>){
+    return x;
+  } else {
+    return is_na(x) ? x : T{std::ceil(unwrap(x))};
+  }
 }
-inline r_int ceiling(r_lgl x) noexcept {
+inline constexpr r_int ceiling(r_lgl x) noexcept {
   return r_int(unwrap(x));
 }
 
 template <RNumber T>
-T trunc(T x) noexcept {
-  return is_na(x) ? x : T{std::trunc(unwrap(x))};
-}
-
-template <>
-inline r_dbl trunc(r_dbl x) noexcept {
-  return r_dbl(std::trunc(unwrap(x)));
-}
-template <RIntegerType T>
 constexpr T trunc(T x) noexcept {
-  return x;
+  if constexpr (RIntegerType<T>){
+    return x;
+  } else {
+    return is_na(x) ? x : T{std::trunc(unwrap(x))};
+  }
 }
-inline r_int trunc(r_lgl x) noexcept {
+inline constexpr r_int trunc(r_lgl x) noexcept {
   return r_int(unwrap(x));
 }
 
@@ -204,18 +191,18 @@ r_dbl round(T x, U digits){
 
 template <RNumber T>
 T round(T x){
-  if (is_na(x)){
-    return x;
-  } else if (identical(abs(x), pos_inf)){ 
+  if constexpr (RIntegerType<T>){
     return x;
   } else {
-    return as<T>(internal::round_to_even(as<r_dbl>(x)));
+    if (is_na(x)){
+      return x;
+    } else if (identical(abs(x), pos_inf)){ 
+      return x;
+    } else {
+      return as<T>(internal::round_to_even(as<r_dbl>(x)));
+    }
   }
-}
 
-template <RIntegerType T>
-constexpr T round(T x){
-  return x;
 }
 
 inline constexpr r_int round(r_lgl x){
