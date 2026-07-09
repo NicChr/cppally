@@ -260,8 +260,8 @@ cpp_source <- function(file, code = NULL, env = parent.frame(),
                        cxx_std = Sys.getenv("CXX_STD", "CXX20"),
                        dir = tempfile()){
   stop_unless_installed(
-    c("brio", "callr", "cli", "decor",
-      "desc", "glue", "vctrs")
+    c("brio", "callr", "cli", "decor", "desc",
+      "glue", "purrr", "readr", "stringr", "vctrs")
   )
   if (!missing(file) && !file.exists(file)) {
     stop("Can't find `file` at this path:\n", file, "\n", call. = FALSE)
