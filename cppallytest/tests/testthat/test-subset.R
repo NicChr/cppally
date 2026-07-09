@@ -35,6 +35,12 @@ test_that("subset with a logical mask", {
   expect_identical(test_subset(x, mask, invert = FALSE), x[mask])
 })
 
+test_that("subset logical mask with NA: current behaviour drops NA positions", {
+  x    <- c(10L, 20L, 30L, 40L)
+  mask <- c(TRUE, NA, TRUE, NA)
+  expect_identical(test_subset(x, mask, invert = FALSE), c(10L, 30L))
+})
+
 test_that("subset by name (including duplicates)", {
   x <- c(a = 1L, b = 2L, c = 3L, d = 4L)
   expect_identical(test_subset(x, c("a", "c"), invert = FALSE), x[c("a", "c")])
