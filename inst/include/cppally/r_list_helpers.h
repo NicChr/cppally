@@ -27,6 +27,7 @@ inline void recycle_impl(r_vec<r_sexp>& x, r_size_t common_size) {
 }
 }
 
+// Stack-overflow safe version of `length(unlist(x))`
 inline r_size_t unlisted_length(const r_vec<r_sexp>& x){
     r_size_t out = 0;
     std::vector<r_vec<r_sexp>> work;
