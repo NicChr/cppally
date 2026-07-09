@@ -1,5 +1,5 @@
-## cppally 1.0.1
+## cppally 1.1.0
 
-- Fixed bug where exclusion of concepts header was affecting vignette creation on macos.
+Some bug fixes, improvements and API changes, listed in news.
 
 
