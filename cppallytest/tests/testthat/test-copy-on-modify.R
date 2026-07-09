@@ -1,12 +1,6 @@
 # These tests compile throwaway units via cpp_source() so they can toggle the
 # CPPALLY_COPY_ON_MODIFY flag, which is otherwise invisible in the default build.
-skip_if_cannot_cpp_source <- function(){
-  skip_on_cran()
-  for (pkg in c("brio", "callr", "cli", "decor", "desc",
-                "glue", "purrr", "readr", "stringr", "vctrs")){
-    skip_if_not_installed(pkg)
-  }
-}
+# skip_if_cannot_cpp_source() lives in helper-cpp-source.R.
 
 # A by-value in-place mutator: reverses `x` and returns it.
 reverse_src <- '
