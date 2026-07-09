@@ -100,7 +100,7 @@ r_vec<V> clean_locs(const r_vec<U>& locs, const T& x){
     valid_indices.reserve(n);
 
     for (r_size_t i = 0; i < n; ++i){
-      unsigned_int_t loc = static_cast<unsigned_int_t>(locs.data()[i]);
+      unsigned_int_t loc = static_cast<unsigned_int_t>(unwrap(locs.get(i)));
       if (loc < static_cast<unsigned_int_t>(xn)){
         valid_indices.push_back(static_cast<unwrap_t<V>>(loc));
       }
@@ -159,7 +159,7 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool invert, bool chec
       unsigned_int_t j;
   
       for (r_size_t i = 0; i < n; ++i){
-        j = indices.data()[i];
+        j = unwrap(indices.get(i));
         if (j < static_cast<unsigned_int_t>(xn)){
           out.set(i, view(static_cast<r_size_t>(j)));
         } else if (j > na_val) [[unlikely]] {
@@ -173,7 +173,7 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool invert, bool chec
       }
     } else {
       for (r_size_t i = 0; i < n; ++i){
-        out.set(i, view(static_cast<r_size_t>(indices.data()[i])));
+        out.set(i, view(static_cast<r_size_t>(unwrap(indices.get(i)))));
     }
   }
   r_vec<r_str_view> nms = names();
