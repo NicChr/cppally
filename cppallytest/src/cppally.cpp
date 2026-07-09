@@ -9,6 +9,8 @@
 #include "test_functionals.h"
 #include "test_nas.h"
 #include "test_refs.h"
+#include "test_rep.h"
+#include "test_replace_at.h"
 #include "test_sort.h"
 #include "test_stats.h"
 #include "test_subset.h"
@@ -962,6 +964,50 @@ extern "C" SEXP _cppallytest_test_temp_by_const_lvalue_ref(SEXP x) {
   );
   END_CPPALLY
 }
+// test_rep.h
+extern "C" SEXP _cppallytest_test_rep_len(SEXP x, SEXP n) {
+  BEGIN_CPPALLY
+  return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP n_internal) -> decltype(cpp_to_r(::test_rep_len(std::declval<T>(), std::declval<int>()))) {
+        return cpp_to_r(::test_rep_len(r_to_cpp<T>(x_internal), r_to_cpp<int>(n_internal)));
+    },
+    x, n
+  );
+  END_CPPALLY
+}
+// test_rep.h
+extern "C" SEXP _cppallytest_test_rep(SEXP x, SEXP times) {
+  BEGIN_CPPALLY
+  return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP times_internal) -> decltype(cpp_to_r(::test_rep(std::declval<T>(), std::declval<r_vec<r_int>>()))) {
+        return cpp_to_r(::test_rep(r_to_cpp<T>(x_internal), r_to_cpp<r_vec<r_int>>(times_internal)));
+    },
+    x, times
+  );
+  END_CPPALLY
+}
+// test_rep.h
+extern "C" SEXP _cppallytest_test_rep_each(SEXP x, SEXP each) {
+  BEGIN_CPPALLY
+  return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_internal, SEXP each_internal) -> decltype(cpp_to_r(::test_rep_each(std::declval<T>(), std::declval<r_vec<r_int>>()))) {
+        return cpp_to_r(::test_rep_each(r_to_cpp<T>(x_internal), r_to_cpp<r_vec<r_int>>(each_internal)));
+    },
+    x, each
+  );
+  END_CPPALLY
+}
+// test_replace_at.h
+extern "C" SEXP _cppallytest_test_replace_at(SEXP x, SEXP where, SEXP with) {
+  BEGIN_CPPALLY
+  return dispatch_template_impl<2, 3, std::array<int, 3>{0, 1, 0}>(
+    []<typename T, typename U>(SEXP x_internal, SEXP where_internal, SEXP with_internal) -> decltype(cpp_to_r(::test_replace_at(std::declval<T>(), std::declval<r_vec<U>>(), std::declval<T>()))) {
+        return cpp_to_r(::test_replace_at(r_to_cpp<T>(x_internal), r_to_cpp<r_vec<U>>(where_internal), r_to_cpp<T>(with_internal)));
+    },
+    x, where, with
+  );
+  END_CPPALLY
+}
 // test_sort.h
 extern "C" SEXP _cppallytest_test_order(SEXP x, SEXP preserve_ties) {
   BEGIN_CPPALLY
@@ -1136,6 +1182,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_order",                        (DL_FUNC) &_cppallytest_test_order,                        2},
     {"_cppallytest_test_overflow",                     (DL_FUNC) &_cppallytest_test_overflow,                     0},
     {"_cppallytest_test_range",                        (DL_FUNC) &_cppallytest_test_range,                        2},
+    {"_cppallytest_test_rep",                          (DL_FUNC) &_cppallytest_test_rep,                          2},
+    {"_cppallytest_test_rep_each",                     (DL_FUNC) &_cppallytest_test_rep_each,                     2},
+    {"_cppallytest_test_rep_len",                      (DL_FUNC) &_cppallytest_test_rep_len,                      2},
+    {"_cppallytest_test_replace_at",                   (DL_FUNC) &_cppallytest_test_replace_at,                   3},
     {"_cppallytest_test_rval_identity",                (DL_FUNC) &_cppallytest_test_rval_identity,                1},
     {"_cppallytest_test_scalar",                       (DL_FUNC) &_cppallytest_test_scalar,                       2},
     {"_cppallytest_test_scalar2",                      (DL_FUNC) &_cppallytest_test_scalar2,                      2},

@@ -420,6 +420,22 @@ test_temp_by_const_lvalue_ref <- function(x) {
   .Call(`_cppallytest_test_temp_by_const_lvalue_ref`, x)
 }
 
+test_rep_len <- function(x, n) {
+  .Call(`_cppallytest_test_rep_len`, x, n)
+}
+
+test_rep <- function(x, times) {
+  .Call(`_cppallytest_test_rep`, x, times)
+}
+
+test_rep_each <- function(x, each) {
+  .Call(`_cppallytest_test_rep_each`, x, each)
+}
+
+test_replace_at <- function(x, where, with) {
+  .Call(`_cppallytest_test_replace_at`, x, where, with)
+}
+
 test_order <- function(x, preserve_ties) {
   .Call(`_cppallytest_test_order`, x, preserve_ties)
 }
