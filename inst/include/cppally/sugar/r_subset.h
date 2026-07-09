@@ -70,14 +70,15 @@ r_vec<V> clean_locs(const r_vec<U>& locs, const T& x){
 
   if constexpr (RStringType<U>){
 
-    static_assert(!is<V, r_int64>, "Cannot perform named-subsetting on long vectors");
+    // static_assert(!is<V, r_int64>, "Cannot perform named-subsetting on long vectors");
     static_assert(!is<T, r_df>, "Named-subsetting of r_df is unsupported, use `r_df.select()`");
 
     if (x.names().is_null()){
       abort("Cannot subset on the names of an unnamed vector");
     }
 
-    std::vector<int> matches;
+    // Long-vector name lookup is caught at runtime by name_index/name hashing.
+    std::vector<unwrap_t<V>> matches;
     matches.reserve(n);
 
     for (r_size_t i = 0; i < n; ++i){
@@ -86,7 +87,7 @@ r_vec<V> clean_locs(const r_vec<U>& locs, const T& x){
         matches.push_back(unwrap(name_idx));
       }
     }
-    return as<r_vec<r_int>>(matches);
+    return as<r_vec<V>>(matches);
   } else if constexpr (RLogicalType<U>){
     if (locs.length() != xn) [[unlikely]] {
       abort("length of indices must match vector length when indices is `r_vec<r_lgl>`");
