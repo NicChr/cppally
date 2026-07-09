@@ -23,8 +23,6 @@
 #include <cppally/r_visit.h>
 #include <cppally/r_length.h>
 #include <cppally/r_copy.h>
-#include <cppally/r_list_helpers.h>
 #include <cppally/r_coerce.h>
-#include <cppally/r_df_methods.h>
 
 #endif

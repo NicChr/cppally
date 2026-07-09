@@ -2,7 +2,7 @@
 #define CPPALLY_R_PASTE_H
 
 #include <cppally/r_vec.h>
-#include <cppally/r_list_helpers.h>
+#include <cppally/sugar/r_list_helpers.h>
 #include <string>
 #include <vector>
 

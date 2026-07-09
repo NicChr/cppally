@@ -2,6 +2,8 @@
 #define CPPALLY_R_LENGTH_H
 
 #include <cppally/r_vec.h>
+#include <cppally/r_factor.h>
+#include <cppally/r_df.h>
 
 namespace cppally {
 

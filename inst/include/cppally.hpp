@@ -26,11 +26,11 @@
 #include <cppally/r_visit.h>
 #include <cppally/r_length.h>
 #include <cppally/r_copy.h>
-#include <cppally/r_list_helpers.h>
 #include <cppally/r_df.h>
 #include <cppally/r_coerce.h>
 #include <cppally/r_identical.h>
-#include <cppally/r_df_methods.h>
+#include <cppally/sugar/r_list_helpers.h>
+#include <cppally/sugar/r_df_methods.h>
 #include <cppally/sugar/r_named_arg.h>
 #include <cppally/sugar/r_stats.h>
 #include <cppally/sugar/r_exprs.h>
