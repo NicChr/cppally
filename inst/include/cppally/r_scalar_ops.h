@@ -13,6 +13,7 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
+#include <cppally/r_utils.h>
 #include <cppally/r_types.h>
 #include <cppally/r_nas.h>
 #include <cstring> // For strcmp
@@ -333,7 +334,8 @@ inline constexpr T& operator+=(T& lhs, U rhs) noexcept {
   if constexpr (is<T, decltype(res)>){
     lhs = res;
   } else {
-    lhs = is_na(res) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
+    using unwrapped_t = unwrap_t<T>;
+    lhs = is_na(res) || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
   }
   return lhs;
 }
@@ -344,7 +346,8 @@ inline constexpr T& operator-=(T& lhs, U rhs) noexcept {
   if constexpr (is<T, decltype(res)>){
     lhs = res;
   } else {
-    lhs = is_na(res) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
+    using unwrapped_t = unwrap_t<T>;
+    lhs = is_na(res) || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
   }
   return lhs;
 }
@@ -355,32 +358,8 @@ inline constexpr T& operator*=(T& lhs, U rhs) noexcept {
   if constexpr (is<T, decltype(res)>){
     lhs = res;
   } else {
-    lhs = is_na(res) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
-  }
-  return lhs;
-}
-
-template <MathType U>
-inline constexpr r_dbl& operator/=(r_dbl& lhs, U rhs) noexcept {
-  lhs = lhs / rhs;
-  return lhs;
-}
-
-// Integer /= behaves like R's `%/%`
-template <RIntegerType T, IntegerType U>
-requires (RNumber<T>)
-inline constexpr T& operator/=(T& lhs, U rhs) noexcept {
-  using unwrapped_t = unwrap_t<common_math_t<T, U>>;
-
-  if (internal::either_na(lhs, rhs) || unwrap(rhs) == 0){
-    lhs = na<T>();
-  } else {
-    unwrapped_t a = static_cast<unwrapped_t>(unwrap(lhs));
-    unwrapped_t b = static_cast<unwrapped_t>(unwrap(rhs));
-    
-    unwrapped_t q = internal::floor_div(a, b);
-    // |q| <= |a| so the quotient always fits back in T
-    lhs.value = static_cast<unwrap_t<T>>(q);
+    using unwrapped_t = unwrap_t<T>;
+    lhs = is_na(res) || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
   }
   return lhs;
 }
@@ -391,7 +370,39 @@ inline constexpr T& operator%=(T& lhs, U rhs) noexcept {
   if constexpr (is<T, decltype(res)>){
     lhs = res;
   } else {
-    lhs = is_na(res) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
+    using unwrapped_t = unwrap_t<T>;
+    lhs = is_na(res) || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
+  }
+  return lhs;
+}
+
+// `/=` uses true division for r_dbl and floored division (R's `%/%`) for integers
+template <RNumber T, MathType U>
+inline constexpr T& operator/=(T& lhs, U rhs) noexcept {
+  using common_t = common_math_t<T, U>;
+  using unwrapped_common_t = unwrap_t<common_t>;
+  using unwrapped_t = unwrap_t<T>;
+
+  if (internal::either_na(lhs, rhs)){
+    lhs = na<T>();
+    return lhs;
+  }
+
+  if constexpr (RIntegerType<common_t>){
+    if (unwrap(rhs) == 0){
+      lhs = na<T>();
+    } else {
+      unwrapped_common_t a = static_cast<unwrapped_common_t>(unwrap(lhs));
+      unwrapped_common_t b = static_cast<unwrapped_common_t>(unwrap(rhs));
+      unwrapped_common_t q = internal::floor_div(a, b);
+      lhs.value = !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(q) ? unwrap(na<T>()) : static_cast<unwrapped_t>(q);
+    }
+  } else {
+    double res = unwrap(lhs / rhs);
+    if constexpr (RIntegerType<T>){
+      res = std::floor(res); // integer target matches R's %/%
+    }
+    lhs.value = !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(res) ? unwrap(na<T>()) : static_cast<unwrapped_t>(res);
   }
   return lhs;
 }
