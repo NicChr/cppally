@@ -50,6 +50,10 @@ gives `-4` instead of `-3`. Division by zero or `NA` now correctly returns
 `NA` instead of crashing the R session. Precision is also preserved for large 
 `r_int64` values that previously round-tripped through `double`.
 
+- Scalar in-place arithmetic that narrows a wider result back to the left-hand 
+type (e.g. `r_int += r_int64`) now checks the value fits first, 
+giving `NA` on overflow instead of a silently wrapped result.
+
 - `%` now accepts mixed integer/float operands (e.g. `r_int(7) % 2.5`), 
 promoting and flooring consistent with R's `%%`.
 
