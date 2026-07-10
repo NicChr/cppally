@@ -1,15 +1,44 @@
-# cppally 1.1.0
+# cppally 1.1.0 (2026-07-10)
+
+## Breaking changes
+
+- Improved type-safety regarding implicit coercion of RScalar types. They now
+can implicitly coerce **only** to their wrapped types, whereas before they
+could implicitly coerce to that as well as other C types.
+
+- `RTimeType` arithmetic has been deprecated and removed.
+
+- Arithmetic involving `r_lgl` is now always promoted to `r_int`, matching R's
+own semantics.
+
+- `common_math_t<T, U>` now never returns `r_lgl`, effectively treating `r_lgl` 
+as `r_int`.
+
+## Bug fixes
 
 - Fixed bug where exclusion of concepts header was affecting vignette creation on macos.
 
 - Fixed incorrect NA handling of `r_date` and `r_psxct`. 
 
-- Improved type-safety regarding implicit coercion of RScalar types. They now 
-can implicitly coerce **only** to their wrapped types, whereas before they 
-could implicitly coerce to that as well as other C types.
+- Fixed a bug where `identical()` would return `false` for two genuinely 
+identical `NA_real_` values.
+
+- `NULL` optional arguments are now correctly handled. 
+Vector, factor and data frame arguments can now be `NULL` to allow for optional 
+argument programming from R.
+
+- Fixed a bug where checking exact equality (via `identical`) for C/C++ types 
+was not compiling due to template ordering issue.
+
+## r_lgl (logical) semantics
 
 - `r_lgl` can now implicitly coerce to `int` (and only `int`), consistent with 
 the other RScalar types.
+
+- `r_lgl` values are now always normalised on construction internally to either 
+0, 1, or `NA`.
+
+## Arithmetic
 
 - Integer overflow is now explicitly handled in all cppally arithmetic, returning 
 `NA` when detected. Integer addition and subtraction in particular are 
@@ -29,36 +58,20 @@ scalar operators, fixing a bug where mixed-width operations (e.g.
 `r_vec<r_int> += r_vec<r_int64>`) could silently truncate values, including 
 turning `NA` into `0`.
 
-- New member `is_na` for RScalar types, in addition to the equivalent 
-`is_na` free function.
-
-- Fixed a bug where `identical()` would return `false` for two genuinely 
-identical `NA_real_` values.
-
-- Fixed a bug where checking exact equality (via `identical`) for C/C++ types 
-was not compiling due to template ordering issue.
-
-- `RTimeType` arithmetic has been deprecated and removed.
-
-- `r_lgl` values are now always normalised on construction internally to either 
-0, 1, or `NA`.
-
-- Arithmetic involving `r_lgl` is now always promoted to `r_int`, matching R's
-own semantics.
-
-- `NULL` optional arguments are now correctly handled. 
-Vector, factor and data frame arguments can now be `NULL` to allow for optional 
-argument programming from R.
-
-- New concept `RNumber` to represent number-based types like `r_int` and `r_dbl`.
-
-- `common_math_t<T, U>` now never returns `r_lgl`, effectively treating `r_lgl` 
-as `r_int`. 
+## Improvements
 
 - Constructing invalid dates and date-times now returns `NA` instead of 
 an error.
 
+- New concept `RNumber` to represent number-based types like `r_int` and `r_dbl`.
+
+- New member `is_na` for RScalar types, in addition to the equivalent 
+`is_na` free function.
+
 - New member function `na()` for RScalar classes.
+
+- Relational operators have been extended to cover all RNumericType classes 
+which includes `r_date` and `r_psxct`.
 
 # cppally 1.0.0 (2026-07-02)
 
