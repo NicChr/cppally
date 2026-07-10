@@ -40,28 +40,44 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.1.0" id="cppally-110">cppally 1.1.0<a class="anchor" aria-label="anchor" href="#cppally-110"></a></h2>
-<ul><li><p>Relaxed the R dependency down from R 4.5.0 to R 4.2.0.</p></li>
-<li><p>Fixed bug where exclusion of concepts header was affecting vignette creation on macos.</p></li>
+<h2 class="pkg-version" data-toc-text="1.1.0" id="cppally-110-2026-07-10">cppally 1.1.0 (2026-07-10)<a class="anchor" aria-label="anchor" href="#cppally-110-2026-07-10"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-1-1-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-1-1-0"></a></h3>
+<ul><li><p>Improved type-safety regarding implicit coercion of RScalar types. They now can implicitly coerce <strong>only</strong> to their wrapped types, whereas before they could implicitly coerce to that as well as other C types.</p></li>
+<li><p><code>RTimeType</code> arithmetic has been deprecated and removed.</p></li>
+<li><p>Arithmetic involving <code>r_lgl</code> is now always promoted to <code>r_int</code>, matching R’s own semantics.</p></li>
+<li><p><code>common_math_t&lt;T, U&gt;</code> now never returns <code>r_lgl</code>, effectively treating <code>r_lgl</code> as <code>r_int</code>.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-1-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-0"></a></h3>
+<ul><li><p>Fixed bug where exclusion of concepts header was affecting vignette creation on macos.</p></li>
 <li><p>Fixed incorrect NA handling of <code>r_date</code> and <code>r_psxct</code>.</p></li>
-<li><p>Improved type-safety regarding implicit coercion of RScalar types. They now can implicitly coerce <strong>only</strong> to their wrapped types, whereas before they could implicitly coerce to that as well as other C types.</p></li>
-<li><p><code>r_lgl</code> can now implicitly coerce to <code>int</code> (and only <code>int</code>), consistent with the other RScalar types.</p></li>
-<li><p>Integer overflow is now explicitly handled in all cppally arithmetic, returning <code>NA</code> when detected. Integer addition and subtraction in particular are written using branchless or vectorisable code, enabling SIMD vectorisation.</p></li>
+<li><p>Fixed a bug where <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code> would return <code>false</code> for two genuinely identical <code>NA_real_</code> values.</p></li>
+<li><p><code>NULL</code> optional arguments are now correctly handled. Vector, factor and data frame arguments can now be <code>NULL</code> to allow for optional argument programming from R.</p></li>
+<li><p>Fixed a bug where checking exact equality (via <code>identical</code>) for C/C++ types was not compiling due to template ordering issue.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="r_lgl-logical-semantics-1-1-0">r_lgl (logical) semantics<a class="anchor" aria-label="anchor" href="#r_lgl-logical-semantics-1-1-0"></a></h3>
+<ul><li><p><code>r_lgl</code> can now implicitly coerce to <code>int</code> (and only <code>int</code>), consistent with the other RScalar types.</p></li>
+<li><p><code>r_lgl</code> values are now always normalised on construction internally to either 0, 1, or <code>NA</code>.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="arithmetic-1-1-0">Arithmetic<a class="anchor" aria-label="anchor" href="#arithmetic-1-1-0"></a></h3>
+<ul><li><p>Integer overflow is now explicitly handled in all cppally arithmetic, returning <code>NA</code> when detected. Integer addition and subtraction in particular are written using branchless or vectorisable code, enabling SIMD vectorisation.</p></li>
 <li><p>Integer in-place division <code>/=</code> now matches R’s <code>%/%</code> (floored division), instead of C’s truncating division, e.g. <code>-7L /= 2L</code> now gives <code>-4</code> instead of <code>-3</code>. Division by zero or <code>NA</code> now correctly returns <code>NA</code> instead of crashing the R session. Precision is also preserved for large <code>r_int64</code> values that previously round-tripped through <code>double</code>.</p></li>
+<li><p>Scalar in-place arithmetic that narrows a wider result back to the left-hand type (e.g. <code>r_int += r_int64</code>) now checks the value fits first, giving <code>NA</code> on overflow instead of a silently wrapped result.</p></li>
 <li><p><code>%</code> now accepts mixed integer/float operands (e.g. <code>r_int(7) % 2.5</code>), promoting and flooring consistent with R’s <code>%%</code>.</p></li>
 <li><p>Vector in-place arithmetic (<code>+=</code>, <code>-=</code>, <code>*=</code>, <code>%=</code>) now routes through the scalar operators, fixing a bug where mixed-width operations (e.g.  <code>r_vec&lt;r_int&gt; += r_vec&lt;r_int64&gt;</code>) could silently truncate values, including turning <code>NA</code> into <code>0</code>.</p></li>
-<li><p>New member <code>is_na</code> for RScalar types, in addition to the equivalent <code>is_na</code> free function.</p></li>
-<li><p>Fixed a bug where <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code> would return <code>false</code> for two genuinely identical <code>NA_real_</code> values.</p></li>
-<li><p>Fixed a bug where checking exact equality (via <code>identical</code>) for C/C++ types was not compiling due to template ordering issue.</p></li>
-<li><p><code>RTimeType</code> arithmetic has been deprecated and removed.</p></li>
-<li><p><code>r_lgl</code> values are now always normalised on construction internally to either 0, 1, or <code>NA</code>.</p></li>
-<li><p>Arithmetic involving <code>r_lgl</code> is now always promoted to <code>r_int</code>, matching R’s own semantics.</p></li>
-<li><p><code>NULL</code> optional arguments are now correctly handled. Vector, factor and data frame arguments can now be <code>NULL</code> to allow for optional argument programming from R.</p></li>
-<li><p>New concept <code>RNumber</code> to represent number-based types like <code>r_int</code> and <code>r_dbl</code>.</p></li>
-<li><p><code>common_math_t&lt;T, U&gt;</code> now never returns <code>r_lgl</code>, effectively treating <code>r_lgl</code> as <code>r_int</code>.</p></li>
-<li><p>Constructing invalid dates and date-times now returns <code>NA</code> instead of an error.</p></li>
-<li><p>New member function <code>na()</code> for RScalar classes.</p></li>
 </ul></div>
+<div class="section level3">
+<h3 id="improvements-1-1-0">Improvements<a class="anchor" aria-label="anchor" href="#improvements-1-1-0"></a></h3>
+<ul><li><p>Constructing invalid dates and date-times now returns <code>NA</code> instead of an error.</p></li>
+<li><p>New concept <code>RNumber</code> to represent number-based types like <code>r_int</code> and <code>r_dbl</code>.</p></li>
+<li><p>New member <code>is_na</code> for RScalar types, in addition to the equivalent <code>is_na</code> free function.</p></li>
+<li><p>New member function <code>na()</code> for RScalar classes.</p></li>
+<li><p>Relational operators have been extended to cover all RNumericType classes which includes <code>r_date</code> and <code>r_psxct</code>.</p></li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.0" id="cppally-100-2026-07-02">cppally 1.0.0 (2026-07-02)<a class="anchor" aria-label="anchor" href="#cppally-100-2026-07-02"></a></h2><p class="text-muted">CRAN release: 2026-07-02</p>
 <p>First major release. cppally’s public API is now considered stable. While there may be structural changes to the <code>r_df</code> and <code>r_raw</code> classes in the future, cppally’s vector and scalar classes are considered stable.</p>

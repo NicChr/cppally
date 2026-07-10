@@ -1384,8 +1384,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique       701µs    720µs     1171.    1.38MB     34.5
-#> 2 cppally_n_unique    307µs    309µs     3182.        0B      0
+#> 1 base_n_unique       707µs    723µs     1162.    1.38MB     34.9
+#> 2 cppally_n_unique    301µs    302µs     3252.        0B      0
 ```
 
 More useful sugar functions
@@ -1459,6 +1459,8 @@ symbol_to_string(hello_world_symbol)
 - RNumber - Includes `r_int`, `r_int64` and `r_dbl`
 
 - RIntegerType - Includes `r_lgl`, `r_int`, `r_int64`
+
+- RIntegerNumber - Includes `r_int` and `r_int64`
 
 - RMathType - Includes `r_lgl`, `r_int`, `r_int64` and `r_dbl`
 
