@@ -95,7 +95,16 @@ template <typename T>
 concept FloatType = RFloatType<T> || CppFloatType<T>;
 
 template <typename T>
-concept RNumber = RShortIntegerType<T> || RLongIntegerType<T> || RFloatType<T>;
+concept RIntegerNumber = RShortIntegerType<T> || RLongIntegerType<T>;
+
+template <typename T>
+concept CppIntegerNumber = std::is_integral_v<std::remove_cvref_t<T>> && !is<T, bool> && !CppCharType<T>;
+
+template <typename T>
+concept IntegerNumber = RIntegerNumber<T> || CppIntegerNumber<T>;
+
+template <typename T>
+concept RNumber = RIntegerNumber<T> || RFloatType<T>;
 
 template <typename T>
 concept CppNumber = std::is_arithmetic_v<std::remove_cvref_t<T>> && !is<T, bool> && !CppCharType<T>;
