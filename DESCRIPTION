@@ -22,7 +22,7 @@ License: MIT + file LICENSE
 URL: https://nicchr.github.io/cppally/
 BugReports: https://github.com/NicChr/cppally/issues/
 Depends:
-    R (>= 4.2.0)
+    R (>= 4.5.0)
 Suggests:
     bench,
     bit64,
