@@ -4,6 +4,7 @@
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
 #include <cppally/r_protect.h>
+#include <cppally/r_int.h>
 #include <limits>
 
 namespace cppally {
@@ -16,13 +17,17 @@ struct r_lgl {
   int value;
   using value_type = int;
   constexpr r_lgl() noexcept : value{0} {}
-  explicit constexpr r_lgl(int x) noexcept : value{(static_cast<unsigned int>(x) * 2u) != 0u ? 1 : x} {}
+  // explicit constexpr r_lgl(int x) noexcept : value{(static_cast<unsigned int>(x) * 2u) != 0u ? 1 : x} {} // Has trouble vectorising on GCC
+  explicit constexpr r_lgl(int x) noexcept : value(r_int(x).is_na() ? x : static_cast<int>(static_cast<bool>(x))){}
   explicit constexpr r_lgl(bool x) noexcept : value{static_cast<int>(x)} {}
   template <typename U> requires (is<U, int>)
   constexpr operator U() const noexcept { return value; }
 
   static constexpr r_lgl na() noexcept {
-    return r_lgl(std::numeric_limits<int>::min());
+    constexpr int na_int = std::numeric_limits<int>::min();
+    r_lgl out;
+    out.value = na_int;
+    return out;
   }
 
   constexpr bool is_true() const noexcept {
