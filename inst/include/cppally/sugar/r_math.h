@@ -92,7 +92,7 @@ inline constexpr r_int abs(r_lgl x) noexcept {
 
 template <RNumber T>
 constexpr T floor(T x) noexcept {
-  if constexpr (RIntegerType<T>){
+  if constexpr (RIntegerNumber<T>){
     return x;
   } else {
     return is_na(x) ? x : T{std::floor(unwrap(x))};
@@ -104,7 +104,7 @@ inline constexpr r_int floor(r_lgl x) noexcept {
 
 template <RNumber T>
 constexpr T ceiling(T x) noexcept {
-  if constexpr (RIntegerType<T>){
+  if constexpr (RIntegerNumber<T>){
     return x;
   } else {
     return is_na(x) ? x : T{std::ceil(unwrap(x))};
@@ -116,7 +116,7 @@ inline constexpr r_int ceiling(r_lgl x) noexcept {
 
 template <RNumber T>
 constexpr T trunc(T x) noexcept {
-  if constexpr (RIntegerType<T>){
+  if constexpr (RIntegerNumber<T>){
     return x;
   } else {
     return is_na(x) ? x : T{std::trunc(unwrap(x))};
@@ -191,7 +191,7 @@ r_dbl round(T x, U digits){
 
 template <RNumber T>
 T round(T x){
-  if constexpr (RIntegerType<T>){
+  if constexpr (RIntegerNumber<T>){
     return x;
   } else {
     if (is_na(x)){
@@ -244,7 +244,7 @@ T gcd(T x, T y, T tol = r_limits<T>::tolerance()) noexcept {
   unwrapped_t ay_ = unwrap(ay);
   unwrapped_t tol_ = unwrap(tol);
 
-  if constexpr (RIntegerType<T>){
+  if constexpr (RIntegerNumber<T>){
 
     if (identical(ax, T(1)) || identical(ay, T(1))){
       return T(1);

@@ -1442,6 +1442,8 @@ symbol_to_string(hello_world_symbol)
 
 - RIntegerType - Includes `r_lgl`, `r_int`, `r_int64`
 
+- RIntegerNumber - Includes `r_int` and `r_int64`
+
 - RMathType - Includes `r_lgl`, `r_int`, `r_int64` and `r_dbl`
 
 - RStringType - Includes `r_str` and `r_str_view`

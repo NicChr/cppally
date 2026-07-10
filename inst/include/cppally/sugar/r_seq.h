@@ -39,7 +39,7 @@ auto sequence(int size, T from, U by){
             check_user_interrupt();
             interrupt_counter = 0;
         }
-        if constexpr (RIntegerType<common_t>){
+        if constexpr (RIntegerNumber<common_t>){
             out.set(j, common_t(current_val));
             if (j < seq_size - 1){
                 if (__builtin_add_overflow(current_val, increment, &current_val)) [[unlikely]] {
