@@ -1,6 +1,8 @@
 # Changelog
 
-## cppally (development version)
+## cppally 1.1.0
+
+- Relaxed the R dependency down from R 4.5.0 to R 4.2.0.
 
 - Fixed bug where exclusion of concepts header was affecting vignette
   creation on macos.
