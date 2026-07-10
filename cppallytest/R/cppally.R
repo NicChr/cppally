@@ -312,6 +312,38 @@ test_to_r_lgl <- function() {
   invisible(.Call(`_cppallytest_test_to_r_lgl`))
 }
 
+test_coerce_edge <- function() {
+  invisible(.Call(`_cppallytest_test_coerce_edge`))
+}
+
+test_coerce_int64_to_int_overflow <- function() {
+  invisible(.Call(`_cppallytest_test_coerce_int64_to_int_overflow`))
+}
+
+test_coerce_dbl_to_int_overflow <- function() {
+  invisible(.Call(`_cppallytest_test_coerce_dbl_to_int_overflow`))
+}
+
+test_coerce_pos_inf_to_int <- function() {
+  invisible(.Call(`_cppallytest_test_coerce_pos_inf_to_int`))
+}
+
+test_coerce_neg_inf_to_int <- function() {
+  invisible(.Call(`_cppallytest_test_coerce_neg_inf_to_int`))
+}
+
+test_coerce_dbl_to_int64_overflow <- function() {
+  invisible(.Call(`_cppallytest_test_coerce_dbl_to_int64_overflow`))
+}
+
+test_coerce_int_min_to_int <- function() {
+  invisible(.Call(`_cppallytest_test_coerce_int_min_to_int`))
+}
+
+test_coerce_int64_min_to_int64 <- function() {
+  invisible(.Call(`_cppallytest_test_coerce_int64_min_to_int64`))
+}
+
 test_factor1 <- function(x) {
   .Call(`_cppallytest_test_factor1`, x)
 }

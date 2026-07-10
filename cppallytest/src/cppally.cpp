@@ -728,6 +728,70 @@ extern "C" SEXP _cppallytest_test_to_r_lgl() {
   return R_NilValue;
   END_CPPALLY
 }
+// test_coerce.cpp
+void test_coerce_edge();
+extern "C" SEXP _cppallytest_test_coerce_edge() {
+  BEGIN_CPPALLY
+  ::test_coerce_edge();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_coerce_int64_to_int_overflow();
+extern "C" SEXP _cppallytest_test_coerce_int64_to_int_overflow() {
+  BEGIN_CPPALLY
+  ::test_coerce_int64_to_int_overflow();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_coerce_dbl_to_int_overflow();
+extern "C" SEXP _cppallytest_test_coerce_dbl_to_int_overflow() {
+  BEGIN_CPPALLY
+  ::test_coerce_dbl_to_int_overflow();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_coerce_pos_inf_to_int();
+extern "C" SEXP _cppallytest_test_coerce_pos_inf_to_int() {
+  BEGIN_CPPALLY
+  ::test_coerce_pos_inf_to_int();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_coerce_neg_inf_to_int();
+extern "C" SEXP _cppallytest_test_coerce_neg_inf_to_int() {
+  BEGIN_CPPALLY
+  ::test_coerce_neg_inf_to_int();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_coerce_dbl_to_int64_overflow();
+extern "C" SEXP _cppallytest_test_coerce_dbl_to_int64_overflow() {
+  BEGIN_CPPALLY
+  ::test_coerce_dbl_to_int64_overflow();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_coerce_int_min_to_int();
+extern "C" SEXP _cppallytest_test_coerce_int_min_to_int() {
+  BEGIN_CPPALLY
+  ::test_coerce_int_min_to_int();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_coerce_int64_min_to_int64();
+extern "C" SEXP _cppallytest_test_coerce_int64_min_to_int64() {
+  BEGIN_CPPALLY
+  ::test_coerce_int64_min_to_int64();
+  return R_NilValue;
+  END_CPPALLY
+}
 // test_factor.cpp
 r_vec<r_sexp> test_factor1(r_factors x);
 extern "C" SEXP _cppallytest_test_factor1(SEXP x) {
@@ -1139,6 +1203,14 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_by_value",                     (DL_FUNC) &_cppallytest_test_by_value,                     1},
     {"_cppallytest_test_coerce",                       (DL_FUNC) &_cppallytest_test_coerce,                       2},
     {"_cppallytest_test_coerce1",                      (DL_FUNC) &_cppallytest_test_coerce1,                      1},
+    {"_cppallytest_test_coerce_dbl_to_int64_overflow", (DL_FUNC) &_cppallytest_test_coerce_dbl_to_int64_overflow, 0},
+    {"_cppallytest_test_coerce_dbl_to_int_overflow",   (DL_FUNC) &_cppallytest_test_coerce_dbl_to_int_overflow,   0},
+    {"_cppallytest_test_coerce_edge",                  (DL_FUNC) &_cppallytest_test_coerce_edge,                  0},
+    {"_cppallytest_test_coerce_int64_min_to_int64",    (DL_FUNC) &_cppallytest_test_coerce_int64_min_to_int64,    0},
+    {"_cppallytest_test_coerce_int64_to_int_overflow", (DL_FUNC) &_cppallytest_test_coerce_int64_to_int_overflow, 0},
+    {"_cppallytest_test_coerce_int_min_to_int",        (DL_FUNC) &_cppallytest_test_coerce_int_min_to_int,        0},
+    {"_cppallytest_test_coerce_neg_inf_to_int",        (DL_FUNC) &_cppallytest_test_coerce_neg_inf_to_int,        0},
+    {"_cppallytest_test_coerce_pos_inf_to_int",        (DL_FUNC) &_cppallytest_test_coerce_pos_inf_to_int,        0},
     {"_cppallytest_test_combine2",                     (DL_FUNC) &_cppallytest_test_combine2,                     2},
     {"_cppallytest_test_construct_date",               (DL_FUNC) &_cppallytest_test_construct_date,               1},
     {"_cppallytest_test_copy",                         (DL_FUNC) &_cppallytest_test_copy,                         1},

@@ -239,3 +239,69 @@ void test_to_r_lgl(){
     expect_identical(as<r_lgl>(na<r_dbl>()), na<r_lgl>());
     expect_identical(as<r_lgl>(na<r_lgl>()), na<r_lgl>());
 }
+
+// Edge cases that do NOT abort: value truncation, widening, boundary values, and
+// non-finite doubles. Coercions that lose information from a non-NA source (integer
+// overflow, +/-Inf into an integer) abort inside scalar_coerce -- those are the
+// helpers below, checked with expect_error() on the R side.
+[[cppally::register]]
+void test_coerce_edge(){
+    // fractional double -> integer truncates toward zero (matches R's as.integer)
+    expect_identical(as<r_int>(r_dbl(3.9)),    r_int(3));
+    expect_identical(as<r_int>(r_dbl(-3.9)),   r_int(-3));
+    expect_identical(as<r_int64>(r_dbl(-3.9)), r_int64(-3));
+
+    // largest double that still fits each integer type (open upper bound at 2^digits)
+    expect_identical(as<r_int>(r_dbl(2147483647.0)), r_limits<r_int>::max());
+    // 2^63 - 1024, the largest double strictly below 2^63
+    expect_identical(as<r_int64>(r_dbl(9223372036854774784.0)), r_int64(9223372036854774784LL));
+
+    // widening is always lossless
+    expect_identical(as<r_int64>(r_int(2147483647)), r_int64(2147483647));
+    expect_identical(as<r_dbl>(r_int(2147483647)),   r_dbl(2147483647.0));
+    expect_identical(as<r_dbl>(r_int64(2147483647)), r_dbl(2147483647.0));
+
+    // int64 -> double may lose precision (tolerated), but never NAs: 2^53 + 1 rounds to 2^53
+    expect_identical(as<r_dbl>(r_int64(9007199254740993LL)), r_dbl(9007199254740992.0));
+
+    // INT_MIN is r_int's NA sentinel, but as an int64 value it is ordinary: widening it
+    // to double is exact and lossless (the sentinel-ness is an r_int property, not the value's)
+    expect_identical(as<r_dbl>(r_int64(std::numeric_limits<int>::min())),
+                     r_dbl(static_cast<double>(std::numeric_limits<int>::min())));
+
+    // NaN is treated as NA, so it propagates to the target's NA rather than aborting
+    expect_identical(as<r_int>(r_dbl(R_NaN)),   na<r_int>());
+    expect_identical(as<r_int64>(r_dbl(R_NaN)), na<r_int64>());
+
+    // +/-Inf and NaN survive a double -> double (identity) coercion unchanged
+    expect_identical(as<r_dbl>(r_dbl(R_PosInf)), r_dbl(R_PosInf));
+    expect_identical(as<r_dbl>(r_dbl(R_NegInf)), r_dbl(R_NegInf));
+    expect_identical(as<r_dbl>(r_dbl(R_NaN)),    r_dbl(R_NaN));
+}
+
+// Each loses information from a non-NA source, which scalar_coerce rejects via abort().
+// Checked with expect_error() on the R side.
+
+[[cppally::register]]
+void test_coerce_int64_to_int_overflow(){ as<r_int>(r_int64(3000000000LL)); } // > INT_MAX
+
+[[cppally::register]]
+void test_coerce_dbl_to_int_overflow(){ as<r_int>(r_dbl(3e9)); }
+
+[[cppally::register]]
+void test_coerce_pos_inf_to_int(){ as<r_int>(r_dbl(R_PosInf)); }
+
+[[cppally::register]]
+void test_coerce_neg_inf_to_int(){ as<r_int>(r_dbl(R_NegInf)); }
+
+// 2^63 exactly: (double)INT64_MAX rounds up to this, so the open upper bound must reject it
+[[cppally::register]]
+void test_coerce_dbl_to_int64_overflow(){ as<r_int64>(r_dbl(9223372036854775808.0)); }
+
+// Sentinel collisions: the value is in native range but casts exactly onto the target's
+// NA sentinel (INT_MIN / INT64_MIN), so it cannot be represented as a non-NA value -> abort
+[[cppally::register]]
+void test_coerce_int_min_to_int(){ as<r_int>(r_int64(std::numeric_limits<int>::min())); }
+
+[[cppally::register]]
+void test_coerce_int64_min_to_int64(){ as<r_int64>(r_dbl(-9223372036854775808.0)); }
