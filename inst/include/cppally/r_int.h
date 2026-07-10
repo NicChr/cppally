@@ -10,8 +10,8 @@ struct r_int {
     int value;
     using value_type = int;
     constexpr r_int() noexcept : value{0} {}
-    template <CppMathType T>
-    requires (internal::can_definitely_be_int<T>())
+    template <CppIntegerType T>
+    requires (internal::lossless_numeric_cast<T, int>())
     explicit constexpr r_int(T x) noexcept : value{static_cast<int>(x)} {}
     template <typename U> requires (is<U, int>)
     constexpr operator U() const noexcept { return value; }

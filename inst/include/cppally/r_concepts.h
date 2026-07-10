@@ -6,6 +6,7 @@
 #include <cstdint> // For uint32_t and similar
 #include <complex> // For complex<double>
 #include <limits>
+#include <utility> // for cmp_less_equal
 
 
 // Forward declarations
@@ -279,41 +280,30 @@ namespace internal {
 // template <typename T>
 // concept LargeType = !SmallType<std::decay_t<T>>;
 
-template<typename T>
-inline consteval bool can_definitely_be_int(){
-
-    constexpr int max_int = std::numeric_limits<int>::max();
-
-    using xt = std::remove_cvref_t<T>;
-
-    if constexpr (!CppIntegerType<xt>) return false;
-
-    if constexpr (sizeof(xt) <= sizeof(int)) {
-        if constexpr (std::is_unsigned_v<xt>) {
-             return std::numeric_limits<xt>::max() <= static_cast<unsigned int>(max_int);
-        }
+// True when every value of From casts to To with no loss at all,
+// neither from overflow nor precision
+template <CppMathType From, CppMathType To>
+inline consteval bool lossless_numeric_cast(){
+    if constexpr (CppIntegerType<From> && CppIntegerType<To>){
+        return std::cmp_less_equal(
+            +std::numeric_limits<To>::min(),
+            +std::numeric_limits<From>::min()
+        ) &&
+        std::cmp_greater_equal(
+            +std::numeric_limits<To>::max(),
+            +std::numeric_limits<From>::max()
+        );
+    } else if constexpr (CppFloatType<From> && CppFloatType<To> && sizeof(To) >= sizeof(From)){
+        // For IEEE floats, size order implies both mantissa and exponent range order
         return true;
+    } else if constexpr (CppIntegerType<From> && CppFloatType<To>){
+        // Exact iff From's whole range lies within [-2^p, 2^p], where p is To's
+        // mantissa width — the largest range over which a float holds every integer
+        return std::numeric_limits<From>::digits <= std::numeric_limits<To>::digits;
+    } else {
+        return false;
     }
-    return false;
-}
-
-template<typename T>
-inline consteval bool can_definitely_be_int64(){
-
-    constexpr int64_t max_int64 = std::numeric_limits<int64_t>::max();
-
-    using xt = std::remove_cvref_t<T>;
-
-    if constexpr (!CppIntegerType<xt>) return false;
-
-    if constexpr (sizeof(xt) <= sizeof(int64_t)) {
-        if constexpr (std::is_unsigned_v<xt>) {
-             return std::numeric_limits<xt>::max() <= static_cast<uint64_t>(max_int64);
-        }
-        return true; 
-    }
-    return false;
-}
+};
 
 // C/C++ -> RScalar mappings
 // RScalar maps to RScalar (identity)
@@ -331,15 +321,16 @@ template<> struct r_scalar_mapping<unsigned char>             { using type = r_r
 
 template <CppMathType T>
 struct r_scalar_mapping<T> {
-    using type = std::conditional_t<
-    can_definitely_be_int<T>(),
-    r_int,
+    using type = 
     std::conditional_t<
-        can_definitely_be_int64<T>(),
-        r_int64,
-        r_dbl
-    >
->;
+        lossless_numeric_cast<T, int>(),
+        r_int,
+        std::conditional_t<
+            lossless_numeric_cast<T, int64_t>(),
+            r_int64,
+            r_dbl
+            >
+        >;
 };
 
 }

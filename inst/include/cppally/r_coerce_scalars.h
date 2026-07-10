@@ -33,42 +33,6 @@ r_sexp as_list_element(const T& x) {
     }
 }
 
-// Assumes no NAs at all
-template<typename T>
-inline constexpr bool can_be_int(const T& x){
-  using unwrapped_t = unwrap_t<T>;
-
-  constexpr int max_int = std::numeric_limits<int>::max();
-  constexpr int min_int = -max_int; // Doesn't include lowest int (reserved for NA)
-
-  if constexpr (can_definitely_be_int<unwrapped_t>()){
-    return true;
-  } else if constexpr (MathType<unwrapped_t>){
-    // This should be a 'practical' way to get the wider type of the 2
-    using common_t = std::common_type_t<unwrapped_t, int>;
-    return between_impl<common_t>(unwrap(x), min_int, max_int);
-  } else {
-    return false;
-  }
-}
-template<typename T>
-inline constexpr bool can_be_int64(const T& x){
-
-  using unwrapped_t = unwrap_t<T>;
-
-  constexpr int64_t max_int64 = std::numeric_limits<int64_t>::max();
-  constexpr int64_t min_int64 = -max_int64; // Doesn't include lowest int (reserved for NA)
-
-  if constexpr (can_definitely_be_int64<unwrapped_t>()){
-    return true;
-  } else if constexpr (MathType<unwrapped_t>){
-    using common_t = std::common_type_t<unwrapped_t, int64_t>;
-    return between_impl<common_t>(unwrap(x), min_int64, max_int64);
-  } else {
-    return false;
-  }
-}
-
 inline bool parse(const char* s, double& out) {
   const char* end = s + std::strlen(s);
   #if defined(__cpp_lib_to_chars_floating_point) || \
@@ -130,7 +94,7 @@ inline r_int as_int(const T& x){
   if constexpr (is<unwrapped_t, int>){
     return r_int(unwrap(x));
   } else if constexpr (MathType<unwrapped_t>){
-    return is_na(x) || !can_be_int(x) ? na<r_int>() : r_int(static_cast<int>(unwrap(x)));
+    return is_na(x) || !numeric_can_be_cast_without_complete_loss<int>(unwrap(x)) ? na<r_int>() : r_int(static_cast<int>(unwrap(x)));
   } else if constexpr (RStringType<T>){
     return as_int(parse_double(x.c_str()));
   } else {
@@ -145,7 +109,7 @@ inline r_int64 as_int64(const T& x){
   if constexpr (is<unwrapped_t, int64_t>){
     return r_int64(unwrap(x));
   } else if constexpr (MathType<unwrapped_t>){
-    return is_na(x) || !can_be_int64(x) ? na<r_int64>() : r_int64(static_cast<int64_t>(unwrap(x)));
+    return is_na(x) || !numeric_can_be_cast_without_complete_loss<int64_t>(unwrap(x)) ? na<r_int64>() : r_int64(static_cast<int64_t>(unwrap(x)));
   } else if constexpr (RStringType<T>){
     return as_int64(parse_double(x.c_str()));
   } else {
