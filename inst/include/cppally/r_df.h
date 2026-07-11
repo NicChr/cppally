@@ -40,6 +40,7 @@ inline r_vec<r_sexp> new_df_impl(int nrows){
 struct r_df {
 
     r_vec<r_sexp> value;
+    using value_type = r_vec<r_sexp>;
 
     private:
 
