@@ -4,7 +4,7 @@
 \name{cppallytest-package}
 \alias{cppallytest}
 \alias{cppallytest-package}
-\title{cppallytest: A Package For Testing 'cppally'}
+\title{cppallytest: A Package for Testing 'cppally'}
 \description{
 Unit tests for the R package cppally.
 }
