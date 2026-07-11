@@ -342,7 +342,14 @@ inline r_vec<r_lgl> operator!(T&& x){
   return pmap_parallel_simd([](r_lgl v) noexcept { return !v; }, x);
 }
 
-template <internal::RMathVector T>
+template <RAtomicVector T>
+requires (RNumber<typename std::remove_cvref_t<T>::data_type>)
+inline std::remove_cvref_t<T> operator+(T&& x){
+    return std::forward<T>(x);
+}
+
+template <RAtomicVector T>
+requires (RNumber<typename std::remove_cvref_t<T>::data_type>)
 inline std::remove_cvref_t<T> operator-(T&& x){
   using data_t = typename std::remove_cvref_t<T>::data_type;
 
@@ -357,6 +364,13 @@ inline std::remove_cvref_t<T> operator-(T&& x){
     }
   }
   return pmap_parallel_simd([](data_t v) noexcept { return -v; }, x);
+}
+
+inline r_vec<r_int> operator+(const r_vec<r_lgl>& x){
+    return pmap_parallel_simd([](r_lgl v) noexcept { return +v; }, x);
+}
+inline r_vec<r_int> operator-(const r_vec<r_lgl>& x){
+    return pmap_parallel_simd([](r_lgl v) noexcept { return -v; }, x);
 }
 
 namespace internal {
