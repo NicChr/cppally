@@ -5,7 +5,6 @@
 #include <cppally/r_concepts.h>
 #include <cppally/r_protect.h>
 #include <cppally/r_int.h>
-#include <limits>
 
 namespace cppally {
 
@@ -24,7 +23,7 @@ struct r_lgl {
   constexpr operator U() const noexcept { return value; }
 
   static constexpr r_lgl na() noexcept {
-    constexpr int na_int = std::numeric_limits<int>::min();
+    constexpr int na_int = r_int::na().value;
     r_lgl out;
     out.value = na_int;
     return out;

@@ -2,6 +2,7 @@
 #define CPPALLY_R_INT_H
 
 #include <cppally/r_concepts.h>
+#include <limits>
 
 namespace cppally {
 
