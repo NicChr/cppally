@@ -420,6 +420,22 @@ test_na_types <- function() {
   .Call(`_cppallytest_test_na_types`)
 }
 
+test_protect_count_tracking <- function() {
+  .Call(`_cppallytest_test_protect_count_tracking`)
+}
+
+test_protect_slot_reuse <- function() {
+  .Call(`_cppallytest_test_protect_slot_reuse`)
+}
+
+test_protect_chunk_growth <- function() {
+  .Call(`_cppallytest_test_protect_chunk_growth`)
+}
+
+test_protect_burst_reserve <- function() {
+  .Call(`_cppallytest_test_protect_burst_reserve`)
+}
+
 test_by_value <- function(x) {
   .Call(`_cppallytest_test_by_value`, x)
 }
