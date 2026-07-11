@@ -34,46 +34,53 @@ inline SEXP unwind_token() {
 // The core unwind_protect (no tuple/gcc4.8 hacks)
 template <typename Fun>
 auto unwind_protect(Fun&& code) -> decltype(code()) {
-    SEXP token = unwind_token();
-
-    std::jmp_buf jmpbuf;
-    if (setjmp(jmpbuf)) [[unlikely]] {
-        throw unwind_exception(token);
-    }
-
-    // Capture the return type
     using ReturnType = decltype(code());
-    
-    if constexpr (std::is_same_v<ReturnType, SEXP>) {
-        SEXP res = R_UnwindProtect(
-            [](void* data) -> SEXP {
-                return (*static_cast<std::decay_t<Fun>*>(data))();
-            },
-            &code,
-            [](void* jmpbuf_ptr, Rboolean jump) {
-                if (jump == TRUE) [[unlikely]] longjmp(*static_cast<std::jmp_buf*>(jmpbuf_ptr), 1);
-            },
-            &jmpbuf, token);
-        SETCAR(token, R_NilValue);
-        return res;
-    } else if constexpr (std::is_same_v<ReturnType, void>) {
-        R_UnwindProtect(
-            [](void* data) -> SEXP {
-                (*static_cast<std::decay_t<Fun>*>(data))();
-                return R_NilValue;
-            },
-            &code,
-            [](void* jmpbuf_ptr, Rboolean jump) {
-                if (jump == TRUE) [[unlikely]] longjmp(*static_cast<std::jmp_buf*>(jmpbuf_ptr), 1);
-            },
-            &jmpbuf, token);
-        SETCAR(token, R_NilValue);
-    } else {
+
+    if constexpr (!std::is_same_v<ReturnType, SEXP> && !std::is_same_v<ReturnType, void>) {
+        // Delegate before setjmp -- only the delegate's jmp_buf is handed to R,
+        // so setting one up here would be pure dead weight
         ReturnType result{};
         unwind_protect([&] {
             result = code();
         });
         return result;
+    } else {
+        SEXP token = unwind_token();
+
+        std::jmp_buf jmpbuf;
+        if (setjmp(jmpbuf)) [[unlikely]] {
+            throw unwind_exception(token);
+        }
+
+        if constexpr (std::is_same_v<ReturnType, SEXP>) {
+            SEXP res = R_UnwindProtect(
+                [](void* data) -> SEXP {
+                    return (*static_cast<std::decay_t<Fun>*>(data))();
+                },
+                &code,
+                [](void* jmpbuf_ptr, Rboolean jump) {
+                    if (jump == TRUE) [[unlikely]] {
+                        longjmp(*static_cast<std::jmp_buf*>(jmpbuf_ptr), 1);
+                    }
+                },
+                &jmpbuf, token);
+            SETCAR(token, R_NilValue);
+            return res;
+        } else {
+            R_UnwindProtect(
+                [](void* data) -> SEXP {
+                    (*static_cast<std::decay_t<Fun>*>(data))();
+                    return R_NilValue;
+                },
+                &code,
+                [](void* jmpbuf_ptr, Rboolean jump) {
+                    if (jump == TRUE) [[unlikely]] {
+                        longjmp(*static_cast<std::jmp_buf*>(jmpbuf_ptr), 1);
+                    }
+                },
+                &jmpbuf, token);
+            SETCAR(token, R_NilValue);
+        }
     }
 }
 
