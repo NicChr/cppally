@@ -282,27 +282,33 @@ namespace internal {
 
 // True when every value of From casts to To with no loss at all,
 // neither from overflow nor precision
-template <CppMathType From, CppMathType To>
+template <typename From, typename To>
 inline consteval bool lossless_numeric_cast(){
-    if constexpr (CppIntegerType<From> && CppIntegerType<To>){
-        return std::cmp_less_equal(
-            +std::numeric_limits<To>::min(),
-            +std::numeric_limits<From>::min()
-        ) &&
-        std::cmp_greater_equal(
-            +std::numeric_limits<To>::max(),
-            +std::numeric_limits<From>::max()
-        );
-    } else if constexpr (CppFloatType<From> && CppFloatType<To> && sizeof(To) >= sizeof(From)){
-        // For IEEE floats, size order implies both mantissa and exponent range order
-        return true;
-    } else if constexpr (CppIntegerType<From> && CppFloatType<To>){
-        // Exact iff From's whole range lies within [-2^p, 2^p], where p is To's
-        // mantissa width — the largest range over which a float holds every integer
-        return std::numeric_limits<From>::digits <= std::numeric_limits<To>::digits;
-    } else {
+
+    if constexpr (!CppMathType<From> || !CppMathType<To>){
         return false;
+    } else {
+        if constexpr (CppIntegerType<From> && CppIntegerType<To>){
+            return std::cmp_less_equal(
+                +std::numeric_limits<To>::min(),
+                +std::numeric_limits<From>::min()
+            ) &&
+            std::cmp_greater_equal(
+                +std::numeric_limits<To>::max(),
+                +std::numeric_limits<From>::max()
+            );
+        } else if constexpr (CppFloatType<From> && CppFloatType<To> && sizeof(To) >= sizeof(From)){
+            // For IEEE floats, size order implies both mantissa and exponent range order
+            return true;
+        } else if constexpr (CppIntegerType<From> && CppFloatType<To>){
+            // Exact iff From's whole range lies within [-2^p, 2^p], where p is To's
+            // mantissa width — the largest range over which a float holds every integer
+            return std::numeric_limits<From>::digits <= std::numeric_limits<To>::digits;
+        } else {
+            return false;
+        }
     }
+
 };
 
 // C/C++ -> RScalar mappings
