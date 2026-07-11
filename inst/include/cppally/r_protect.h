@@ -180,9 +180,16 @@ namespace vec_store {
 // Memory behaviour:
 //   * The pool tracks the actual current working set, not the historical
 //     peak. When a chunk becomes entirely empty (free_count == capacity)
-//     it is R_ReleaseObject'd and freed in `release()`, with one exception:
+//     it is R_ReleaseObject'd and freed in `release()`, with two exceptions:
 //     we always keep at least one chunk alive as a scratchpad to avoid
-//     allocate-then-free thrashing at burst boundaries.
+//     allocate-then-free thrashing at burst boundaries, and watermark-sized
+//     empties are retained up to a slot budget (16384)
+//     so that repeated protection bursts do not pay one Rf_allocVector +
+//     R_PreserveObject per burst.
+//   * Only chunks of the current watermark size are eligible for the
+//     reserve. Smaller chunks are historical warmup sizes -- `next_size`
+//     never shrinks, so they would never be allocated again -- and retaining
+//     them would eat the budget the actually-reused size needs.
 //   * This matters because R's GC marks every slot of a VECSXP up to its
 //     length, not just the populated ones -- a 16384-slot chunk holding
 //     three live objects still costs ~16384 pointer reads per GC cycle.
@@ -225,6 +232,7 @@ struct chunk {
     chunk* prev;        // master allocation chain (back link, for O(1) unlink)
     chunk* free_next;   // "has free slots" list, forward; nullptr if full
     chunk* free_prev;   // "has free slots" list, back; nullptr if full or head
+    bool   reserved;    // entirely empty and counted in the retained reserve
 };
 
 // Token returned by insert; opaque to callers other than `release`.
@@ -236,8 +244,12 @@ struct slot_ref {
 // Singletons (one per shared library via `static` in inline functions).
 //   head_chunk     -- master chain of every chunk ever allocated
 //   free_list_head -- head of the intrusive "has free slots" list
+//   watermark_size -- capacity of the largest chunk allocated so far
+//   reserved_slots -- total capacity of currently-retained empty chunks
 inline chunk*& head_chunk()     { static chunk* head = nullptr; return head; }
 inline chunk*& free_list_head() { static chunk* head = nullptr; return head; }
+inline int&    watermark_size() { static int n = 0; return n; }
+inline int&    reserved_slots() { static int n = 0; return n; }
 
 // Allocate a new chunk and push it onto both the master chain and the
 // free list. Capacity doubles each time, capped at `max_chunk_size`. Caller
@@ -284,6 +296,7 @@ inline chunk* add_chunk() {
     if (next_size < max_chunk_size) {
         next_size *= 2;
     }
+    watermark_size() = cap;
     return c;
 }
 
@@ -335,6 +348,12 @@ inline slot_ref insert(SEXP x) {
     int slot = c->free_stack[--c->free_count];
     SET_VECTOR_ELT(c->vec, slot, x);
 
+    // Taking a slot from a retained empty chunk brings it back into service.
+    if (c->reserved) [[unlikely]] {
+        c->reserved = false;
+        reserved_slots() -= c->capacity;
+    }
+
     // If this chunk just became full, unlink it from the free list.
     if (c->free_count == 0) [[unlikely]] {
         free_list_head() = c->free_next;
@@ -368,13 +387,23 @@ inline void release(slot_ref ref) noexcept {
         free_list_head() = c;
     }
 
-    // If the chunk is now entirely empty, free it back to R -- but always
-    // keep at least one chunk alive as a scratchpad. Without the guard, a
-    // workload that protects exactly one object at a time and releases it
-    // immediately would allocate-then-free a chunk on every cycle.
+    // The chunk is now entirely empty. A sole chunk is always kept alive as
+    // a scratchpad, and stays unreserved -- checking that first keeps the
+    // one-object insert/release ping-pong on the exact pre-reserve path,
+    // with no accounting work. Otherwise, retain the chunk in the reserve
+    // if it is watermark-sized and fits the budget (the next burst then
+    // reuses it with no R-side allocation), or free it back to R (stale
+    // warmup size, budget full) so GC scan cost stays proportional to the
+    // working set.
     if (c->free_count == c->capacity && head_chunk() != nullptr &&
         head_chunk()->next != nullptr) [[unlikely]] {
-        destroy_chunk(c);
+        if (c->capacity == watermark_size() &&
+            (reserved_slots() + c->capacity) <= 16384) {
+            c->reserved = true;
+            reserved_slots() += c->capacity;
+        } else {
+            destroy_chunk(c);
+        }
     }
 }
 
@@ -390,9 +419,10 @@ inline void print() {
     REprintf("vec_store:\n");
     int idx = 0;
     for (chunk* c = head_chunk(); c != nullptr; c = c->next, ++idx) {
-        REprintf("  chunk %d: vec=%p capacity=%d in_use=%d\n",
+        REprintf("  chunk %d: vec=%p capacity=%d in_use=%d%s\n",
                  idx, reinterpret_cast<void*>(c->vec),
-                 c->capacity, c->capacity - c->free_count);
+                 c->capacity, c->capacity - c->free_count,
+                 c->reserved ? " (reserved)" : "");
     }
     REprintf("---\n");
 }
