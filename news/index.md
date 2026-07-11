@@ -1,6 +1,6 @@
 # Changelog
 
-## cppally 1.1.0 (2026-07-10)
+## cppally 1.1.0 (2026-07-11)
 
 ### Breaking changes
 
