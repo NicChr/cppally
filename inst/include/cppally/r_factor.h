@@ -18,6 +18,8 @@ struct r_factors {
   public:
 
   r_vec<r_int> value;
+  using value_type = r_vec<r_int>;
+  using data_type = r_str; // data_type is tied to return type of `get()`
 
   private: 
 
