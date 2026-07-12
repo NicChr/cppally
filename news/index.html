@@ -40,7 +40,7 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.1.0" id="cppally-110-2026-07-11">cppally 1.1.0 (2026-07-11)<a class="anchor" aria-label="anchor" href="#cppally-110-2026-07-11"></a></h2>
+<h2 class="pkg-version" data-toc-text="1.1.0" id="cppally-110-2026-07-12">cppally 1.1.0 (2026-07-12)<a class="anchor" aria-label="anchor" href="#cppally-110-2026-07-12"></a></h2>
 <div class="section level3">
 <h3 id="breaking-changes-1-1-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-1-1-0"></a></h3>
 <ul><li><p>Improved type-safety regarding implicit coercion of RScalar types. They now can implicitly coerce <strong>only</strong> to their wrapped types, whereas before they could implicitly coerce to that as well as other C types.</p></li>
@@ -71,7 +71,8 @@
 </ul></div>
 <div class="section level3">
 <h3 id="improvements-1-1-0">Improvements<a class="anchor" aria-label="anchor" href="#improvements-1-1-0"></a></h3>
-<ul><li><p>Constructing invalid dates and date-times now returns <code>NA</code> instead of an error.</p></li>
+<ul><li><p>Better errors when passing invalid types to template functions.</p></li>
+<li><p>Constructing invalid dates and date-times now returns <code>NA</code> instead of an error.</p></li>
 <li><p>New concept <code>RNumber</code> to represent number-based types like <code>r_int</code> and <code>r_dbl</code>.</p></li>
 <li><p>New member <code>is_na</code> for RScalar types, in addition to the equivalent <code>is_na</code> free function.</p></li>
 <li><p>New member function <code>na()</code> for RScalar classes.</p></li>
