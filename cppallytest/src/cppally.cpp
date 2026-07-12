@@ -955,28 +955,28 @@ extern "C" SEXP _cppallytest_test_na_types() {
   END_CPPALLY
 }
 // test_protect.cpp
-r_lgl test_protect_count_tracking();
+bool test_protect_count_tracking();
 extern "C" SEXP _cppallytest_test_protect_count_tracking() {
   BEGIN_CPPALLY
   return cpp_to_r(::test_protect_count_tracking());
   END_CPPALLY
 }
 // test_protect.cpp
-r_lgl test_protect_slot_reuse();
+bool test_protect_slot_reuse();
 extern "C" SEXP _cppallytest_test_protect_slot_reuse() {
   BEGIN_CPPALLY
   return cpp_to_r(::test_protect_slot_reuse());
   END_CPPALLY
 }
 // test_protect.cpp
-r_lgl test_protect_chunk_growth();
+bool test_protect_chunk_growth();
 extern "C" SEXP _cppallytest_test_protect_chunk_growth() {
   BEGIN_CPPALLY
   return cpp_to_r(::test_protect_chunk_growth());
   END_CPPALLY
 }
 // test_protect.cpp
-r_lgl test_protect_burst_reserve();
+bool test_protect_burst_reserve();
 extern "C" SEXP _cppallytest_test_protect_burst_reserve() {
   BEGIN_CPPALLY
   return cpp_to_r(::test_protect_burst_reserve());
