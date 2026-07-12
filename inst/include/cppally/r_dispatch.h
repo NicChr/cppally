@@ -25,7 +25,8 @@
 
 #define BEGIN_CPPALLY                   \
   SEXP err = R_NilValue;              \
-  char buf[CPPALLY_ERROR_BUFSIZE] = ""; \
+  char buf[CPPALLY_ERROR_BUFSIZE];    \
+  buf[0] = '\0';                      \
   try {
 
 #define END_CPPALLY                                               \
