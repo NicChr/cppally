@@ -76,10 +76,11 @@ test_that("Runtime type ID (via CPPALLY_TYPEOF) on SEXP", {
   expect_identical(cpp_typeof(raw(1)), "raw")
   expect_identical(cpp_typeof(list()), "list")
   expect_identical(cpp_typeof(list(1)), "list")
-  expect_identical(cpp_typeof(Sys.Date()), "CPPALLY_REALDATESXP")
-  expect_identical(cpp_typeof(Sys.time()), "CPPALLY_REALPSXTSXP")
+  expect_identical(cpp_typeof(Sys.Date()), "date (double storage)")
+  expect_identical(cpp_typeof(Sys.time()), "date-time (double storage)")
   # expect_identical(cpp_typeof(`storage.mode<-`(Sys.Date(), "integer")), "CPPALLY_INTDATESXP")
-  expect_identical(cpp_typeof(as.factor(0)), "CPPALLY_FCTSXP")
+  expect_identical(cpp_typeof(as.factor(0)), "factor")
+  expect_identical(cpp_typeof(iris), "data frame")
 
 })
 
