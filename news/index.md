@@ -1,5 +1,7 @@
 # Changelog
 
+## cppally (development version)
+
 ## cppally 1.1.0 (2026-07-12)
 
 CRAN release: 2026-07-12
