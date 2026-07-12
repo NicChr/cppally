@@ -411,7 +411,34 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
     }
 
 
-    abort("No matching template instantiation found for input types");
+    // Find the first template param whose type no valid instantiation accepts
+    // at that position; if every param is individually acceptable, the types
+    // only fail in combination
+    for (size_t K = 0; K < NumTemplateParams; ++K) {
+        if (runtime_types[K] == NILSXP) {
+            continue;
+        }
+        bool satisfiable = false;
+        for (size_t I = 0; I < Total && !satisfiable; ++I) {
+            satisfiable = dispatch_table[I] != nullptr &&
+                (type_table[I][K] == std::numeric_limits<uint32_t>::max() ||
+                 type_table[I][K] == runtime_types[K]);
+        }
+        if (!satisfiable) {
+            size_t arg = 0;
+            for (size_t i = 0; i < NumArgs; ++i) {
+                if (ArgToTemplateMap[i] == static_cast<int>(K)) {
+                    arg = i;
+                    break;
+                }
+            }
+            abort(
+                "Argument %zu of type %s does not satisfy the template constraints",
+                arg + 1, r_type_to_str(static_cast<SEXPTYPE>(runtime_types[K]))
+            );
+        }
+    }
+    abort("Supplied types do not satisfy the template constraints in combination");
     return nullptr;
 }
 
