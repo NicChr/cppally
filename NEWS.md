@@ -1,4 +1,4 @@
-# cppally 1.1.0 (2026-07-11)
+# cppally 1.1.0 (2026-07-12)
 
 ## Breaking changes
 
@@ -63,6 +63,8 @@ scalar operators, fixing a bug where mixed-width operations (e.g.
 turning `NA` into `0`.
 
 ## Improvements
+
+- Better errors when passing invalid types to template functions.
 
 - Constructing invalid dates and date-times now returns `NA` instead of 
 an error.
