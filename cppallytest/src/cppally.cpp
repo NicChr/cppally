@@ -954,6 +954,34 @@ extern "C" SEXP _cppallytest_test_na_types() {
   return cpp_to_r(::test_na_types());
   END_CPPALLY
 }
+// test_protect.cpp
+r_lgl test_protect_count_tracking();
+extern "C" SEXP _cppallytest_test_protect_count_tracking() {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_protect_count_tracking());
+  END_CPPALLY
+}
+// test_protect.cpp
+r_lgl test_protect_slot_reuse();
+extern "C" SEXP _cppallytest_test_protect_slot_reuse() {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_protect_slot_reuse());
+  END_CPPALLY
+}
+// test_protect.cpp
+r_lgl test_protect_chunk_growth();
+extern "C" SEXP _cppallytest_test_protect_chunk_growth() {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_protect_chunk_growth());
+  END_CPPALLY
+}
+// test_protect.cpp
+r_lgl test_protect_burst_reserve();
+extern "C" SEXP _cppallytest_test_protect_burst_reserve() {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_protect_burst_reserve());
+  END_CPPALLY
+}
 // test_refs.h
 SEXP test_by_value(r_vec<r_dbl> x);
 extern "C" SEXP _cppallytest_test_by_value(SEXP x) {
@@ -1253,6 +1281,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_null",                         (DL_FUNC) &_cppallytest_test_null,                         0},
     {"_cppallytest_test_order",                        (DL_FUNC) &_cppallytest_test_order,                        2},
     {"_cppallytest_test_overflow",                     (DL_FUNC) &_cppallytest_test_overflow,                     0},
+    {"_cppallytest_test_protect_burst_reserve",        (DL_FUNC) &_cppallytest_test_protect_burst_reserve,        0},
+    {"_cppallytest_test_protect_chunk_growth",         (DL_FUNC) &_cppallytest_test_protect_chunk_growth,         0},
+    {"_cppallytest_test_protect_count_tracking",       (DL_FUNC) &_cppallytest_test_protect_count_tracking,       0},
+    {"_cppallytest_test_protect_slot_reuse",           (DL_FUNC) &_cppallytest_test_protect_slot_reuse,           0},
     {"_cppallytest_test_range",                        (DL_FUNC) &_cppallytest_test_range,                        2},
     {"_cppallytest_test_rep",                          (DL_FUNC) &_cppallytest_test_rep,                          2},
     {"_cppallytest_test_rep_each",                     (DL_FUNC) &_cppallytest_test_rep_each,                     2},
