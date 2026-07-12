@@ -12,7 +12,6 @@
 
 #include <cppally/r_sexp_types.h>
 #include <cppally/r_coerce.h>
-#include <cppally/r_length.h>
 #include <cstdint> // For uint32_t and similar
 #include <tuple>
 #include <utility>
