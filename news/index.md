@@ -2,6 +2,8 @@
 
 ## cppally 1.1.0 (2026-07-12)
 
+CRAN release: 2026-07-12
+
 ### Breaking changes
 
 - Improved type-safety regarding implicit coercion of RScalar types.
