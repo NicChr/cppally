@@ -12,12 +12,10 @@ template <RNumber T, RNumber U>
 auto sequence(int size, T from, U by){
 
     using common_t   = common_r_t<T, U>;
-    using common_cpp = unwrap_t<common_t>;
 
     if (size < 0){
         abort("size must be non-negative");
     }
-
     if (is_na(from)){
         abort("from contains NA values");
     }
@@ -25,30 +23,15 @@ auto sequence(int size, T from, U by){
         abort("by contains NA values");
     }
 
-    auto start     = unwrap(from);
-    auto increment = unwrap(by);
+    r_vec<common_t> out(size);
+    int interrupt_counter = 0;
 
-    auto seq_size = unwrap(size);
-    auto out = r_vec<common_t>(seq_size);
-
-    common_cpp current_val = start;
-    r_size_t interrupt_counter = 0;
-
-    for (r_size_t j = 0; j < seq_size; ++j, ++interrupt_counter){
+    for (int j = 0; j < size; ++j, ++interrupt_counter){
         if (interrupt_counter == 100000000) [[unlikely]] {
             check_user_interrupt();
             interrupt_counter = 0;
         }
-        if constexpr (RIntegerNumber<common_t>){
-            out.set(j, common_t(current_val));
-            if (j < seq_size - 1){
-                if (__builtin_add_overflow(current_val, increment, &current_val)) [[unlikely]] {
-                    abort("Integer overflow in sequence, please use doubles");
-                }
-            }
-        } else {
-            out.set(j, common_t( start + (j * increment) ));
-        }
+        out.set(j, from + (j * by) );
     }
     return out;
 }
