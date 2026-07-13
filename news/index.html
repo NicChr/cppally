@@ -41,7 +41,10 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="cppally-development-version">cppally (development version)<a class="anchor" aria-label="anchor" href="#cppally-development-version"></a></h2>
-</div>
+<ul><li><p>Sequences no longer abort on overflow, but instead silently return <code>NA</code>.</p></li>
+<li><p>Fixed a bug where matching on integer vectors with a non <code>NA</code> <code>nomatch</code> value would still return <code>NA</code>.</p></li>
+<li><p>New by-group left-fold functional <code>reduce_by_group</code>.</p></li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.0" id="cppally-110-2026-07-12">cppally 1.1.0 (2026-07-12)<a class="anchor" aria-label="anchor" href="#cppally-110-2026-07-12"></a></h2><p class="text-muted">CRAN release: 2026-07-12</p>
 <div class="section level3">
