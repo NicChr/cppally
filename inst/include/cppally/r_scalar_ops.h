@@ -36,7 +36,7 @@ inline constexpr r_lgl operator!(r_lgl x) noexcept {
 // ---------------------------------------------------------
 inline constexpr r_lgl operator||(r_lgl lhs, r_lgl rhs) noexcept {
     int val = lhs.value | rhs.value;
-    return (val & 1) ? r_true : r_lgl(val);
+    return (val & 1) ? r_true : internal::new_r_lgl(val);
 }
 
 // ---------------------------------------------------------
@@ -51,7 +51,7 @@ inline constexpr r_lgl operator&&(r_lgl lhs, r_lgl rhs) noexcept {
   int b = rhs.value;
   int o = a | b;
   int res = (a & b) | ((o & r_na.value) & -(o & 1));
-  return r_lgl{res};
+  return internal::new_r_lgl(res);
 }
 
 inline constexpr r_lgl operator|(r_lgl lhs, r_lgl rhs) noexcept {
