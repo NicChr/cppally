@@ -55,7 +55,7 @@ internal::control_flow<Acc> done(Acc v){ return { std::move(v), true }; }
 template <typename Acc>
 internal::control_flow<Acc> keep(Acc v){ return { std::move(v), false }; }
 
-template<RVal T>
+template <RVal T>
 struct r_vec {
 
   r_sexp value;

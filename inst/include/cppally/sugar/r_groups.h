@@ -108,7 +108,7 @@ r_vec<r_int> order() const {
     if (sorted || is_sorted(ids)){
         int n = ids.length();
         r_vec<r_int> out(n);
-        for (int i = 0; i < n; ++i) out.set(i, r_int(i));
+        out.iota();
         return out;
     } else {
         return cppally::order(ids, /*preserve_ties = */ false);
