@@ -78,8 +78,8 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack, U no_match = n
         }
       }
       
-      // Find first NA position in haystack (if any)
-      int na_pos = na<r_int>();
+      // Find first NA position in haystack, NA needles get no_match if there is none
+      int na_pos = unwrap(no_match);
       for (r_size_t i = 0; i < n_haystack; ++i) {
         if (is_na(p_haystack[i])){
           na_pos = static_cast<int>(i);
@@ -94,7 +94,9 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack, U no_match = n
           p_out[i] = na_pos;
         } else if (val >= min_val && val <= max_val) {
           size_t idx = static_cast<size_t>(static_cast<int64_t>(val) - min_val);
-          p_out[i] = p_table[idx];
+          int pos = p_table[idx];
+          // NA is the table's 'unset' sentinel, meaning val is not in the haystack
+          p_out[i] = is_na(pos) ? unwrap(no_match) : pos;
         } else {
           p_out[i] = unwrap(no_match);
         }
