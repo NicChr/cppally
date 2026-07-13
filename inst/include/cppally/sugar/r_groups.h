@@ -42,26 +42,21 @@ struct groups {
         return out;
     }
 
-    int curr_group;
-
     if (sorted){
         // Initialise just in-case there are groups with no group IDs (e.g. unused factor levels)
         out.fill(na<r_int>());
         const int* RESTRICT p_ids = ids.data();
         int* RESTRICT p_out = out.data();
 
-        curr_group = 0;
-        p_out[0] = 0;
+        if (n > 0){
+            p_out[p_ids[0]] = 0;
+        }
 
         for (int i = 1; i < n; ++i){
             // New group
-            if (p_ids[i] > curr_group){
-                p_out[++curr_group] = i;
+            if (p_ids[i] != p_ids[i - 1]){
+                p_out[p_ids[i]] = i;
             }
-            //
-            // if (p_ids[i] > p_ids[i - 1]){
-            //     p_out[++curr_group] = i;
-            // }
         }
     } else {
 
@@ -74,7 +69,7 @@ struct groups {
         int* RESTRICT p_out = out.data();
 
         for (int i = 0; i < n; ++i){
-            curr_group = p_ids[i];
+            int curr_group = p_ids[i];
             p_out[curr_group] = std::min(p_out[curr_group], i);
           }
 
