@@ -1,5 +1,12 @@
 # cppally (development version)
 
+- Sequences no longer abort on overflow, but instead silently return `NA`.
+
+- Fixed a bug where matching on integer vectors with a non `NA` `nomatch` value
+would still return `NA`.
+
+- New by-group left-fold functional `reduce_by_group`.
+
 # cppally 1.1.0 (2026-07-12)
 
 ## Breaking changes
