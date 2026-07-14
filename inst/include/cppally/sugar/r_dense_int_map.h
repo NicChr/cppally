@@ -1,5 +1,5 @@
-#ifndef CPPALLY_R_VALUE_MAP_H
-#define CPPALLY_R_VALUE_MAP_H
+#ifndef CPPALLY_R_DENSE_INT_MAP_H
+#define CPPALLY_R_DENSE_INT_MAP_H
 
 #include <cppally/r_vec.h>
 #include <cppally/sugar/r_stats.h>

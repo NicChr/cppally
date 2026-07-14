@@ -6,7 +6,7 @@
 #include <cppally/r_visit.h>
 #include <cppally/sugar/r_stats.h>
 #include <cppally/sugar/r_hash.h>
-#include <cppally/sugar/r_value_map.h>
+#include <cppally/sugar/r_dense_int_map.h>
 #include <cppally/sugar/r_sort.h>
 #include <cppally/r_identical.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
@@ -260,40 +260,6 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
       n_groups = next_id;
       return groups(group_ids, n_groups, ordered, sorted);
 }
-
-// template <RVal T>
-// inline groups make_unordered_groups(const r_vec<T>& x) {
-
-//     r_size_t n = x.length();
-
-//     if (n == 0) return groups(r_vec<r_int>(), 0, false, true);
-
-//     r_vec<r_int> group_ids(n);
-
-//     auto* RESTRICT p_x = x.data();
-//     auto* RESTRICT p_id = group_ids.data();
-
-//     // Group IDs are assigned in order of first appearance
-//     int n_groups = internal::with_value_map<int>(x, -1, [p_x, p_id, n](auto&& try_emplace, auto&&) -> int {
-//         int next_id = 0;
-//         for (r_size_t i = 0; i < n; ++i) {
-//             auto [id, inserted] = try_emplace(p_x[i], next_id);
-//             next_id += inserted;
-//             p_id[i] = id;
-//         }
-//         return next_id;
-//     });
-
-//     // check if group IDs are sorted
-//     bool sorted = true;
-//     for (r_size_t i = 1; i < n; ++i) {
-//         if (p_id[i] < p_id[i - 1]){
-//             sorted = false;
-//             break;
-//         }
-//     }
-//     return groups(group_ids, n_groups, /*ordered=*/false, sorted);
-// }
 
 // hash each row directly into a single key
 inline groups make_unordered_groups(const r_df& x) {
