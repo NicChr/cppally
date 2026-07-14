@@ -95,13 +95,13 @@ inline r_df r_df::get_row(int index) const {
     attr::set_old_class(out, internal::data_frame_class());
     attr::set_attr(out, symbol::row_names_sym, internal::create_row_names(1));
     for (int i = 0; i < ncols; ++i){
-        out.set(i, r_sexp(internal::view_sexp(value.view(i), [index]<typename vec_t>(const vec_t& vec) -> SEXP {
+        out.set(i, internal::view_sexp(value.view(i), [index]<typename vec_t>(const vec_t& vec) -> r_sexp {
             if constexpr (requires { vec.view(index); }){
-                return as<SEXP>(vec.view(index));
+                return static_cast<r_sexp>(internal::as_list_element(vec.view(index)));
             } else {
                 abort("No view member exists for type %s", internal::type_str<vec_t>());
             }
-        }), internal::view_tag{}));
+        }));
     }
     return r_df(out, 1, internal::no_checks_tag{});
 }
