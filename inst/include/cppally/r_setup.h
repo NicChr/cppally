@@ -21,11 +21,6 @@
 #define ANKERL_UNORDERED_DENSE_DISABLE_PMR
 #endif
 
-// To preserve R ALTREP and avoid premature data materialisation
-// Either uncomment the below line or define it in your code before including <cppally.hpp>
-// Note: Preserving ALTREP may incur some performance cost
-// #define CPPALLY_PRESERVE_ALTREP 
-
 #include <Rinternals.h>
 #include <iosfwd> // Forward declarations for strings
 #include <cstdint>
