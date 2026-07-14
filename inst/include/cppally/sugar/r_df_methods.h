@@ -98,6 +98,9 @@ inline r_df r_df::get_row(int index) const {
     for (int i = 0; i < ncols; ++i){
         out.set(i, internal::view_sexp(value.view(i), [index]<typename vec_t>(const vec_t& vec) -> r_sexp {
             if constexpr (requires { vec.view(index); }){
+                // Basically there's no way to go from an r_str to an r_factors object
+                // All RVector objects are well-defined in that they have one-to-one mappings to/from their scalar counterparts
+                // But that's not the case with other RComposite types like r_factors (and r_df)
                 if constexpr (RVector<vec_t>){
                     return static_cast<r_sexp>(internal::as_list_element(vec.view(index)));
                 } else {
