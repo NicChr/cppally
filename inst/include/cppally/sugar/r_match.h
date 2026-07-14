@@ -4,6 +4,7 @@
 #include <cppally/r_coerce.h>
 #include <cppally/sugar/r_hash.h>
 #include <cppally/sugar/r_stats.h>
+#include <cppally/sugar/r_value_map.h>
 #include <cppally/r_vec_ops.h>
 #include <cppally/r_pmap.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
@@ -50,60 +51,20 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack, U no_match = n
   auto* RESTRICT p_haystack = haystack.data();
   auto* RESTRICT p_out = out.data();
 
-  // Integer optimization: use table lookup for small integer ranges
-  if constexpr (is<U, r_int> && is<key_t, int>) {
-    r_vec<T> rng = range(haystack, /*na_rm=*/true);
-    
-    int min_val = unwrap(rng.get(0));
-    int max_val = unwrap(rng.get(1));
-    
-    bool all_nas = is_na(min_val) && is_na(max_val);
-    int64_t range_span = all_nas ? 0 : static_cast<int64_t>(max_val) - static_cast<int64_t>(min_val);
-    constexpr int64_t MAX_TABLE_SIZE = 20000000; 
+  // Try the dense int table first (small-range int haystack)
+  if constexpr (is<U, r_int> && is<T, r_int>) {
+    bool done = internal::try_dense_int_map(haystack, -1, [&, p_needles, p_haystack, p_out](auto&& try_emplace, auto&& find_or) {
 
-    if (!all_nas && range_span < MAX_TABLE_SIZE) {
-      // Table maps (value - min_val) -> position, init with NA
-      r_vec<r_int> table(range_span + 1, na<r_int>());
-      
-      auto* RESTRICT p_table = table.data();
-      
       // Build table: first occurrence wins
       for (r_size_t i = 0; i < n_haystack; ++i) {
-        int val = p_haystack[i];
-        if (!is_na(val)){
-          size_t idx = static_cast<size_t>(static_cast<int64_t>(val) - min_val);
-          if (is_na(p_table[idx])){
-            p_table[idx] = static_cast<int>(i);
-          }
-        }
+        try_emplace(p_haystack[i], static_cast<int>(i));
       }
-      
-      // Find first NA position in haystack, NA needles get no_match if there is none
-      int na_pos = unwrap(no_match);
-      for (r_size_t i = 0; i < n_haystack; ++i) {
-        if (is_na(p_haystack[i])){
-          na_pos = static_cast<int>(i);
-          break;
-        }
-      }
-      
-      // Match needles
+      // Match needles (NA needles match the first NA in the haystack)
       for (r_size_t i = 0; i < n_needles; ++i) {
-        int val = p_needles[i];
-        if (is_na(val)) {
-          p_out[i] = na_pos;
-        } else if (val >= min_val && val <= max_val) {
-          size_t idx = static_cast<size_t>(static_cast<int64_t>(val) - min_val);
-          int pos = p_table[idx];
-          // NA is the table's 'unset' sentinel, meaning val is not in the haystack
-          p_out[i] = is_na(pos) ? unwrap(no_match) : pos;
-        } else {
-          p_out[i] = unwrap(no_match);
-        }
+        p_out[i] = find_or(p_needles[i], unwrap(no_match));
       }
-      
-      return out;
-    }
+    });
+    if (done) return out;
   }
 
   // Build hash table

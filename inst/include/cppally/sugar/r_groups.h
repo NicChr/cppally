@@ -6,6 +6,7 @@
 #include <cppally/r_visit.h>
 #include <cppally/sugar/r_stats.h>
 #include <cppally/sugar/r_hash.h>
+#include <cppally/sugar/r_value_map.h>
 #include <cppally/sugar/r_sort.h>
 #include <cppally/r_identical.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
@@ -193,72 +194,28 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
     bool ordered = false;
     bool sorted = false;
 
-    // Table Method (For int with small range)
+    auto* RESTRICT p_x = x.data();
+    auto* RESTRICT p_id = group_ids.data();
+
+    // Try the dense int table first (For int with small range)
+    // An all-NA vector falls through to the hash map, which handles NA keys
     if constexpr (is<T, r_int>) {
 
-        r_vec<T> rng = range(x, /*na_rm=*/true);
+        int next_id = 0;
 
-        int min_val = unwrap(rng.get(0));
-        int max_val = unwrap(rng.get(1));
-
-        // Check range results
-        // If x had only NAs, result would also be c(NA, NA)
-
-        bool all_nas = is_na(min_val) && is_na(max_val);
-        int64_t range_span = 0;
-
-        if (!all_nas) {
-             range_span = static_cast<int64_t>(max_val) - static_cast<int64_t>(min_val);
-        }
-
-        // Table vs Hash Map
-        // Table is faster if range is reasonably small (e.g. < 20M)
-        constexpr int64_t MAX_TABLE_SIZE = 20000000;
-
-
-        if (all_nas) {
-          // If all NAs, just return all zeroes
-          group_ids.fill(r_int(0));
-          n_groups = 1;
-          sorted = true;
-          return groups(group_ids, n_groups, ordered, sorted);
-       }
-
-        if (!all_nas && range_span < MAX_TABLE_SIZE) {
-
-            // --- FAST TABLE PATH ---
-
-            // Table maps (value - min_val) -> group_id
-            r_vec<r_int> table(range_span + 1, r_int(-1));
-            int na_group_id = -1; // Special slot for NA
-
-            auto* RESTRICT p_x = x.data();
-            auto* RESTRICT p_id = group_ids.data();
-            auto* RESTRICT p_table = table.data();
-
-            int next_id = 0;
-
-            for(r_size_t i = 0; i < n; ++i) {
-                int val = p_x[i];
-
-                int id;
-                if (val == unwrap(na<r_int>())) {
-                    if (na_group_id == -1) {
-                        na_group_id = next_id++;
-                    }
-                    id = na_group_id;
-                } else {
-                    // Safe subtraction because we validated range
-                    size_t idx = static_cast<size_t>(val - min_val);
-
-                    id = p_table[idx];
-                    if (id == -1) {
-                        id = next_id++;
-                        p_table[idx] = id;
-                    }
+        bool done = internal::try_dense_int_map(x, -1, [&, p_x, p_id](auto&& try_emplace, auto&&) {
+            for (r_size_t i = 0; i < n; ++i) {
+                auto [id, inserted] = try_emplace(p_x[i], next_id);
+                // Branch instead of `next_id += inserted` so the common (found) path
+                // carries no dependency between iterations
+                if (inserted) {
+                    ++next_id;
                 }
                 p_id[i] = id;
             }
+        });
+
+        if (done) {
             n_groups = next_id;
             // check if group IDs are sorted
             sorted = true;
@@ -270,7 +227,7 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
             }
             return groups(group_ids, n_groups, ordered, sorted);
         }
-      }
+    }
 
         ankerl::unordered_dense::map<
         key_type,
@@ -279,9 +236,6 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
         internal::r_hash_eq<T>
       > lookup;
       lookup.reserve(internal::get_hash_map_reserve_size<T>(n));
-
-      auto* RESTRICT p_x = x.data();
-      auto* RESTRICT p_id = group_ids.data();
 
       int next_id = 0;
 

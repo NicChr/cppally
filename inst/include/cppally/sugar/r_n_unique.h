@@ -5,6 +5,7 @@
 #include <cppally/r_concepts.h>
 #include <cppally/r_factor.h>
 #include <cppally/sugar/r_groups.h>
+#include <cppally/sugar/r_value_map.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 
 namespace cppally {
@@ -14,9 +15,25 @@ template <RVector T>
 inline r_size_t n_unique(const T& x) {
 
   using data_t = typename T::data_type;
-  
+
   r_size_t n = x.length();
-  
+
+  auto* RESTRICT p_x = x.data();
+
+  // Try the dense int table first (For int with small range)
+  if constexpr (is<data_t, r_int>) {
+
+    r_size_t n_unq = 0;
+
+    bool done = internal::try_dense_int_map(x, 0, [&, p_x](auto&& try_emplace, auto&&) {
+      for (r_size_t i = 0; i < n; ++i) {
+        n_unq += try_emplace(p_x[i], 1).second;
+      }
+    });
+
+    if (done) return n_unq;
+  }
+
   // Hash set for O(n) de-duplication
   ankerl::unordered_dense::set<
     unwrap_t<data_t>, 
@@ -25,8 +42,6 @@ inline r_size_t n_unique(const T& x) {
   > seen;
 
   seen.reserve(internal::get_hash_map_reserve_size<data_t>(n));
-
-  auto* RESTRICT p_x = x.data(); 
 
   for (r_size_t i = 0; i < n; ++i) {
     seen.insert(p_x[i]);
