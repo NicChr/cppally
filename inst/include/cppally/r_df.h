@@ -26,6 +26,12 @@ inline r_vec<r_int> create_row_names(int n){
     }
 }
 
+// Cached row names attribute for fast single-row r_df creation
+inline r_vec<r_int> single_row_names(){
+    static r_vec<r_int> row_nm = create_row_names(1);
+    return row_nm;
+}
+
 inline r_vec<r_sexp> new_df_impl(int nrows){
     r_vec<r_sexp> out{};
     r_vec<r_int> row_names = create_row_names(nrows);

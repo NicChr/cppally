@@ -89,15 +89,20 @@ inline r_df::r_df(const r_vec<T>& col) : r_df(r_vec<r_sexp>(1, r_sexp(static_cas
 inline r_df::r_df(const r_factors& col) : r_df(col.value){}
 
 inline r_df r_df::get_row(int index) const {
-    int ncols = ncol();
+    const int ncols = ncol();
     r_vec<r_sexp> out(ncols);
     out.set_names(colnames());
     attr::set_old_class(out, internal::data_frame_class());
-    attr::set_attr(out, symbol::row_names_sym, internal::create_row_names(1));
+    attr::set_attr(out, symbol::row_names_sym, internal::single_row_names()); 
+
     for (int i = 0; i < ncols; ++i){
         out.set(i, internal::view_sexp(value.view(i), [index]<typename vec_t>(const vec_t& vec) -> r_sexp {
             if constexpr (requires { vec.view(index); }){
-                return static_cast<r_sexp>(internal::as_list_element(vec.view(index)));
+                if constexpr (RVector<vec_t>){
+                    return static_cast<r_sexp>(internal::as_list_element(vec.view(index)));
+                } else {
+                    return static_cast<r_sexp>(subset(vec, r_vec<r_int>(1, r_int(index)), /*invert=*/false, /*check=*/false));
+                }
             } else {
                 abort("No view member exists for type %s", internal::type_str<vec_t>());
             }
