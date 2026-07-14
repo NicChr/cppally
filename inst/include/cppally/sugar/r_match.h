@@ -123,6 +123,58 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack, U no_match = n
   return out;
 }
 
+// template <internal::RNumericSubscript U = r_int, RVal T>
+// r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack, U no_match = na<U>()) {
+
+//   r_size_t n_needles = needles.length();
+//   r_size_t n_haystack = haystack.length();
+
+//   if constexpr (is<U, r_int>){
+//     if (n_haystack > r_limits<r_int>::max()){
+//       abort("Cannot match to a long vector, please use match<r_int64> instead");
+//     }
+//   }
+
+//   using int_t = unwrap_t<U>;
+
+//   r_vec<U> out(n_needles);
+
+//   if (n_needles == 0){
+//     return out;
+//   }
+
+//   // If only 1 needle, just find its first occurrence
+
+//   if (n_needles == 1){
+//     auto val = needles.view(0);
+//     for (r_size_t i = 0; i < n_haystack; ++i){
+//       if (identical(val, haystack.view(i))){
+//         out.set(0, U(static_cast<unwrap_t<U>>(i)));
+//         return out;
+//       }
+//     }
+//     out.set(0, no_match);
+//     return out;
+//   }
+
+//   auto* RESTRICT p_needles = needles.data();
+//   auto* RESTRICT p_haystack = haystack.data();
+//   auto* RESTRICT p_out = out.data();
+
+//   internal::with_value_map<int_t>(haystack, int_t(-1), [&](auto&& try_emplace, auto&& find_or) {
+//     // Build: first occurrence wins
+//     for (r_size_t i = 0; i < n_haystack; ++i) {
+//       try_emplace(p_haystack[i], static_cast<int_t>(i));
+//     }
+//     // Match needles (NA needles match the first NA in the haystack)
+//     for (r_size_t i = 0; i < n_needles; ++i) {
+//       p_out[i] = find_or(p_needles[i], unwrap(no_match));
+//     }
+//   });
+
+//   return out;
+// }
+
 namespace internal {
 
 // Per-column eq probe across two dfs at matching column positions.
