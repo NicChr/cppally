@@ -37,6 +37,8 @@ generate_cpp_template_example <- function(){
   utils::getFromNamespace("use_src", "usethis")()
   h_path <- file.path(proj_path, "src", "code.h")
   brio::write_lines(c(
+    "#pragma once",
+    "",
     "#include <cppally.hpp>",
     "using namespace cppally;",
     "
