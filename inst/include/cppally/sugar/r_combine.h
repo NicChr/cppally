@@ -101,22 +101,10 @@ inline r_sexp flatten(const r_vec<r_sexp>& x) {
         return r_null;
     }
 
-    r_size_t out_size = 0;
-    for (r_size_t i = 0; i < n; ++i) {
-        out_size += length(vectors.view(i));
-    }
-
     r_sexp ptype = common_ptype(x);
 
     return r_sexp_view(ptype, [&]<RComposite out_t>(const out_t&){
-        out_t out = resize(as<out_t>(vectors.view(0)), out_size);
-        r_size_t k = 0, m;
-        for (r_size_t i = 0; i < n; k += m, ++i){
-            out_t curr = as<out_t>(vectors.view(i));
-            m = length(curr);
-            r_copy_n(out, curr, k, m);
-        }
-        return static_cast<r_sexp>(out);
+        return r_sexp(flatten<out_t>(vectors));
     });
 }
   
