@@ -42,13 +42,13 @@ struct r_str {
     return CHAR(value);
   }
 
-  std::string_view cpp_str() const noexcept {
-    return std::string_view{c_str()};
+  std::string cpp_str() const {
+    return std::string(c_str(), static_cast<std::size_t>(Rf_length(value)));
   }
   
   // Explicit conversions
   explicit operator const char*() const noexcept { return c_str(); }
-  explicit operator std::string_view() const noexcept { return cpp_str(); }
+  explicit operator std::string() const { return cpp_str(); }
 
   static r_str na() noexcept {
     return r_str(NA_STRING, internal::view_tag{}, internal::no_checks_tag{});
@@ -90,7 +90,7 @@ struct r_str_view {
   r_str_view(const r_str& x) noexcept : value(static_cast<SEXP>(x)) {}
   
   const char* c_str() const noexcept { return CHAR(value); }
-  std::string_view cpp_str() const noexcept { return std::string_view{c_str()}; }
+  std::string_view cpp_str() const noexcept { return std::string_view(c_str(), static_cast<std::size_t>(Rf_length(value))); }
 
 
   // Explicit conversions
