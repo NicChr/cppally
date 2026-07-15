@@ -56,28 +56,6 @@ inline r_size_t n_unique(const T& x) {
   return seen.size();
 }
 
-// template <RVector T>
-// inline r_size_t n_unique(const T& x) {
-
-//   using data_t = typename T::data_type;
-
-//   r_size_t n = x.length();
-
-//   auto* RESTRICT p_x = x.data();
-
-//   return internal::with_value_map<int>(x, 0, [&](auto&& try_emplace, auto&&) -> r_size_t {
-//     r_size_t n_unq = 0;
-//     for (r_size_t i = 0; i < n; ++i) {
-//       n_unq += try_emplace(p_x[i], 1).second;
-//       // Since r_lgl can be either true, false or NA, we can safely return early if n_unique == 3
-//       if constexpr (is<data_t, r_lgl>){
-//         if (n_unq == 3) return 3;
-//       }
-//     }
-//     return n_unq;
-//   });
-// }
-
 inline r_size_t n_unique(const r_factors& x) {
   return n_unique(x.value);
 }
