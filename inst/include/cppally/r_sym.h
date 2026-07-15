@@ -31,7 +31,7 @@ struct r_sym {
 
   // Coercion to r_str
   r_str_view name() const {
-    return r_str_view(PRINTNAME(value)); 
+    return r_str_view(PRINTNAME(value), internal::no_checks_tag{}); 
   }
   explicit operator r_str_view() const {
     return name();
