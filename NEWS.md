@@ -5,11 +5,21 @@ would still return `NA`.
 
 - Fixed a bug where getting `r_df` rows would return CHARSXP instead of STRSXP.
 
+- `r_str::cpp_str` now returns `std::string` instead of `std::string_view`. 
+`r_str_view::cpp_str` is unchanged and continues to return `std::string_view`.
+
 - Sequences no longer abort on overflow, but instead silently return `NA`.
 
-- New by-group left-fold functional `reduce_by_group`.
+- `r_sym` now constructs symbols from strings (`const char*`, `r_str`,
+`r_str_view`) under unwind protection, so R errors can no longer 
+longjmp past C++ destructors.
+
+- New by-group left-fold functional `reduce_by_group`, allowing for very 
+efficient binary reductions by-group.
 
 - `n_unique` has been sped-up for integer vectors.
+
+- Integer multiplication overflow handling is now more portable. 
 
 # cppally 1.1.0 (2026-07-12)
 
