@@ -47,7 +47,7 @@ struct r_sym {
 
 template <internal::name T>
 inline r_sym cached_sym() {
-    return r_sym(internal::lazy_sym_impl<T>());
+    return r_sym(internal::lazy_sym_impl<T>(), internal::no_checks_tag{});
 }
 
 namespace symbol {
