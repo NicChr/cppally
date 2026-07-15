@@ -82,7 +82,8 @@ struct r_str_view {
   }
   explicit r_str_view(SEXP x, internal::no_checks_tag) : value{x} {}
   explicit r_str_view(SEXP x, internal::view_tag, internal::no_checks_tag) : value(x) {}
-  // explicit r_str_view(const char *x) : value(Rf_mkCharCE(x, CE_UTF8)) {}
+  // Can't construct `r_str_view` from `const char*` — use `r_str` instead
+  explicit r_str_view(const char *x) = delete;
   // Implicit r_str_view -> SEXP
   operator SEXP() const noexcept { return value; }
   
