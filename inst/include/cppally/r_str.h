@@ -27,6 +27,7 @@ struct r_str {
   explicit r_str(r_sexp x) : value(std::move(x)) {
     internal::check_valid_construction<r_str>(value);
   }
+  explicit r_str(r_sexp x, internal::no_checks_tag) : value(std::move(x)) {}
   explicit r_str(SEXP x, internal::no_checks_tag) : value{x} {}
   explicit r_str(SEXP x, internal::view_tag, internal::no_checks_tag) : value(x, internal::view_tag{}) {}
 
@@ -110,7 +111,7 @@ inline r_str::r_str(r_str_view x) : value(static_cast<SEXP>(x)) {}
 
 template <internal::name T>
 inline r_str cached_str() {
-    return r_str(internal::lazy_str_impl<T>());
+    return r_str(internal::lazy_str_impl<T>(), internal::no_checks_tag{});
 }
 
 // Memory address
@@ -120,7 +121,7 @@ inline r_str address(SEXP x) {
 
 namespace internal {
 inline r_str_view c_str_to_r_str_view(const char* x){
-  return r_str_view(Rf_mkCharCE(x, CE_UTF8));
+  return r_str_view(Rf_mkCharCE(x, CE_UTF8), internal::no_checks_tag{});
 }
 // NA
 inline const r_str na_str = r_str::na();
