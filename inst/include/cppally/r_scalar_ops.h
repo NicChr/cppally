@@ -239,6 +239,50 @@ inline constexpr auto operator-(T lhs, U rhs) noexcept {
   }
 }
 
+namespace internal {
+
+#if defined(__has_builtin)
+#  if __has_builtin(__builtin_mul_overflow)
+#    define CPPALLY_HAS_BUILTIN_MUL_OVERFLOW 1
+#  endif
+#endif
+
+// Portable signed multiply with overflow detection.
+// On overflow returns true and out is unspecified, otherwise false
+template <CppIntegerType I>
+inline constexpr bool mul_overflow(I a, I b, I& out) noexcept {
+  if constexpr (sizeof(I) < 8){
+    int_fast64_t p = static_cast<int_fast64_t>(a) * static_cast<int_fast64_t>(b);
+    out = static_cast<I>(p);
+    return p != static_cast<int_fast64_t>(out);
+  } 
+  // else if constexpr (sizeof(I) == 8 && int128_available){
+  //   int128_otherwise_64_t p = static_cast<int128_otherwise_64_t>(a) * static_cast<int128_otherwise_64_t>(b);
+  //   out = static_cast<I>(p);
+  //   return p != static_cast<int128_otherwise_64_t>(out);
+  // } 
+  else {
+  #ifdef CPPALLY_HAS_BUILTIN_MUL_OVERFLOW
+    return __builtin_mul_overflow(a, b, &out);
+  #else
+    using UI = std::make_unsigned_t<I>;
+    out = static_cast<I>(static_cast<UI>(a) * static_cast<UI>(b));
+    if (a == 0 || b == 0){
+      return false;
+    }
+    if (b == -1){
+      return a == std::numeric_limits<I>::min(); // avoid MIN / -1 trap below
+    }
+    // If the product wrapped, it is off by a multiple of 2^64 and division cannot recover a
+    return (out / b) != a;
+  #endif
+  }
+}
+
+#undef CPPALLY_HAS_BUILTIN_MUL_OVERFLOW
+
+}
+
 template <MathType T, MathType U>
   requires (RMathType<T> || RMathType<U>)
 inline constexpr auto operator*(T lhs, U rhs) noexcept {
@@ -250,7 +294,7 @@ inline constexpr auto operator*(T lhs, U rhs) noexcept {
     I a = static_cast<I>(unwrap(lhs));
     I b = static_cast<I>(unwrap(rhs));
     I p;
-    bool bad = internal::either_na(lhs, rhs) || __builtin_mul_overflow(a, b, &p);
+    bool bad = internal::either_na(lhs, rhs) || internal::mul_overflow(a, b, p);
     return bad ? na<common_t>() : common_t(p);
   } else if constexpr (is<T, r_dbl> && is<U, r_dbl>){
     return r_dbl(static_cast<double>(unwrap(lhs)) * static_cast<double>(unwrap(rhs)));
