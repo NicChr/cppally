@@ -50,7 +50,7 @@ struct r_str {
   explicit operator std::string_view() const noexcept { return cpp_str(); }
 
   static r_str na() noexcept {
-    return r_str(NA_STRING, internal::view_tag{});
+    return r_str(NA_STRING, internal::view_tag{}, internal::no_checks_tag{});
   }
 
   bool is_na() const noexcept {
@@ -97,7 +97,7 @@ struct r_str_view {
   explicit operator std::string_view() const noexcept { return cpp_str(); }
 
   static r_str_view na() noexcept {
-    return r_str_view(NA_STRING);
+    return r_str_view(NA_STRING, internal::no_checks_tag{});
   }
 
   bool is_na() const noexcept {
