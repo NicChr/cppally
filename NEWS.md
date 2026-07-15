@@ -1,11 +1,15 @@
 # cppally (development version)
 
-- Sequences no longer abort on overflow, but instead silently return `NA`.
-
 - Fixed a bug where matching on integer vectors with a non `NA` `nomatch` value
 would still return `NA`.
 
+- Fixed a bug where getting `r_df` rows would return CHARSXP instead of STRSXP.
+
+- Sequences no longer abort on overflow, but instead silently return `NA`.
+
 - New by-group left-fold functional `reduce_by_group`.
+
+- `n_unique` has been sped-up for integer vectors.
 
 # cppally 1.1.0 (2026-07-12)
 
