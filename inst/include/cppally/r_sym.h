@@ -33,14 +33,14 @@ struct r_sym {
   operator SEXP() const noexcept { return value; }
 
   // Coercion to r_str
-  r_str_view name() const {
-    return r_str_view(PRINTNAME(value), internal::no_checks_tag{}); 
+  r_str name() const {
+    return r_str(PRINTNAME(value), internal::view_tag{}, internal::no_checks_tag{}); 
   }
   explicit operator r_str_view() const {
-    return name();
+    return r_str_view(name());
   }
   explicit operator r_str() const {
-    return r_str(name());
+    return name();
   }
 
 };
