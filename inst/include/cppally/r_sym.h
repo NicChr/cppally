@@ -25,8 +25,8 @@ struct r_sym {
   explicit r_sym(SEXP x, internal::no_checks_tag) : value(x) {}
   explicit r_sym(SEXP x, internal::view_tag, internal::no_checks_tag) : value(x) {}
 
-  explicit r_sym(const char *x) : value(Rf_installChar(Rf_mkCharCE(x, CE_UTF8))) {}
-  explicit r_sym(const r_str_view& x) : value(x.is_na() ? internal::lazy_sym_impl<"NA">() : Rf_installChar(x.value)){}
+  explicit r_sym(const char *x) : value(internal::unwind_protect([&] { return Rf_installChar(Rf_mkCharCE(x, CE_UTF8)); })) {}
+  explicit r_sym(const r_str_view& x) : value(x.is_na() ? internal::lazy_sym_impl<"NA">() : safe[Rf_installChar](x.value)){}
   explicit r_sym(const r_str& x) : r_sym(r_str_view(x)){}
   
   explicit operator r_sexp() const noexcept { return r_sexp(value, internal::view_tag{}); }
