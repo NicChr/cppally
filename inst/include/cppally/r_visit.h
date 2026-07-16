@@ -94,7 +94,7 @@ inline std::string join_accepted() {
 #define CPPALLY_CASE_TYPE(C, W) W,
 template <class F>
 inline std::string accepted_types() {
-    std::string s = join_accepted<F, CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>();
+    static std::string s = join_accepted<F, CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>();
     return s.empty() ? "(none)" : s;
 }
 #undef CPPALLY_CASE_TYPE
