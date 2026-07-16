@@ -169,13 +169,16 @@ template <typename T>
 concept CStringType = is<T, const char*>;
 
 template <typename T>
+concept CppStringType = CStringType<T> || (std::is_class_v<T> && std::convertible_to<const T&, std::string_view>);
+
+template <typename T>
 concept RStringType = any<T, r_str, r_str_view>;
 
 template <typename T>
 concept RSortableType = RNumericType<T> || RStringType<T>;
 
 template <typename T>
-concept CppSortableType = CppNumericType<T> || (std::is_class_v<T> && std::convertible_to<const T&, std::string_view>);
+concept CppSortableType = (CppNumericType<T> || CppStringType<T>) && !CStringType<T>;
 
 template <typename T>
 concept SortableType = RSortableType<T> || CppSortableType<T>;
