@@ -3,6 +3,7 @@
 
 #include <cppally/r_vec.h>
 #include <cppally/sugar/r_list_helpers.h>
+#include <initializer_list>
 #include <string>
 #include <vector>
 
@@ -72,6 +73,22 @@ r_vec<r_str> str_paste(Args... args){
     std::vector<r_vec<r_str_view>> characters = as<std::vector<r_vec<r_str_view>>>(vectors);
     return internal::str_paste_list(characters);
 }
+
+
+template <RAtomicVector T>
+inline r_vec<r_str> str_paste(std::initializer_list<T> args, const char* sep = ""){
+    std::vector<r_vec<r_str_view>> characters;
+    characters.reserve(args.size());
+    for (const T& v : args){
+        if (!v.is_null()){
+            characters.push_back(as<r_vec<r_str_view>>(v));
+        }
+    }
+    return internal::str_paste_list(characters, sep);
+}
+
+
+
 inline r_str str_collapse(const r_vec<r_str>& x, const char* sep = ""){
     r_size_t n = x.length();
 
