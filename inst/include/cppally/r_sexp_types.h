@@ -7,6 +7,7 @@
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
 #include <cppally/r_protect.h>
+#include <cstdio>
 
 namespace cppally {
 
@@ -86,30 +87,34 @@ template <> inline const char* type_str<r_psxct>(){return "r_psxct";}
 template <> inline const char* type_str<r_factors>(){return "r_factors";}
 template <> inline const char* type_str<r_df>(){return "r_df";}
 
-template<RVector T>
+
+template <RVector T>
 inline const char* type_str(){
-    using r_t = typename T::data_type;
-    static const std::string out = std::string("r_vec<") + type_str<r_t>() + ">";
-    return out.c_str();
+    using data_t = typename T::data_type;
+    // static needed so data stays alive for program duration
+    static char out[64];
+    static const int len = std::snprintf(out, sizeof(out), "r_vec<%s>", type_str<data_t>());
+    (void)len;
+    return out;
 }
 
-template<CppFloatType T> 
+template <CppFloatType T> 
 inline const char* type_str(){
     return "C++ float";
 }
-template<CppIntegerType T>
+template <CppIntegerType T>
 inline const char* type_str(){
     return "C/C++ integer";
 }
-template<> 
-inline const char* type_str<const char*>(){
-    return "C string";
+template <CppStringType T>
+inline const char* type_str(){
+    if constexpr (CStringType<T>){
+        return "C string";
+    } else {
+        return "C++ string";
+    }
 }
-template<>
-inline const char* type_str<std::string>(){
-    return "C++ string";
-}
-template<CppComplexType T> 
+template <CppComplexType T> 
 inline const char* type_str(){
     return "C++ complex";
 }
