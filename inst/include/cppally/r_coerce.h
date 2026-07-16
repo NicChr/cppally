@@ -78,7 +78,7 @@ inline T as_impl(const U& x) {
 template <CastableToRScalar T, typename U>
 requires (CppType<T>)
 inline T as_impl(const U& x) {
-  return static_cast<T>(unwrap(as<as_r_scalar_t<T>>(x)));
+  return static_cast<T>(as<as_r_scalar_t<T>>(x));
 }
 
 template <RScalar T, RScalar U>
