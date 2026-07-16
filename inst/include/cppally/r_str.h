@@ -86,7 +86,6 @@ struct r_str_view {
   explicit r_str_view(SEXP x, internal::view_tag, internal::no_checks_tag) : value(x) {}
   // Can't construct `r_str_view` from `const char*` — use `r_str` instead
   explicit r_str_view(const char *x) = delete;
-  explicit r_str_view(const std::string& x) = delete;
   explicit r_str_view(std::string_view x) = delete;
   // Implicit r_str_view -> SEXP
   operator SEXP() const noexcept { return value; }
@@ -125,9 +124,30 @@ inline r_str address(SEXP x) {
 }
 
 namespace internal {
+
+// Result is UNPROTECTED! Ensure the result is immediately protected
+// e.g. by setting it as an element to r_vec<r_str_view>
+// Otherwise just use `r_str()` or `as<r_str>` 
 inline r_str_view c_str_to_r_str_view(const char* x){
   return r_str_view(Rf_mkCharCE(x, CE_UTF8), internal::no_checks_tag{});
 }
+
+// inline r_str str_concat(std::initializer_list<const char*> parts, const char* sep = ""){
+//   std::size_t sep_len = std::strlen(sep), n = parts.size() > 1 ? (parts.size() - 1) * sep_len : 0;
+//   for (const char* p : parts){ n += std::strlen(p); }
+//   char* buf = R_alloc(n + 1, 1);
+//   char* q = buf;
+//   bool first = true;
+//   for (const char* p : parts){
+//     if (!first){ std::memcpy(q, sep, sep_len); q += sep_len; }
+//     std::size_t k = std::strlen(p);
+//     std::memcpy(q, p, k); q += k;
+//     first = false;
+//   }
+//   *q = '\0';
+//   return r_str(Rf_mkCharLenCE(buf, static_cast<int>(n), CE_UTF8), internal::no_checks_tag{});
+// }
+
 // NA
 inline const r_str na_str = r_str::na();
 }
