@@ -33,8 +33,6 @@ struct r_str {
   explicit r_str(SEXP x, internal::view_tag, internal::no_checks_tag) : value(x, internal::view_tag{}) {}
 
   explicit r_str(const char *x) : value(Rf_mkCharCE(x, CE_UTF8)) {}
-  // explicit r_str(std::string_view x) : value(Rf_mkCharLenCE(x.data(), static_cast<int>(x.size()), CE_UTF8)) {}
-  // explicit r_str(const std::string& x) : r_str(std::string_view(x)) {}
 
   // Implicit r_str -> SEXP 
   operator SEXP() const noexcept { return value; }
@@ -50,15 +48,9 @@ struct r_str {
     return std::string_view{c_str()};
   }
 
-  // std::string cpp_str() const {
-  //   return std::string(c_str(), static_cast<std::size_t>(Rf_length(value)));
-  // }
-  
   // Explicit conversions
   explicit operator const char*() const noexcept { return c_str(); }
   explicit operator std::string_view() const noexcept { return cpp_str(); }
-  // explicit operator std::string_view() const noexcept { return std::string_view(c_str(), static_cast<std::size_t>(Rf_length(value))); }
-  // explicit operator std::string() const { return cpp_str(); }
 
   static r_str na() noexcept {
     return r_str(NA_STRING, internal::view_tag{}, internal::no_checks_tag{});
@@ -103,13 +95,12 @@ struct r_str_view {
   r_str_view(const r_str& x) noexcept : value(static_cast<SEXP>(x)) {}
   
   const char* c_str() const noexcept { return CHAR(value); }
-  std::string_view cpp_str() const noexcept { return std::string_view(c_str(), static_cast<std::size_t>(Rf_length(value))); }
+  std::string_view cpp_str() const noexcept { return std::string_view{c_str()}; }
 
 
   // Explicit conversions
   explicit operator const char*() const noexcept { return c_str(); }
   explicit operator std::string_view() const noexcept { return cpp_str(); }
-  // explicit operator std::string() const { return static_cast<std::string>(cpp_str()); }
 
   static r_str_view na() noexcept {
     return r_str_view(NA_STRING, internal::no_checks_tag{});
