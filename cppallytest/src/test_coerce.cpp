@@ -152,12 +152,6 @@ void test_to_bool(){
     expect_identical(as<bool>(r_int64(3)), true);
     expect_identical(as<bool>(r_dbl(3)), true);
     expect_identical(as<bool>(r_true), true);
-
-    // bool has no NA representation; NA is non-zero so maps to true
-    expect_identical(as<bool>(na<r_int>()), true);
-    expect_identical(as<bool>(na<r_int64>()), true);
-    expect_identical(as<bool>(na<r_dbl>()), true);
-    expect_identical(as<bool>(na<r_lgl>()), true);
 }
 
 // -> r_int

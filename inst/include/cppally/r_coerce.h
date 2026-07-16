@@ -78,7 +78,15 @@ inline T as_impl(const U& x) {
 template <CastableToRScalar T, typename U>
 requires (CppType<T>)
 inline T as_impl(const U& x) {
-  return static_cast<T>(unwrap(as<as_r_scalar_t<T>>(x)));
+  using r_scalar_t = as_r_scalar_t<T>;
+  // Use defined conversion if operator exists
+  if constexpr (std::is_constructible_v<T, r_scalar_t>){
+    return T(as<r_scalar_t>(x));
+  } else {
+    // Fall-back branch, mainly useful for numeric casting
+    // as<> produces runtime error if cast results in complete loss
+    return static_cast<T>(unwrap(as<r_scalar_t>(x)));
+  }
 }
 
 template <RScalar T, RScalar U>
