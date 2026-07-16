@@ -4,6 +4,7 @@
 #include <concepts>
 #include <type_traits>
 #include <cstdint> // For uint32_t and similar
+#include <string_view>
 #include <complex> // For complex<double>
 #include <limits>
 #include <utility> // for cmp_less_equal
@@ -174,7 +175,7 @@ template <typename T>
 concept RSortableType = RNumericType<T> || RStringType<T>;
 
 template <typename T>
-concept CppSortableType = CppNumericType<T> || any<T, std::string, std::string_view>;
+concept CppSortableType = CppNumericType<T> || (std::is_class_v<T> && std::convertible_to<const T&, std::string_view>);
 
 template <typename T>
 concept SortableType = RSortableType<T> || CppSortableType<T>;
@@ -311,7 +312,7 @@ inline consteval bool lossless_numeric_cast(){
 
 };
 
-// C/C++ -> RScalar mappings
+// C/C++ -> RScalar mappings (many-to-one)
 // RScalar maps to RScalar (identity)
 
 template <typename T>
@@ -320,10 +321,10 @@ struct r_scalar_mapping {};
 template <RScalar T>
 struct r_scalar_mapping<T> { using type = T; };
 
-template<> struct r_scalar_mapping<bool>                      { using type = r_lgl; };
-template<> struct r_scalar_mapping<const char*>               { using type = r_str; };
-template<> struct r_scalar_mapping<std::complex<double>>      { using type = r_cplx; };
-template<> struct r_scalar_mapping<unsigned char>             { using type = r_raw; };
+template<> struct r_scalar_mapping<bool>                            { using type = r_lgl; };
+template<> struct r_scalar_mapping<const char*>                     { using type = r_str; };
+template<> struct r_scalar_mapping<std::complex<double>>            { using type = r_cplx; };
+template<> struct r_scalar_mapping<unsigned char>                   { using type = r_raw; };
 
 template <CppMathType T>
 struct r_scalar_mapping<T> {
