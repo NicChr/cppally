@@ -132,22 +132,6 @@ inline r_str_view c_str_to_r_str_view(const char* x){
   return r_str_view(Rf_mkCharCE(x, CE_UTF8), internal::no_checks_tag{});
 }
 
-// inline r_str str_concat(std::initializer_list<const char*> parts, const char* sep = ""){
-//   std::size_t sep_len = std::strlen(sep), n = parts.size() > 1 ? (parts.size() - 1) * sep_len : 0;
-//   for (const char* p : parts){ n += std::strlen(p); }
-//   char* buf = R_alloc(n + 1, 1);
-//   char* q = buf;
-//   bool first = true;
-//   for (const char* p : parts){
-//     if (!first){ std::memcpy(q, sep, sep_len); q += sep_len; }
-//     std::size_t k = std::strlen(p);
-//     std::memcpy(q, p, k); q += k;
-//     first = false;
-//   }
-//   *q = '\0';
-//   return r_str(Rf_mkCharLenCE(buf, static_cast<int>(n), CE_UTF8), internal::no_checks_tag{});
-// }
-
 // NA
 inline const r_str na_str = r_str::na();
 }
