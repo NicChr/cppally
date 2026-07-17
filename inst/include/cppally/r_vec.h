@@ -155,19 +155,19 @@ struct r_vec {
 
   // By default do nothing (e.g. for vectors with no attrs)
   template <typename U>
-  void validate_attrs(SEXP x) const {
+  void validate_class(SEXP x) const {
     return;
   }
 
   template <RDateType U>
-  void validate_attrs(SEXP x) const {
+  void validate_class(SEXP x) const {
     if (!Rf_inherits(x, "Date")) [[unlikely]] {
       abort("SEXP must be of class 'Date'");
     }
   }
 
   template <RPsxctType U>
-  void validate_attrs(SEXP x) const {
+  void validate_class(SEXP x) const {
     if (!Rf_inherits(x, "POSIXct")) [[unlikely]] {
       abort("SEXP must inherit class 'POSIXct'");
     }
@@ -197,7 +197,7 @@ struct r_vec {
   explicit r_vec(r_sexp s) : value(std::move(s)) {
     if (!is_null()) {
       internal::check_valid_construction<r_vec<T>>(value);
-      validate_attrs<T>(value.value);
+      validate_class<T>(value.value);
       initialise_ptr();
     }
   }
@@ -205,13 +205,22 @@ struct r_vec {
   explicit r_vec(const r_sexp& s, internal::view_tag) : value(s.value, internal::view_tag{}){
     if (!is_null()){
       internal::check_valid_construction<r_vec<T>>(value);
-      validate_attrs<T>(value.value);
+      validate_class<T>(value.value);
       initialise_ptr();
     }
   }
 
   explicit r_vec(SEXP s) : r_vec(r_sexp(s)) {}
   explicit r_vec(SEXP s, internal::view_tag) : r_vec(r_sexp(s, internal::view_tag{}), internal::view_tag{}) {}
+
+  // Unchecked constructors: skip type and class validation
+  // For use where the SEXP type is already established (e.g. r_visit.h dispatchers)
+  explicit r_vec(r_sexp s, internal::no_checks_tag) : value(std::move(s)) {
+    initialise_ptr();
+  }
+  explicit r_vec(const r_sexp& s, internal::view_tag, internal::no_checks_tag) : value(s.value, internal::view_tag{}){
+    initialise_ptr();
+  }
 
   // Implicit conversion to SEXP
   operator SEXP() const noexcept {
