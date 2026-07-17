@@ -47,8 +47,8 @@ inline void mutate_as(r_sexp& x, F&& f) {
     A(SYMSXP,                          r_sym)               \
     A(CPPALLY_DFSXP,                   r_df)
 
-#define CPPALLY_CASE_OWNING(C, W)  case C: return f(W(x));
-#define CPPALLY_CASE_VIEWING(C, W) case C: return f(W(x, view_tag{}));
+#define CPPALLY_CASE_OWNING(C, W)  case C: return f(W(x, no_checks_tag{}));
+#define CPPALLY_CASE_VIEWING(C, W) case C: return f(W(x, view_tag{}, no_checks_tag{}));
 #define CPPALLY_CASE_MUTATE(C, W)  case C: mutate_as<W>(x, f); break;
 
 template <class F>
@@ -112,10 +112,10 @@ template <class F>
 
 // Guarded arms: hand `f` the wrapper only if it accepts it, else reject.
 #define CPPALLY_CASE_OWNING_G(C, W)                                          \
-    case C: if constexpr (std::invocable<F&, W>) return f(W(x));             \
+    case C: if constexpr (std::invocable<F&, W>) return f(W(x, no_checks_tag{}));             \
             else internal::reject<F>(internal::type_str<W>());
 #define CPPALLY_CASE_VIEWING_G(C, W)                                         \
-    case C: if constexpr (std::invocable<F&, W>) return f(W(x, view_tag{})); \
+    case C: if constexpr (std::invocable<F&, W>) return f(W(x, view_tag{}, no_checks_tag{})); \
             else internal::reject<F>(internal::type_str<W>());
 #define CPPALLY_CASE_MUTATE_G(C, W)                                          \
     case C: if constexpr (std::invocable<F&, W&>) { mutate_as<W>(x, f); break; } \
