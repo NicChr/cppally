@@ -25,8 +25,8 @@ inline void set_threads(int n) noexcept {
 // Recycle loop indices
 // `v` is an index to be recycled
 // `size` is the size of the vector that we are indexing with `v`
-template <typename T>
-inline constexpr void recycle_index(T& v, T size) {
+template <CppMathType T>
+inline constexpr void recycle_index(T& v, T size) noexcept {
   v = (++v == size) ? T(0) : v;
 }
 
