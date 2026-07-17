@@ -157,6 +157,14 @@ struct r_df {
     explicit r_df(const r_vec<r_sexp>& df, int nrows, internal::no_checks_tag) : value(df){
         cached_nrow = nrows;
     }
+
+    // Unchecked constructors, for use where the SEXP is already known to be a data frame
+    explicit r_df(r_sexp s, internal::no_checks_tag) : value(std::move(s), internal::no_checks_tag{}) {
+        cached_nrow = get_nrow();
+    }
+    explicit r_df(const r_sexp& s, internal::view_tag, internal::no_checks_tag) : value(s, internal::view_tag{}, internal::no_checks_tag{}) {
+        cached_nrow = get_nrow();
+    }
     
     // Forward declarations, defined in r_df_methods.h
     explicit r_df(const r_vec<r_sexp>& cols, bool recycle = true);
