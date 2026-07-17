@@ -5,6 +5,9 @@ would still return `NA`.
 
 - Fixed a bug where getting `r_df` rows would return CHARSXP instead of STRSXP.
 
+- Fixed a bug where `r_vec::apply` would throw a compiler error when called on 
+lists and character vectors.
+
 - Sequences no longer abort on overflow, but instead silently return `NA`.
 
 - `r_sym` now constructs symbols from strings (`const char*`, `r_str`,
@@ -14,7 +17,14 @@ longjmp past C++ destructors.
 - New by-group left-fold functional `reduce_by_group`, allowing for very 
 efficient binary reductions by-group.
 
+- Renamed `common_length` to `list_common_length`. `common_length` now 
+accepts `initializer_list` and variadic input.
+
+- New function `list_recycle` to recycle vectors of a list.
+
 - `n_unique` has been sped-up for integer vectors.
+
+- New `initializer_list` overloads for common helpers.
 
 - Integer multiplication overflow handling is now more portable. 
 
