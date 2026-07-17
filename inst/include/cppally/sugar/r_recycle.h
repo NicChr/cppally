@@ -30,6 +30,12 @@ inline r_size_t list_common_length(const r_vec<r_sexp>& x){
 
 }
 
+template <typename... Args>
+inline r_size_t common_length(Args&&... args) {
+  r_vec<r_sexp> vectors = make_vec<r_sexp>(std::forward<Args>(args)...);
+  return list_common_length(vectors);
+}
+
 template <RComposite T>
 inline r_size_t common_length(std::initializer_list<T> args){
   r_size_t n_vectors = static_cast<r_size_t>(args.size());
