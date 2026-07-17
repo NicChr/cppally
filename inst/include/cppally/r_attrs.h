@@ -86,11 +86,11 @@ template <RObject T>
 inline r_vec<r_sexp> get_attrs(const T& x) {
   if (can_have_attributes(x)){
     #if R_VERSION >= R_Version(4, 6, 0)
-    return r_vec<r_sexp>(R_getAttributes(x));
+    return r_vec<r_sexp>(safe[R_getAttributes](x));
     #else
     SEXP x_ = x;
     SEXP expr = Rf_protect(Rf_lang2(cppally::cached_sym<"attributes">(), x_));
-    SEXP res = Rf_protect(Rf_eval(expr, R_BaseEnv));
+    SEXP res = Rf_protect(safe[Rf_eval](expr, R_BaseEnv));
     r_vec<r_sexp> out(res);
     Rf_unprotect(2);
     return out;
