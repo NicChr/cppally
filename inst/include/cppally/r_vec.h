@@ -475,10 +475,7 @@ struct r_vec {
       abort("map: target length must match source length");
     }
 
-    if constexpr (!RVectorisable<T> || !RVectorisable<U>){
-      simd = false;
-      parallel = false;
-    }
+    if constexpr (RVectorisable<T> && RVectorisable<U>){
 
     int n_threads = parallel ? internal::calc_threads(n) : 1;
      
@@ -510,7 +507,12 @@ struct r_vec {
         }
       }
     }
+  } else {
+    for (r_size_t i = 0; i < n; ++i){
+      target.set(i, fn(i, view(i)));
+    }
   }
+}
 
   public:
 
