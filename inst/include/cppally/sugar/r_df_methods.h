@@ -62,7 +62,7 @@ inline r_vec<r_sexp> new_df_impl(const r_vec<r_sexp>& cols, bool recycle, int nr
 inline r_vec<r_sexp> new_df_impl(const r_vec<r_sexp>& cols, bool recycle = true){
     r_size_t nrows;
     if (recycle){
-        nrows = common_length(cols);
+        nrows = list_common_length(cols);
     } else {
         if (cols.length() == 0){
             nrows = 0;
