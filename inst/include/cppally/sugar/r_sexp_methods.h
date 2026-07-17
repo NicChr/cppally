@@ -21,7 +21,11 @@
 namespace cppally {
 
 inline r_size_t length(const r_sexp& x) {
-    return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ r_size_t, /*fn = */ length);
+    if (!Rf_isObject(x)){
+        return Rf_xlength(x);
+    } else {
+        return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ r_size_t, /*fn = */ length);
+    }
 }
 
 inline r_sexp rep_len(const r_sexp& x, r_size_t n) {
