@@ -8,7 +8,7 @@
 #include <cppally/r_visit.h>
 #include <cppally/r_coerce.h>
 #include <cppally/sugar/r_rep.h>
-#include <cppally/sugar/r_list_helpers.h>
+#include <cppally/sugar/r_recycle.h>
 #include <cppally/sugar/r_subset.h>
 #include <cppally/sugar/r_make_vec.h>
 #include <cppally/sugar/r_sexp_methods.h>
