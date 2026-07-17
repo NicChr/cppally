@@ -121,7 +121,7 @@ inline T as_impl(const U& x) {
 template <RScalar T, RVector U>
 inline T as_impl(const U& x) {
   if (x.length() != 1) [[unlikely]] {
-    abort("Vector must be length-1 to be coerced to requested scalar type");
+    abort("Vector of type %s must be length-1 to be coerced to scalar type %s", internal::type_str<U>(), internal::type_str<T>());
   }
   return as<T>(x.get(0));
 }
@@ -162,7 +162,7 @@ inline T as_impl(const U& x) {
 template <RScalar T, RFactor U>
 inline T as_impl(const U& x) {
   if (x.length() != 1) [[unlikely]] {
-    abort("Factor must be length-1 to be coerced to requested scalar type");
+    abort("Factor must be length-1 to be coerced to scalar type %s", internal::type_str<T>());
   }
   return as<T>(x.get(0));
 }
