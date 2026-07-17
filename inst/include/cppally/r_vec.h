@@ -276,7 +276,7 @@ struct r_vec {
       return r_vec<r_str_view>(r_null, internal::view_tag{});
     }
     ensure_names_cached();
-    return r_vec<r_str_view>(*cached_names->names);
+    return r_vec<r_str_view>(*cached_names->names, internal::no_checks_tag{});
   }
 
   template <RStringType U>
@@ -298,8 +298,12 @@ struct r_vec {
     } else {
       Rf_namesgets(value, names);
     }
-    cached_names = internal::name_cache().get_or_create(value);
-    cached_names->invalidate();
+    if (cached_names){ // We already hold the shared entry
+      cached_names->invalidate();
+    } else if (auto sp = internal::name_cache().try_lookup(value)){ // We never cached, but a sibling did
+      cached_names = std::move(sp);
+      cached_names->invalidate();
+    }
   }
 
   // For named vectors: find first index of name
