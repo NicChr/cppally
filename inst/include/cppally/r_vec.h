@@ -265,7 +265,16 @@ struct r_vec {
     return value.address();
   }
 
+  // Cheap presence test — never engages the name cache
+  bool has_names() const noexcept {
+    return Rf_getAttrib(value, symbol::names_sym) != R_NilValue;
+  }
+
   r_vec<r_str_view> names() const {
+    // Unnamed with no cache yet: skip the registry entirely
+    if (!cached_names && !has_names()){
+      return r_vec<r_str_view>(r_null, internal::view_tag{});
+    }
     ensure_names_cached();
     return r_vec<r_str_view>(*cached_names->names);
   }
@@ -277,7 +286,7 @@ struct r_vec {
         abort("`length(names)` must equal `length(x)`");
       }
       // Removing names from an unnamed vector - return early, no copy needed
-      if (removing && Rf_getAttrib(*this, symbol::names_sym) == R_NilValue){
+      if (removing && !has_names()){
         return;
       }
       maybe_ensure_exclusive();
