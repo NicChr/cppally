@@ -281,22 +281,25 @@ struct r_vec {
 
   template <RStringType U>
   void set_names(const r_vec<U>& names){
-      bool removing = names.is_null();
-      if (!removing && names.length() != length()) [[unlikely]] {
-        abort("`length(names)` must equal `length(x)`");
-      }
-      // Removing names from an unnamed vector - return early, no copy needed
-      if (removing && !has_names()){
-        return;
-      }
-      maybe_ensure_exclusive();
-      if (removing){
-        Rf_setAttrib(value, symbol::names_sym, r_null);
-      } else {
-        Rf_namesgets(value, names);
-      }
-      cached_names = internal::name_cache().get_or_create(value);
-      cached_names->invalidate();
+      
+    bool removing = names.is_null();
+
+    // Removing names from an unnamed vector - return early, no copy needed
+    if (removing && !has_names()){
+      return;
+    }
+
+    if (!removing && names.length() != length()) [[unlikely]] {
+      abort("`length(names)` must equal `length(x)`");
+    }
+    maybe_ensure_exclusive();
+    if (removing){
+      Rf_setAttrib(value, symbol::names_sym, r_null);
+    } else {
+      Rf_namesgets(value, names);
+    }
+    cached_names = internal::name_cache().get_or_create(value);
+    cached_names->invalidate();
   }
 
   // For named vectors: find first index of name
