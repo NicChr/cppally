@@ -132,9 +132,6 @@ template <typename T, typename U>
 constexpr bool either_na(const T& x, const U& y) noexcept {
   return is_na(x) || is_na(y);
 } 
-inline constexpr bool either_na(r_dbl x, r_dbl y) noexcept {
-  return is_na(r_dbl(unwrap(x) + unwrap(y)));
-}
 inline constexpr bool either_na(r_lgl x, r_lgl y) noexcept {
   return std::min(unwrap(x), unwrap(y)) == unwrap(na<r_lgl>());
 }
