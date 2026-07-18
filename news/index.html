@@ -41,9 +41,17 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="cppally-development-version">cppally (development version)<a class="anchor" aria-label="anchor" href="#cppally-development-version"></a></h2>
-<ul><li><p>Sequences no longer abort on overflow, but instead silently return <code>NA</code>.</p></li>
-<li><p>Fixed a bug where matching on integer vectors with a non <code>NA</code> <code>nomatch</code> value would still return <code>NA</code>.</p></li>
-<li><p>New by-group left-fold functional <code>reduce_by_group</code>.</p></li>
+<ul><li><p>Fixed a bug where matching on integer vectors with a non <code>NA</code> <code>nomatch</code> value would still return <code>NA</code>.</p></li>
+<li><p>Fixed a bug where getting <code>r_df</code> rows would return CHARSXP instead of STRSXP.</p></li>
+<li><p>Fixed a bug where <code>r_vec::apply</code> would throw a compiler error when called on lists and character vectors.</p></li>
+<li><p>Sequences no longer abort on overflow, but instead silently return <code>NA</code>.</p></li>
+<li><p><code>r_sym</code> now constructs symbols from strings (<code>const char*</code>, <code>r_str</code>, <code>r_str_view</code>) under unwind protection, so R errors can no longer longjmp past C++ destructors.</p></li>
+<li><p>New by-group left-fold functional <code>reduce_by_group</code>, allowing for very efficient binary reductions by-group.</p></li>
+<li><p>Renamed <code>common_length</code> to <code>list_common_length</code>. <code>common_length</code> now accepts <code>initializer_list</code> and variadic input.</p></li>
+<li><p>New function <code>list_recycle</code> to recycle vectors of a list.</p></li>
+<li><p><code>n_unique</code> has been sped-up for integer vectors.</p></li>
+<li><p>New <code>initializer_list</code> overloads for common helpers.</p></li>
+<li><p>Integer multiplication overflow handling is now more portable.</p></li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.0" id="cppally-110-2026-07-12">cppally 1.1.0 (2026-07-12)<a class="anchor" aria-label="anchor" href="#cppally-110-2026-07-12"></a></h2><p class="text-muted">CRAN release: 2026-07-12</p>
