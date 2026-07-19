@@ -29,10 +29,10 @@ inline r_sexp make_pairlist(Args... args) {
 
     (([&]() {
       if constexpr (NamedArg<Args>) {
-        SETCAR(current, as<r_sexp>(args.value));
+        SETCAR(current, internal::as_list_element(args.value));
         SET_TAG(current, r_sym(args.name));
       } else {
-        SETCAR(current, as<r_sexp>(args));
+        SETCAR(current, internal::as_list_element(args));
       }
       current = CDR(current);
     }()), ...);
