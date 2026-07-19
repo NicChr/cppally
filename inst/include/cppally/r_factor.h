@@ -90,6 +90,7 @@ struct r_factors {
   FORWARD_FACTOR_METHOD(subset)
   FORWARD_FACTOR_METHOD(rep_len)
   FORWARD_FACTOR_METHOD(resize)
+  FORWARD_FACTOR_METHOD(copy)
 
   // Undefine the macros so they don't leak out of the struct
   #undef FORWARD_METHOD

@@ -191,7 +191,16 @@ struct r_df {
             return value.NAME(std::forward<Args>(args)...);    \
         }
 
-    public: 
+        #define FORWARD_DATA_FRAME_METHOD(NAME)                                     \
+        template <typename... Args>                                                 \
+        r_df NAME(Args&&... args) const {                                           \
+            /* Call the method on the underlying r_vec<r_int> */                    \
+            r_vec<r_sexp> new_vec = value.NAME(std::forward<Args>(args)...);        \
+            /* Wrap it in a new r_df */                                             \
+            return r_df(static_cast<r_sexp>(new_vec), internal::no_checks_tag{});             \
+        }
+
+    public:
 
     // Inherit standard methods from r_vec<>
 
@@ -202,10 +211,13 @@ struct r_df {
     FORWARD_METHOD(address)
     FORWARD_METHOD(names)
     FORWARD_MUTATING_METHOD(set_names)
+
+    FORWARD_DATA_FRAME_METHOD(copy)
   
     // Undefine the macros so they don't leak out of the struct
     #undef FORWARD_METHOD
     #undef FORWARD_MUTATING_METHOD
+    #undef FORWARD_DATA_FRAME_METHOD
 
     template <typename T>
     int col_index(const T& name) const {
