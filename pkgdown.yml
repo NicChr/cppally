@@ -6,7 +6,7 @@ articles:
   functionals: functionals.html
   protection: protection.html
   vector_name_hashing: vector_name_hashing.html
-last_built: 2026-07-19T18:15Z
+last_built: 2026-07-19T18:27Z
 urls:
   reference: https://nicchr.github.io/cppally/reference
   article: https://nicchr.github.io/cppally/articles
