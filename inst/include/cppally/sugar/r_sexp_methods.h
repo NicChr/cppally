@@ -61,7 +61,7 @@ inline r_vec<r_int> order(const r_sexp& x, bool preserve_ties) {
 }
 
 inline r_vec<r_lgl> duplicated(const r_sexp& x, bool all) {
-    return r_sexp_view(x, CPPALLY_MAKE_VISITOR(r_vec<r_lgl>, duplicated, all));
+    return r_sexp_view(x, CPPALLY_MAKE_VISITOR(r_vec<r_lgl>, v, duplicated(v, all)));
 }
 
 inline r_size_t n_unique(const r_sexp& x) {
