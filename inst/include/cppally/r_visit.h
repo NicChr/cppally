@@ -194,8 +194,8 @@ inline bool is_visitable(const r_sexp& x){
 // overload set `fn` with the given bound args, converting each arm's result to `ret`.
 // The requires-clause excludes unvisitable r_sexp types
 #define CPPALLY_MAKE_VISITOR(ret, v, ...)                                       \
-    [&]<typename visitor_v_t> requires (!is<visitor_v_t, r_sexp>)               \
-        (const visitor_v_t& v)                                                  \
+    [&]<typename cppally_visited_t> requires (!is<cppally_visited_t, r_sexp>)               \
+        (const cppally_visited_t& v)                                                  \
         -> decltype(static_cast<ret>(__VA_ARGS__))                              \
     { return static_cast<ret>(__VA_ARGS__); }
 
