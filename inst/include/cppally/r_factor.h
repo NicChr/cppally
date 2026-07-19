@@ -9,10 +9,6 @@
 
 namespace cppally {
 
-namespace internal {
-inline void share_levels_cache(r_factors&, const r_factors&);
-}
-
 struct r_factors {
 
   public:
@@ -59,8 +55,6 @@ struct r_factors {
   // levels; the hash is only built on the second so one-shot lookups pay no
   // build cost.
   mutable bool first_access = false;
-
-  friend void internal::share_levels_cache(r_factors&, const r_factors&);
 
   void ensure_levels_cached() const {
     if (!cached_levels) {
@@ -426,31 +420,6 @@ struct r_factors {
   }
 
 };
-
-namespace internal {
-
-// Transplant a populated levels cache from source to target on r_factors.
-//
-// Shares only the inner sexp_index_table (via shared_ptr), not the enclosing
-// names_map. Each wrapper keeps its own names_map so that a future mutation
-// of one (e.g. append_level → set_levels → invalidate) cannot poison the
-// other's view. The inner table is still safe to share because both sides
-// have the same levels STRSXP at the point of sharing; any later mutation
-// goes through append_level's detach-when-shared path.
-inline void share_levels_cache(r_factors& target, const r_factors& source) {
-    if (!source.cached_levels) return;
-    if (!source.cached_levels->names.has_value()) return;
-    SEXP target_levels = Rf_protect(Rf_getAttrib(target, symbol::levels_sym));
-    if (target_levels != static_cast<SEXP>(*source.cached_levels->names)){
-        Rf_unprotect(1);
-        return;
-    }
-    target.ensure_levels_cached();
-    target.cached_levels->map = source.cached_levels->map;
-    Rf_unprotect(1);
-}
-
-}
 
 }
 
