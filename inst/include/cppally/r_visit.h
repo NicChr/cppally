@@ -199,10 +199,14 @@ inline bool is_visitable(const r_sexp& x){
 //         -> decltype(static_cast<ret>(fn(v_ __VA_OPT__(,) __VA_ARGS__)))                   
 //     { return static_cast<ret>(fn(v_ __VA_OPT__(,) __VA_ARGS__)); }
 
-#define CPPALLY_VISITOR(ret, v, ...)                                          \
-    [&]<typename visitor_v_t> requires (!is<visitor_v_t, r_sexp>)             \
-        (const visitor_v_t& v)                                                \
-        -> decltype(static_cast<ret>(__VA_ARGS__))                            \
+#ifdef MAKE_VISITOR
+#warning "MAKE_VISITOR pragma already defined and will be overwritten!"
+#endif
+
+#define MAKE_VISITOR(ret, v, ...)                                               \
+    [&]<typename visitor_v_t> requires (!is<visitor_v_t, r_sexp>)               \
+        (const visitor_v_t& v)                                                  \
+        -> decltype(static_cast<ret>(__VA_ARGS__))                              \
     { return static_cast<ret>(__VA_ARGS__); }
 
 // Helper that disambiguates r_sexp type via view_sexp and then calls the named function

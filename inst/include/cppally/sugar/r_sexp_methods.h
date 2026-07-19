@@ -24,17 +24,17 @@ inline r_size_t length(const r_sexp& x) {
     if (!Rf_isObject(x)){
         return Rf_xlength(x);
     } else {
-        return r_sexp_view(x, CPPALLY_VISITOR(r_size_t, v, length(v)));
+        return r_sexp_view(x, MAKE_VISITOR(r_size_t, v, length(v)));
     }
 }
 
 inline r_sexp rep_len(const r_sexp& x, r_size_t n) {
-    // return r_sexp_view(x, CPPALLY_VISITOR(r_sexp, rep_len, n)); // Earlier pattern, dont use
-    return r_sexp_view(x, CPPALLY_VISITOR(r_sexp, v, rep_len(v, n)));
+    // return r_sexp_view(x, MAKE_VISITOR(r_sexp, rep_len, n)); // Earlier pattern, dont use
+    return r_sexp_view(x, MAKE_VISITOR(r_sexp, v, rep_len(v, n)));
 }
 
 inline r_sexp resize(const r_sexp& x, r_size_t n) {
-    return r_sexp_view(x, CPPALLY_VISITOR(r_sexp, v, resize(v, n)));
+    return r_sexp_view(x, MAKE_VISITOR(r_sexp, v, resize(v, n)));
 }
 
 inline r_sexp rep(const r_sexp& x, const r_vec<r_int>& times) {
@@ -55,11 +55,11 @@ inline r_vec<r_int> order(const r_sexp& x, bool preserve_ties) {
 }
 
 inline r_vec<r_lgl> duplicated(const r_sexp& x, bool all) {
-    return r_sexp_view(x, CPPALLY_VISITOR(r_vec<r_lgl>, duplicated, all));
+    return r_sexp_view(x, MAKE_VISITOR(r_vec<r_lgl>, duplicated, all));
 }
 
 inline r_size_t n_unique(const r_sexp& x) {
-    return r_sexp_view(x, CPPALLY_VISITOR(r_size_t, v, n_unique(v)));
+    return r_sexp_view(x, MAKE_VISITOR(r_size_t, v, n_unique(v)));
 }
 
 inline groups make_groups(const r_sexp& x, bool ordered) {
@@ -137,7 +137,7 @@ inline bool identical_impl(const r_sexp& a, const r_sexp& b) {
 }
 
 inline uint64_t r_hash_impl(const r_sexp& x) {
-    return r_sexp_view(x, CPPALLY_VISITOR(uint64_t, v, r_hash_impl(v)));
+    return r_sexp_view(x, MAKE_VISITOR(uint64_t, v, r_hash_impl(v)));
 }
 
 }
