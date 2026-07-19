@@ -18,22 +18,24 @@ inline T shallow_copy(const T& x) = delete;
 template<>
 inline r_sexp shallow_copy(const r_sexp& x);
 
+template <RComposite T>
+T shallow_copy(const T& x){
+    return x.copy();
+}
+
 template <RVector T>
 inline T deep_copy(const T& x){
     
-    if (x.is_null()) return T(r_null);
-
-    r_size_t n = x.length();
-    T out(n);
+    T out = x.copy();
 
     // If list, copy list elements
     if constexpr (is<T, r_vec<r_sexp>>){
+        r_size_t n = x.length();
         for (r_size_t i = 0; i < n; ++i){
             out.set(i, deep_copy(x.view(i)));
         }
-    } else {
-        r_copy_n(out, x, 0, n);
-    }    
+    }
+    
     if (attr::has_attrs(x)){
         r_vec<r_sexp> attrs = attr::get_attrs(x);
         int n_attrs = attrs.length();
@@ -48,7 +50,7 @@ inline T deep_copy(const T& x){
 template<>
 inline r_factors deep_copy(const r_factors& x){
     r_vec<r_int> out = deep_copy(x.value);
-    return r_factors(unwrap(out), false);
+    return r_factors(static_cast<r_sexp>(out), internal::no_checks_tag{});
 }
 
 template<>
@@ -60,33 +62,6 @@ inline r_df deep_copy(const r_df& x){
 template<>
 inline r_sym deep_copy(const r_sym& x){
     return x;
-}
-
-
-template <RVector T>
-T shallow_copy(const T& x){
-    if (x.is_null()) return x;
-    r_size_t n = x.length();
-    T out(n);
-    for (r_size_t i = 0; i < n; ++i){
-        out.set(i, x.view(i));
-    }
-    attr::set_attrs(out, attr::get_attrs(x));
-    internal::share_name_cache(out, x);
-    return out;
-}
-
-template<>
-inline r_factors shallow_copy(const r_factors& x){
-    r_vec<r_int> out = shallow_copy(x.value);
-    r_factors result(unwrap(out), false);
-    internal::share_levels_cache(result, x);
-    return result;
-}
-
-template<>
-inline r_df shallow_copy(const r_df& x){
-    return r_df(shallow_copy(x.value), x.nrow(), internal::no_checks_tag{});
 }
 
 // Symbols can't be copied
