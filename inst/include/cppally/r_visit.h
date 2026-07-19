@@ -190,13 +190,31 @@ inline bool is_visitable(const r_sexp& x){
     return internal::view_sexp(x, []<typename T>(const T&) -> bool { return !is<T, r_sexp>; });
 }
 
+// // Visit the static-type that r_sexp holds, abort if it doesn't match.
+// // Distinct from constructing T from r_sexp directly because this verifies class + storage whereas 
+// // construction from r_sexp verifies only storage.
+// template <RComposite T>
+// T visit_as(const r_sexp& x){
+//     return r_sexp_visit(x, []<typename v> requires (is<v, T>)(const v& obj) {
+//         return obj;
+//     });
+// }
+// // View the static-type that r_sexp holds, abort if it doesn't match.
+// // Distinct from constructing T from r_sexp directly because this verifies class + storage whereas 
+// // construction from r_sexp verifies only storage.
+// template <RComposite T>
+// T view_as(const r_sexp& x){
+//     return r_sexp_view(x, []<typename v> requires (is<v, T>)(const v& obj) {
+//         return obj;
+//     });
+// }
+
 // Builds a visitor (for r_sexp_visit) that applies the named
 // overload set `fn` with the given bound args, converting each arm's result to `ret`.
 // The requires-clause excludes unvisitable r_sexp types
-#define CPPALLY_MAKE_VISITOR(ret, v, ...)                                       \
+#define CPPALLY_MAKE_VISITOR(ret, v, ...)                                                   \
     [&]<typename cppally_visited_t> requires (!is<cppally_visited_t, r_sexp>)               \
-        (const cppally_visited_t& v)                                                  \
-        -> decltype(static_cast<ret>(__VA_ARGS__))                              \
+        (const cppally_visited_t& v) -> decltype(static_cast<ret>(__VA_ARGS__))             \
     { return static_cast<ret>(__VA_ARGS__); }
 
 // Helper that disambiguates r_sexp type via view_sexp and then calls the named function
