@@ -72,6 +72,7 @@ inline const char* type_str() {
     return "Unknown";
 }
 
+template <> inline const char* type_str<void>(){return "void";}
 template <> inline const char* type_str<r_lgl>(){return "r_lgl";}
 template <> inline const char* type_str<r_int>(){return "r_int";}
 template <> inline const char* type_str<r_int64>(){return "r_int64";}
