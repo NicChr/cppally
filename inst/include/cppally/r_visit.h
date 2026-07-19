@@ -190,6 +190,12 @@ inline bool is_visitable(const r_sexp& x){
     return internal::view_sexp(x, []<typename T>(const T&) -> bool { return !is<T, r_sexp>; });
 }
 
+template <typename T>
+requires (!is<T, r_sexp>)
+bool is_visitable(const r_sexp& x){
+    return internal::view_sexp(x, []<typename v>(const v&) -> bool { return is<v, T>; });
+}
+
 // // Visit the static-type that r_sexp holds, abort if it doesn't match.
 // // Distinct from constructing T from r_sexp directly because this verifies class + storage whereas 
 // // construction from r_sexp verifies only storage.
