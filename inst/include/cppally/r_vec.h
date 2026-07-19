@@ -11,6 +11,7 @@
 #include <cppally/r_hash_names.h>
 #include <algorithm>
 #include <utility>
+// #include <Rversion.h>
 
 namespace cppally {
 
@@ -82,6 +83,7 @@ struct r_vec {
 
   // data is copied but attributes are shallow copied, matching Rf_shallow_duplicate.
   r_vec<T> copy() const {
+    if (is_null()) return *this;
     r_size_t n = length();
     r_vec<T> new_vec(n);
     r_copy_n(new_vec, *this, 0, n);
@@ -902,6 +904,17 @@ struct r_vec {
   void iota(T init = T(0)) requires (any<T, r_int, r_int64>) {
     apply_with_index([init](r_size_t i, auto){ return init + i; }, /*simd = */ true);
   }
+
+  // Attribute members
+  // r_vec<r_sexp> attrs() const {
+  //   #if R_VERSION >= R_Version(4, 6, 0)
+  //   return r_vec<r_sexp>(safe[R_getAttributes](value));
+  //   #else
+  //   r_sexp expr = r_sexp(Rf_lang2(cppally::cached_sym<"attributes">(), value));
+  //   r_sexp res = safe[Rf_eval](expr, R_BaseEnv);
+  //   return r_vec<r_sexp>(res);
+  //   #endif 
+  // }
 
   // Conditional member functions (only available for certain types)
 
