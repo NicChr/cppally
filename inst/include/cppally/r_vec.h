@@ -272,12 +272,13 @@ struct r_vec {
   }
 
   r_vec<r_str_view> names() const {
-    // Unnamed with no cache yet: skip the registry entirely
-    if (!cached_names && !has_names()){
-      return r_vec<r_str_view>(r_null, internal::view_tag{});
+    // Reuse an already-built cache's STRSXP: no getAttrib
+    if (cached_names && cached_names->names.has_value()){
+      return r_vec<r_str_view>(*cached_names->names, internal::no_checks_tag{});
     }
-    ensure_names_cached();
-    return r_vec<r_str_view>(*cached_names->names, internal::no_checks_tag{});
+    // Otherwise read the attribute directly without engaging the registry —
+    // name_index() is the cache-warming path, not names()
+    return r_vec<r_str_view>(Rf_getAttrib(value, symbol::names_sym));
   }
 
   template <RStringType U>
