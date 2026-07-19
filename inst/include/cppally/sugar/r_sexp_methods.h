@@ -38,7 +38,13 @@ inline r_sexp resize(const r_sexp& x, r_size_t n) {
 }
 
 inline r_sexp rep(const r_sexp& x, const r_vec<r_int>& times) {
-    return r_sexp(CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ SEXP, /*fn = */ rep, times));
+    return r_sexp_view(x, MAKE_VISITOR(r_sexp, v, rep(v, times)));
+}
+
+template <typename A>
+requires (is<A, r_sexp> || RComposite<A>)
+inline r_sexp rep(const A& x, const r_sexp& times) {
+    return r_sexp_view(times, MAKE_VISITOR(r_sexp, v, rep(x, v)));
 }
 
 inline r_sexp rep_each(const r_sexp& x, const r_vec<r_int>& each) {
