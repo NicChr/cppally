@@ -190,6 +190,21 @@ inline bool is_visitable(const r_sexp& x){
     return internal::view_sexp(x, []<typename T>(const T&) -> bool { return !is<T, r_sexp>; });
 }
 
+// Builds a visitor (for r_sexp_visit) that applies the named
+// overload set `fn` with the given bound args, converting each arm's result to `ret`.
+// The requires-clause excludes unvisitable r_sexp types
+// define CPPALLY_VISITOR(ret, fn, ...)
+//     [&]<typename visitor_v_t> requires (!is<visitor_v_t, r_sexp>)                         
+//         (const visitor_v_t& v_)                                                           
+//         -> decltype(static_cast<ret>(fn(v_ __VA_OPT__(,) __VA_ARGS__)))                   
+//     { return static_cast<ret>(fn(v_ __VA_OPT__(,) __VA_ARGS__)); }
+
+#define CPPALLY_VISITOR(ret, v, ...)                                          \
+    [&]<typename visitor_v_t> requires (!is<visitor_v_t, r_sexp>)             \
+        (const visitor_v_t& v)                                                \
+        -> decltype(static_cast<ret>(__VA_ARGS__))                            \
+    { return static_cast<ret>(__VA_ARGS__); }
+
 // Helper that disambiguates r_sexp type via view_sexp and then calls the named function
 // If there is no defined specialisation or overload then this is caught in the last branch
 // If the visited type can't be disambiguated, this is caught in the first branch
