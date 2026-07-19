@@ -80,13 +80,19 @@ struct r_vec {
     return static_cast<bool>(m_ptr); 
   }
 
+  // data is copied but attributes are shallow copied, matching Rf_shallow_duplicate.
+  r_vec<T> copy() const {
+    r_size_t n = length();
+    r_vec<T> new_vec(n);
+    r_copy_n(new_vec, *this, 0, n);
+    safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
+    // internal::share_name_cache(new_vec, *this); // Maybe include this
+    return new_vec;
+  }
+
   void ensure_exclusive() {
     if (!is_exclusive()) [[unlikely]] {
-      r_size_t n = length();
-      r_vec<T> new_vec(n);
-      r_copy_n(new_vec, *this, 0, n);
-      safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
-      // internal::share_name_cache(new_vec, *this); // Maybe include this
+      r_vec<T> new_vec = copy();
       *this = std::move(new_vec);
     }
   }
