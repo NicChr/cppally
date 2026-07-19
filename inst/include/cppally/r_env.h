@@ -10,6 +10,7 @@ namespace cppally {
 namespace env {
 inline const r_sexp empty_env = r_sexp(R_EmptyEnv, internal::view_tag{});
 inline const r_sexp base_env = r_sexp(R_BaseEnv, internal::view_tag{});
+inline const r_sexp global_env = r_sexp(R_GlobalEnv, internal::view_tag{});
 }
 
 }
