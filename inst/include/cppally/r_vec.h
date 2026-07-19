@@ -27,9 +27,6 @@ inline r_size_t length(const r_sexp& x);
   
 namespace internal {
 
-template <typename V>
-inline void share_name_cache(V&, const V&);
-
 // Concept helpers for location-based subset helpers
 template <typename T>
 concept RSubscript = any<T, r_lgl, r_int, r_int64, r_str_view, r_str>;
@@ -88,7 +85,6 @@ struct r_vec {
     r_vec<T> new_vec(n);
     r_copy_n(new_vec, *this, 0, n);
     safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
-    // internal::share_name_cache(new_vec, *this); // Maybe include this
     return new_vec;
   }
 
@@ -157,9 +153,6 @@ struct r_vec {
       cached_names->names.emplace(static_cast<r_sexp>(validated));
     }
   }
-
-  template <typename V>
-  friend void internal::share_name_cache(V&, const V&);
 
   // By default do nothing (e.g. for vectors with no attrs)
   template <typename U>
@@ -992,33 +985,6 @@ inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_
       target.set(target_offset + i, source.view(i));
     }
   }
-}
-
-namespace internal {
-
-// Transplant a populated names cache from source to target. Intended for
-// shallow-copy paths where the new SEXP shares the names STRSXP with source —
-// the existing hash is still valid and rebuilding would be wasteful at high
-// column counts. No-op if source has no populated cache or if target's names
-// attribute differs from source's cached names.
-//
-// Shares only the inner sexp_index_table, not the enclosing names_map. Each
-// wrapper keeps its own names_map so that a future set_names() (or any
-// invalidation path) on one cannot poison the other's view.
-template <typename V>
-inline void share_name_cache(V& target, const V& source) {
-    if (!source.cached_names) return;
-    if (!source.cached_names->names.has_value()) return;
-    SEXP target_names = Rf_protect(Rf_getAttrib(target, symbol::names_sym));
-    if (target_names != static_cast<SEXP>(*source.cached_names->names)){
-        Rf_unprotect(1);
-        return;
-    }
-    target.ensure_names_cached();
-    target.cached_names->map = source.cached_names->map;
-    Rf_unprotect(1);
-}
-
 }
 
 }

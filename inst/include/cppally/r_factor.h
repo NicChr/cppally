@@ -429,7 +429,7 @@ struct r_factors {
 
 namespace internal {
 
-// Same shape as share_name_cache, for the levels cache on r_factors.
+// Transplant a populated levels cache from source to target on r_factors.
 //
 // Shares only the inner sexp_index_table (via shared_ptr), not the enclosing
 // names_map. Each wrapper keeps its own names_map so that a future mutation
