@@ -201,14 +201,14 @@ bool is_visitable(const r_sexp& x){
 // // construction from r_sexp verifies only storage.
 template <RComposite T>
 T visit_as(const r_sexp& x){
-    return r_sexp_visit(x, []<typename v> requires (is<v, T>)(const v& obj) {
+    return r_sexp_visit(x, []<typename v>(const v& obj) requires (is<v, T>) {
         return obj;
     });
 }
 // Same as visit_as<> but returns a short-lifetime view-only object
 template <RComposite T>
 T view_as(const r_sexp& x){
-    return r_sexp_view(x, []<typename v> requires (is<v, T>)(const v& obj) {
+    return r_sexp_view(x, []<typename v>(const v& obj) requires (is<v, T>) {
         return obj;
     });
 }
