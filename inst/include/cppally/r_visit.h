@@ -199,21 +199,19 @@ bool is_visitable(const r_sexp& x){
 // // Visit the static-type that r_sexp holds, abort if it doesn't match.
 // // Distinct from constructing T from r_sexp directly because this verifies class + storage whereas 
 // // construction from r_sexp verifies only storage.
-// template <RComposite T>
-// T visit_as(const r_sexp& x){
-//     return r_sexp_visit(x, []<typename v> requires (is<v, T>)(const v& obj) {
-//         return obj;
-//     });
-// }
-// // View the static-type that r_sexp holds, abort if it doesn't match.
-// // Distinct from constructing T from r_sexp directly because this verifies class + storage whereas 
-// // construction from r_sexp verifies only storage.
-// template <RComposite T>
-// T view_as(const r_sexp& x){
-//     return r_sexp_view(x, []<typename v> requires (is<v, T>)(const v& obj) {
-//         return obj;
-//     });
-// }
+template <RComposite T>
+T visit_as(const r_sexp& x){
+    return r_sexp_visit(x, []<typename v> requires (is<v, T>)(const v& obj) {
+        return obj;
+    });
+}
+// Same as visit_as<> but returns a short-lifetime view-only object
+template <RComposite T>
+T view_as(const r_sexp& x){
+    return r_sexp_view(x, []<typename v> requires (is<v, T>)(const v& obj) {
+        return obj;
+    });
+}
 
 // Builds a visitor (for r_sexp_visit) that applies the named
 // overload set `fn` with the given bound args, converting each arm's result to `ret`.
