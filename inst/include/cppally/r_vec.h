@@ -253,6 +253,7 @@ struct r_vec {
   // Once the cache is populated, it becomes a secondary source of truth
   // and is assumed to be in sync with the SEXP's names attribute.
   mutable std::shared_ptr<internal::names_map> cached_names;
+
   // Counts name_index calls on this wrapper. First lookup uses a linear scan;
   // the hash table is only built on the second, so one-shot callers pay no
   // build cost and the benefit accrues to repeated-lookup C++ code.
@@ -298,6 +299,12 @@ struct r_vec {
 
   template <RStringType U>
   void set_names(const r_vec<U>& names){
+
+    // If we have cached names AND the new names share the same address as the cached names
+    // then skip names-setting
+    if (has_cached_names() && unwrap(names) == unwrap(*cached_names->names)){
+      return;
+    }
       
     bool removing = names.is_null();
 
@@ -320,12 +327,11 @@ struct r_vec {
     }
     if (cached_names){ // We already hold the shared entry
       cached_names->invalidate();
-      cached_names->names.emplace(static_cast<r_sexp>(names));
     } else if (auto sp = internal::name_cache().try_lookup(value)){ // We never cached, but a sibling did
       cached_names = std::move(sp);
       cached_names->invalidate();
-      cached_names->names.emplace(static_cast<r_sexp>(names));
     }
+    cache_names(r_vec<r_str_view>(r_sexp(names), internal::no_checks_tag{}));
   }
 
   // For named vectors: find first index of name
