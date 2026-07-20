@@ -141,6 +141,9 @@ inline constexpr bool either_na(r_int x, r_int y) noexcept {
 inline constexpr bool either_na(r_int64 x, r_int64 y) noexcept {
   return std::min(unwrap(x), unwrap(y)) == unwrap(na<r_int64>());
 }
+inline constexpr bool either_na(r_dbl x, r_dbl y) noexcept {
+  return is_na(std::abs(unwrap(x)) + std::abs(unwrap(y)));
+}
 
 }
 
