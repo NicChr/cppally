@@ -24,6 +24,10 @@ inline r_size_t length(const r_sym& x) noexcept {
     return 1;
 }
 
+inline r_size_t length(const r_function& x) noexcept {
+    return 1;
+}
+
 inline r_size_t length(const r_sexp& x);
 
 inline bool is_long(SEXP x){

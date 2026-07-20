@@ -46,9 +46,10 @@ struct r_str_view;
 struct r_cplx;
 struct r_raw;
 struct r_sym;
-struct r_sexp; 
+struct r_sexp;
 struct r_date;
 struct r_psxct;
+struct r_function;
 
 // Are long vectors supported?
 constexpr bool long_vectors_supported = !std::is_same_v<int, r_size_t>;
@@ -200,6 +201,9 @@ concept RVal = RScalar<T> || is<T, r_sexp>;
 template <typename T>
 concept RVectorisable = RScalar<T> && !RObject<T>;
 
+template <typename T>
+concept RFunction = is<T, r_function>;
+
 // Forward declare vector-based structs
 template <RVal T>
 struct r_vec;
@@ -255,7 +259,7 @@ concept RComposite = RVector<T> || RMetaVector<T> || RDataFrame<T>;
 
 // All R types defined by cppally
 template <typename T>
-concept CppallyType = RVal<T> || RSymbolType<T> || RComposite<T>;
+concept CppallyType = RVal<T> || RSymbolType<T> || RComposite<T> || RFunction<T>;
 
 template <typename T>
 concept CppType = !CppallyType<T>;

@@ -27,6 +27,7 @@ inline constexpr SEXPTYPE CPPALLY_REALDATESXP = 200;
 inline constexpr SEXPTYPE CPPALLY_REALPSXTSXP = 201;
 inline constexpr SEXPTYPE CPPALLY_FCTSXP = 202;
 inline constexpr SEXPTYPE CPPALLY_DFSXP = 203;
+inline constexpr SEXPTYPE CPPALLY_FUNCTIONSXP = 204;
 
 inline SEXPTYPE CPPALLY_TYPEOF(SEXP x) noexcept {
 
@@ -50,6 +51,11 @@ inline SEXPTYPE CPPALLY_TYPEOF(SEXP x) noexcept {
         if (Rf_inherits(x, "data.frame")) return CPPALLY_DFSXP;
         return xtype;
     }
+    case CLOSXP:
+    case BUILTINSXP:
+    case SPECIALSXP: {
+        return CPPALLY_FUNCTIONSXP;
+    }
     default: {
         return xtype;
     }
@@ -64,6 +70,7 @@ inline const char* r_type_to_str(SEXPTYPE x){
     case CPPALLY_REALPSXTSXP: return "date-time (double storage)";
     case CPPALLY_FCTSXP: return "factor";
     case CPPALLY_DFSXP: return "data frame";
+    case CPPALLY_FUNCTIONSXP: return "function";
     default: return Rf_type2char(x);
     }
 }
@@ -88,6 +95,7 @@ template <> inline const char* type_str<r_date>(){return "r_date";}
 template <> inline const char* type_str<r_psxct>(){return "r_psxct";}
 template <> inline const char* type_str<r_factors>(){return "r_factors";}
 template <> inline const char* type_str<r_df>(){return "r_df";}
+template <> inline const char* type_str<r_function>(){return "r_function";}
 
 
 template <RVector T>

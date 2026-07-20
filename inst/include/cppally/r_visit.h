@@ -5,6 +5,7 @@
 #include <cppally/r_factor.h>
 #include <cppally/r_sexp_types.h>
 #include <cppally/r_df.h>
+#include <cppally/r_function.h>
 #include <utility>
 #include <string>
 
@@ -45,6 +46,7 @@ inline void mutate_as(r_sexp& x, F&& f) {
     CPPALLY_VECTOR_CASES(A)                                 \
     A(CPPALLY_FCTSXP,                  r_factors)           \
     A(SYMSXP,                          r_sym)               \
+    A(CPPALLY_FUNCTIONSXP,             r_function)          \
     A(CPPALLY_DFSXP,                   r_df)
 
 #define CPPALLY_CASE_OWNING(C, W)  case C: return f(W(x, no_checks_tag{}));

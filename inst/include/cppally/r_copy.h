@@ -70,6 +70,15 @@ inline r_sym shallow_copy(const r_sym& x){
     return x;
 }
 
+template<>
+inline r_function shallow_copy(const r_function& x){
+    return x;
+}
+template<>
+inline r_function deep_copy(const r_function& x){
+    return x;
+}
+
 
 }
 #endif

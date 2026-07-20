@@ -243,6 +243,25 @@ inline T as_impl(const U& x) {
   return r_sym(as<r_str_view>(x));
 }
 
+// ----- R Functions -----
+
+// A function has no scalar/vector/factor/data-frame/symbol representation; only its
+// underlying SEXP is meaningful (handled by the AnySexp<T>/NotSexp<T>,AnySexp<U>
+// overloads above - constrained here to the remaining CPPALLY_ALL_CASES dispatch
+// types (RScalar/RComposite/RSymbolType) so as not to compete with those for T or
+// U being SEXP/r_sexp).
+template <NotSexp T, RFunction U>
+requires (!RFunction<T>)
+inline T as_impl(const U& x) {
+  abort("No available method to convert type %s to %s", internal::type_str<U>(), internal::type_str<T>());
+}
+
+template <RFunction T, NotSexp U>
+requires (!RFunction<U>)
+inline T as_impl(const U& x) {
+  abort("No available method to convert type %s to %s", internal::type_str<U>(), internal::type_str<T>());
+}
+
 }
 
 // Convert any obj to an r_vec<>
