@@ -193,7 +193,7 @@ inline r_sexp new_vec_impl(r_size_t n) {
     return out;
   } else if constexpr (RPsxctType<T>){
     r_sexp out = new_vec_impl<typename T::value_type>(n);
-    r_sexp cls = new_vec(STRSXP, 2);
+    r_sexp cls = new_vec_impl<r_str>(2);
     SET_STRING_ELT(cls, 0, cached_str<"POSIXct">());
     SET_STRING_ELT(cls, 1, cached_str<"POSIXt">());
     Rf_setAttrib(out, symbol::class_sym, cls);
@@ -245,54 +245,6 @@ inline r_sexp new_vec_impl<r_raw>(r_size_t n){
 template <>
 inline r_sexp new_vec_impl<r_sexp>(r_size_t n){
   return internal::new_vec(VECSXP, n);
-}
-inline r_sexp new_scalar_vec(r_lgl default_value) {
-  return r_sexp(Rf_ScalarLogical(unwrap(default_value)));
-}
-inline r_sexp new_scalar_vec(r_int default_value){
-  return r_sexp(Rf_ScalarInteger(unwrap(default_value)));
-}
-inline r_sexp new_scalar_vec(r_dbl default_value){
-  return r_sexp(Rf_ScalarReal(unwrap(default_value)));
-}
-inline r_sexp new_scalar_vec(r_int64 default_value){
-  r_sexp out = new_vec_impl<r_int64>(1);
-  vector_ptr<r_int64>(out)[0] = default_value;
-  return out;
-}
-inline r_sexp new_scalar_vec(r_str_view default_value){
-  return r_sexp(Rf_ScalarString(unwrap(default_value)));
-}
-inline r_sexp new_scalar_vec(const r_str& default_value){
-  return r_sexp(Rf_ScalarString(unwrap(default_value)));
-}
-inline r_sexp new_scalar_vec(const r_cplx& default_value){
-  Rcomplex z;
-  z.r = default_value.re();
-  z.i = default_value.im();
-  return r_sexp(Rf_ScalarComplex(z));
-}
-inline r_sexp new_scalar_vec(r_raw default_value){
-  return r_sexp(Rf_ScalarRaw(static_cast<Rbyte>(unwrap(default_value))));
-}
-inline r_sexp new_scalar_vec(r_date default_value){
-  r_sexp out = new_scalar_vec(static_cast<typename r_date::value_type>(default_value));
-  Rf_setAttrib(out, symbol::class_sym, new_scalar_vec(cached_str<"Date">()));
-  return out;
-}
-inline r_sexp new_scalar_vec(r_psxct default_value){
-  r_sexp out = new_scalar_vec(static_cast<typename r_psxct::value_type>(default_value));
-  r_sexp cls = new_vec(STRSXP, 2);
-  SET_STRING_ELT(cls, 0, cached_str<"POSIXct">());
-  SET_STRING_ELT(cls, 1, cached_str<"POSIXt">());
-  Rf_setAttrib(out, symbol::class_sym, cls);
-  Rf_setAttrib(out, cached_sym<"tzone">(), new_scalar_vec(cached_str<"UTC">()));
-  return out;
-}
-inline r_sexp new_scalar_vec(const r_sexp& default_value){
-  r_sexp out = new_vec_impl<r_sexp>(1);
-  SET_VECTOR_ELT(out.value, 0, unwrap(default_value));
-  return out;
 }
 
 }
