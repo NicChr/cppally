@@ -294,7 +294,7 @@ inline constexpr auto operator*(T lhs, U rhs) noexcept {
     I a = static_cast<I>(unwrap(lhs));
     I b = static_cast<I>(unwrap(rhs));
     I p;
-    bool bad = internal::either_na(lhs, rhs) || internal::mul_overflow(a, b, p);
+    bool bad = internal::either_na(lhs, rhs) | internal::mul_overflow(a, b, p);
     return bad ? na<common_t>() : common_t(p);
   } else if constexpr (is<T, r_dbl> && is<U, r_dbl>){
     return r_dbl(static_cast<double>(unwrap(lhs)) * static_cast<double>(unwrap(rhs)));
