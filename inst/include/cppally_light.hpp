@@ -17,6 +17,7 @@
 #include <cppally/r_limits.h>
 #include <cppally/r_nas.h>
 #include <cppally/r_scalar_ops.h>
+#include <cppally/r_function.h>
 #include <cppally/r_vec.h>
 #include <cppally/r_attrs.h>
 #include <cppally/r_factor.h>

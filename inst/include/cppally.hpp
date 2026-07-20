@@ -19,6 +19,7 @@
 #include <cppally/r_scalar_ops.h>
 #include <cppally/r_vec_utils.h>
 #include <cppally/r_coerce_scalars.h>
+#include <cppally/r_function.h>
 #include <cppally/r_vec.h>
 #include <cppally/r_pmap.h>
 #include <cppally/r_vec_ops.h>
@@ -33,8 +34,6 @@
 #include <cppally/sugar/r_list_helpers.h>
 #include <cppally/sugar/r_df_methods.h>
 #include <cppally/sugar/r_stats.h>
-#include <cppally/sugar/r_exprs.h>
-#include <cppally/sugar/r_fns.h>
 #include <cppally/sugar/r_hash.h>
 #include <cppally/sugar/r_n_unique.h>
 #include <cppally/sugar/r_sort.h>
