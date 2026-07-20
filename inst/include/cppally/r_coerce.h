@@ -39,7 +39,8 @@ inline T as_impl(const U& x) {
     if constexpr (RObject<U>){
       return static_cast<SEXP>(x);
     } else {
-      return static_cast<SEXP>(new_scalar_vec(as_r_scalar_t<U>(x)));
+      using scalar_t = as_r_scalar_t<U>;
+      return static_cast<SEXP>(r_vec<scalar_t>(1, scalar_t(x)));
     }
   } else {
     if constexpr (RVector<U>){
@@ -49,7 +50,8 @@ inline T as_impl(const U& x) {
     } else if constexpr (RObject<U>){
       return T(static_cast<SEXP>(x));
     } else {
-      return new_scalar_vec(as_r_scalar_t<U>(x));
+      using scalar_t = as_r_scalar_t<U>;
+      return T(r_vec<scalar_t>(1, scalar_t(x)));
     }
   }
 }
