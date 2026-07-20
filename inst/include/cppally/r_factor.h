@@ -92,10 +92,6 @@ struct r_factors {
   #undef FORWARD_FACTOR_METHOD
 
   r_vec<r_str_view> levels() const {
-    // Hot path: levels already cached
-    if (cached_levels && cached_levels->names.has_value()){
-      return r_vec<r_str_view>(*cached_levels->names, internal::no_checks_tag{});
-    }
     ensure_levels_cached();
     return r_vec<r_str_view>(*cached_levels->names, internal::no_checks_tag{});
   }
