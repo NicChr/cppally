@@ -142,16 +142,17 @@ struct r_vec {
   // build cost and the benefit accrues to repeated-lookup C++ code.
   mutable bool first_access = false;
 
-  void ensure_names_cached() const {
-    if (!cached_names) {
+  // Registry + capture — the single home for cache population.
+  void cache_names(const r_vec<r_str_view>& validated) const {
+    if (!cached_names){
       cached_names = internal::name_cache().get_or_create(value.value);
     }
-    if (!cached_names->names.has_value()) {
-      // Construct via r_vec<r_str_view> so the SEXP type is validated before
-      // we ever call STRING_PTR_RO on it inside lazy_build()
-      r_vec<r_str_view> validated(Rf_getAttrib(value, symbol::names_sym));
-      cached_names->names.emplace(static_cast<r_sexp>(validated));
-    }
+    cached_names->names.emplace(static_cast<r_sexp>(validated));
+  }
+
+  void ensure_names_cached() const {
+    if (cached_names && cached_names->names.has_value()) return;
+    cache_names(r_vec<r_str_view>(Rf_getAttrib(value, symbol::names_sym)));
   }
 
   // By default do nothing (e.g. for vectors with no attrs)
@@ -272,13 +273,18 @@ struct r_vec {
   }
 
   r_vec<r_str_view> names() const {
-    // Reuse an already-built cache's STRSXP: no getAttrib
+    // Hot path: cache holds the names STRSXP — no getAttrib, no validation
     if (cached_names && cached_names->names.has_value()){
       return r_vec<r_str_view>(*cached_names->names, internal::no_checks_tag{});
     }
-    // Otherwise read the attribute directly without engaging the registry —
-    // name_index() is the cache-warming path, not names()
-    return r_vec<r_str_view>(Rf_getAttrib(value, symbol::names_sym));
+    // Unnamed: null view, stay out of the registry
+    if (Rf_getAttrib(value, symbol::names_sym) == R_NilValue){
+      return r_vec<r_str_view>(r_null, internal::view_tag{});
+    }
+    // Named: capture into the shared cache once; every later call takes the hot path
+    r_vec<r_str_view> nms(Rf_getAttrib(value, symbol::names_sym));
+    cache_names(nms);
+    return nms;
   }
 
   template <RStringType U>
@@ -286,15 +292,18 @@ struct r_vec {
       
     bool removing = names.is_null();
 
-    // Removing names from an unnamed vector - return early, no copy needed
-    if (removing && !has_names()){
-      return;
-    }
-
     if (!removing && names.length() != length()) [[unlikely]] {
       abort("`length(names)` must equal `length(x)`");
     }
+
+    // Removing names from an unnamed vector - return early, no copy needed
+    if (removing && (Rf_getAttrib(value, symbol::names_sym) == R_NilValue)){
+      return;
+    }
+
+    // Ensure vector is exclusive referencer if COM is enabled
     maybe_ensure_exclusive();
+
     if (removing){
       Rf_setAttrib(value, symbol::names_sym, r_null);
     } else {
