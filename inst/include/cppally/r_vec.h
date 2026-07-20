@@ -134,27 +134,6 @@ struct r_vec {
     }
   }
 
-  // Shared cache: any two r_vec wrappers around the same SEXP point to the same
-  // names_map via the registry, so set_names() propagates to all of them
-  mutable std::shared_ptr<internal::names_map> cached_names;
-  // Counts name_index calls on this wrapper. First lookup uses a linear scan;
-  // the hash table is only built on the second, so one-shot callers pay no
-  // build cost and the benefit accrues to repeated-lookup C++ code.
-  mutable bool first_access = false;
-
-  // Registry + capture — the single home for cache population.
-  void cache_names(const r_vec<r_str_view>& validated) const {
-    if (!cached_names){
-      cached_names = internal::name_cache().get_or_create(value.value);
-    }
-    cached_names->names.emplace(static_cast<r_sexp>(validated));
-  }
-
-  void ensure_names_cached() const {
-    if (cached_names && cached_names->names.has_value()) return;
-    cache_names(r_vec<r_str_view>(Rf_getAttrib(value, symbol::names_sym)));
-  }
-
   // By default do nothing (e.g. for vectors with no attrs)
   template <typename U>
   void validate_class(SEXP x) const {
@@ -267,22 +246,58 @@ struct r_vec {
     return value.address();
   }
 
-  // Cheap presence test — never engages the name cache
+  private: 
+
+  // Shared cache: any two r_vec wrappers around the same SEXP point to the same
+  // names_map via the registry, so set_names() propagates to all of them
+  // Once the cache is populated, it becomes a secondary source of truth
+  // and is assumed to be in sync with the SEXP's names attribute.
+  mutable std::shared_ptr<internal::names_map> cached_names;
+  // Counts name_index calls on this wrapper. First lookup uses a linear scan;
+  // the hash table is only built on the second, so one-shot callers pay no
+  // build cost and the benefit accrues to repeated-lookup C++ code.
+  mutable bool first_access = false;
+
+  // Place names into cache (no hash map yet)
+  void cache_names(const r_vec<r_str_view>& nms) const {
+    if (!cached_names){
+      cached_names = internal::name_cache().get_or_create(unwrap(value));
+    }
+    cached_names->names.emplace(static_cast<r_sexp>(nms));
+  }
+
+  bool has_cached_names() const noexcept {
+    return cached_names && cached_names->names.has_value();
+  }
+
+  // Cache unless we hold a populated cache
+  void ensure_names_cached() const {
+    if (has_cached_names()){
+      return;
+    }
+    cache_names(r_vec<r_str_view>(Rf_getAttrib(value, symbol::names_sym)));
+  }
+
+  public: 
+
   bool has_names() const noexcept {
+    if (has_cached_names()){
+      return !cached_names->names->is_null();
+    }
     return Rf_getAttrib(value, symbol::names_sym) != R_NilValue;
   }
 
   r_vec<r_str_view> names() const {
-    // Hot path: cache holds the names STRSXP — no getAttrib, no validation
-    if (cached_names && cached_names->names.has_value()){
+    // Hot path: cache holds the names STRSXP
+    if (has_cached_names()){
       return r_vec<r_str_view>(*cached_names->names, internal::no_checks_tag{});
     }
-    // Unnamed: null view, stay out of the registry
-    if (Rf_getAttrib(value, symbol::names_sym) == R_NilValue){
-      return r_vec<r_str_view>(r_null, internal::view_tag{});
+    // Unnamed
+    r_vec<r_str_view> nms(Rf_getAttrib(value, symbol::names_sym), internal::view_tag{});
+    if (nms.is_null()){
+      return nms;
     }
     // Named: capture into the shared cache once; every later call takes the hot path
-    r_vec<r_str_view> nms(Rf_getAttrib(value, symbol::names_sym));
     cache_names(nms);
     return nms;
   }
@@ -297,7 +312,7 @@ struct r_vec {
     }
 
     // Removing names from an unnamed vector - return early, no copy needed
-    if (removing && (Rf_getAttrib(value, symbol::names_sym) == R_NilValue)){
+    if (removing && !has_names()){
       return;
     }
 
