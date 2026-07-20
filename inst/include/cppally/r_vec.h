@@ -334,7 +334,7 @@ struct r_vec {
       cached_names = std::move(sp);
       cached_names->invalidate();
     }
-    cache_names(r_vec<r_str_view>(r_sexp(names), internal::no_checks_tag{}));
+    cache_names(r_vec<r_str_view>(r_sexp(Rf_getAttrib(*this, symbol::names_sym)), internal::no_checks_tag{}));
   }
 
   // For named vectors: find first index of name
