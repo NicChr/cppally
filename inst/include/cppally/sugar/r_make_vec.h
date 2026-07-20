@@ -2,7 +2,7 @@
 #define CPPALLY_R_MAKE_VEC_H
 
 #include <cppally/r_setup.h>
-#include <cppally/sugar/r_named_arg.h>
+#include <cppally/r_named_arg.h>
 #include <cppally/r_vec.h>
 #include <cppally/r_attrs.h>
 #include <cppally/r_coerce.h>

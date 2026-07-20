@@ -7,6 +7,7 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h> // Concepts and forward declarations
+#include <cppally/r_named_arg.h>
 #include <cppally/r_utils.h>
 #include <cppally/r_sexp.h>
 #include <cppally/r_sexp_types.h>
@@ -31,7 +32,6 @@
 #include <cppally/r_identical.h>
 #include <cppally/sugar/r_list_helpers.h>
 #include <cppally/sugar/r_df_methods.h>
-#include <cppally/sugar/r_named_arg.h>
 #include <cppally/sugar/r_stats.h>
 #include <cppally/sugar/r_exprs.h>
 #include <cppally/sugar/r_fns.h>
