@@ -320,11 +320,12 @@ struct r_vec {
     }
     if (cached_names){ // We already hold the shared entry
       cached_names->invalidate();
+      cached_names->names.emplace(static_cast<r_sexp>(names));
     } else if (auto sp = internal::name_cache().try_lookup(value)){ // We never cached, but a sibling did
       cached_names = std::move(sp);
       cached_names->invalidate();
+      cached_names->names.emplace(static_cast<r_sexp>(names));
     }
-    // cache_names(r_vec<r_str_view>(names));
   }
 
   // For named vectors: find first index of name
