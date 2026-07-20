@@ -280,13 +280,6 @@ struct r_vec {
 
   public: 
 
-  bool has_names() const noexcept {
-    if (has_cached_names()){
-      return !cached_names->names->is_null();
-    }
-    return Rf_getAttrib(value, symbol::names_sym) != R_NilValue;
-  }
-
   r_vec<r_str_view> names() const {
     // Hot path: cache holds the names STRSXP (or a cached null for unnamed)
     if (has_cached_names()){
@@ -297,6 +290,10 @@ struct r_vec {
     r_vec<r_str_view> nms(Rf_getAttrib(value, symbol::names_sym));
     cache_names(nms);
     return nms;
+  }
+
+  bool has_names() const {
+    return !names().is_null();
   }
 
   template <RStringType U>
