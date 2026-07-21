@@ -11,7 +11,6 @@
 #include <cppally/r_hash_names.h>
 #include <algorithm>
 #include <utility>
-// #include <Rversion.h>
 
 namespace cppally {
 
