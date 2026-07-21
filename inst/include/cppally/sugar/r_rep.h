@@ -24,7 +24,7 @@ inline r_df rep_len(const r_df& x, r_size_t n){
     if (x.nrow() == n){
         return x;
       }
-      r_df out = shallow_copy(x);
+      r_df out = x.copy();
       out.set_nrow(n);
       int ncols = out.ncol();
       for (int i = 0; i < ncols; ++i){
@@ -51,7 +51,7 @@ inline r_df resize(const r_df& x, r_size_t n){
     if (n == x.nrow()){
         return x;
     }
-    r_df out = shallow_copy(x);
+    r_df out = x.copy();
     out.set_nrow(n);
     int ncols = out.ncol();
 
@@ -97,7 +97,7 @@ inline r_factors rep(const r_factors& x, const r_vec<r_int>& times){
 inline r_sexp rep(const r_sexp& x, const r_vec<r_int>& times);
 
 inline r_df rep(const r_df& x, const r_vec<r_int>& times) {
-    r_df out = shallow_copy(x);
+    r_df out = x.copy();
     out.set_nrow(rep(r_vec<r_int>(out.nrow()), times).length());
     int ncols = out.ncol();
     for (int i = 0; i < ncols; ++i){
@@ -125,7 +125,7 @@ inline r_factors rep_each(const r_factors& x, const r_vec<r_int>& each){
 inline r_sexp rep_each(const r_sexp& x, const r_vec<r_int>& each);
 
 inline r_df rep_each(const r_df& x, const r_vec<r_int>& each) {
-    r_df out = shallow_copy(x);
+    r_df out = x.copy();
     out.set_nrow(rep_each(r_vec<r_int>(out.nrow()), each).length());
     int ncols = out.ncol();
     for (int i = 0; i < ncols; ++i){
