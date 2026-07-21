@@ -88,10 +88,10 @@ double bench_protect_insert_release_cppally(int n) {
 
 insert_release_cpp11 <- replicate(10^4, bench_protect_insert_release_cpp11(10^4)) 
 mean(insert_release_cpp11)
-#> [1] 38.32346
+#> [1] 37.9721
 insert_release_cppally <- replicate(10^4, bench_protect_insert_release_cppally(10^4))
 mean(insert_release_cppally)
-#> [1] 16.35267
+#> [1] 16.42399
 ```
 
 On my machine, cpp11 performs an insert & release every ~38 nanoseconds.
@@ -150,10 +150,10 @@ double bench_protect_copy_cppally(int n) {
 
 copy_sexp_cpp11 <- replicate(10^4, bench_protect_copy_cpp11(10^4))
 mean(copy_sexp_cpp11)
-#> [1] 36.47014
+#> [1] 36.16691
 copy_sexp_cppally <- replicate(10^4, bench_protect_copy_cppally(10^4))
 mean(copy_sexp_cppally)
-#> [1] 0.315388
+#> [1] 0.3223601
 ```
 
 In these benchmark results we can see a drastic difference, with cpp11
@@ -233,7 +233,7 @@ mark(C_na_count(x))
 #> # A tibble: 1 × 6
 #>   expression         min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>    <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 C_na_count(x)   34.1µs   63.4µs    15545.        0B        0
+#> 1 C_na_count(x)   34.3µs   63.5µs    15461.        0B        0
 ```
 
 **cpp11 results**
@@ -244,7 +244,7 @@ mark(cpp11_na_count(x))
 #> # A tibble: 1 × 6
 #>   expression             min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>        <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cpp11_na_count(x)   6.66ms   6.87ms      145.        0B     47.4
+#> 1 cpp11_na_count(x)    6.6ms   6.82ms      146.        0B     45.9
 ```
 
 **cppally results**
@@ -302,7 +302,7 @@ mark(cppally_fast_na_count(x))
 #> # A tibble: 1 × 6
 #>   expression                    min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>               <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_fast_na_count(x)   35.6µs   63.6µs    15485.        0B     2.01
+#> 1 cppally_fast_na_count(x)   34.5µs   63.6µs    15494.        0B        0
 ```
 
 Looking at the benchmark results, we have effectively eliminated the
@@ -335,7 +335,7 @@ mark(cppally_fast_na_count_v2(x))
 #> # A tibble: 1 × 6
 #>   expression                       min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>                  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_fast_na_count_v2(x)   63.4µs   63.6µs    15455.        0B        0
+#> 1 cppally_fast_na_count_v2(x)   63.4µs   63.6µs    15437.        0B        0
 ```
 
 The results are similar to that of `cppally_fast_na_count()`.
