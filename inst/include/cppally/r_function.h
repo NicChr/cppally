@@ -55,7 +55,12 @@ inline r_sexp eval(const r_sexp& expr, const r_sexp& env){
   return r_sexp(safe[Rf_eval](expr, env));
 }
 
-// Wraps a callable R object
+// Wrap a callable R function.
+// r_function allows you to find an existing function inside a specified namespace. 
+// e.g. `r_function("sum")` will look for a function named 'sum' in the global environment (by default). 
+// `r_function("sum", pkg_env<"base">())` will look for a function named sum specifically in the base R package.
+// An efficient and clean way to call functions is via `cached_sym`, e.g. `r_function(cached_sym<"foo">())` as the symbol
+// `foo` becomes cached by C++.
 struct r_function {
 
     r_sexp value;
