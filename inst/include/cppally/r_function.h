@@ -36,6 +36,10 @@ inline r_sexp make_pairlist(Args... args) {
     return out;
   }
 }
+inline r_sexp empty_fn(){
+  static r_sexp empty_clo(safe[R_mkClosure](R_NilValue, R_NilValue, env::empty_env));
+  return empty_clo;
+}
 
 }
 
@@ -56,8 +60,6 @@ struct r_function {
 
     r_sexp value;
     using value_type = r_sexp;
-  
-    r_function() = default;
   
     explicit r_function(SEXP x) : value(x) {
       check_is_function(value);
@@ -84,6 +86,8 @@ struct r_function {
     // Look a function up by name (string)
     template <RStringType T>
     explicit r_function(const T& name, const r_sexp& env = env::global_env) : r_function(r_sym(name), env) {}
+
+    r_function() : value(internal::empty_fn()) {}
   
     operator SEXP() const noexcept { return value; }
     explicit operator r_sexp() const noexcept { return value; }
