@@ -243,6 +243,20 @@ inline T as_impl(const U& x) {
   return r_sym(as<r_str_view>(x));
 }
 
+// ----- R Functions -----
+
+template <NotSexp T, RFunction U>
+requires (!RFunction<T>)
+inline T as_impl(const U& x) {
+  abort("No available method to convert type %s to %s", internal::type_str<U>(), internal::type_str<T>());
+}
+
+template <RFunction T, NotSexp U>
+requires (!RFunction<U>)
+inline T as_impl(const U& x) {
+  abort("No available method to convert type %s to %s", internal::type_str<U>(), internal::type_str<T>());
+}
+
 }
 
 // Convert any obj to an r_vec<>
