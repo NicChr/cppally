@@ -27,6 +27,20 @@ inline r_size_t length(const r_sexp& x);
   
 namespace internal {
 
+// RScalar -> RVector
+// Everything else -> r_sexp
+template <typename T>
+r_sexp as_list_element(const T& x) {
+    if constexpr (RScalar<T>){
+      return r_sexp(r_vec<T>(1, x));
+    } else if constexpr (std::is_constructible_v<r_sexp, const T&>){
+      return r_sexp(x);
+    } else {
+      // May never get reached as most types have r_sexp operator
+      return as<r_sexp>(x);
+    }
+}
+
 // Concept helpers for location-based subset helpers
 template <typename T>
 concept RSubscript = any<T, r_lgl, r_int, r_int64, r_str_view, r_str>;

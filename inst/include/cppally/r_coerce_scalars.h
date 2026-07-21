@@ -22,17 +22,6 @@ std::remove_cvref_t<T> as(const U& x);
 
 namespace internal {
 
-// RScalar -> RVector
-// Everything else -> r_sexp
-template <typename T>
-r_sexp as_list_element(const T& x) {
-    if constexpr (RScalar<T>){
-      return r_vec<T>(1, x).value;
-    } else {
-      return as<r_sexp>(x);
-    }
-}
-
 inline bool parse(const char* s, double& out) {
   const char* end = s + std::strlen(s);
   #if defined(__cpp_lib_to_chars_floating_point) || \

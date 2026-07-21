@@ -6,7 +6,7 @@
 #include <cppally/r_sym.h>
 #include <cppally/r_env.h>
 #include <cppally/r_named_arg.h>
-#include <cppally/r_coerce_scalars.h>
+#include <cppally/r_vec.h>
 
 namespace cppally {
 
@@ -25,10 +25,10 @@ inline r_sexp make_pairlist(Args... args) {
 
     (([&]() {
       if constexpr (NamedArg<Args>) {
-        SETCAR(current, internal::as_list_element(args.value));
+        SETCAR(current, as_list_element(args.value));
         SET_TAG(current, r_sym(args.name));
       } else {
-        SETCAR(current, internal::as_list_element(args));
+        SETCAR(current, as_list_element(args));
       }
       current = CDR(current);
     }()), ...);
