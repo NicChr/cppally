@@ -16,6 +16,10 @@ lists and character vectors.
 to easily retrieve functions from specific packages,
 e.g. `r_function("foo", pkg_env<"bar">())`.
 
+- New `copy` member for `r_vec`, `r_factors` and `r_df`. `copy` shallow 
+copies the vector by creating a fresh copy of the atomic data, without deep 
+copying lists or attributes, just like `Rf_shallow_duplicate`.
+
 - `r_sym` now constructs symbols from strings (`const char*`, `r_str`,
 `r_str_view`) under unwind protection, so R errors can no longer 
 longjmp past C++ destructors.
