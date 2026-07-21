@@ -245,11 +245,6 @@ inline T as_impl(const U& x) {
 
 // ----- R Functions -----
 
-// A function has no scalar/vector/factor/data-frame/symbol representation; only its
-// underlying SEXP is meaningful (handled by the AnySexp<T>/NotSexp<T>,AnySexp<U>
-// overloads above - constrained here to the remaining CPPALLY_ALL_CASES dispatch
-// types (RScalar/RComposite/RSymbolType) so as not to compete with those for T or
-// U being SEXP/r_sexp).
 template <NotSexp T, RFunction U>
 requires (!RFunction<T>)
 inline T as_impl(const U& x) {
