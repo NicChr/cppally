@@ -84,7 +84,15 @@ auto unwind_protect(Fun&& code) -> decltype(code()) {
     }
 }
 
-// The `safe` syntax wrapper (C++20 lambda style, no complex structs)
+// Forwarding non-trivially-copyable C++ objects through a C vararg function
+// (e.g. Rf_errorcall / Rf_warningcall) is undefined behaviour. These helpers
+// are printf-style; only POD types and `const char*` are valid. The static
+// assert catches accidental `std::string` etc at compile time -- use .c_str().
+template <typename... Args>
+inline constexpr bool all_vararg_safe_v =
+    (std::is_trivially_copyable_v<std::decay_t<Args>> && ...);
+
+// The `safe` syntax wrapper
 struct protect {
     template <typename F>
     constexpr auto operator[](F* raw_func) const {
@@ -94,16 +102,11 @@ struct protect {
             });
         };
     }
+    template <typename F>
+    constexpr auto operator()(F&& raw_func) const {
+        return operator[](std::forward<F>(raw_func));
+    }
 };
-
-
-// Forwarding non-trivially-copyable C++ objects through a C vararg function
-// (e.g. Rf_errorcall / Rf_warningcall) is undefined behaviour. These helpers
-// are printf-style; only POD types and `const char*` are valid. The static
-// assert catches accidental `std::string` etc at compile time -- use .c_str().
-template <typename... Args>
-inline constexpr bool all_vararg_safe_v =
-    (std::is_trivially_copyable_v<std::decay_t<Args>> && ...);
 
 }
 
