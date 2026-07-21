@@ -10,6 +10,12 @@ lists and character vectors.
 
 - Sequences no longer abort on overflow, but instead silently return `NA`.
 
+- New class `r_function` to safely call R functions from C++. 
+
+- `pkg_env` is a helper that returns the environment of a package, allowing users 
+to easily retrieve functions from specific packages,
+e.g. `r_function("foo", pkg_env<"bar">())`.
+
 - `r_sym` now constructs symbols from strings (`const char*`, `r_str`,
 `r_str_view`) under unwind protection, so R errors can no longer 
 longjmp past C++ destructors.
@@ -25,6 +31,8 @@ accepts `initializer_list` and variadic input.
 - `n_unique` has been sped-up for integer vectors.
 
 - New `initializer_list` overloads for common helpers.
+
+- New `r_sexp` visit helpers `visit_as` and `view_as`.
 
 - Integer multiplication overflow handling is now more portable. 
 
