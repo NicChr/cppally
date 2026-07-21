@@ -61,6 +61,9 @@ struct r_function {
     r_sexp value;
     using value_type = r_sexp;
   
+    // By default, construct a NULL returning empty fn
+    r_function() : r_function(internal::empty_fn(), internal::no_checks_tag{}) {}
+
     explicit r_function(SEXP x) : value(x) {
       check_is_function(value);
     }
@@ -86,8 +89,6 @@ struct r_function {
     // Look a function up by name (string)
     template <RStringType T>
     explicit r_function(const T& name, const r_sexp& env = env::global_env) : r_function(r_sym(name), env) {}
-
-    r_function() : value(internal::empty_fn()) {}
   
     operator SEXP() const noexcept { return value; }
     explicit operator r_sexp() const noexcept { return value; }
@@ -98,7 +99,7 @@ struct r_function {
       r_sexp fn_args = internal::make_pairlist(std::forward<Args>(args)...);
 
       return r_sexp(
-        internal::unwind_protect([&] { return Rf_eval(Rf_lcons(*this, fn_args), env::base_env); })
+        internal::unwind_protect([&] { return Rf_eval(Rf_lcons(*this, fn_args), env::global_env); })
       );
     }
   
