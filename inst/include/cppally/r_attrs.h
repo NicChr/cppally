@@ -5,6 +5,7 @@
 #include <Rversion.h>
 #include <cppally/r_vec.h>
 #include <cppally/r_utils.h>
+#include <cppally/r_function.h>
 
 namespace cppally {
 
@@ -43,7 +44,8 @@ inline bool can_have_attributes(const T& x) noexcept {
   }
 }
 
-inline void check_can_have_attributes(SEXP x){
+template <RObject T>
+inline void check_can_have_attributes(const T& x){
   if (!can_have_attributes(x)) [[unlikely]] {
     abort("%s: `x` cannot have attributes added to it", __func__);
   }
@@ -88,12 +90,8 @@ inline r_vec<r_sexp> get_attrs(const T& x) {
     #if R_VERSION >= R_Version(4, 6, 0)
     return r_vec<r_sexp>(safe[R_getAttributes](x));
     #else
-    SEXP x_ = x;
-    SEXP expr = Rf_protect(Rf_lang2(cppally::cached_sym<"attributes">(), x_));
-    SEXP res = Rf_protect(safe[Rf_eval](expr, R_BaseEnv));
-    r_vec<r_sexp> out(res);
-    Rf_unprotect(2);
-    return out;
+    static r_function r_attrs_fn = r_function("attributes", env::base_env);
+    return r_vec<r_sexp>(r_attrs_fn(x));
     #endif
   } else {
     return r_vec<r_sexp>(r_null);
