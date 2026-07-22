@@ -4,13 +4,23 @@
 \alias{load_all}
 \title{A wrapper around \code{devtools::load_all()} specifically for cppally}
 \usage{
-load_all(path = ".", debug = FALSE, ...)
+load_all(
+  path = ".",
+  debug = FALSE,
+  cppally_header = c("cppally.hpp", "cppally_light.hpp"),
+  ...
+)
 }
 \arguments{
 \item{path}{Path to package.}
 
 \item{debug}{Should package be built without optimisations?
 Default is \code{FALSE} which builds with optimisations.}
+
+\item{cppally_header}{Which header should be
+included with the registered C++ code? The default is the full library
+"cppally.hpp". Choose "cppally_light.hpp" for the lighter header, which may
+provide quicker compile times, at the cost of less features.}
 
 \item{...}{Further arguments passed on to \code{pkgload::load_all()}}
 }

@@ -464,6 +464,10 @@ check_valid_attributes <- function(decorations, file = decorations$file) {
 #' @param quiet If `TRUE` suppresses output from this function.
 #' @param extension The file extension to use for the generated src/cppally file.
 #' Options are either '.cpp' (the default) or '.cc'.
+#' @param cppally_header Which header should be
+#' included with the registered C++ code? The default is the full library
+#' "cppally.hpp". Choose "cppally_light.hpp" for the lighter header, which may
+#' provide quicker compile times, at the cost of less features.
 #'
 #' @returns
 #' The paths to the generated R and C++ source files.
@@ -471,9 +475,15 @@ check_valid_attributes <- function(decorations, file = decorations$file) {
 #' @seealso [cpp_source]
 #'
 #' @export
-cpp_register <- function(path = ".", quiet = !is_interactive(), extension = c(".cpp", ".cc")) {
+cpp_register <- function(
+    path = ".",
+    quiet = !is_interactive(),
+    extension = c(".cpp", ".cc"),
+    cppally_header = c("cppally.hpp", "cppally_light.hpp")
+) {
   stop_unless_installed(get_cpp_register_needs())
   extension <- match.arg(extension)
+  cppally_header <- match.arg(cppally_header)
 
   r_path <- file.path(path, "R", "cppally.R")
   src_path <- file.path(path, "src")
@@ -568,7 +578,7 @@ cpp_register <- function(path = ".", quiet = !is_interactive(), extension = c(".
 
       {extra_includes}
       #include <cppally/r_dispatch.h>
-      #include <cppally.hpp>
+      #include <{cppally_header}>
       #include <R_ext/Visibility.h>
       {user_includes}
 
