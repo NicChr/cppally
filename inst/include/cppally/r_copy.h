@@ -48,6 +48,28 @@ inline T deep_copy(const T& x){
 }
 
 template<>
+inline r_sexp deep_copy(const r_sexp& x) {
+    return internal::view_sexp(x, []<typename vec_t>(const vec_t& vec) -> r_sexp {
+        if constexpr (!is<vec_t, r_sexp>){
+            return r_sexp(deep_copy(vec));
+        } else {
+            return r_sexp(safe[Rf_duplicate](vec));
+        }
+    });
+}
+
+template<>
+inline r_sexp shallow_copy(const r_sexp& x) {
+    return internal::view_sexp(x, []<typename vec_t>(const vec_t& vec) -> r_sexp {
+        if constexpr (!is<vec_t, r_sexp>){
+            return r_sexp(shallow_copy(vec));
+        } else {
+            return r_sexp(safe[Rf_shallow_duplicate](vec));
+        }
+    });
+}
+
+template<>
 inline r_factors deep_copy(const r_factors& x){
     r_vec<r_int> out = deep_copy(x.value);
     return r_factors(static_cast<r_sexp>(out), internal::no_checks_tag{});

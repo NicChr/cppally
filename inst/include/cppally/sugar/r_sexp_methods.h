@@ -20,14 +20,6 @@
 
 namespace cppally {
 
-inline r_size_t length(const r_sexp& x) {
-    if (!Rf_isObject(x)){
-        return Rf_xlength(x);
-    } else {
-        return r_sexp_view(x, CPPALLY_MAKE_VISITOR(r_size_t, v, length(v)));
-    }
-}
-
 inline r_sexp rep_len(const r_sexp& x, r_size_t n) {
     // return r_sexp_view(x, CPPALLY_MAKE_VISITOR(r_sexp, rep_len, n)); // Earlier pattern, dont use
     return r_sexp_view(x, CPPALLY_MAKE_VISITOR(r_sexp, v, rep_len(v, n)));
@@ -96,28 +88,6 @@ void fill(r_sexp& x, const r_vec<U>& where, const r_sexp& with) {
             abort("fill: unsupported `with` type %s", internal::type_str<with_t>());
         } else {
             fill(x, where, with_);
-        }
-    });
-}
-
-template<>
-inline r_sexp deep_copy(const r_sexp& x) {
-    return internal::view_sexp(x, []<typename vec_t>(const vec_t& vec) -> r_sexp {
-        if constexpr (!is<vec_t, r_sexp>){
-            return r_sexp(deep_copy(vec));
-        } else {
-            return r_sexp(safe[Rf_duplicate](vec));
-        }
-    });
-}
-
-template<>
-inline r_sexp shallow_copy(const r_sexp& x) {
-    return internal::view_sexp(x, []<typename vec_t>(const vec_t& vec) -> r_sexp {
-        if constexpr (!is<vec_t, r_sexp>){
-            return r_sexp(shallow_copy(vec));
-        } else {
-            return r_sexp(safe[Rf_shallow_duplicate](vec));
         }
     });
 }

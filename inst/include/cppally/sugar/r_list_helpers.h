@@ -8,6 +8,21 @@
 
 namespace cppally {
 
+inline r_vec<r_int> lengths(const r_vec<r_sexp>& x) {
+    r_size_t n = x.length();
+    r_vec<r_int> out(n);
+    out.set_names(x.names());
+
+    for (r_size_t i = 0; i < n; ++i){
+        r_size_t len = length(x.view(i));
+        if (len > unwrap(r_limits<r_int>::max())) [[unlikely]] {
+            abort("`lengths()` does not currently support long-vectors");
+        }
+        out.set(i, r_int(static_cast<int>(len)));
+    }
+    return out;
+}
+
 // Stack-overflow safe version of `length(unlist(x))`
 inline r_size_t unlisted_length(const r_vec<r_sexp>& x){
     r_size_t out = 0;

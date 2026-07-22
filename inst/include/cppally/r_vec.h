@@ -974,23 +974,6 @@ struct r_vec {
     safe[Rf_setAttrib](value, cached_sym<"tzone">(), r_vec<r_str>(1, r_str(tz)));
   }
 
-  // list-only members
-
-  r_vec<r_int> lengths() const requires is<T, r_sexp> {
-    r_size_t n = length();
-    r_vec<r_int> out(n);
-    out.set_names(names());
-  
-    for (r_size_t i = 0; i < n; ++i){
-      r_size_t len = cppally::length(view(i));
-      if (len > unwrap(r_limits<r_int>::max())) [[unlikely]] {
-        abort("`lengths()` does not currently support long-vectors");
-      }
-      out.set(i, r_int(static_cast<int>(len)));
-    }
-    return out;
-  }
-
 };
 
 // Alias of r_vec

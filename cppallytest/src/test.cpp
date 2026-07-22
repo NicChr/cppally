@@ -127,7 +127,7 @@ r_str test_tz(r_vec<r_psxct> x){
 
 [[cppally::register]]
 r_vec<r_int> test_lengths(const r_vec<r_sexp>& x){
-  return x.lengths();
+  return lengths(x);
 }
 
 [[cppally::register]]
