@@ -10,6 +10,10 @@ lists and character vectors.
 
 - Sequences no longer abort on overflow, but instead silently return `NA`.
 
+- `cpp_source` now generates OpenMP flags, so its compiled functions 
+can use both OpenMP SIMD vectorisation and multi-threaded execution 
+(threads set via `set_threads()`).
+
 - New class `r_function` to safely call R functions from C++. 
 
 - `pkg_env` is a helper that returns the environment of a package, allowing users 
