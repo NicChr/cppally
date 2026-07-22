@@ -10,8 +10,8 @@ functions.
 `cpp_eval()` evaluates a single C++ expression and returns the result.
 For example `cpp_eval('get_threads()')` will run the C++ function
 `cppally::get_threads()` and return the number of OMP threads currently
-set for use. For expressions no return result, the call is evaluated and
-returns `NULL` invisibly.
+set for use. For expressions that do not return a result, the call is
+evaluated and `NULL` is returned invisibly.
 
 ## Usage
 
@@ -243,13 +243,13 @@ mark(last_altrep_aware(1:10^5)) # No materialisation
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 4.07µs 4.71µs   191002.    3.18KB        0 10000     0     52.4ms
+#> 1 last_altrep… 3.72µs 5.45µs   179474.    3.18KB        0 10000     0     55.7ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
-#>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 36.9µs 38.7µs    20643.     391KB     167.  3707    30      180ms
+#>   <bch:expr>    <bch> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 last_altrep_…  40µs 41.2µs    20666.     391KB     168.  3329    27      161ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 ### Copy-on-modify ###
@@ -285,7 +285,7 @@ mark(reverse(x)) # Memory allocated, therefore x was copied before reversing
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr> <bch:tm> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 reverse(x)    243µs  249µs     3832.     391KB     28.4  1754    13      458ms
+#> 1 reverse(x)    231µs  379µs     2818.     391KB     21.8   907     7      322ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 # The cppally preferred approach is to allocate a fresh vector or copy the
@@ -310,11 +310,11 @@ mark(
   cppally_no_copy_on_modify_reverse = cppally_reverse(x)
 )
 #> # A tibble: 3 × 13
-#>   expression     min  median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
-#>   <bch:expr> <bch:t> <bch:t>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 r_reverse  220.6µs 223.1µs     4291.     781KB     66.6  1482    23      345ms
-#> 2 cppally_c… 242.6µs 248.9µs     3944.     391KB     30.7  1797    14      456ms
-#> 3 cppally_n…  57.4µs  63.2µs    15217.     391KB    119.   4860    38      319ms
+#>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
+#>   <bch:expr>  <bch:t> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 r_reverse   229.3µs  242µs     3853.     781KB     63.6  1091    18      283ms
+#> 2 cppally_co… 231.6µs  284µs     3126.     391KB     24.6  1396    11      447ms
+#> 3 cppally_no…  56.5µs  248µs     5279.     391KB     39.3  2150    16      407ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 # }
 ```

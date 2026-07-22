@@ -7,7 +7,12 @@ specifically for cppally
 ## Usage
 
 ``` r
-load_all(path = ".", debug = FALSE, ...)
+load_all(
+  path = ".",
+  debug = FALSE,
+  cppally_header = c("cppally.hpp", "cppally_light.hpp"),
+  ...
+)
 ```
 
 ## Arguments
@@ -20,6 +25,13 @@ load_all(path = ".", debug = FALSE, ...)
 
   Should package be built without optimisations? Default is `FALSE`
   which builds with optimisations.
+
+- cppally_header:
+
+  Which header should be included with the registered C++ code? The
+  default is the full library "cppally.hpp". Choose "cppally_light.hpp"
+  for the lighter header, which may provide quicker compile times, at
+  the cost of less features.
 
 - ...:
 

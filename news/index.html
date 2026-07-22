@@ -45,6 +45,7 @@
 <li><p>Fixed a bug where getting <code>r_df</code> rows would return CHARSXP instead of STRSXP.</p></li>
 <li><p>Fixed a bug where <code>r_vec::apply</code> would throw a compiler error when called on lists and character vectors.</p></li>
 <li><p>Sequences no longer abort on overflow, but instead silently return <code>NA</code>.</p></li>
+<li><p><code>cpp_source</code> now generates OpenMP flags, so its compiled functions can use both OpenMP SIMD vectorisation and multi-threaded execution (threads set via <code>set_threads()</code>).</p></li>
 <li><p>New class <code>r_function</code> to safely call R functions from C++.</p></li>
 <li><p><code>pkg_env</code> is a helper that returns the environment of a package, allowing users to easily retrieve functions from specific packages, e.g. <code>r_function("foo", pkg_env&lt;"bar"&gt;())</code>.</p></li>
 <li><p>New <code>copy</code> member for <code>r_vec</code>, <code>r_factors</code> and <code>r_df</code>. <code>copy</code> shallow copies the vector by creating a fresh copy of the atomic data, without deep copying lists or attributes, just like <code>Rf_shallow_duplicate</code>.</p></li>

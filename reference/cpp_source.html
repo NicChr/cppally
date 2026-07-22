@@ -7,8 +7,8 @@ This may include multiple C++ functions.
 cpp_eval() evaluates a single C++ expression and returns the result.
 For example cpp_eval('get_threads()') will run the C++ function
 cppally::get_threads() and return the number of OMP threads currently set
-for use. For expressions no return result, the call is evaluated and returns
-NULL invisibly."><meta property="og:description" content="cpp11-style helpers to compile cppally code outside of a cppally-linked package
+for use. For expressions that do not return a result, the call is
+evaluated and NULL is returned invisibly."><meta property="og:description" content="cpp11-style helpers to compile cppally code outside of a cppally-linked package
 context.
 cpp_source() compiles and loads a single C++ file for use in R,
 either from an expression or a cpp file.
@@ -16,8 +16,8 @@ This may include multiple C++ functions.
 cpp_eval() evaluates a single C++ expression and returns the result.
 For example cpp_eval('get_threads()') will run the C++ function
 cppally::get_threads() and return the number of OMP threads currently set
-for use. For expressions no return result, the call is evaluated and returns
-NULL invisibly."></head><body>
+for use. For expressions that do not return a result, the call is
+evaluated and NULL is returned invisibly."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -67,8 +67,8 @@ This may include multiple C++ functions.</p>
 <p><code>cpp_eval()</code> evaluates a single C++ expression and returns the result.
 For example <code>cpp_eval('get_threads()')</code> will run the C++ function
 <code>cppally::get_threads()</code> and return the number of OMP threads currently set
-for use. For expressions no return result, the call is evaluated and returns
-<code>NULL</code> invisibly.</p>
+for use. For expressions that do not return a result, the call is
+evaluated and <code>NULL</code> is returned invisibly.</p>
     </div>
 
     <div class="section level2">
@@ -304,13 +304,13 @@ the <code>[[cppally::register]]</code> tagged functions to R. <br><code>cpp_eval
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 13</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> last_altrep… 4.07µs 4.71µs   <span style="text-decoration: underline;">191</span>002.    3.18KB        0 <span style="text-decoration: underline;">10</span>000     0     52.4ms</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> last_altrep… 3.72µs 5.45µs   <span style="text-decoration: underline;">179</span>474.    3.18KB        0 <span style="text-decoration: underline;">10</span>000     0     55.7ms</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: result &lt;list&gt;, memory &lt;list&gt;, time &lt;list&gt;, gc &lt;list&gt;</span></span>
 <span class="r-in"><span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">last_altrep_unaware</span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">^</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span> <span class="co"># Materialises full vector</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 13</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> last_altrep… 36.9µs 38.7µs    <span style="text-decoration: underline;">20</span>643.     391KB     167.  <span style="text-decoration: underline;">3</span>707    30      180ms</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;bch&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> last_altrep_…  40µs 41.2µs    <span style="text-decoration: underline;">20</span>666.     391KB     168.  <span style="text-decoration: underline;">3</span>329    27      161ms</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: result &lt;list&gt;, memory &lt;list&gt;, time &lt;list&gt;, gc &lt;list&gt;</span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">### Copy-on-modify ###</span></span></span>
@@ -346,7 +346,7 @@ the <code>[[cppally::register]]</code> tagged functions to R. <br><code>cpp_eval
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 13</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> reverse(x)    243µs  249µs     <span style="text-decoration: underline;">3</span>832.     391KB     28.4  <span style="text-decoration: underline;">1</span>754    13      458ms</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> reverse(x)    231µs  379µs     <span style="text-decoration: underline;">2</span>818.     391KB     21.8   907     7      322ms</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: result &lt;list&gt;, memory &lt;list&gt;, time &lt;list&gt;, gc &lt;list&gt;</span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># The cppally preferred approach is to allocate a fresh vector or copy the</span></span></span>
@@ -371,11 +371,11 @@ the <code>[[cppally::register]]</code> tagged functions to R. <br><code>cpp_eval
 <span class="r-in"><span>  cppally_no_copy_on_modify_reverse <span class="op">=</span> <span class="fu">cppally_reverse</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 13</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   expression     min  median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:t&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:t&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> r_reverse  220.6µs 223.1µs     <span style="text-decoration: underline;">4</span>291.     781KB     66.6  <span style="text-decoration: underline;">1</span>482    23      345ms</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> cppally_c… 242.6µs 248.9µs     <span style="text-decoration: underline;">3</span>944.     391KB     30.7  <span style="text-decoration: underline;">1</span>797    14      456ms</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> cppally_n…  57.4µs  63.2µs    <span style="text-decoration: underline;">15</span>217.     391KB    119.   <span style="text-decoration: underline;">4</span>860    38      319ms</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:t&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> r_reverse   229.3µs  242µs     <span style="text-decoration: underline;">3</span>853.     781KB     63.6  <span style="text-decoration: underline;">1</span>091    18      283ms</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> cppally_co… 231.6µs  284µs     <span style="text-decoration: underline;">3</span>126.     391KB     24.6  <span style="text-decoration: underline;">1</span>396    11      447ms</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> cppally_no…  56.5µs  248µs     <span style="text-decoration: underline;">5</span>279.     391KB     39.3  <span style="text-decoration: underline;">2</span>150    16      407ms</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: result &lt;list&gt;, memory &lt;list&gt;, time &lt;list&gt;, gc &lt;list&gt;</span></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
