@@ -187,17 +187,26 @@ inline unwrap_t<r_sexp> elt<r_sexp>(SEXP x, r_size_t i) {
 // Internal vec constructor
 template <RVal T>
 inline r_sexp new_vec_impl(r_size_t n) {
+
   if constexpr (RDateType<T>){
+    static r_sexp date_cls = r_sexp(safe[Rf_ScalarString](r_str("Date")));
     r_sexp out = new_vec_impl<typename T::value_type>(n);
-    Rf_setAttrib(out, symbol::class_sym, Rf_ScalarString(cached_str<"Date">()));
+    Rf_setAttrib(out, symbol::class_sym, date_cls);
     return out;
   } else if constexpr (RPsxctType<T>){
+
+    static r_sexp psxct_cls = []{
+      r_sexp cls = new_vec_impl<r_str>(2);
+      SET_STRING_ELT(cls, 0, r_str("POSIXct"));
+      SET_STRING_ELT(cls, 1, r_str("POSIXt"));
+      return cls;
+    }();
+
+    static r_sexp utc_tz = r_sexp(safe[Rf_ScalarString](r_str("UTC")));
+
     r_sexp out = new_vec_impl<typename T::value_type>(n);
-    r_sexp cls = new_vec_impl<r_str>(2);
-    SET_STRING_ELT(cls, 0, cached_str<"POSIXct">());
-    SET_STRING_ELT(cls, 1, cached_str<"POSIXt">());
-    Rf_setAttrib(out, symbol::class_sym, cls);
-    Rf_setAttrib(out, cached_sym<"tzone">(), Rf_ScalarString(cached_str<"UTC">()));
+    Rf_setAttrib(out, symbol::class_sym, psxct_cls);
+    Rf_setAttrib(out, cached_sym<"tzone">(), utc_tz);
     return out;
   } else {
     static_assert(
@@ -222,8 +231,9 @@ inline r_sexp new_vec_impl<r_dbl>(r_size_t n){
 }
 template <>
 inline r_sexp new_vec_impl<r_int64>(r_size_t n){
-  r_sexp out = r_sexp(internal::new_vec(REALSXP, n));
-  Rf_setAttrib(out, symbol::class_sym, Rf_ScalarString(cached_str<"integer64">()));
+  static r_sexp integer64_cls = r_sexp(safe[Rf_ScalarString](r_str("integer64")));
+  r_sexp out = internal::new_vec(REALSXP, n);
+  Rf_setAttrib(out, symbol::class_sym, integer64_cls);
   return out;
 }
 template <>
