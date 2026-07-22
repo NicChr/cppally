@@ -36,7 +36,10 @@ template <typename Fun>
 auto unwind_protect(Fun&& code) -> decltype(code()) {
     using ReturnType = decltype(code());
 
-    if constexpr (!std::is_same_v<ReturnType, SEXP> && !std::is_same_v<ReturnType, void>) {
+    constexpr bool void_res = std::is_void_v<ReturnType>;
+    constexpr bool sexp_res = std::is_same_v<ReturnType, SEXP>;
+
+    if constexpr (!sexp_res && !void_res) {
         // Delegate before setjmp -- only the delegate's jmp_buf is handed to R,
         // so setting one up here would be pure dead weight
         ReturnType result{};
@@ -51,36 +54,24 @@ auto unwind_protect(Fun&& code) -> decltype(code()) {
         if (setjmp(jmpbuf)) [[unlikely]] {
             throw unwind_exception(token);
         }
-
-        if constexpr (std::is_same_v<ReturnType, SEXP>) {
-            SEXP res = R_UnwindProtect(
-                [](void* data) -> SEXP {
-                    return (*static_cast<std::decay_t<Fun>*>(data))();
-                },
-                &code,
-                [](void* jmpbuf_ptr, Rboolean jump) {
-                    if (jump == TRUE) [[unlikely]] {
-                        longjmp(*static_cast<std::jmp_buf*>(jmpbuf_ptr), 1);
-                    }
-                },
-                &jmpbuf, token);
-            SETCAR(token, R_NilValue);
-            return res;
-        } else {
-            R_UnwindProtect(
-                [](void* data) -> SEXP {
+        SEXP res = R_UnwindProtect(
+            [](void* data) -> SEXP {
+                if constexpr (void_res){
                     (*static_cast<std::decay_t<Fun>*>(data))();
                     return R_NilValue;
-                },
-                &code,
-                [](void* jmpbuf_ptr, Rboolean jump) {
-                    if (jump == TRUE) [[unlikely]] {
-                        longjmp(*static_cast<std::jmp_buf*>(jmpbuf_ptr), 1);
-                    }
-                },
-                &jmpbuf, token);
-            SETCAR(token, R_NilValue);
-        }
+                } else {
+                    return (*static_cast<std::decay_t<Fun>*>(data))();
+                }
+            },
+            &code,
+            [](void* jmpbuf_ptr, Rboolean jump) {
+                if (jump == TRUE) [[unlikely]] {
+                    longjmp(*static_cast<std::jmp_buf*>(jmpbuf_ptr), 1);
+                }
+            },
+            &jmpbuf, token);
+        SETCAR(token, R_NilValue);
+        return static_cast<ReturnType>(res);
     }
 }
 
