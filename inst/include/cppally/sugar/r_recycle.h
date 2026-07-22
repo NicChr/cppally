@@ -4,7 +4,6 @@
 #include <cppally/r_visit.h>
 #include <cppally/sugar/r_list_helpers.h>
 #include <cppally/sugar/r_make_vec.h>
-#include <initializer_list>
 
 namespace cppally {
 
@@ -36,31 +35,11 @@ inline r_size_t common_length(Args&&... args) {
   return list_common_length(vectors);
 }
 
-template <RComposite T>
-inline r_size_t common_length(std::initializer_list<T> args){
-  r_size_t n_vectors = static_cast<r_size_t>(args.size());
-  r_vec<r_sexp> vectors(n_vectors);
-  for (r_size_t i = 0; i < n_vectors; ++i){
-    vectors.set(i, args.begin()[i]);
-  }
-  return list_common_length(vectors);
-}
-
 inline r_vec<r_sexp> list_recycle(const r_vec<r_sexp>& x) {
   r_vec<r_sexp> out = x.remove(r_null);
   out.ensure_exclusive();
   internal::recycle_impl(out, list_common_length(out));
   return out;
-}
-
-template <RComposite T>
-inline r_vec<r_sexp> recycle(std::initializer_list<T> args){
-  r_size_t n_vectors = static_cast<r_size_t>(args.size());
-  r_vec<r_sexp> vectors(n_vectors);
-  for (r_size_t i = 0; i < n_vectors; ++i){
-    vectors.set(i, args.begin()[i]);
-  }
-  return list_recycle(vectors);
 }
 
 // Variadic recycle function

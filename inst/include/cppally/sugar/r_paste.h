@@ -67,14 +67,6 @@ inline r_vec<r_str> str_paste_list(const std::vector<r_vec<r_str_view>>& x, cons
 
 }
 
-template <typename... Args>
-r_vec<r_str> str_paste(Args... args){
-    r_vec<r_sexp> vectors = make_vec<r_sexp>(args...).remove(r_null);
-    std::vector<r_vec<r_str_view>> characters = as<std::vector<r_vec<r_str_view>>>(vectors);
-    return internal::str_paste_list(characters);
-}
-
-
 template <RAtomicVector T>
 inline r_vec<r_str> str_paste(std::initializer_list<T> args, const char* sep = ""){
     std::vector<r_vec<r_str_view>> characters;
@@ -86,17 +78,6 @@ inline r_vec<r_str> str_paste(std::initializer_list<T> args, const char* sep = "
     }
     return internal::str_paste_list(characters, sep);
 }
-
-template <RStringType T>
-inline r_vec<r_str> str_paste(std::initializer_list<T> args, const char* sep = ""){
-    std::vector<r_vec<r_str_view>> characters;
-    characters.reserve(args.size());
-    for (const T& v : args){
-        characters.push_back(as<r_vec<r_str_view>>(v));
-    }
-    return internal::str_paste_list(characters, sep);
-}
-
 
 
 inline r_str str_collapse(const r_vec<r_str>& x, const char* sep = ""){
