@@ -7,7 +7,8 @@
 #include <cppally/r_df.h>
 #include <cppally/r_function.h>
 #include <utility>
-#include <string>
+#include <cstdio>
+#include <cstddef>
 
 namespace cppally {
 
@@ -80,24 +81,38 @@ void mutate_sexp(r_sexp& x, F&& f) {
 
 // Comma-join the names of the candidate wrappers F accepts
 template <class F, class... Cs>
-inline std::string join_accepted() {
-    std::string out;
+inline void join_accepted(char* buf, std::size_t n) {
+    std::size_t off = 0;
+    buf[0] = '\0';
     ([&]{
         if constexpr (std::invocable<F, Cs&>) {
-            if (!out.empty()) out += ", ";
-            out += type_str<Cs>();
+            int w = std::snprintf(buf + off, n - off, "%s%s",
+                                  off ? ", " : "", type_str<Cs>());
+            if (w > 0) {
+                off += static_cast<std::size_t>(w);
+                if (off >= n) {
+                    off = n - 1;
+                }
+            }
         }
     }(), ...);
-    return out;
 }
 
 // The wrapped types F accepts, as a printable list. Used when a constrained
 // visit/view/mutate meets a runtime type its visitor rejects.
 #define CPPALLY_CASE_TYPE(C, W) W,
 template <class F>
-inline std::string accepted_types() {
-    static std::string s = join_accepted<F, CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>();
-    return s.empty() ? "(none)" : s;
+inline const char* accepted_types() {
+    static char s[256];
+    static const bool init = [] {
+        join_accepted<F, CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>(s, sizeof(s));
+        if (s[0] == '\0') {
+            std::snprintf(s, sizeof(s), "(none)");
+        }
+        return true;
+    }();
+    (void)init;
+    return s;
 }
 #undef CPPALLY_CASE_TYPE
 
@@ -109,7 +124,7 @@ template <class F>
 [[noreturn]] void reject(const char* got) {
     abort("`r_sexp` visitor cannot accept the value's type %s;\n"
           "Accepted types that satisfy the constraints: %s",
-          got, accepted_types<F&>().c_str());
+          got, accepted_types<F&>());
 }
 
 // Guarded arms: hand `f` the wrapper only if it accepts it, else reject.
