@@ -265,8 +265,12 @@ inline chunk* add_chunk() {
     static int next_size = first_chunk_size;
 
     int cap = next_size;
-    SEXP v = safe[Rf_allocVector](VECSXP, cap);
-    R_PreserveObject(v);
+
+    SEXP v = cppally::internal::unwind_protect([&]{
+        SEXP v_local = Rf_allocVector(VECSXP, cap);
+        R_PreserveObject(v_local);
+        return v_local;
+    });
 
     chunk* c = new chunk{};
     c->vec        = v;
