@@ -9,6 +9,7 @@
 #include <utility>
 #include <cstdio>
 #include <cstddef>
+#include <cstring>
 
 namespace cppally {
 
@@ -82,17 +83,22 @@ void mutate_sexp(r_sexp& x, F&& f) {
 // Comma-join the names of the candidate wrappers F accepts
 template <class F, class... Cs>
 inline void join_accepted(char* buf, std::size_t n) {
+    if (n == 0) {
+        return;
+    }
     std::size_t off = 0;
     buf[0] = '\0';
     ([&]{
         if constexpr (std::invocable<F, Cs&>) {
-            int w = std::snprintf(buf + off, n - off, "%s%s",
-                                  off ? ", " : "", type_str<Cs>());
-            if (w > 0) {
-                off += static_cast<std::size_t>(w);
-                if (off >= n) {
-                    off = n - 1;
-                }
+            const char* sep  = off ? ", " : "";
+            const char* name = type_str<Cs>();
+            const std::size_t ls = std::strlen(sep);
+            const std::size_t ln = std::strlen(name);
+            if (off + ls + ln < n) {          // room for text + NUL
+                std::memcpy(buf + off, sep, ls);
+                std::memcpy(buf + off + ls, name, ln);
+                off += ls + ln;
+                buf[off] = '\0';
             }
         }
     }(), ...);
