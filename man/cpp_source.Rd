@@ -91,8 +91,8 @@ This may include multiple C++ functions.
 \code{cpp_eval()} evaluates a single C++ expression and returns the result.
 For example \code{cpp_eval('get_threads()')} will run the C++ function
 \code{cppally::get_threads()} and return the number of OMP threads currently set
-for use. For expressions no return result, the call is evaluated and returns
-\code{NULL} invisibly.
+for use. For expressions that do not return a result, the call is
+evaluated and \code{NULL} is returned invisibly.
 }
 \examples{
 
