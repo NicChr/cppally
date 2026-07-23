@@ -3,7 +3,7 @@
 #include <cppally_light.hpp>
 using namespace cppally;
 
-template <typename T, typename U>
+template <CastableToRScalar T, CastableToRScalar U>
 void expect_identical(const T& x, const U& target){
     bool test_passed = identical(x, target);
     if (!test_passed){
