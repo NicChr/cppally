@@ -91,6 +91,8 @@ inline uint64_t r_hash_impl(const r_sym& x) noexcept {
 
 // Vector hashing
 
+inline uint64_t r_hash_impl(const r_sexp& x);
+
 template <RVector T>
 inline uint64_t r_hash_impl(const T& x) {
         
@@ -117,9 +119,13 @@ inline uint64_t r_hash_impl(const r_factors& x) {
     return r_hash_impl(x.value);
 };
 
+inline uint64_t r_hash_impl(const r_df& x) {
+    return r_hash_impl(x.value);
+};
 
-// Overload for elements of lists — defined in sugar/r_sexp_methods.h
-inline uint64_t r_hash_impl(const r_sexp& x);
+inline uint64_t r_hash_impl(const r_sexp& x) {
+    return r_sexp_view(x, CPPALLY_MAKE_VISITOR(uint64_t, v, r_hash_impl(v)));
+}
 
 
 template <typename T>
