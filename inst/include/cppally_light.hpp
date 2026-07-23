@@ -23,6 +23,7 @@
 #include <cppally/r_factor.h>
 #include <cppally/r_df.h>
 #include <cppally/r_visit.h>
+#include <cppally/r_identical.h>
 #include <cppally/r_length.h>
 #include <cppally/r_copy.h>
 #include <cppally/r_coerce.h>
