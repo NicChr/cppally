@@ -6,24 +6,25 @@
 
 namespace cppally {
 
-namespace internal {
 template <int N>
-struct fixed_string {
+struct string_literal {
     char data[N];
-    consteval fixed_string(const char (&s)[N]) {
+    consteval string_literal(const char (&s)[N]) {
         for (int i = 0; i < N; ++i){
             data[i] = s[i];
         }
     }
 };
 
+namespace internal {
+
 // Meyers-singleton method to cache R strings and symbols
-template <fixed_string T>
+template <string_literal T>
 inline r_sexp lazy_str_impl() {
     static r_sexp s = r_sexp(Rf_mkCharCE(T.data, CE_UTF8));
     return s;
 }
-template <fixed_string T>
+template <string_literal T>
 inline SEXP lazy_sym_impl() {
     static SEXP s = Rf_installChar(lazy_str_impl<T>());
     return s;

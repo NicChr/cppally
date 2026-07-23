@@ -45,7 +45,7 @@ struct r_sym {
 
 };
 
-template <internal::fixed_string T>
+template <string_literal T>
 inline r_sym cached_sym() {
     return r_sym(internal::lazy_sym_impl<T>(), internal::no_checks_tag{});
 }

@@ -113,7 +113,7 @@ struct r_str_view {
 
 inline r_str::r_str(r_str_view x) : value(static_cast<SEXP>(x)) {}
 
-template <internal::fixed_string T>
+template <string_literal T>
 inline r_str cached_str() {
     return r_str(internal::lazy_str_impl<T>(), internal::no_checks_tag{});
 }

@@ -43,7 +43,7 @@ inline r_sexp empty_fn(){
 
 }
 
-template <internal::fixed_string pkg>
+template <string_literal pkg>
 inline r_sexp pkg_env() {
   static r_sexp ns = r_sexp(
     internal::unwind_protect([] { return R_FindNamespace(Rf_ScalarString(Rf_mkCharCE(pkg.data, CE_UTF8))); })
