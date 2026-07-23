@@ -8,7 +8,6 @@
 #include <cppally/r_function.h>
 #include <utility>
 #include <cstddef>
-#include <array>
 #include <string>
 
 // Could in theory use C-style str pasting but string is already included via r_hash_names.h which includes ankerl
@@ -83,44 +82,30 @@ void mutate_sexp(r_sexp& x, F&& f) {
     }
 }
 
-// Machinery for the "accepted types" list in a constrained-dispatch error.
-
-#define CPPALLY_CASE_TYPE(C, W) W,
-#define CPPALLY_CASE_NAME(C, W) type_str<W>(),
-
-// Fixed candidate names, e.g. "r_vec<r_lgl>", "r_vec<r_int>", etc.
-inline const char* const* candidate_names() {
-    static const char* const names[] = {
-        CPPALLY_ALL_CASES(CPPALLY_CASE_NAME) type_str<r_sexp>()
-    };
-    return names;
-}
-
-// accepted[i] == does F accept candidate i?
+// Comma-join the names of the candidate wrappers F accepts.
 template <class F, class... Cs>
-constexpr std::array<bool, sizeof...(Cs)> accepted_flags() {
-    return { std::invocable<F, Cs&>... };
+inline std::string join_accepted() {
+    std::string out;
+    ([&]{
+        if constexpr (std::invocable<F, Cs&>) {
+            if (!out.empty()) {
+                out += ", ";
+            }
+            out += type_str<Cs>();
+        }
+    }(), ...);
+    return out;
 }
 
-// comma-join the accepted names.
-inline const char* accepted_types_str(const bool* accepted, std::size_t count) {
-    static std::string s;
-    s.clear();
-    const char* const* names = candidate_names();
-    for (std::size_t i = 0; i < count; ++i) {
-        if (!accepted[i]) {
-            continue;
-        }
-        if (!s.empty()) {
-            s += ", ";
-        }
-        s += names[i];
-    }
-    if (s.empty()) {
-        s = "(none)";
-    }
-    return s.c_str();
+// The wrapped types F accepts, as a printable list. Used when a constrained
+// visit/view/mutate meets a runtime type its visitor rejects.
+#define CPPALLY_CASE_TYPE(C, W) W,
+template <class F>
+inline std::string accepted_types() {
+    static std::string s = join_accepted<F, CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>();
+    return s.empty() ? "(none)" : s;
 }
+#undef CPPALLY_CASE_TYPE
 
 // Terminal for a constrained dispatcher that meets a type its visitor rejects.
 // [[noreturn]] is load-bearing: in the guarded switches below the reject arms
@@ -128,15 +113,10 @@ inline const char* accepted_types_str(const bool* accepted, std::size_t count) {
 // dispatcher deduces its type from the accepted arms alone
 template <class F>
 [[noreturn]] void reject(const char* got) {
-    static constexpr auto accepted =
-        accepted_flags<F&, CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>();
     abort("r_sexp visitor cannot accept the value's type: %s\n"
           "Accepted types that satisfy the constraints: %s",
-          got, accepted_types_str(accepted.data(), accepted.size()));
+          got, accepted_types<F&>().c_str());
 }
-
-#undef CPPALLY_CASE_TYPE
-#undef CPPALLY_CASE_NAME
 
 // Guarded arms: hand `f` the wrapper only if it accepts it, else reject.
 #define CPPALLY_CASE_OWNING_G(C, W)                                          \
