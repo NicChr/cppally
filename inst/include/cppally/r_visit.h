@@ -7,10 +7,12 @@
 #include <cppally/r_df.h>
 #include <cppally/r_function.h>
 #include <utility>
-#include <cstdio>
 #include <cstddef>
-#include <cstring>
 #include <array>
+#include <string>
+
+// Could in theory use C-style str pasting but string is already included via r_hash_names.h which includes ankerl
+// Only way to avoid including string would be to use a different hash map
 
 namespace cppally {
 
@@ -102,29 +104,22 @@ constexpr std::array<bool, sizeof...(Cs)> accepted_flags() {
 
 // comma-join the accepted names.
 inline const char* accepted_types_str(const bool* accepted, std::size_t count) {
-    static char s[256];
+    static std::string s;
+    s.clear();
     const char* const* names = candidate_names();
-    std::size_t off = 0;
-    s[0] = '\0';
     for (std::size_t i = 0; i < count; ++i) {
         if (!accepted[i]) {
             continue;
         }
-        const char* sep  = off ? ", " : "";
-        const char* name = names[i];
-        const std::size_t ls = std::strlen(sep);
-        const std::size_t ln = std::strlen(name);
-        if (off + ls + ln < sizeof(s)) {          // room for text + NUL
-            std::memcpy(s + off, sep, ls);
-            std::memcpy(s + off + ls, name, ln);
-            off += ls + ln;
-            s[off] = '\0';
+        if (!s.empty()) {
+            s += ", ";
         }
+        s += names[i];
     }
-    if (s[0] == '\0') {
-        std::snprintf(s, sizeof(s), "(none)");
+    if (s.empty()) {
+        s = "(none)";
     }
-    return s;
+    return s.c_str();
 }
 
 // Terminal for a constrained dispatcher that meets a type its visitor rejects.
