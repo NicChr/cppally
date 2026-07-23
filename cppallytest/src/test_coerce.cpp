@@ -1,4 +1,5 @@
 #include "cppallytest.h"
+#include <cppally.hpp>
 using namespace cppally;
 
 [[cppally::register]]

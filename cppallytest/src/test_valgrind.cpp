@@ -1,4 +1,4 @@
-#include <cppally.hpp>
+#include <cppally_light.hpp>
 #include <vector>
 using namespace cppally;
 

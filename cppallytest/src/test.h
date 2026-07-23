@@ -277,7 +277,7 @@ SEXP test_copy(SEXP x){
 }
 
 [[cppally::register]]
-bool test_identical(SEXP x, SEXP y){
+bool test_identical(r_sexp x, r_sexp y){
   return identical(x, y);
 }
 

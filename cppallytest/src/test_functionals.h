@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cppally.hpp>
+#include <cppally_light.hpp>
 using namespace cppally;
 
 template <RNumber T>

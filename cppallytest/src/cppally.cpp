@@ -3,7 +3,7 @@
 
 
 #include <cppally/r_dispatch.h>
-#include <cppally.hpp>
+#include <cppally_light.hpp>
 #include <R_ext/Visibility.h>
 #include "test.h"
 #include "test_functionals.h"
@@ -554,10 +554,10 @@ extern "C" SEXP _cppallytest_test_copy(SEXP x) {
   END_CPPALLY
 }
 // test.h
-bool test_identical(SEXP x, SEXP y);
+bool test_identical(r_sexp x, r_sexp y);
 extern "C" SEXP _cppallytest_test_identical(SEXP x, SEXP y) {
   BEGIN_CPPALLY
-  return cpp_to_r(::test_identical(r_to_cpp<SEXP>(x), r_to_cpp<SEXP>(y)));
+  return cpp_to_r(::test_identical(r_to_cpp<r_sexp>(x), r_to_cpp<r_sexp>(y)));
   END_CPPALLY
 }
 // test.h
