@@ -3,7 +3,7 @@
 
 
 #include <cppally/r_dispatch.h>
-#include <cppally_light.hpp>
+#include <cppally.hpp>
 #include <R_ext/Visibility.h>
 #include "test.h"
 #include "test_functionals.h"
