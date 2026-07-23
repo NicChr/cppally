@@ -4,19 +4,15 @@
 // Type-safe methods for r_sexp
 
 #include <cppally/r_visit.h>
-#include <cppally/r_length.h>
 #include <cppally/r_coerce.h>
 #include <cppally/sugar/r_rep.h>
 #include <cppally/sugar/r_subset.h>
 #include <cppally/sugar/r_sort.h>
 #include <cppally/sugar/r_unique.h>
 #include <cppally/sugar/r_n_unique.h>
-#include <cppally/sugar/r_hash.h>
 #include <cppally/sugar/r_groups.h>
 #include <cppally/sugar/r_match.h>
 #include <cppally/sugar/r_replace_at.h>
-#include <cppally/r_copy.h>
-#include <cppally/r_identical.h>
 
 namespace cppally {
 
@@ -90,32 +86,6 @@ void fill(r_sexp& x, const r_vec<U>& where, const r_sexp& with) {
             fill(x, where, with_);
         }
     });
-}
-
-namespace internal {
-
-inline bool identical_impl(const r_sexp& a, const r_sexp& b) {
-    if (internal::ptrs_identical(a, b)) return true;
-    if (a.is_null() || b.is_null()) return false; // If true it would have been caught by above ptr comparison
-    return internal::view_sexp(a, [&b]<typename vec1_t>(const vec1_t& vec1) -> bool {
-        if constexpr (is<vec1_t, r_sexp>){
-            return R_compute_identical(vec1, b, 16);
-        } else {
-            return internal::view_sexp(b, [&vec1]<typename vec2_t>(const vec2_t& vec2) -> bool {
-                if constexpr (!is<vec1_t, vec2_t>){
-                    return false;
-                } else {
-                    return identical_impl(vec1, vec2);
-                }
-            });
-        }
-    });
-}
-
-inline uint64_t r_hash_impl(const r_sexp& x) {
-    return r_sexp_view(x, CPPALLY_MAKE_VISITOR(uint64_t, v, r_hash_impl(v)));
-}
-
 }
 
 } 

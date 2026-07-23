@@ -54,6 +54,10 @@ inline bool identical_impl(const r_sym& a, const r_sym& b) noexcept {
     return unwrap(a) == unwrap(b);
 }
 
+inline bool identical_impl(const r_function& a, const r_function& b) noexcept {
+    return unwrap(a) == unwrap(b);
+}
+
 inline bool identical_impl(const r_sexp& a, const r_sexp& b);
 
 template <RComposite T>
@@ -106,9 +110,22 @@ inline bool identical_impl<r_df>(const r_df& a, const r_df& b) {
     return identical_impl(a.value, b.value);
 }
 
-
-inline bool identical_impl(SEXP a, SEXP b) {
-    return identical_impl(r_sexp(a, view_tag{}), r_sexp(b, view_tag{}));
+inline bool identical_impl(const r_sexp& a, const r_sexp& b) {
+    if (internal::ptrs_identical(a, b)) return true;
+    if (a.is_null() || b.is_null()) return false; // If true it would have been caught by above ptr comparison
+    return internal::view_sexp(a, [&b]<typename vec1_t>(const vec1_t& vec1) -> bool {
+        if constexpr (is<vec1_t, r_sexp>){
+            return R_compute_identical(vec1, b, 16);
+        } else {
+            return internal::view_sexp(b, [&vec1]<typename vec2_t>(const vec2_t& vec2) -> bool {
+                if constexpr (!is<vec1_t, vec2_t>){
+                    return false;
+                } else {
+                    return identical_impl(vec1, vec2);
+                }
+            });
+        }
+    });
 }
 
 }
