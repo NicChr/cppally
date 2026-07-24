@@ -6,7 +6,7 @@
 \title{Compile C++20 code}
 \usage{
 cpp_source(
-  file,
+  file = NULL,
   code = NULL,
   env = parent.frame(),
   clean = TRUE,
@@ -31,7 +31,8 @@ cpp_eval(
   check_data_frames = FALSE,
   copy_on_modify = FALSE,
   simplify = TRUE,
-  cxx_std = Sys.getenv("CXX_STD", "CXX20")
+  cxx_std = Sys.getenv("CXX_STD", "CXX20"),
+  cppally_header = c("cppally.hpp", "cppally_light.hpp")
 )
 }
 \arguments{
@@ -74,6 +75,11 @@ The default is a temporary directory via \code{tempfile()} which is removed when
 
 \item{simplify}{Applies to \code{cpp_eval}. A list of results is returned unless
 \code{length(code) == 1} and \code{simplify = TRUE}.}
+
+\item{cppally_header}{Which header should be
+included with the registered C++ code? The default is the full library
+"cppally.hpp". Choose "cppally_light.hpp" for the lighter header, which may
+provide quicker compile times, at the cost of less features.}
 }
 \value{
 \code{cpp_source()} invisibly compiles the C++ code and registers

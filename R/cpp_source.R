@@ -113,6 +113,10 @@ curr_env <- function(){
 #' `clean = TRUE`.
 #' @param simplify Applies to `cpp_eval`. A list of results is returned unless
 #' `length(code) == 1` and `simplify = TRUE`.
+#' @param cppally_header Which header should be
+#' included with the registered C++ code? The default is the full library
+#' "cppally.hpp". Choose "cppally_light.hpp" for the lighter header, which may
+#' provide quicker compile times, at the cost of less features.
 #'
 #' @returns
 #' `cpp_source()` invisibly compiles the C++ code and registers
@@ -253,7 +257,7 @@ curr_env <- function(){
 #'
 #' @rdname cpp_source
 #' @export
-cpp_source <- function(file, code = NULL, env = parent.frame(),
+cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
                        clean = TRUE, quiet = TRUE, debug = FALSE,
                        preserve_altrep = FALSE,
                        check_factors = FALSE,
@@ -265,7 +269,12 @@ cpp_source <- function(file, code = NULL, env = parent.frame(),
     c("brio", "callr", "cli", "decor", "desc",
       "glue", "purrr", "readr", "stringr", "vctrs")
   )
-  if (!missing(file) && !file.exists(file)) {
+
+  if (!is.null(file) && !is.null(code)){
+    cli::cli_abort("Please supply either a C++ file or string of C++ code")
+  }
+
+  if (!is.null(file) && !file.exists(file)) {
     stop("Can't find `file` at this path:\n", file, "\n", call. = FALSE)
   }
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
@@ -280,7 +289,7 @@ cpp_source <- function(file, code = NULL, env = parent.frame(),
     brio::write_lines(code, file)
   }
   if (!any(tools::file_ext(file) %in% c("cpp", "cc"))) {
-    stop("`file` must have a `.cpp` or `.cc` extension")
+    cli::cli_abort("{.arg file} must have a `.cpp` or `.cc` extension")
   }
   name <- generate_cpp_name(file)
   package <- tools::file_path_sans_ext(name)
@@ -338,7 +347,9 @@ source_single_exprs <- function(exprs, env = parent.frame(), clean = TRUE,
                                 check_factors = FALSE,
                                 check_data_frames = FALSE,
                                 copy_on_modify = FALSE,
-                                cxx_std = Sys.getenv("CXX_STD", "CXX20")){
+                                cxx_std = Sys.getenv("CXX_STD", "CXX20"),
+                                cppally_header = c("cppally.hpp", "cppally_light.hpp")){
+  cppally_header <- match.arg(cppally_header)
   if (length(exprs) == 0){
     cli::cli_abort("{.arg exprs} is length 0, please supply a valid input")
   }
@@ -350,18 +361,21 @@ source_single_exprs <- function(exprs, env = parent.frame(), clean = TRUE,
   eval_helper <- paste(c(
     'template <typename F>',
     'SEXP cppally_eval(F&& f) {',
-    '  if constexpr (std::is_void_v<std::invoke_result_t<F>>) {',
+    '  r_vec<r_sexp> out(2);',
+    '  r_vec<r_str> nms(2);',
+    '  nms.set(0, r_str("is_void"));',
+    '  nms.set(1, r_str("result"));',
+    '  out.set_names(nms);',
+    '  using res_t = std::invoke_result_t<F>;',
+    '  if constexpr (std::same_as<res_t, void>) {',
     '    std::forward<F>(f)();',
-    '    return make_vec<r_sexp>(',
-    '      arg("is_void") = make_vec<r_lgl>(r_true),',
-    '      arg("result") = R_NilValue',
-    '    );',
+    '    out.set(0, r_sexp(r_vec<r_lgl>(1, r_true)));',
+    '    out.set(1, r_null);',
     '  } else {',
-    '    return make_vec<r_sexp>(',
-    '      arg("is_void") = make_vec<r_lgl>(r_false),',
-    '      arg("result") = cpp_to_r(std::forward<F>(f)())',
-    '    );',
+    '    out.set(0, r_sexp(r_vec<r_lgl>(1, r_false)));',
+    '    out.set(1, r_sexp(internal::cpp_to_r(std::forward<F>(f)())));',
     '  }',
+    '  return out;',
     '}'
   ), collapse = "\n")
   fun_names <- paste0("f", seq_along(exprs))
@@ -372,21 +386,20 @@ source_single_exprs <- function(exprs, env = parent.frame(), clean = TRUE,
   cpp_source(
     code = paste(c(
       "#include <cppally/r_dispatch.h>",
-      "#include <cppally.hpp>",
-      "#include <type_traits>",
-      "#include <utility>",
+      glue::glue("#include <{cppally_header}>"),
       "using namespace cppally;",
-      "using internal::cpp_to_r;",
-      "using internal::r_to_cpp;",
       eval_helper,
       bodies
     ), collapse = "\n"),
-    env = env, clean = clean, quiet = quiet,
-    debug = debug, cxx_std = cxx_std,
+    env = env,
+    clean = clean,
+    quiet = quiet,
+    debug = debug,
+    cxx_std = cxx_std,
     preserve_altrep = preserve_altrep,
     check_factors = check_factors,
     check_data_frames = check_data_frames,
-    copy_on_modify = copy_on_modify,
+    copy_on_modify = copy_on_modify
   )
 }
 #' @rdname cpp_source
@@ -398,7 +411,9 @@ cpp_eval <- function(code, env = curr_env(), clean = TRUE,
                      check_data_frames = FALSE,
                      copy_on_modify = FALSE,
                      simplify = TRUE,
-                     cxx_std = Sys.getenv("CXX_STD", "CXX20")){
+                     cxx_std = Sys.getenv("CXX_STD", "CXX20"),
+                     cppally_header = c("cppally.hpp", "cppally_light.hpp")){
+  cppally_header <- match.arg(cppally_header)
   curr_objs <- names(env)
   source_single_exprs(
     code, env = env, clean = clean,
@@ -407,7 +422,8 @@ cpp_eval <- function(code, env = curr_env(), clean = TRUE,
     check_factors = check_factors,
     check_data_frames = check_data_frames,
     copy_on_modify = copy_on_modify,
-    cxx_std = cxx_std
+    cxx_std = cxx_std,
+    cppally_header = cppally_header
   )
   fn_names <- paste0("f", seq_along(code))
   fns <- mget(fn_names, envir = env)
