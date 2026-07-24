@@ -253,12 +253,33 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
 
         uint32_t n_uniques = uniques.size();
 
-        // Sort the unique group IDs
+        // Sort the unique group IDs by string content (C-locale byte order)
         std::vector<uint32_t> sorted_ids(n_uniques);
         std::iota(sorted_ids.begin(), sorted_ids.end(), 0u);
-        std::sort(sorted_ids.begin(), sorted_ids.end(), [&](uint32_t a, uint32_t b) {
-            return std::strcmp(CHAR(uniques[a]), CHAR(uniques[b])) < 0;
-        });
+
+        // Low cardinality: strcmp sort is already trivial, and building keys would
+        // be pure overhead. High cardinality: pack the first 8 bytes of each unique
+        // big-endian so a plain uint64 compare reproduces strcmp's unsigned byte
+        // order, letting most comparisons skip the strcmp call (strcmp breaks ties)
+        if (n_uniques < 256) {
+            std::sort(sorted_ids.begin(), sorted_ids.end(), [&](uint32_t a, uint32_t b) {
+                return std::strcmp(CHAR(uniques[a]), CHAR(uniques[b])) < 0;
+            });
+        } else {
+            std::vector<uint64_t> prefix(n_uniques);
+            for (uint32_t id = 0; id < n_uniques; ++id) {
+                const char* s = CHAR(uniques[id]);
+                uint64_t k = 0;
+                for (int b = 0; b < 8 && s[b]; ++b) {
+                    k |= static_cast<uint64_t>(static_cast<unsigned char>(s[b])) << (56 - 8 * b);
+                }
+                prefix[id] = k;
+            }
+            std::sort(sorted_ids.begin(), sorted_ids.end(), [&](uint32_t a, uint32_t b) {
+                if (prefix[a] != prefix[b]) { return prefix[a] < prefix[b]; }
+                return std::strcmp(CHAR(uniques[a]), CHAR(uniques[b])) < 0;
+            });
+        }
         
         // Prefix Sums: calculate the starting write offset for each group
         std::vector<uint32_t> offsets(n_uniques);
