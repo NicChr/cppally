@@ -1,8 +1,8 @@
 #ifndef CPPALLY_LIGHT_HPP
 #define CPPALLY_LIGHT_HPP
 
-// cppally API - Light version (In progress, don't use, recommend including cppally.hpp)
-// Includes only the absolute essentials
+// cppally API - Light version
+// Includes everything except sugar header files
 // License: MIT
 // Author: Nick Christofides
 
