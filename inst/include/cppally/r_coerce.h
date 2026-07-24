@@ -120,7 +120,7 @@ inline T as_impl(const U& x) {
   return out;
 }
 
-template <RScalar T, RVector U>
+template <CastableToRScalar T, RVector U>
 inline T as_impl(const U& x) {
   if (x.length() != 1) [[unlikely]] {
     abort("Vector of type %s must be length-1 to be coerced to scalar type %s", internal::type_str<U>(), internal::type_str<T>());
@@ -161,7 +161,7 @@ inline T as_impl(const U& x) {
 
 // ----- Factors -----
 
-template <RScalar T, RFactor U>
+template <CastableToRScalar T, RFactor U>
 inline T as_impl(const U& x) {
   if (x.length() != 1) [[unlikely]] {
     abort("Factor must be length-1 to be coerced to scalar type %s", internal::type_str<T>());
@@ -194,7 +194,7 @@ inline T as_impl(const U& x) {
 // ----- Data Frames -----
 
 template <typename T, RDataFrame U>
-requires (RScalar<T> || RVector<T> || RFactor<T>)
+requires (CastableToRScalar<T> || RVector<T> || RFactor<T>)
 inline T as_impl(const U& x) {
   if (x.ncol() != 1) [[unlikely]] {
     abort("r_df must be a 1-column data frame to convert to %s", internal::type_str<T>());
@@ -212,13 +212,14 @@ inline T as_impl(const U& x) {
   return r_df(x);
 }
 
-template <RComposite T, RScalar U>
+template <RComposite T, CastableToRScalar U>
 inline T as_impl(const U& x) {
   if constexpr (RVector<T>){
     using data_t = typename T::data_type;
     return r_vec<data_t>(1, as<data_t>(x)); 
   } else {
-    return as<T>(r_vec<U>(1, x));
+    using scalar_t = as_r_scalar_t<U>;
+    return as<T>(r_vec<scalar_t>(1, scalar_t(x)));
   }
 }
 
