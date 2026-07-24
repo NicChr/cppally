@@ -87,7 +87,7 @@ template <class F, class... Cs>
 inline std::string join_accepted() {
     std::string out;
     ([&]{
-        if constexpr (std::invocable<F, Cs&>) {
+        if constexpr (requires { std::declval<F>()(std::declval<Cs&>()); }) {
             if (!out.empty()) {
                 out += ", ";
             }
