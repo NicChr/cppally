@@ -30,12 +30,12 @@ namespace internal {
 // Everything else -> r_sexp
 template <typename T>
 r_sexp as_list_element(const T& x) {
-    if constexpr (RScalar<T>){
-      return r_sexp(r_vec<T>(1, x));
+    if constexpr (CastableToRScalar<T>){
+      using data_t = as_r_scalar_t<T>;
+      return r_sexp(r_vec<data_t>(1, data_t(x)));
     } else if constexpr (std::is_constructible_v<r_sexp, const T&>){
       return r_sexp(x);
     } else {
-      // May never get reached as most types have r_sexp operator
       return as<r_sexp>(x);
     }
 }
