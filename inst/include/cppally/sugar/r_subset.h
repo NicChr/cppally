@@ -112,16 +112,17 @@ r_vec<V> clean_locs(const r_vec<U>& locs, const T& x){
 
 }
 
-template <RVal T>
-template <internal::RSubscript U>
-inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool invert, bool check) const {
+template <RVector T, internal::RSubscript U>
+inline T subset(const T& x, const r_vec<U>& indices, bool invert = false, bool check = true) {
 
+  using data_t = typename std::remove_cvref_t<T>::data_type;
+  
   if (indices.is_null()){
-    return *this;
+    return x;
   }
   
   if constexpr (RStringType<U>){
-    if (is_long()){
+    if (x.is_long()){
         abort("%s: Named subsetting on long-vectors is unsupported", __func__);
     }
 
@@ -129,73 +130,65 @@ inline r_vec<T> r_vec<T>::subset(const r_vec<U>& indices, bool invert, bool chec
     r_vec<r_int> matches(n);
     bool do_check = false;
     for (r_size_t i = 0; i < n; ++i){
-      r_int name_idx = name_index(indices.view(i), /*abort_on_missing = */ false);
-      do_check = do_check || cppally::is_na(name_idx);
+      r_int name_idx = x.name_index(indices.view(i), /*abort_on_missing = */ false);
+      do_check = do_check || is_na(name_idx);
       matches.set(i, name_idx);
     }
-    return subset(matches, /*invert=*/ invert, /*check=*/ do_check);
+    return subset(x, matches, /*invert=*/ invert, /*check=*/ do_check);
   } else if constexpr (RLogicalType<U>){
-    if (is_long()){
-      return subset(internal::clean_locs<r_int64>(indices, *this), /*invert=*/ invert, /*check=*/ false);
+    if (x.is_long()){
+      return subset(x, internal::clean_locs<r_int64>(indices, x), /*invert=*/ invert, /*check=*/ false);
     } else {
-      return subset(internal::clean_locs<r_int>(indices, *this), /*invert=*/ invert, /*check=*/ false);
+      return subset(x, internal::clean_locs<r_int>(indices, x), /*invert=*/ invert, /*check=*/ false);
     }
   } else {
     if (invert){
-      if (is_long()){
-        return subset(internal::exclude_locs<r_int64>(indices, length()), /*invert=*/ false, /*check=*/ false);
+      if (x.is_long()){
+        return subset(x, internal::exclude_locs<r_int64>(indices, x.length()), /*invert=*/ false, /*check=*/ false);
       } else {
-        return subset(internal::exclude_locs<r_int>(indices, length()), /*invert=*/ false, /*check=*/ false);
+        return subset(x, internal::exclude_locs<r_int>(indices, x.length()), /*invert=*/ false, /*check=*/ false);
       }
     }
 
     using unsigned_int_t = std::make_unsigned_t<unwrap_t<U>>;
     r_size_t n = indices.length();
 
-    r_vec<T> out(n);
+    T out(n);
 
     if (check){
-      r_size_t xn = length();
+      r_size_t xn = x.length();
       unsigned_int_t na_val = unwrap(na<U>());
       unsigned_int_t j;
   
       for (r_size_t i = 0; i < n; ++i){
         j = unwrap(indices.get(i));
         if (j < static_cast<unsigned_int_t>(xn)){
-          out.set(i, view(static_cast<r_size_t>(j)));
+          out.set(i, x.view(static_cast<r_size_t>(j)));
         } else if (j > na_val) [[unlikely]] {
           // If j > n_val then it is a negative signed integer
           abort("Negative indices are unsupported, use `invert = true`");
         } else {
-          if constexpr (RScalar<T>){
-            out.set(i, na<T>());
+          if constexpr (requires { data_t::na(); }){
+            out.set(i, na<data_t>());
           }
         }
       }
     } else {
       for (r_size_t i = 0; i < n; ++i){
-        out.set(i, view(static_cast<r_size_t>(unwrap(indices.get(i)))));
+        out.set(i, x.view(static_cast<r_size_t>(unwrap(indices.get(i)))));
+      }
     }
+    r_vec<r_str_view> nms = x.names();
+    if (!nms.is_null()){
+      r_vec<r_str_view> new_nms = subset(nms, indices, invert, check);
+      out.set_names(new_nms);
+    }
+    return out;
   }
-  r_vec<r_str_view> nms = names();
-  if (!nms.is_null()){
-    r_vec<r_str_view> new_nms = nms.subset(indices, invert, check);
-    out.set_names(new_nms);
-  }
-  return out;
-}
-}
-
-
-// Free subset functions
-
-template <RVector T, internal::RSubscript U>
-inline T subset(const T& x, const r_vec<U>& indices, bool invert = false, bool check = true) {
-  return x.subset(indices, invert, check);
 }
 template <internal::RSubscript U>
 inline r_factors subset(const r_factors& x, const r_vec<U>& indices, bool invert = false, bool check = true) {
-  return x.subset(indices, invert, check);
+  return r_factors(subset(x.value, indices, invert, check), x.levels(), false);
 }
 
 template <internal::RSubscript U>

@@ -19,7 +19,7 @@ inline r_vec<r_str_view> combine_levels(const r_vec<r_str_view>& x_lvls, const r
         return x_lvls;
     }
 
-    r_vec<r_str_view> new_lvls = y_lvls.subset(new_lvl_locations);
+    r_vec<r_str_view> new_lvls = subset(y_lvls, new_lvl_locations);
 
     r_size_t n_lvls = x_lvls.length() + new_lvls.length();
     r_vec<r_str_view> out(n_lvls);

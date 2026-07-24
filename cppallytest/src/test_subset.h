@@ -13,7 +13,7 @@ T test_subset(T x, r_vec<U> i, bool invert){
     if constexpr (is<U, r_int>){
         i = i - 1;
     }
-    return x.subset(i, invert, true);
+    return subset(x, i, invert, true);
 }
 
 template <RVal T, RVal U>

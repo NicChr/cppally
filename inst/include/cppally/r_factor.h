@@ -81,7 +81,6 @@ struct r_factors {
   FORWARD_METHOD(name_index)
 
   // Methods that return factors
-  FORWARD_FACTOR_METHOD(subset)
   FORWARD_FACTOR_METHOD(rep_len)
   FORWARD_FACTOR_METHOD(resize)
   FORWARD_FACTOR_METHOD(copy)

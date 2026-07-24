@@ -132,7 +132,7 @@ inline r_df r_df::get_row(int index) const {
 
 template <internal::RSubscript U>
 inline r_df r_df::select(const r_vec<U>& cols) const {
-    return r_df(value.subset(cols), false, nrow());
+    return r_df(subset(value, cols), false, nrow());
 }
 
 inline r_vec<r_str> r_df::rownames() const {

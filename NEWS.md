@@ -10,6 +10,10 @@ lists and character vectors.
 
 - Sequences no longer abort on overflow, but instead silently return `NA`.
 
+- Removed `r_vec::subset` and `r_factors::subset` as they didn't thematically 
+fit in with the rest of the members. 
+The free `subset` function is still available.
+
 - `cpp_source` now generates OpenMP flags, so its compiled functions 
 can use both OpenMP SIMD vectorisation and multi-threaded execution 
 (threads set via `set_threads()`).

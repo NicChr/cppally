@@ -527,13 +527,6 @@ struct r_vec {
     return view(static_cast<r_size_t>(index)); 
   }
 
-  template <internal::RSubscript U>
-  r_vec<T> subset(const r_vec<U>& indices, bool invert = false, bool check = true) const;
-
-  r_vec<T> subset(r_size_t index, bool invert = false, bool check = true) const {
-    return subset(r_vec<r_int64>(1, r_int64(static_cast<int64_t>(index))), invert, check);
-  }
-
   private: 
 
   // Core engine: fn(index, value) -> set onto target[i]. All map/apply variants use this

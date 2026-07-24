@@ -20,6 +20,6 @@ requires ((RVector<T> && RSortableType<typename T::data_type>) || RFactor<T>)
 [[cppally::register]]
 T test_sort(T x, bool preserve_ties){
   auto o = test_order(x, preserve_ties);
-  return x.subset(o);
+  return subset(x, o);
 }
 
