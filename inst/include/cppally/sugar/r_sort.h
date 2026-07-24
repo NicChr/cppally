@@ -141,38 +141,50 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
 
     using unsigned_t = decltype(ska_sort::detail::to_unsigned_or_bool(std::declval<base_t>()));
 
-    if constexpr (sizeof(unsigned_t) == sizeof(int)) {
-        // 32-bit key: sort r_vec<r_int> backing directly — single allocation, no copy
-        out.iota();
+    // Keys materialised once, co-located with the index, so every radix pass is
+    // a sequential scan — no per-pass gather through the permutation index.
+    struct key_index {
+        unsigned_t key;
+        uint32_t index;
+    };
 
-        if (preserve_ties) {
-            ska_sort::ska_sort(p_out, p_out + n, [&](uint32_t ui) {
-                unsigned_t key = is_na(p_x[ui]) ? std::numeric_limits<unsigned_t>::max()
-                                               : ska_sort::detail::to_unsigned_or_bool(p_x[ui]) - 1u; // -1 so that INT_MAX doesn't sort after NA
-                return std::make_pair(key, ui);
-            });
+    std::vector<key_index> pairs(n);
+    for (uint32_t i = 0; i < n; ++i) {
+        unsigned_t key;
+        if (is_na(p_x[i])) {
+            key = std::numeric_limits<unsigned_t>::max();
         } else {
-            ska_sort::ska_sort(p_out, p_out + n, [&](uint32_t ui) {
-                return is_na(p_x[ui]) ? std::numeric_limits<unsigned_t>::max()
-                                    : ska_sort::detail::to_unsigned_or_bool(p_x[ui]) - 1u; // -1 so that INT_MAX doesn't sort after NA
-            });
+            key = ska_sort::detail::to_unsigned_or_bool(p_x[i]);
+            if constexpr (sizeof(unsigned_t) == sizeof(int)) {
+                key -= 1u; // keep max real value below the NA sentinel
+            }
+        }
+        pairs[i] = { key, i };
+    }
+
+    // Where the sorted result ends up; usually `pairs`, but ska_sort_copy may
+    // leave it in the scratch buffer.
+    const key_index* RESTRICT src = pairs.data();
+    std::vector<key_index> buffer; // only allocated for the 32-bit stable path
+
+    if constexpr (sizeof(unsigned_t) == sizeof(int)) {
+        // 32-bit key: LSD ska_sort_copy is stable by construction, so the stable
+        // case sorts on the bare key (~4 flat passes) instead of widening to a
+        // (key, index) pair. Unstable sorts in place — no scratch buffer.
+        if (preserve_ties) {
+            buffer.resize(n);
+            bool in_buffer = ska_sort::ska_sort_copy(pairs.begin(), pairs.end(), buffer.begin(),
+                [](const key_index& k) { return k.key; });
+            if (in_buffer) {
+                src = buffer.data();
+            }
+        } else {
+            ska_sort::ska_sort(pairs.begin(), pairs.end(),
+                [](const key_index& k) { return k.key; });
         }
     } else {
-        // 64-bit key: key_index struct keeps key co-located with index during sort
-        struct key_index {
-            unsigned_t key; 
-            uint32_t index; 
-        };
-
-        std::vector<key_index> pairs(n);
-        for (uint32_t i = 0; i < n; ++i) {
-            pairs[i] = {
-                is_na(p_x[i]) ? std::numeric_limits<unsigned_t>::max()
-                             : ska_sort::detail::to_unsigned_or_bool(p_x[i]), // -1 so that INT_MAX doesn't sort after NA
-                i
-            };
-        }
-
+        // 64-bit key: ska_sort_copy degrades to unstable in-place at this width,
+        // so stability still needs the (key, index) composite.
         if (preserve_ties) {
             ska_sort::ska_sort(pairs.begin(), pairs.end(),
                 [](const key_index& k) { return std::make_pair(k.key, k.index); });
@@ -180,10 +192,11 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
             ska_sort::ska_sort(pairs.begin(), pairs.end(),
                 [](const key_index& k) { return k.key; });
         }
-        OMP_SIMD
-        for (uint32_t i = 0; i < n; ++i) {
-            p_out[i] = static_cast<int>(pairs[i].index);
-        }
+    }
+
+    OMP_SIMD
+    for (uint32_t i = 0; i < n; ++i) {
+        p_out[i] = static_cast<int>(src[i].index);
     }
     return out;
     }
