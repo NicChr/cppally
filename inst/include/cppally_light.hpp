@@ -25,7 +25,6 @@
 #include <cppally/r_visit.h>
 #include <cppally/r_identical.h>
 #include <cppally/r_length.h>
-#include <cppally/r_copy.h>
 #include <cppally/r_coerce.h>
 
 #endif

@@ -237,7 +237,7 @@ curr_env <- function(){
 #'
 #'   [[cppally::register]]
 #'   r_vec<r_int> cppally_reverse(r_vec<r_int> x){
-#'     r_vec<r_int> out = shallow_copy(x);
+#'     r_vec<r_int> out = x.copy();
 #'     out.rev();
 #'     return out;
 #'   }

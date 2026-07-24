@@ -93,7 +93,7 @@ r_lgl test_names_shallow_copy_isolation() {
     (void) a.name_index("a1");
     (void) a.name_index("a1");          // build hash on a
 
-    r_vec<r_int> b = shallow_copy(a);   // independent SEXP, shared inner table
+    r_vec<r_int> b = a.copy();   // independent SEXP, shared inner table
     b.set_names(make_vec<r_str>("b1", "b2"));
 
     r_int a_old   = a.name_index("a1", false);

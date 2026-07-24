@@ -5,7 +5,7 @@
 #include <cppally/r_vec.h>
 #include <cppally/r_visit.h>
 #include <cppally/r_sexp_types.h>
-#include <cppally/r_copy.h>
+#include <cppally/sugar/r_copy.h>
 #include <vector>
 
 namespace cppally {
