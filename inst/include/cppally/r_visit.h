@@ -120,13 +120,13 @@ template <class F>
 
 // Guarded arms: hand `f` the wrapper only if it accepts it, else reject.
 #define CPPALLY_CASE_OWNING_G(C, W)                                          \
-    case C: if constexpr (std::invocable<F&, W>) return f(W(x, no_checks_tag{}));             \
+    case C: if constexpr (requires { f(W(x, no_checks_tag{})); }) return f(W(x, no_checks_tag{}));             \
             else internal::reject<F>(internal::type_str<W>());
 #define CPPALLY_CASE_VIEWING_G(C, W)                                         \
-    case C: if constexpr (std::invocable<F&, W>) return f(W(x, view_tag{}, no_checks_tag{})); \
+    case C: if constexpr (requires { f(W(x, view_tag{}, no_checks_tag{})); }) return f(W(x, view_tag{}, no_checks_tag{})); \
             else internal::reject<F>(internal::type_str<W>());
 #define CPPALLY_CASE_MUTATE_G(C, W)                                          \
-    case C: if constexpr (std::invocable<F&, W&>) { mutate_as<W>(x, f); break; } \
+    case C: if constexpr (requires (W& w) { f(w); }) { mutate_as<W>(x, f); break; } \
             else internal::reject<F>(internal::type_str<W>());
 
 // Constrained owning visit: dispatch to `f` only for the types it accepts.
@@ -134,7 +134,7 @@ template <class F>
 decltype(auto) visit_constrained(const r_sexp& x, F&& f) {
     switch (CPPALLY_TYPEOF(x)) {
         CPPALLY_ALL_CASES(CPPALLY_CASE_OWNING_G)
-        default: if constexpr (std::invocable<F&, r_sexp>) return f(r_sexp(x));
+        default: if constexpr (requires { f(r_sexp(x)); }) return f(r_sexp(x));
                  else internal::reject<F>(internal::type_str<r_sexp>());
     }
 }
@@ -144,7 +144,7 @@ template <class F>
 decltype(auto) view_constrained(const r_sexp& x, F&& f) {
     switch (CPPALLY_TYPEOF(x)) {
         CPPALLY_ALL_CASES(CPPALLY_CASE_VIEWING_G)
-        default: if constexpr (std::invocable<F&, r_sexp>) return f(r_sexp(x, view_tag{}));
+        default: if constexpr (requires { f(r_sexp(x, view_tag{})); }) return f(r_sexp(x, view_tag{}));
                  else internal::reject<F>(internal::type_str<r_sexp>());
     }
 }
@@ -154,7 +154,7 @@ template <class F>
 void mutate_constrained(r_sexp& x, F&& f) {
     switch (CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
         CPPALLY_ALL_CASES(CPPALLY_CASE_MUTATE_G)
-        default: if constexpr (std::invocable<F&, r_sexp&>) { mutate_as<r_sexp>(x, f); break; }
+        default: if constexpr (requires (r_sexp& s) { f(s); }) { mutate_as<r_sexp>(x, f); break; }
                  else internal::reject<F>(internal::type_str<r_sexp>());
     }
 }
