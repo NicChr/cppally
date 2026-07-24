@@ -6,6 +6,7 @@
 #include <cppally/r_sexp.h>
 #include <cppally/r_sexp_types.h>
 #include <cppally/r_lazy.h>
+#include <string>
 #include <string_view>
 
 namespace cppally {
@@ -57,8 +58,50 @@ struct r_str {
   }
 
   bool is_na() const noexcept {
-    return value.value == NA_STRING;
+    return static_cast<SEXP>(*this) == NA_STRING;
   }
+
+  bool is_utf8() const noexcept {
+    return static_cast<bool>(Rf_charIsUTF8(*this) || Rf_charIsASCII(*this));
+  }
+
+  r_str as_utf8() const {
+    // Rf_translateCharUTF8 does indeed check for UTF8-ness BUT
+    // We still need the CHARSXP and so we avoid the overhead of Rf_mkChar directly
+    if (is_na() || is_utf8()) {
+      return *this;
+    }
+    // Latin-1 mapping is a (most of the time) fixed, locale-independent byte transform
+    // In the case that there is divergence, we fall back to Rf_translateCharUTF8
+    if (static_cast<bool>(Rf_charIsLatin1(*this))) {
+      const SEXP s = *this;
+      const unsigned char *p = reinterpret_cast<const unsigned char *>(CHAR(s));
+      const int n = Rf_length(s);
+      std::string out;
+      // Most Latin-1 text is mostly ASCII, so n is a good guess; grows only if high bytes are dense
+      out.reserve(static_cast<std::size_t>(n));
+      for (int i = 0; i < n; ++i) {
+        const unsigned char b = p[i];
+        // In Latin-1 the byte value IS the Unicode code point, so 0x00-0x7F is already UTF-8
+        if (b < 0x80) {
+          out.push_back(static_cast<char>(b));
+        } else if (b >= 0xA0) {
+          // 0xA0-0xFF: ISO-8859-1 and Windows CP1252 agree, byte == code point.
+          // 2-byte UTF-8: 110xxxxx 10xxxxxx (never wider, since max code point is 0xFF)
+          out.push_back(static_cast<char>(0xC0 | (b >> 6)));
+          out.push_back(static_cast<char>(0x80 | (b & 0x3F)));
+        } else {
+          // 0x80-0x9F: ISO-8859-1 (C1 controls) and CP1252 (€, smart quotes, dashes...) diverge,
+          // and R may interpret CE_LATIN1 as CP1252 (R >= 3.5.0, notably Windows). Defer to R
+          // so the platform-correct semantics are used rather than guessing.
+          return r_str(safe[Rf_translateCharUTF8](*this));
+        }
+      }
+      return r_str(Rf_mkCharLenCE(out.data(), static_cast<int>(out.size()), CE_UTF8), internal::no_checks_tag{});
+    }
+    return r_str(safe[Rf_translateCharUTF8](*this));
+  }
+
 
 };
 
