@@ -50,13 +50,6 @@ extern "C" SEXP _cppallytest_cpp_typeof(SEXP x) {
   END_CPPALLY
 }
 // test.cpp
-SEXP test_identity2(SEXP x);
-extern "C" SEXP _cppallytest_test_identity2(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::test_identity2(r_to_cpp<SEXP>(x)));
-  END_CPPALLY
-}
-// test.cpp
 r_vec<r_str> test_str1(r_str x);
 extern "C" SEXP _cppallytest_test_str1(SEXP x) {
   BEGIN_CPPALLY
@@ -68,27 +61,6 @@ r_vec<r_str_view> test_str2(r_str_view x);
 extern "C" SEXP _cppallytest_test_str2(SEXP x) {
   BEGIN_CPPALLY
   return cpp_to_r(::test_str2(r_to_cpp<r_str_view>(x)));
-  END_CPPALLY
-}
-// test.cpp
-r_vec<r_date> test_as_date(SEXP x);
-extern "C" SEXP _cppallytest_test_as_date(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::test_as_date(r_to_cpp<SEXP>(x)));
-  END_CPPALLY
-}
-// test.cpp
-r_vec<r_date> test_construct_date(SEXP x);
-extern "C" SEXP _cppallytest_test_construct_date(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::test_construct_date(r_to_cpp<SEXP>(x)));
-  END_CPPALLY
-}
-// test.cpp
-r_vec<r_date> test_as_date2(r_vec<r_date> x);
-extern "C" SEXP _cppallytest_test_as_date2(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::test_as_date2(r_to_cpp<r_vec<r_date>>(x)));
   END_CPPALLY
 }
 // test.cpp
@@ -124,34 +96,6 @@ r_vec<r_int> test_coerce1(const r_vec<r_sexp>& x);
 extern "C" SEXP _cppallytest_test_coerce1(SEXP x) {
   BEGIN_CPPALLY
   return cpp_to_r(::test_coerce1(r_to_cpp<const r_vec<r_sexp>&>(x)));
-  END_CPPALLY
-}
-// test.cpp
-r_vec<r_date> test_dates1(r_vec<r_date> x);
-extern "C" SEXP _cppallytest_test_dates1(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::test_dates1(r_to_cpp<r_vec<r_date>>(x)));
-  END_CPPALLY
-}
-// test.cpp
-r_str test_tz(r_vec<r_psxct> x);
-extern "C" SEXP _cppallytest_test_tz(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::test_tz(r_to_cpp<r_vec<r_psxct>>(x)));
-  END_CPPALLY
-}
-// test.cpp
-r_vec<r_int> test_lengths(const r_vec<r_sexp>& x);
-extern "C" SEXP _cppallytest_test_lengths(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::test_lengths(r_to_cpp<const r_vec<r_sexp>&>(x)));
-  END_CPPALLY
-}
-// test.cpp
-r_lgl test_lgl();
-extern "C" SEXP _cppallytest_test_lgl() {
-  BEGIN_CPPALLY
-  return cpp_to_r(::test_lgl());
   END_CPPALLY
 }
 // test.h
@@ -1218,8 +1162,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_scalar_vec3",                       (DL_FUNC) &_cppallytest_scalar_vec3,                       4},
     {"_cppallytest_test_arithmetic",                   (DL_FUNC) &_cppallytest_test_arithmetic,                   0},
     {"_cppallytest_test_arithmetic_edge_cases",        (DL_FUNC) &_cppallytest_test_arithmetic_edge_cases,        0},
-    {"_cppallytest_test_as_date",                      (DL_FUNC) &_cppallytest_test_as_date,                      1},
-    {"_cppallytest_test_as_date2",                     (DL_FUNC) &_cppallytest_test_as_date2,                     1},
     {"_cppallytest_test_as_dbl",                       (DL_FUNC) &_cppallytest_test_as_dbl,                       6},
     {"_cppallytest_test_as_int",                       (DL_FUNC) &_cppallytest_test_as_int,                       6},
     {"_cppallytest_test_as_str",                       (DL_FUNC) &_cppallytest_test_as_str,                       6},
@@ -1240,9 +1182,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_coerce_neg_inf_to_int",        (DL_FUNC) &_cppallytest_test_coerce_neg_inf_to_int,        0},
     {"_cppallytest_test_coerce_pos_inf_to_int",        (DL_FUNC) &_cppallytest_test_coerce_pos_inf_to_int,        0},
     {"_cppallytest_test_combine2",                     (DL_FUNC) &_cppallytest_test_combine2,                     2},
-    {"_cppallytest_test_construct_date",               (DL_FUNC) &_cppallytest_test_construct_date,               1},
     {"_cppallytest_test_copy",                         (DL_FUNC) &_cppallytest_test_copy,                         1},
-    {"_cppallytest_test_dates1",                       (DL_FUNC) &_cppallytest_test_dates1,                       1},
     {"_cppallytest_test_dates2",                       (DL_FUNC) &_cppallytest_test_dates2,                       1},
     {"_cppallytest_test_deduced_scalar_type",          (DL_FUNC) &_cppallytest_test_deduced_scalar_type,          1},
     {"_cppallytest_test_deduced_scalar_type2",         (DL_FUNC) &_cppallytest_test_deduced_scalar_type2,         1},
@@ -1257,9 +1197,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_group_id",                     (DL_FUNC) &_cppallytest_test_group_id,                     2},
     {"_cppallytest_test_identical",                    (DL_FUNC) &_cppallytest_test_identical,                    2},
     {"_cppallytest_test_identity",                     (DL_FUNC) &_cppallytest_test_identity,                     1},
-    {"_cppallytest_test_identity2",                    (DL_FUNC) &_cppallytest_test_identity2,                    1},
-    {"_cppallytest_test_lengths",                      (DL_FUNC) &_cppallytest_test_lengths,                      1},
-    {"_cppallytest_test_lgl",                          (DL_FUNC) &_cppallytest_test_lgl,                          0},
     {"_cppallytest_test_list_to_scalars",              (DL_FUNC) &_cppallytest_test_list_to_scalars,              1},
     {"_cppallytest_test_match",                        (DL_FUNC) &_cppallytest_test_match,                        2},
     {"_cppallytest_test_mean",                         (DL_FUNC) &_cppallytest_test_mean,                         2},
@@ -1322,7 +1259,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_to_r_lgl",                     (DL_FUNC) &_cppallytest_test_to_r_lgl,                     0},
     {"_cppallytest_test_to_r_size_t",                  (DL_FUNC) &_cppallytest_test_to_r_size_t,                  0},
     {"_cppallytest_test_to_uint",                      (DL_FUNC) &_cppallytest_test_to_uint,                      0},
-    {"_cppallytest_test_tz",                           (DL_FUNC) &_cppallytest_test_tz,                           1},
     {"_cppallytest_test_unique",                       (DL_FUNC) &_cppallytest_test_unique,                       1},
     {"_cppallytest_test_valgrind",                     (DL_FUNC) &_cppallytest_test_valgrind,                     0},
     {"_cppallytest_test_var",                          (DL_FUNC) &_cppallytest_test_var,                          2},

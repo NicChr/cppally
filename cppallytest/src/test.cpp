@@ -54,13 +54,6 @@ r_str cpp_typeof(SEXP x){
   return r_str(internal::r_type_to_str(internal::CPPALLY_TYPEOF(x)));
 }
 
-
-// Basic identity fn
-[[cppally::register]]
-SEXP test_identity2(SEXP x){
-  return x;
-}
-
 // R strings
 [[cppally::register]]
 r_vec<r_str> test_str1(r_str x){
@@ -71,21 +64,6 @@ r_vec<r_str> test_str1(r_str x){
 r_vec<r_str_view> test_str2(r_str_view x){
   return as<r_vec<r_str_view>>(x);
 }
-
-[[cppally::register]]
-r_vec<r_date> test_as_date(SEXP x){
-  return as<r_vec<r_date>>(x);
-} 
-
-[[cppally::register]]
-r_vec<r_date> test_construct_date(SEXP x){
-  return r_vec<r_date>(x);
-} 
-
-[[cppally::register]]
-r_vec<r_date> test_as_date2(r_vec<r_date> x){
-  return as<r_vec<r_date>>(x);
-} 
 
 [[cppally::register]]
 r_sexp test_null(){
@@ -110,29 +88,4 @@ r_vec<r_sexp> test_sexp3(r_vec<r_sexp> x){
 [[cppally::register]]
 r_vec<r_int> test_coerce1(const r_vec<r_sexp>& x){
   return as<r_vec<r_int>>(x);
-}
-
-[[cppally::register]]
-r_vec<r_date> test_dates1(r_vec<r_date> x){
-  return x;
-}
-
-
-[[cppally::register]]
-r_str test_tz(r_vec<r_psxct> x){
-  x.set_tzone("America/New_York");
-  return x.tzone();
-}
-
-
-[[cppally::register]]
-r_vec<r_int> test_lengths(const r_vec<r_sexp>& x){
-  return lengths(x);
-}
-
-[[cppally::register]]
-r_lgl test_lgl(){
-  r_int x(5);
-  r_int y(5);
-  return (x == y || x != y || r_true != r_false);
 }

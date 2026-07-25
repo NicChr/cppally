@@ -16,28 +16,12 @@ cpp_typeof <- function(x) {
   .Call(`_cppallytest_cpp_typeof`, x)
 }
 
-test_identity2 <- function(x) {
-  .Call(`_cppallytest_test_identity2`, x)
-}
-
 test_str1 <- function(x) {
   .Call(`_cppallytest_test_str1`, x)
 }
 
 test_str2 <- function(x) {
   .Call(`_cppallytest_test_str2`, x)
-}
-
-test_as_date <- function(x) {
-  .Call(`_cppallytest_test_as_date`, x)
-}
-
-test_construct_date <- function(x) {
-  .Call(`_cppallytest_test_construct_date`, x)
-}
-
-test_as_date2 <- function(x) {
-  .Call(`_cppallytest_test_as_date2`, x)
 }
 
 test_null <- function() {
@@ -58,22 +42,6 @@ test_sexp3 <- function(x) {
 
 test_coerce1 <- function(x) {
   .Call(`_cppallytest_test_coerce1`, x)
-}
-
-test_dates1 <- function(x) {
-  .Call(`_cppallytest_test_dates1`, x)
-}
-
-test_tz <- function(x) {
-  .Call(`_cppallytest_test_tz`, x)
-}
-
-test_lengths <- function(x) {
-  .Call(`_cppallytest_test_lengths`, x)
-}
-
-test_lgl <- function() {
-  .Call(`_cppallytest_test_lgl`)
 }
 
 test_deduced_type <- function(x) {
