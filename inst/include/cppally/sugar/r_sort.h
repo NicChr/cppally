@@ -425,8 +425,9 @@ inline r_vec<r_int> order(const r_sexp& x, bool preserve_ties);
 
 // Is x in a sorted order? i.e is x increasing but not necessarily monotonically?
 // To retrieve a bool result, use the `is_true` member function
-template <RSortableVector T>
-inline r_lgl is_sorted(const T& x) {
+template <typename T>
+requires requires (const T& v, r_size_t i){ v.view(i) >= v.view(i); }
+inline r_lgl is_sorted(const T& x) noexcept(RAtomicVector<T>) {
     r_size_t n = x.length();
     for (r_size_t i = 1; i < n; ++i) {
         r_lgl is_increasing = x.view(i) >= x.view(i - 1);
@@ -437,6 +438,66 @@ inline r_lgl is_sorted(const T& x) {
         }
     }
     return r_true;
+}
+
+// Sorting
+
+namespace internal {
+
+// In-place sort
+template <typename T>
+requires requires (const T& v, r_size_t i) { v.get(i);}
+void sort_in_place(T& x, r_vec<r_int>&& order){
+
+    int n = static_cast<int>(x.length());
+
+    if (n != order.length()) [[unlikely]] {
+        abort("%s: `x` and `order` must have the same length", __func__);
+    }
+
+    // Since we are overwriting order, ensure it is not overwriting user data
+    order.ensure_exclusive();
+    
+    // Apply the permutation to x via cycle-following: no extra buffer,
+    // o doubles as the visited marker (o[j] = j once that slot is final).
+    for (int i = 0; i < n; ++i){
+        if (unwrap(order.get(i)) == i) continue;
+    
+        int j = i;
+        auto temp = x.view(i);
+        while (unwrap(order.view(j)) != i){
+            int next = unwrap(order.view(j));
+            x.set(j, x.view(next));
+            order.set(j, j);
+            j = next;
+        }
+        x.set(j, temp);
+        order.set(j, j);
+    }
+}
+
+}
+
+template <typename T>
+requires requires (T&& v, r_size_t i) { order(v); v.get(i);}
+std::remove_cvref_t<T> sort(T&& x){
+    
+    if (RVector<T> && RNumericType<typename std::remove_cvref_t<T>::data_type> && is_sorted(x)){
+        if constexpr (std::is_same_v<T, std::remove_cvref_t<T>>){
+            return std::move(x);
+        }
+        return x;
+    }
+
+    r_vec<r_int> o = order(x);
+
+    if constexpr (std::is_same_v<T, std::remove_cvref_t<T>>){
+        if (x.is_exclusive()){
+            internal::sort_in_place(x, std::move(o));
+            return std::move(x);
+        }
+    }
+    return pmap_parallel_simd([&](r_int a){ return x.get(a);}, std::move(o));
 }
 
 }
