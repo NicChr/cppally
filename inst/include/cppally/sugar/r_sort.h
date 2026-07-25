@@ -427,7 +427,7 @@ inline r_vec<r_int> order(const r_sexp& x, bool preserve_ties);
 // To retrieve a bool result, use the `is_true` member function
 template <typename T>
 requires requires (const T& v, r_size_t i){ v.view(i) >= v.view(i); }
-inline r_lgl is_sorted(const T& x) {
+inline r_lgl is_sorted(const T& x) noexcept(RAtomicVector<T>) {
     r_size_t n = x.length();
     for (r_size_t i = 1; i < n; ++i) {
         r_lgl is_increasing = x.view(i) >= x.view(i - 1);
