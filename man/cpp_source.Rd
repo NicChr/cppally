@@ -104,7 +104,13 @@ evaluated and \code{NULL} is returned invisibly.
 
 library(cppally)
 library(bit64)
-\donttest{
+
+cpp_eval <- function(...){
+  # We don't need the full cppally header for these examples
+  cppally::cpp_eval(..., cppally_header = "cppally_light.hpp")
+}
+
+#' \donttest{
 cpp_eval('print("hello world!")')
 
 # Default values of all cppally scalars
@@ -139,7 +145,7 @@ add(2, NA)
 
 cpp_source(
   code = '
-  #include <cppally.hpp>
+  #include <cppally_light.hpp>
   using namespace cppally;
 
   [[cppally::register]]
@@ -157,7 +163,7 @@ cpp_source(
 
 cpp_source(
   code = '
-  #include <cppally.hpp>
+  #include <cppally_light.hpp>
   using namespace cppally;
 
   [[cppally::register]]
@@ -189,7 +195,7 @@ mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 
 cpp_source(
   code = '
-  #include <cppally.hpp>
+  #include <cppally_light.hpp>
   using namespace cppally;
 
   [[cppally::register]]
@@ -211,7 +217,7 @@ mark(reverse(x)) # Memory allocated, therefore x was copied before reversing
 # existing vector
 cpp_source(
   code = '
-  #include <cppally.hpp>
+  #include <cppally_light.hpp>
   using namespace cppally;
 
   [[cppally::register]]
@@ -228,6 +234,8 @@ mark(
   cppally_copy_on_modify_reverse = reverse(x),
   cppally_no_copy_on_modify_reverse = cppally_reverse(x)
 )
+
+rm(cpp_eval)
 }
 
 }
