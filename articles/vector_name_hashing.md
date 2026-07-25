@@ -68,12 +68,12 @@ mark(large[[1]])
 #> # A tibble: 1 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 large[[1]]    140ns    151ns  6008412.        0B     601.
+#> 1 large[[1]]     80ns    110ns  8390977.        0B     839.
 mark(large[[length(large)]])
 #> # A tibble: 1 × 6
 #>   expression                  min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>             <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 large[[length(large)]]    220ns    250ns  3649505.        0B        0
+#> 1 large[[length(large)]]    160ns    180ns  5131266.        0B        0
 ```
 
 Since R scans the names each time, lookup by name is O(n) and can be
@@ -88,8 +88,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 by_name       150ns    171ns  5354380.        0B     535.
-#> 2 by_index      131ns    160ns  5920914.        0B       0
+#> 1 by_name       100ns    120ns  7242102.        0B     724.
+#> 2 by_index       90ns    110ns  8120671.        0B       0
 
 mark(
     by_name = large[["name_100000"]], 
@@ -98,8 +98,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 by_name       562µs    574µs     1743.        0B        0
-#> 2 by_index      140ns    161ns  5906375.        0B        0
+#> 1 by_name       450µs    458µs     2176.        0B        0
+#> 2 by_index       90ns    101ns  8692960.        0B        0
 ```
 
 If we created a hash table of names-values, we could speedup repeated
@@ -131,9 +131,9 @@ mark(
 #> # A tibble: 3 × 6
 #>   expression          min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>     <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 by_name           578µs    589µs     1696.        0B        0
-#> 2 by_index          140ns    160ns  5875609.        0B        0
-#> 3 by_hashed_name    871ns    912ns   768585.        0B        0
+#> 1 by_name           450µs    458µs     2173.        0B        0
+#> 2 by_index           90ns    110ns  8495505.        0B        0
+#> 3 by_hashed_name    631ns    701ns   936976.        0B        0
 ```
 
 That worked! Extracting the value associated with the last name using
@@ -293,8 +293,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_one_lookup   33.4µs   33.9µs    28457.        0B        0
-#> 2 base_one_lookup     580.6µs  593.6µs     1676.    21.6KB        0
+#> 1 cppally_one_lookup     29µs   29.6µs    32660.        0B        0
+#> 2 base_one_lookup       456µs  470.8µs     2112.    21.6KB        0
 ```
 
 While I’m not sure why cppally’s linear scan is faster than R’s, it may
