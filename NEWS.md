@@ -43,6 +43,12 @@ can use both OpenMP SIMD vectorisation and multi-threaded execution
 `r_str_view`) under unwind protection, so R errors can no longer 
 longjmp past C++ destructors.
 
+- Sorting speed has been improved for both character vectors 
+and numeric vectors. Sorting is faster for character vectors when there are 
+a relatively high proportion of unique strings. Sorting is also 
+dramatically faster for double vectors when all values in the vector are 
+exact whole numbers.
+
 - `n_unique` has been sped-up for integer vectors.
 
 ## New features
