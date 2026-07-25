@@ -18,7 +18,7 @@ namespace internal {
 
 // general order vector that sorts `x`
 // NAs are ordered last
-// Internal function to be used for low overhead sorting small vectors (n<500)
+// Internal function to be used for low overhead sorting small vectors
 template <RSortableVector T>
 r_vec<r_int> order_cmp(const T& x, bool stable = true) {
     int n = x.length();
