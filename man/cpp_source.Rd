@@ -110,7 +110,7 @@ cpp_eval <- function(...){
   cppally::cpp_eval(..., cppally_header = "cppally_light.hpp")
 }
 
-#' \donttest{
+\donttest{
 cpp_eval('print("hello world!")')
 
 # Default values of all cppally scalars
@@ -235,8 +235,8 @@ mark(
   cppally_no_copy_on_modify_reverse = cppally_reverse(x)
 )
 
-rm(cpp_eval)
 }
+rm(cpp_eval)
 
 }
 \seealso{
