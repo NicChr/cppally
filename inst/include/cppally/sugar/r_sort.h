@@ -9,6 +9,7 @@
 #include <vector> // For C++ vectors
 #include <numeric>
 #include <limits>
+#include <cmath>
 #include <algorithm> // For std::min
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 #include <ska_sort/ska_sort.hpp> // For radix sorting via ska_sort
@@ -41,7 +42,7 @@ r_vec<r_int> order_cmp(const T& x, bool stable = true) {
 
 // Exact whole-number test
 inline bool is_exact_whole(double x) noexcept {
-    return static_cast<double>(static_cast<std::size_t>(x)) == x;
+    return (std::trunc(x) == x) && !std::isinf(x);
 }
 
 }
