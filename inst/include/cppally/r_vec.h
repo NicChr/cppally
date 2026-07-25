@@ -298,15 +298,8 @@ struct r_vec {
   public: 
 
   r_vec<r_str_view> names() const {
-    // Hot path: cache holds the names STRSXP (or a cached null for unnamed)
-    if (has_cached_names()){
-      return r_vec<r_str_view>(*cached_names->names, internal::no_checks_tag{});
-    }
-    // Cold path: capture whatever the attribute is — a STRSXP, or a null for an
-    // unnamed vector — so every later call (named or not) takes the hot path
-    r_vec<r_str_view> nms(Rf_getAttrib(value, symbol::names_sym));
-    cache_names(nms);
-    return nms;
+    ensure_names_cached();
+    return r_vec<r_str_view>(*cached_names->names, internal::no_checks_tag{});
   }
 
   bool has_names() const {
