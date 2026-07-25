@@ -106,8 +106,8 @@ struct r_str {
 };
 
 inline r_str r_sexp::address() const {
-  char buf[1000];
-  std::snprintf(buf, 1000, "%p", static_cast<void*>(value));
+  char buf[32];
+  std::snprintf(buf, 32, "%p", static_cast<void*>(value));
   return r_str(buf);
 }
 
