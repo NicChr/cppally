@@ -21,7 +21,7 @@ namespace internal {
 // Meyers-singleton method to cache R strings and symbols
 template <string_literal T>
 inline r_sexp lazy_str_impl() {
-    static r_sexp s = r_sexp(Rf_mkCharCE(T.data, CE_UTF8));
+    static r_sexp& s = *new r_sexp(Rf_mkCharCE(T.data, CE_UTF8));
     return s;
 }
 template <string_literal T>

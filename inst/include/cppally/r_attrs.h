@@ -90,7 +90,7 @@ inline r_vec<r_sexp> get_attrs(const T& x) {
     #if R_VERSION >= R_Version(4, 6, 0)
     return r_vec<r_sexp>(safe[R_getAttributes](x));
     #else
-    static r_function r_attrs_fn = r_function("attributes", env::base_env);
+    static r_function& r_attrs_fn = *new r_function("attributes", env::base_env);
     return r_vec<r_sexp>(r_attrs_fn(x));
     #endif
   } else {

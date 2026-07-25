@@ -37,7 +37,7 @@ inline r_sexp make_pairlist(Args... args) {
   }
 }
 inline r_sexp empty_fn(){
-  static r_sexp empty_clo(safe[R_mkClosure](R_NilValue, R_NilValue, env::empty_env));
+  static r_sexp& empty_clo = *new r_sexp(safe[R_mkClosure](R_NilValue, R_NilValue, env::empty_env));
   return empty_clo;
 }
 
@@ -45,7 +45,7 @@ inline r_sexp empty_fn(){
 
 template <string_literal pkg>
 inline r_sexp pkg_env() {
-  static r_sexp ns = r_sexp(
+  static r_sexp& ns = *new r_sexp(
     internal::unwind_protect([] { return R_FindNamespace(Rf_ScalarString(Rf_mkCharCE(pkg.data, CE_UTF8))); })
   );
   return ns;

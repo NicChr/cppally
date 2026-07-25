@@ -11,7 +11,7 @@ namespace internal {
 
 // Lazily cache data frame class for re-use
 inline r_vec<r_str_view> data_frame_class(){
-    static r_vec<r_str_view> df_cls = r_vec<r_str_view>(1, r_str_view(cached_str<"data.frame">()));
+    static r_vec<r_str_view>& df_cls = *new r_vec<r_str_view>(1, r_str_view(cached_str<"data.frame">()));
     return df_cls;
 }
     
@@ -28,7 +28,7 @@ inline r_vec<r_int> create_row_names(int n){
 
 // Cached row names attribute for fast single-row r_df creation
 inline r_vec<r_int> single_row_names(){
-    static r_vec<r_int> row_nm = create_row_names(1);
+    static r_vec<r_int>& row_nm = *new r_vec<r_int>(create_row_names(1));
     return row_nm;
 }
 
