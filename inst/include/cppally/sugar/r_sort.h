@@ -20,23 +20,19 @@ namespace internal {
 // NAs are ordered last
 // Internal function to be used for low overhead sorting small vectors (n<500)
 template <RSortableVector T>
-r_vec<r_int> cpp_order(const T& x, bool stable = true) {
+r_vec<r_int> order_cmp(const T& x, bool stable = true) {
     int n = x.length();
     r_vec<r_int> pv(n);
     pv.iota();
     auto* RESTRICT p = pv.data();
 
     if (stable){
-        std::stable_sort(p, p + n, [&](int i, int j) noexcept {
-            if (is_na(x.view(i))) return false;
-            if (is_na(x.view(j))) return true;
-            return (x.view(i) < x.view(j)).is_true();
+        std::stable_sort(p, p + n, [&x](int i, int j) noexcept {
+            return is_na(x.view(i)) ? false : !(x.view(i) < x.view(j)).is_false();
         });
     } else {
-        std::sort(p, p + n, [&](int i, int j) noexcept {
-            if (is_na(x.view(i))) return false;
-            if (is_na(x.view(j))) return true;
-            return (x.view(i) < x.view(j)).is_true();
+        std::sort(p, p + n, [&x](int i, int j) noexcept {
+            return is_na(x.view(i)) ? false : !(x.view(i) < x.view(j)).is_false();
         });
     }
     return pv;
@@ -54,7 +50,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
 
     uint32_t n = x.length();
     if (n < 1000){
-        return internal::cpp_order(x, preserve_ties);
+        return internal::order_cmp(x, preserve_ties);
     }
 
     if constexpr (RNumericType<data_t>) {
@@ -305,7 +301,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         
         return out;
     } else {
-        return internal::cpp_order(x, preserve_ties);
+        return internal::order_cmp(x, preserve_ties);
     }
 }
 
