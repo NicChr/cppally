@@ -32,13 +32,11 @@ inline r_vec<r_str_view> combine_levels(const r_vec<r_str_view>& x_lvls, const r
 inline void r_copy_n(r_factors& target, const r_factors& source, r_size_t target_offset, r_size_t n){
     if (identical(target.levels(), source.levels())){
         r_copy_n(target.value, source.value, target_offset, n);
-        return;   
+        return;
     }
     r_vec<r_str_view> all_levels = internal::combine_levels(target.levels(), source.levels());
     target.set_levels(all_levels);
-    r_vec<r_int> new_codes = source.new_codes(all_levels);
-    r_copy_n(target.value, new_codes, target_offset, n);
-
+    r_copy_n(target.value, source.refactor(all_levels).value, target_offset, n);
 }
 
 inline void r_copy_n(r_df& target, const r_df& source, r_size_t target_offset, r_size_t n){
