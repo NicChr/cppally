@@ -3,6 +3,7 @@
 
 #include <cppally/r_limits.h>
 #include <cppally/r_vec.h>
+#include <cppally/r_identical.h>
 #include <cppally/r_vec_ops.h>
 #include <cppally/r_hash_names.h>
 #include <cppally/r_attrs.h>
@@ -159,13 +160,6 @@ struct r_factors {
     cached_levels = internal::levels_cache().get_or_create(static_cast<SEXP>(value));
     cached_levels->invalidate();
   }
-
-  void set_codes(r_vec<r_int> new_codes) {
-    r_vec<r_str_view> lvls = levels();
-    value = std::move(new_codes);
-    cached_levels.reset();
-    init_factor(lvls, false);
-  }
   
   // Direct constructor from integer codes + string levels
   template <RStringType T>
@@ -306,14 +300,19 @@ struct r_factors {
     value.set(index, get_code(val));
   }
 
-  // Generate new factor codes along x against new factor levels
+  // Re-express this factor's values against a new set of levels
   template <RStringType U>
-  r_vec<r_int> new_codes(const r_vec<U>& new_levels, r_int no_match = na<r_int>()) const {
+  r_factors refactor(const r_vec<U>& new_levels) const {
+
+    if (identical(new_levels, levels())){
+      return *this;
+    }
+
     // Empty codes — we only need the temp's levels for lookup
     r_factors new_lvls_fct(r_vec<r_int>(), new_levels);
-    
+
     // For each of this factor's levels, find its position in new_levels
-    r_vec<r_int> remap = new_lvls_fct.get_codes(levels(), no_match);
+    r_vec<r_int> remap = new_lvls_fct.get_codes(levels(), na<r_int>());
     r_size_t n = length();
     r_vec<r_int> out(n);
     for (r_size_t i = 0; i < n; ++i){
@@ -321,24 +320,12 @@ struct r_factors {
       // Legit NA codes always stay NA — only unmapped levels use the sentinel
       out.set(i, is_na(c) ? na<r_int>() : remap.get(unwrap(c) - 1));
     }
-    return out;
+    return r_factors(std::move(out), new_levels, false);
   }
 
-  // Re-generate factor using new factor levels in-place
   template <RStringType U>
   void recode(const r_vec<U>& new_levels) {
-    // Empty codes — we only need the temp's levels for lookup
-    r_factors new_lvls_fct(r_vec<r_int>(), new_levels);
-    
-    // For each of this factor's levels, find its position in new_levels
-    r_vec<r_int> remap = new_lvls_fct.get_codes(levels(), na<r_int>());
-    r_size_t n = length();
-    for (r_size_t i = 0; i < n; ++i){
-      r_int c = value.get(i);
-      // Legit NA codes always stay NA — only unmapped levels use the sentinel
-      value.set(i, is_na(c) ? na<r_int>() : remap.get(unwrap(c) - 1));
-    }
-    set_levels(new_levels);
+    *this = refactor(new_levels);
   }
 
   template <RStringType U>
