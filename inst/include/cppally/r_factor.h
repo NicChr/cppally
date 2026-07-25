@@ -56,17 +56,32 @@ struct r_factors {
   // build cost.
   mutable bool first_access = false;
 
+  // Place names into cache (no hash map yet)
+  void cache_levels(const r_vec<r_str_view>& lvls) const {
+    if (!cached_levels){
+      cached_levels = internal::levels_cache().get_or_create(unwrap(value));
+    }
+    cached_levels->names.emplace(static_cast<r_sexp>(lvls));
+  }
+
+  bool has_cached_levels() const noexcept {
+    return cached_levels && cached_levels->names.has_value();
+  }
+
+  // Cache unless we hold a populated cache
   void ensure_levels_cached() const {
-    if (!cached_levels) {
-      cached_levels = internal::levels_cache().get_or_create(static_cast<SEXP>(value));
+    if (has_cached_levels()){
+      return;
     }
-    if (!cached_levels->names.has_value()) {
-      r_vec<r_str_view> validated(Rf_getAttrib(value, symbol::levels_sym));
-      cached_levels->names.emplace(static_cast<r_sexp>(validated));
-    }
+    cache_levels(r_vec<r_str_view>(Rf_getAttrib(value, symbol::levels_sym)));
   }
 
   public:
+
+  r_vec<r_str_view> levels() const {
+    ensure_levels_cached();
+    return r_vec<r_str_view>(*cached_levels->names, internal::no_checks_tag{});
+  }
 
   // Inherit standard methods from r_vec<>
 
@@ -89,11 +104,6 @@ struct r_factors {
   #undef FORWARD_METHOD
   #undef FORWARD_MUTATING_METHOD
   #undef FORWARD_FACTOR_METHOD
-
-  r_vec<r_str_view> levels() const {
-    ensure_levels_cached();
-    return r_vec<r_str_view>(*cached_levels->names, internal::no_checks_tag{});
-  }
 
   r_vec<r_int> codes() const {
     r_vec<r_int> out(value.length());
