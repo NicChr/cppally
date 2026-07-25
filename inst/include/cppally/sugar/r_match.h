@@ -116,10 +116,13 @@ build_cross_col_eq_probes(const r_df& needles, const r_df& haystack) {
 
 }
 
-// Forward decl
-template <typename T, typename U>
-requires (is<T, r_sexp> || is<U, r_sexp>)
-inline r_vec<r_int> match(const T& x, const U& y, r_int no_match = na<r_int>());
+// Forward decls — defined in sugar/r_sexp_methods.h. Default arg lives here only.
+template <typename U>
+requires (is<U, r_sexp> || RComposite<U>)
+inline r_vec<r_int> match(const r_sexp& x, const U& y, r_int no_match = na<r_int>());
+
+template <RComposite T>
+inline r_vec<r_int> match(const T& x, const r_sexp& y, r_int no_match = na<r_int>());
 
 // match() for r_df: row-level match of needle rows against haystack rows
 inline r_vec<r_int> match(const r_df& needles, const r_df& haystack, r_int no_match = na<r_int>()) {

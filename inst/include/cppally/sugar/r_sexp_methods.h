@@ -61,11 +61,17 @@ inline groups make_groups(const r_sexp& x, bool ordered) {
     return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ groups, /*fn = */ make_groups, /*rest of args = */ ordered);
 }
 
-template <typename T, typename U>
-requires (is<T, r_sexp> || is<U, r_sexp>)
-inline r_vec<r_int> match(const T& x, const U& y, r_int no_match) {
-    return CPPALLY_VIEW_PAIR_AND_APPLY(x, y, r_vec<r_int>, match, no_match);
+template <typename U>
+requires (is<U, r_sexp> || RComposite<U>)
+inline r_vec<r_int> match(const r_sexp& x, const U& y, r_int no_match) {
+    return r_sexp_view(x, CPPALLY_MAKE_VISITOR(r_vec<r_int>, v, match(v, y, no_match)));
 }
+
+template <RComposite T>
+inline r_vec<r_int> match(const T& x, const r_sexp& y, r_int no_match) {
+    return r_sexp_view(y, CPPALLY_MAKE_VISITOR(r_vec<r_int>, v, match(x, v, no_match)));
+}
+
 
 template <internal::RSubscript U, typename V>
 void fill(r_sexp& x, const r_vec<U>& where, const V& with) {
