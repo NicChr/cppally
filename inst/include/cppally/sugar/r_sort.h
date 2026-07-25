@@ -482,6 +482,13 @@ template <typename T>
 requires requires (T&& v, r_size_t i) { order(v); v.get(i);}
 std::remove_cvref_t<T> sort(T&& x){
     
+    if (RVector<T> && RNumericType<typename std::remove_cvref_t<T>::data_type> && is_sorted(x)){
+        if constexpr (std::is_same_v<T, std::remove_cvref_t<T>>){
+            return std::move(x);
+        }
+        return x;
+    }
+
     r_vec<r_int> o = order(x);
 
     if constexpr (std::is_same_v<T, std::remove_cvref_t<T>>){
