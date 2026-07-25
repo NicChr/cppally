@@ -208,7 +208,7 @@ bool is_visitable(const r_sexp& x){
 // // Distinct from constructing T from r_sexp directly because this verifies class + storage whereas 
 // // construction from r_sexp verifies only storage.
 template <CppallyType T>
-requires (!Scalar<T> && !is<T, r_sexp>)
+requires (!RScalar<T> && !is<T, r_sexp>)
 T visit_as(const r_sexp& x){
     return r_sexp_visit(x, []<typename v>(const v& obj) requires (is<v, T>) {
         return obj;
@@ -216,7 +216,7 @@ T visit_as(const r_sexp& x){
 }
 // Same as visit_as<> but returns a short-lifetime view-only object
 template <CppallyType T>
-requires (!Scalar<T> && !is<T, r_sexp>)
+requires (!RScalar<T> && !is<T, r_sexp>)
 T view_as(const r_sexp& x){
     return r_sexp_view(x, []<typename v>(const v& obj) requires (is<v, T>) {
         return obj;
