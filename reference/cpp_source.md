@@ -130,3 +130,207 @@ cpp_eval(
 [cpp_register](https://nicchr.github.io/cppally/reference/cpp_register.md)
 
 ## Examples
+
+``` r
+
+library(cppally)
+library(bit64)
+#> 
+#> Attaching package: ‘bit64’
+#> The following object is masked from ‘package:utils’:
+#> 
+#>     hashtab
+#> The following objects are masked from ‘package:base’:
+#> 
+#>     %in%, :, array, as.factor, as.ordered, colSums, factor, intersect,
+#>     is.double, is.element, match, matrix, order, rank, rowSums,
+#>     setdiff, setequal, table, union
+
+cpp_eval <- function(...){
+  # We don't need the full cppally header for these examples
+  cppally::cpp_eval(..., cppally_header = "cppally_light.hpp")
+}
+
+# \donttest{
+cpp_eval('print("hello world!")')
+#> hello world!
+
+# Default values of all cppally scalars
+cpp_eval(c(
+  'r_lgl()',
+  'r_int()',
+  'r_dbl()',
+  'r_int64()',
+  'r_str()',
+  'r_raw()',
+  'r_cplx()',
+  'r_date()',
+  'r_psxct()'
+))
+#> $res1
+#> [1] FALSE
+#> 
+#> $res2
+#> [1] 0
+#> 
+#> $res3
+#> [1] 0
+#> 
+#> $res4
+#> integer64
+#> [1] 0
+#> 
+#> $res5
+#> [1] ""
+#> 
+#> $res6
+#> [1] 00
+#> 
+#> $res7
+#> [1] 0+0i
+#> 
+#> $res8
+#> [1] "1970-01-01"
+#> 
+#> $res9
+#> [1] "1970-01-01 UTC"
+#> 
+
+cpp_source(code = '
+  #include <cppally.hpp>
+  using namespace cppally;
+
+  [[cppally::register]]
+  r_dbl add(r_dbl x, r_dbl y){
+    return x + y;
+  }
+', debug = TRUE)
+add(1, 2)
+#> [1] 3
+add(2, NA)
+#> [1] NA
+
+### ALTREP ###
+
+# cppally also supports lazy ALTREP materialisation as an opt-in feature.
+# To opt-in, set `preserve_altrep = TRUE`
+
+cpp_source(
+  code = '
+  #include <cppally_light.hpp>
+  using namespace cppally;
+
+  [[cppally::register]]
+  r_int last_altrep_unaware(r_vec<r_int> x){
+    r_int out;
+    r_size_t n = x.length();
+
+    if (n > 0){
+      out = x.get(n - 1);
+    }
+    return out;
+  }
+', debug = TRUE
+)
+
+cpp_source(
+  code = '
+  #include <cppally_light.hpp>
+  using namespace cppally;
+
+  [[cppally::register]]
+  r_int last_altrep_aware(r_vec<r_int> x){
+    r_int out;
+    r_size_t n = x.length();
+
+    if (n > 0){
+      out = x.get(n - 1);
+    }
+    return out;
+  }
+', debug = TRUE,
+  preserve_altrep = TRUE
+)
+
+library(bench)
+mark(last_altrep_aware(1:10^5)) # No materialisation
+#> # A tibble: 1 × 13
+#>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
+#>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 last_altrep… 3.05µs 4.19µs   229265.    3.18KB        0 10000     0     43.6ms
+#> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
+mark(last_altrep_unaware(1:10^5)) # Materialises full vector
+#> # A tibble: 1 × 13
+#>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
+#>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 last_altrep… 45.5µs 51.5µs    16687.     391KB     134.  3229    26      194ms
+#> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
+
+### Copy-on-modify ###
+
+# cppally supports copy-on-modify as an opt-in feature
+# It is disabled by default because it incurs a major performance penalty
+# and has been deemed not worth it even for the safety benefits
+# That being said, if you prefer absolute safety over speed then you can
+# enable it globally via `cppally::use_copy_on_modify()` or
+# via the arg `copy_on_modify` if  using `cpp_source()`
+
+cpp_source(
+  code = '
+  #include <cppally_light.hpp>
+  using namespace cppally;
+
+  [[cppally::register]]
+  r_vec<r_int> reverse(r_vec<r_int> x){
+    x.rev(); // in-place reverse
+    return x;
+  }
+', copy_on_modify = TRUE
+)
+
+x <- c(1L, 2L, 3L)
+reverse(x)
+#> [1] 3 2 1
+x # x was preserved and not updated by reference (as expected)
+#> [1] 1 2 3
+
+x <- sample.int(10^5)
+mark(reverse(x)) # Memory allocated, therefore x was copied before reversing
+#> # A tibble: 1 × 13
+#>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
+#>   <bch:expr> <bch:tm> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 reverse(x)    256µs  404µs     2692.     391KB     20.7   909     7      338ms
+#> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
+
+# The cppally preferred approach is to allocate a fresh vector or copy the
+# existing vector
+cpp_source(
+  code = '
+  #include <cppally_light.hpp>
+  using namespace cppally;
+
+  [[cppally::register]]
+  r_vec<r_int> cppally_reverse(r_vec<r_int> x){
+    r_vec<r_int> out = x.copy();
+    out.rev();
+    return out;
+  }
+', copy_on_modify = FALSE
+)
+
+mark(
+  r_reverse = rev(x),
+  cppally_copy_on_modify_reverse = reverse(x),
+  cppally_no_copy_on_modify_reverse = cppally_reverse(x)
+)
+#> # A tibble: 3 × 13
+#>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
+#>   <bch:expr>  <bch:t> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 r_reverse   216.5µs  229µs     4133.     781KB     64.6  1280    20      310ms
+#> 2 cppally_co… 254.4µs  297µs     3142.     391KB     23.9  1446    11      460ms
+#> 3 cppally_no…  67.7µs  206µs     5927.     391KB     47.7  2359    19      398ms
+#> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
+
+# }
+rm(cpp_eval)
+```
