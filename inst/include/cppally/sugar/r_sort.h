@@ -9,6 +9,7 @@
 #include <vector> // For C++ vectors
 #include <numeric>
 #include <limits>
+#include <algorithm> // For std::min
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 #include <ska_sort/ska_sort.hpp> // For radix sorting via ska_sort
 
@@ -63,101 +64,101 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
     // ----------------------------------------------------------------------
     // Integers or whole numbers with relatively small range optimisation
     // ----------------------------------------------------------------------
-    
-        if (n >= 100000){
 
-            auto rng = range(x, true);
-            auto* RESTRICT px = x.data();
-            auto min_val = rng.get(0), max_val = rng.get(1);
+    auto rng = range(x, true);
+    auto* RESTRICT px = x.data();
+    auto min_val = rng.get(0), max_val = rng.get(1);
 
-            // Range is NA only when every value is NA -> sequential indices
-            if (is_na(min_val) || is_na(max_val)) {
-                r_vec<r_int> out(static_cast<r_size_t>(n));
-                out.iota();
-                return out;
-            }
+    // Range is NA only when every value is NA -> sequential indices
+    if (is_na(min_val) || is_na(max_val)) {
+        r_vec<r_int> out(static_cast<r_size_t>(n));
+        out.iota();
+        return out;
+    }
 
-            base_t lo = unwrap(min_val);
-            base_t hi = unwrap(max_val);
+    base_t lo = unwrap(min_val);
+    base_t hi = unwrap(max_val);
 
-            constexpr uint64_t COUNTING_SORT_THRESHOLD = 10000000;
+    // Absolute cap bounds the counts allocation and prefix-sum work; the
+    // relative cap stops small-n/wide-range inputs paying a range-sized scan
+    constexpr uint64_t MAX_RANGE = 10000000;
+    const uint64_t range_cap = std::min(MAX_RANGE, static_cast<uint64_t>(n) * 32);
 
-            std::size_t range_size = 0;
-            bool usable;
-            if constexpr (CppFloatType<base_t>) {
-                double span = static_cast<double>(hi) - static_cast<double>(lo);
-                usable = span >= 0.0 && span < static_cast<double>(COUNTING_SORT_THRESHOLD);
-                if (usable) {
-                    constexpr base_t EXACT_LIMIT =
-                        static_cast<base_t>(uint64_t(1) << std::numeric_limits<base_t>::digits);
-                    if (lo < -EXACT_LIMIT || hi > EXACT_LIMIT) {
-                        usable = false;
-                    } else {
-                        for (uint32_t i = 0; i < n; ++i) {
-                            base_t v = px[i];
-                            if (!is_na(v) && !internal::is_exact_whole(v - lo)) {
-                                usable = false;
-                                break;
-                            }
-                        }
-                    }
-                    if (usable) {
-                        range_size = static_cast<std::size_t>(span) + 1; // span is whole here
-                    }
-                }
+    std::size_t range_size = 0;
+    bool usable;
+    if constexpr (CppFloatType<base_t>) {
+        double span = static_cast<double>(hi) - static_cast<double>(lo);
+        usable = span >= 0.0 && span < static_cast<double>(range_cap);
+        if (usable) {
+            constexpr base_t EXACT_LIMIT =
+                static_cast<base_t>(uint64_t(1) << std::numeric_limits<base_t>::digits);
+            if (lo < -EXACT_LIMIT || hi > EXACT_LIMIT) {
+                usable = false;
             } else {
-                uint64_t span = static_cast<uint64_t>(hi) - static_cast<uint64_t>(lo);
-                usable = span < COUNTING_SORT_THRESHOLD;
-                if (usable) {
-                    range_size = static_cast<std::size_t>(span) + 1;
+                for (uint32_t i = 0; i < n; ++i) {
+                    base_t v = px[i];
+                    if (!is_na(v) && !internal::is_exact_whole(v - lo)) {
+                        usable = false;
+                        break;
+                    }
                 }
             }
-
-            // Use counting sort for small range
             if (usable) {
-
-                std::vector<uint32_t> counts(range_size, 0);
-
-                // First pass: count occurrences (ignore NAs)
-                bool has_nas = false;
-                for (uint32_t i = 0; i < n; ++i) {
-                    base_t v = px[i];
-                    if (!is_na(v)) {
-                        counts[static_cast<std::size_t>(v - lo)]++;
-                    } else {
-                        has_nas = true;
-                    }
-                }
-
-                // Prefix sum: counts[i] becomes the starting position for value i
-                uint32_t total = 0;
-                for (std::size_t i = 0; i < range_size; ++i) {
-                    uint32_t old_count = counts[i];
-                    counts[i] = total;
-                    total += old_count;
-                }
-
-                // Second pass: write indices in sorted order (stable)
-                r_vec<r_int> out(static_cast<r_size_t>(n));
-                int* RESTRICT p_out = out.data();
-                for (uint32_t i = 0; i < n; ++i) {
-                    base_t v = px[i];
-                    if (!is_na(v)) {
-                        p_out[counts[static_cast<std::size_t>(v - lo)]++] = static_cast<int>(i);
-                    }
-                }
-
-                // Append NAs at end (preserving input order)
-                if (has_nas) {
-                    for (uint32_t i = 0; i < n; ++i) {
-                        if (is_na(px[i])) {
-                            p_out[total++] = static_cast<int>(i);
-                        }
-                    }
-                }
-                return out;
+                range_size = static_cast<std::size_t>(span) + 1; // span is whole here
             }
         }
+    } else {
+        uint64_t span = static_cast<uint64_t>(hi) - static_cast<uint64_t>(lo);
+        usable = span < range_cap;
+        if (usable) {
+            range_size = static_cast<std::size_t>(span) + 1;
+        }
+    }
+
+    // Use counting sort for small range
+    if (usable) {
+
+        std::vector<uint32_t> counts(range_size, 0);
+
+        // First pass: count occurrences (ignore NAs)
+        bool has_nas = false;
+        for (uint32_t i = 0; i < n; ++i) {
+            base_t v = px[i];
+            if (!is_na(v)) {
+                counts[static_cast<std::size_t>(v - lo)]++;
+            } else {
+                has_nas = true;
+            }
+        }
+
+        // Prefix sum: counts[i] becomes the starting position for value i
+        uint32_t total = 0;
+        for (std::size_t i = 0; i < range_size; ++i) {
+            uint32_t old_count = counts[i];
+            counts[i] = total;
+            total += old_count;
+        }
+
+        // Second pass: write indices in sorted order (stable)
+        r_vec<r_int> out(static_cast<r_size_t>(n));
+        int* RESTRICT p_out = out.data();
+        for (uint32_t i = 0; i < n; ++i) {
+            base_t v = px[i];
+            if (!is_na(v)) {
+                p_out[counts[static_cast<std::size_t>(v - lo)]++] = static_cast<int>(i);
+            }
+        }
+
+        // Append NAs at end (preserving input order)
+        if (has_nas) {
+            for (uint32_t i = 0; i < n; ++i) {
+                if (is_na(px[i])) {
+                    p_out[total++] = static_cast<int>(i);
+                }
+            }
+        }
+        return out;
+    }
 
     r_vec<r_int> out(static_cast<r_size_t>(n));
     int* RESTRICT p_out = out.data();
