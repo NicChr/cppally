@@ -446,27 +446,33 @@ namespace internal {
 
 // In-place sort
 template <typename T>
-requires requires (const T& v, r_size_t i) { order(v); v.get(i);}
-void sort_in_place(T& x){
+requires requires (const T& v, r_size_t i) { v.get(i);}
+void sort_in_place(T& x, r_vec<r_int>&& order){
 
-    r_vec<r_int> o = order(x);
     int n = static_cast<int>(x.length());
+
+    if (n != order.length()) [[unlikely]] {
+        abort("%s: `x` and `order` must have the same length", __func__);
+    }
+
+    // Since we are overwriting order, ensure it is not overwriting user data
+    order.ensure_exclusive();
     
     // Apply the permutation to x via cycle-following: no extra buffer,
     // o doubles as the visited marker (o[j] = j once that slot is final).
     for (int i = 0; i < n; ++i){
-        if (unwrap(o.get(i)) == i) continue;
+        if (unwrap(order.get(i)) == i) continue;
     
         int j = i;
         auto temp = x.view(i);
-        while (unwrap(o.view(j)) != i){
-            int next = unwrap(o.view(j));
+        while (unwrap(order.view(j)) != i){
+            int next = unwrap(order.view(j));
             x.set(j, x.view(next));
-            o.set(j, j);
+            order.set(j, j);
             j = next;
         }
         x.set(j, temp);
-        o.set(j, j);
+        order.set(j, j);
     }
 }
 
@@ -475,13 +481,16 @@ void sort_in_place(T& x){
 template <typename T>
 requires requires (T&& v, r_size_t i) { order(v); v.get(i);}
 std::remove_cvref_t<T> sort(T&& x){
+    
+    r_vec<r_int> o = order(x);
+
     if constexpr (std::is_same_v<T, std::remove_cvref_t<T>>){
         if (x.is_exclusive()){
-            internal::sort_in_place(x);
+            internal::sort_in_place(x, std::move(o));
             return std::move(x);
         }
     }
-    return pmap_parallel_simd([&](r_int a){ return x.get(a);}, order(x));
+    return pmap_parallel_simd([&](r_int a){ return x.get(a);}, std::move(o));
 }
 
 }
