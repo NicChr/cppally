@@ -37,16 +37,16 @@ inline r_sexp rep(const A& x, const r_sexp& times) {
 }
 
 inline r_sexp rep_each(const r_sexp& x, const r_vec<r_int>& each) {
-    return r_sexp(CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ SEXP, /*fn = */ rep_each, each));
+    return r_sexp_view(x, CPPALLY_MAKE_VISITOR(r_sexp, v, rep_each(v, each)));
 }
 
 template <internal::RSubscript U>
 inline r_sexp subset(const r_sexp& x, const r_vec<U>& indices, bool invert, bool check) {
-    return r_sexp(CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ SEXP, /*fn = */ subset, /*rest of args = */ indices, invert, check));
+    return r_sexp_view(x, CPPALLY_MAKE_VISITOR(r_sexp, v, subset(v, indices, invert, check)));
 }
 
 inline r_vec<r_int> order(const r_sexp& x, bool preserve_ties) {
-    return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ r_vec<r_int>, /*fn = */ order, /*rest of args = */ preserve_ties);
+    return r_sexp_view(x, CPPALLY_MAKE_VISITOR(r_vec<r_int>, v, order(v, preserve_ties)));
 }
 
 inline r_vec<r_lgl> duplicated(const r_sexp& x, bool all) {
@@ -58,7 +58,7 @@ inline r_size_t n_unique(const r_sexp& x) {
 }
 
 inline groups make_groups(const r_sexp& x, bool ordered) {
-    return CPPALLY_VIEW_AND_APPLY(x, /*return_type = */ groups, /*fn = */ make_groups, /*rest of args = */ ordered);
+    return r_sexp_view(x, CPPALLY_MAKE_VISITOR(groups, v, make_groups(v, ordered)));
 }
 
 template <typename U>
