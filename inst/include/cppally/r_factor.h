@@ -167,10 +167,11 @@ struct r_factors {
 
   template <RStringType T>
   void init_factor(const r_vec<T>& levels, bool check_valid_levels = chk_fct_lvls_opt) {
-      // Set class
-      attr::set_attr(value, symbol::class_sym, r_vec<r_str_view>(1, r_str_view(cached_str<"factor">())));
-      // Set levels
-      set_levels(levels, check_valid_levels);
+    static r_vec<r_str_view> fct_class = r_vec<r_str_view>(1, r_str_view(r_str("factor")));
+    // Set class
+    attr::set_attr(value, symbol::class_sym, fct_class);
+    // Set levels
+    set_levels(levels, check_valid_levels);
   }
   
   public:
