@@ -41,23 +41,44 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="cppally-development-version">cppally (development version)<a class="anchor" aria-label="anchor" href="#cppally-development-version"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
 <ul><li><p>Fixed a bug where matching on integer vectors with a non <code>NA</code> <code>nomatch</code> value would still return <code>NA</code>.</p></li>
 <li><p>Fixed a bug where getting <code>r_df</code> rows would return CHARSXP instead of STRSXP.</p></li>
 <li><p>Fixed a bug where <code>r_vec::apply</code> would throw a compiler error when called on lists and character vectors.</p></li>
-<li><p>Sequences no longer abort on overflow, but instead silently return <code>NA</code>.</p></li>
-<li><p><code>cpp_source</code> now generates OpenMP flags, so its compiled functions can use both OpenMP SIMD vectorisation and multi-threaded execution (threads set via <code>set_threads()</code>).</p></li>
-<li><p>New class <code>r_function</code> to safely call R functions from C++.</p></li>
-<li><p><code>pkg_env</code> is a helper that returns the environment of a package, allowing users to easily retrieve functions from specific packages, e.g. <code>r_function("foo", pkg_env&lt;"bar"&gt;())</code>.</p></li>
-<li><p>New <code>copy</code> member for <code>r_vec</code>, <code>r_factors</code> and <code>r_df</code>. <code>copy</code> shallow copies the vector by creating a fresh copy of the atomic data, without deep copying lists or attributes, just like <code>Rf_shallow_duplicate</code>.</p></li>
-<li><p><code>r_sym</code> now constructs symbols from strings (<code>const char*</code>, <code>r_str</code>, <code>r_str_view</code>) under unwind protection, so R errors can no longer longjmp past C++ destructors.</p></li>
-<li><p>New by-group left-fold functional <code>reduce_by_group</code>, allowing for very efficient binary reductions by-group.</p></li>
-<li><p>Renamed <code>common_length</code> to <code>list_common_length</code>. <code>common_length</code> now accepts <code>initializer_list</code> and variadic input.</p></li>
-<li><p>New function <code>list_recycle</code> to recycle vectors of a list.</p></li>
-<li><p><code>n_unique</code> has been sped-up for integer vectors.</p></li>
-<li><p>New <code>initializer_list</code> overloads for common helpers.</p></li>
-<li><p>New <code>r_sexp</code> visit helpers <code>visit_as</code> and <code>view_as</code>.</p></li>
-<li><p>Integer multiplication overflow handling is now more portable.</p></li>
 </ul></div>
+<div class="section level3">
+<h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
+<ul><li><p>Sequences no longer abort on overflow, but instead silently return <code>NA</code>.</p></li>
+<li><p>Removed <code>r_vec::subset</code> and <code>r_factors::subset</code> as they didn’t thematically fit in with the rest of the members. The free <code>subset</code> function is still available.</p></li>
+<li><p>Renamed <code>common_length</code> to <code>list_common_length</code>. <code>common_length</code> now accepts variadic inputs.</p></li>
+<li><p>Relocated various headers to and from the sugar folder.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="r_function-development-version">r_function<a class="anchor" aria-label="anchor" href="#r_function-development-version"></a></h3>
+<ul><li><p>New class <code>r_function</code> to safely call R functions from C++.</p></li>
+<li><p>New helper <code>pkg_env</code> to return the environment of a package, allowing users to easily retrieve functions from specific packages, e.g. <code>r_function("foo", pkg_env&lt;"bar"&gt;())</code>.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="improvements-development-version">Improvements<a class="anchor" aria-label="anchor" href="#improvements-development-version"></a></h3>
+<ul><li><p><code>cpp_source</code> now generates OpenMP flags, so its compiled functions can use both OpenMP SIMD vectorisation and multi-threaded execution (threads set via <code>set_threads()</code>).</p></li>
+<li><p>Integer multiplication overflow handling is now more portable.</p></li>
+<li><p><code>r_sym</code> now constructs symbols from strings (<code>const char*</code>, <code>r_str</code>, <code>r_str_view</code>) under unwind protection, so R errors can no longer longjmp past C++ destructors.</p></li>
+<li><p>Sorting speed has been improved for both character vectors and numeric vectors. Sorting is faster for character vectors when there are a relatively high proportion of unique strings. Sorting is also dramatically faster for double vectors when all values in the vector are exact whole numbers.</p></li>
+<li><p><code>n_unique</code> has been sped-up for integer vectors.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-features-development-version">New features<a class="anchor" aria-label="anchor" href="#new-features-development-version"></a></h3>
+<ul><li><p>New <code>copy</code> member for <code>r_vec</code>, <code>r_factors</code> and <code>r_df</code>. <code>copy</code> shallow copies the vector by creating a fresh copy of the atomic data, without deep copying lists or attributes, just like <code>Rf_shallow_duplicate</code>.</p></li>
+<li><p>New by-group left-fold functional <code>reduce_by_group</code>, allowing for very efficient binary reductions by-group.</p></li>
+<li><p>New function <code>list_recycle</code> to recycle vectors of a list.</p></li>
+<li><p>New <code>r_sexp</code> visit helpers <code>visit_as</code> and <code>view_as</code>.</p></li>
+<li><p>New <code>r_str</code> member function <code>is_utf8</code> to check whether a string has valid UTF-8 encoding, which includes ASCII strings.</p></li>
+<li><p>New <code>r_str</code> member function <code>as_utf8</code> to convert a string to a UTF-8 string. If the string is already a UTF-8 string, it is a no-op and simply returns the same <code>r_str</code>.</p></li>
+<li><p>New class <code>string_literal</code> to facilitate compile-time string literal NTTP programming.</p></li>
+<li><p><code>cpp_eval</code> gains a new argument, <code>cppally_header</code>, allowing one to compile expressions using the optional light header “cppally_light.hpp”.</p></li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.0" id="cppally-110-2026-07-12">cppally 1.1.0 (2026-07-12)<a class="anchor" aria-label="anchor" href="#cppally-110-2026-07-12"></a></h2><p class="text-muted">CRAN release: 2026-07-12</p>
 <div class="section level3">

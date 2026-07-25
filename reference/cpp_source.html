@@ -74,7 +74,7 @@ evaluated and <code>NULL</code> is returned invisibly.</p>
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">cpp_source</span><span class="op">(</span></span>
-<span>  <span class="va">file</span>,</span>
+<span>  file <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  code <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  env <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sys.parent.html" class="external-link">parent.frame</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  clean <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -99,7 +99,8 @@ evaluated and <code>NULL</code> is returned invisibly.</p>
 <span>  check_data_frames <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  copy_on_modify <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  simplify <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  cxx_std <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"CXX_STD"</span>, <span class="st">"CXX20"</span><span class="op">)</span></span>
+<span>  cxx_std <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"CXX_STD"</span>, <span class="st">"CXX20"</span><span class="op">)</span>,</span>
+<span>  cppally_header <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cppally.hpp"</span>, <span class="st">"cppally_light.hpp"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -172,6 +173,13 @@ The default is a temporary directory via <code><a href="https://rdrr.io/r/base/t
 <dd><p>Applies to <code>cpp_eval</code>. A list of results is returned unless
 <code>length(code) == 1</code> and <code>simplify = TRUE</code>.</p></dd>
 
+
+<dt id="arg-cppally-header">cppally_header<a class="anchor" aria-label="anchor" href="#arg-cppally-header"></a></dt>
+<dd><p>Which header should be
+included with the registered C++ code? The default is the full library
+"cppally.hpp". Choose "cppally_light.hpp" for the lighter header, which may
+provide quicker compile times, at the cost of less features.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -185,201 +193,7 @@ the <code>[[cppally::register]]</code> tagged functions to R. <br><code>cpp_eval
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://nicchr.github.io/cppally/">cppally</a></span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-lib/bit64" class="external-link">bit64</a></span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Attaching package: ‘bit64’</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> The following object is masked from ‘package:utils’:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>     hashtab</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> The following objects are masked from ‘package:base’:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>     %in%, :, array, as.factor, as.ordered, colSums, factor, intersect,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>     is.double, is.element, match, matrix, order, rank, rowSums,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>     setdiff, setequal, table, union</span>
-<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
-<span class="r-in"><span><span class="fu">cpp_eval</span><span class="op">(</span><span class="st">'print("hello world!")'</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> hello world!</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Default values of all cppally scalars</span></span></span>
-<span class="r-in"><span><span class="fu">cpp_eval</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  <span class="st">'r_lgl()'</span>,</span></span>
-<span class="r-in"><span>  <span class="st">'r_int()'</span>,</span></span>
-<span class="r-in"><span>  <span class="st">'r_dbl()'</span>,</span></span>
-<span class="r-in"><span>  <span class="st">'r_int64()'</span>,</span></span>
-<span class="r-in"><span>  <span class="st">'r_str()'</span>,</span></span>
-<span class="r-in"><span>  <span class="st">'r_raw()'</span>,</span></span>
-<span class="r-in"><span>  <span class="st">'r_cplx()'</span>,</span></span>
-<span class="r-in"><span>  <span class="st">'r_date()'</span>,</span></span>
-<span class="r-in"><span>  <span class="st">'r_psxct()'</span></span></span>
-<span class="r-in"><span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $res1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $res2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $res3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $res4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> integer64</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $res5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] ""</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $res6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $res7</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0+0i</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $res8</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "1970-01-01"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $res9</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "1970-01-01 UTC"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu">cpp_source</span><span class="op">(</span>code <span class="op">=</span> <span class="st">'</span></span></span>
-<span class="r-in"><span><span class="st">  #include &lt;cppally.hpp&gt;</span></span></span>
-<span class="r-in"><span><span class="st">  using namespace cppally;</span></span></span>
-<span class="r-in"><span><span class="st"></span></span></span>
-<span class="r-in"><span><span class="st">  [[cppally::register]]</span></span></span>
-<span class="r-in"><span><span class="st">  r_dbl add(r_dbl x, r_dbl y){</span></span></span>
-<span class="r-in"><span><span class="st">    return x + y;</span></span></span>
-<span class="r-in"><span><span class="st">  }</span></span></span>
-<span class="r-in"><span><span class="st">'</span>, debug <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">add</span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 3</span>
-<span class="r-in"><span><span class="fu">add</span><span class="op">(</span><span class="fl">2</span>, <span class="cn">NA</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] NA</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">### ALTREP ###</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># cppally also supports lazy ALTREP materialisation as an opt-in feature.</span></span></span>
-<span class="r-in"><span><span class="co"># To opt-in, set `preserve_altrep = TRUE`</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu">cpp_source</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  code <span class="op">=</span> <span class="st">'</span></span></span>
-<span class="r-in"><span><span class="st">  #include &lt;cppally.hpp&gt;</span></span></span>
-<span class="r-in"><span><span class="st">  using namespace cppally;</span></span></span>
-<span class="r-in"><span><span class="st"></span></span></span>
-<span class="r-in"><span><span class="st">  [[cppally::register]]</span></span></span>
-<span class="r-in"><span><span class="st">  r_int last_altrep_unaware(r_vec&lt;r_int&gt; x){</span></span></span>
-<span class="r-in"><span><span class="st">    r_int out;</span></span></span>
-<span class="r-in"><span><span class="st">    r_size_t n = x.length();</span></span></span>
-<span class="r-in"><span><span class="st"></span></span></span>
-<span class="r-in"><span><span class="st">    if (n &gt; 0){</span></span></span>
-<span class="r-in"><span><span class="st">      out = x.get(n - 1);</span></span></span>
-<span class="r-in"><span><span class="st">    }</span></span></span>
-<span class="r-in"><span><span class="st">    return out;</span></span></span>
-<span class="r-in"><span><span class="st">  }</span></span></span>
-<span class="r-in"><span><span class="st">'</span>, debug <span class="op">=</span> <span class="cn">TRUE</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu">cpp_source</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  code <span class="op">=</span> <span class="st">'</span></span></span>
-<span class="r-in"><span><span class="st">  #include &lt;cppally.hpp&gt;</span></span></span>
-<span class="r-in"><span><span class="st">  using namespace cppally;</span></span></span>
-<span class="r-in"><span><span class="st"></span></span></span>
-<span class="r-in"><span><span class="st">  [[cppally::register]]</span></span></span>
-<span class="r-in"><span><span class="st">  r_int last_altrep_aware(r_vec&lt;r_int&gt; x){</span></span></span>
-<span class="r-in"><span><span class="st">    r_int out;</span></span></span>
-<span class="r-in"><span><span class="st">    r_size_t n = x.length();</span></span></span>
-<span class="r-in"><span><span class="st"></span></span></span>
-<span class="r-in"><span><span class="st">    if (n &gt; 0){</span></span></span>
-<span class="r-in"><span><span class="st">      out = x.get(n - 1);</span></span></span>
-<span class="r-in"><span><span class="st">    }</span></span></span>
-<span class="r-in"><span><span class="st">    return out;</span></span></span>
-<span class="r-in"><span><span class="st">  }</span></span></span>
-<span class="r-in"><span><span class="st">'</span>, debug <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
-<span class="r-in"><span>  preserve_altrep <span class="op">=</span> <span class="cn">TRUE</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bench.r-lib.org/" class="external-link">bench</a></span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">last_altrep_aware</span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">^</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span> <span class="co"># No materialisation</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 13</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> last_altrep… 4.17µs 5.41µs   <span style="text-decoration: underline;">182</span>136.    3.18KB        0 <span style="text-decoration: underline;">10</span>000     0     54.9ms</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: result &lt;list&gt;, memory &lt;list&gt;, time &lt;list&gt;, gc &lt;list&gt;</span></span>
-<span class="r-in"><span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">last_altrep_unaware</span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">^</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span> <span class="co"># Materialises full vector</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 13</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> last_altrep… 37.6µs 39.6µs    <span style="text-decoration: underline;">20</span>217.     391KB     164.  <span style="text-decoration: underline;">3</span>707    30      183ms</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: result &lt;list&gt;, memory &lt;list&gt;, time &lt;list&gt;, gc &lt;list&gt;</span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">### Copy-on-modify ###</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># cppally supports copy-on-modify as an opt-in feature</span></span></span>
-<span class="r-in"><span><span class="co"># It is disabled by default because it incurs a major performance penalty</span></span></span>
-<span class="r-in"><span><span class="co"># and has been deemed not worth it even for the safety benefits</span></span></span>
-<span class="r-in"><span><span class="co"># That being said, if you prefer absolute safety over speed then you can</span></span></span>
-<span class="r-in"><span><span class="co"># enable it globally via `cppally::use_copy_on_modify()` or</span></span></span>
-<span class="r-in"><span><span class="co"># via the arg `copy_on_modify` if  using `cpp_source()`</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu">cpp_source</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  code <span class="op">=</span> <span class="st">'</span></span></span>
-<span class="r-in"><span><span class="st">  #include &lt;cppally.hpp&gt;</span></span></span>
-<span class="r-in"><span><span class="st">  using namespace cppally;</span></span></span>
-<span class="r-in"><span><span class="st"></span></span></span>
-<span class="r-in"><span><span class="st">  [[cppally::register]]</span></span></span>
-<span class="r-in"><span><span class="st">  r_vec&lt;r_int&gt; reverse(r_vec&lt;r_int&gt; x){</span></span></span>
-<span class="r-in"><span><span class="st">    x.rev(); // in-place reverse</span></span></span>
-<span class="r-in"><span><span class="st">    return x;</span></span></span>
-<span class="r-in"><span><span class="st">  }</span></span></span>
-<span class="r-in"><span><span class="st">'</span>, copy_on_modify <span class="op">=</span> <span class="cn">TRUE</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">2L</span>, <span class="fl">3L</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">reverse</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 3 2 1</span>
-<span class="r-in"><span><span class="va">x</span> <span class="co"># x was preserved and not updated by reference (as expected)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1 2 3</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="fl">10</span><span class="op">^</span><span class="fl">5</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">reverse</span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span> <span class="co"># Memory allocated, therefore x was copied before reversing</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 13</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> reverse(x)    246µs  250µs     <span style="text-decoration: underline;">3</span>856.     391KB     28.5  <span style="text-decoration: underline;">1</span>759    13      456ms</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: result &lt;list&gt;, memory &lt;list&gt;, time &lt;list&gt;, gc &lt;list&gt;</span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># The cppally preferred approach is to allocate a fresh vector or copy the</span></span></span>
-<span class="r-in"><span><span class="co"># existing vector</span></span></span>
-<span class="r-in"><span><span class="fu">cpp_source</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  code <span class="op">=</span> <span class="st">'</span></span></span>
-<span class="r-in"><span><span class="st">  #include &lt;cppally.hpp&gt;</span></span></span>
-<span class="r-in"><span><span class="st">  using namespace cppally;</span></span></span>
-<span class="r-in"><span><span class="st"></span></span></span>
-<span class="r-in"><span><span class="st">  [[cppally::register]]</span></span></span>
-<span class="r-in"><span><span class="st">  r_vec&lt;r_int&gt; cppally_reverse(r_vec&lt;r_int&gt; x){</span></span></span>
-<span class="r-in"><span><span class="st">    r_vec&lt;r_int&gt; out = shallow_copy(x);</span></span></span>
-<span class="r-in"><span><span class="st">    out.rev();</span></span></span>
-<span class="r-in"><span><span class="st">    return out;</span></span></span>
-<span class="r-in"><span><span class="st">  }</span></span></span>
-<span class="r-in"><span><span class="st">'</span>, copy_on_modify <span class="op">=</span> <span class="cn">FALSE</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  r_reverse <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rev.html" class="external-link">rev</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  cppally_copy_on_modify_reverse <span class="op">=</span> <span class="fu">reverse</span><span class="op">(</span><span class="va">x</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  cppally_no_copy_on_modify_reverse <span class="op">=</span> <span class="fu">cppally_reverse</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 13</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:t&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> r_reverse   221.1µs  228µs     <span style="text-decoration: underline;">4</span>200.     781KB     67.7  <span style="text-decoration: underline;">1</span>303    21      310ms</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> cppally_co… 246.5µs  251µs     <span style="text-decoration: underline;">3</span>944.     391KB     30.8  <span style="text-decoration: underline;">1</span>792    14      454ms</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> cppally_no…  61.8µs  216µs     <span style="text-decoration: underline;">5</span>777.     391KB     42.4  <span style="text-decoration: underline;">2</span>316    17      401ms</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: result &lt;list&gt;, memory &lt;list&gt;, time &lt;list&gt;, gc &lt;list&gt;</span></span>
-<span class="r-in"><span><span class="co"># }</span></span></span>
-<span class="r-in"><span></span></span>
-</code></pre></div>
+
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

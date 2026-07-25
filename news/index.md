@@ -2,6 +2,8 @@
 
 ## cppally (development version)
 
+### Bug fixes
+
 - Fixed a bug where matching on integer vectors with a non `NA`
   `nomatch` value would still return `NA`.
 
@@ -11,42 +13,74 @@
 - Fixed a bug where `r_vec::apply` would throw a compiler error when
   called on lists and character vectors.
 
+### Breaking changes
+
 - Sequences no longer abort on overflow, but instead silently return
   `NA`.
+
+- Removed `r_vec::subset` and `r_factors::subset` as they didn’t
+  thematically fit in with the rest of the members. The free `subset`
+  function is still available.
+
+- Renamed `common_length` to `list_common_length`. `common_length` now
+  accepts variadic inputs.
+
+- Relocated various headers to and from the sugar folder.
+
+### r_function
+
+- New class `r_function` to safely call R functions from C++.
+
+- New helper `pkg_env` to return the environment of a package, allowing
+  users to easily retrieve functions from specific packages,
+  e.g. `r_function("foo", pkg_env<"bar">())`.
+
+### Improvements
 
 - `cpp_source` now generates OpenMP flags, so its compiled functions can
   use both OpenMP SIMD vectorisation and multi-threaded execution
   (threads set via `set_threads()`).
 
-- New class `r_function` to safely call R functions from C++.
-
-- `pkg_env` is a helper that returns the environment of a package,
-  allowing users to easily retrieve functions from specific packages,
-  e.g. `r_function("foo", pkg_env<"bar">())`.
-
-- New `copy` member for `r_vec`, `r_factors` and `r_df`. `copy` shallow
-  copies the vector by creating a fresh copy of the atomic data, without
-  deep copying lists or attributes, just like `Rf_shallow_duplicate`.
+- Integer multiplication overflow handling is now more portable.
 
 - `r_sym` now constructs symbols from strings (`const char*`, `r_str`,
   `r_str_view`) under unwind protection, so R errors can no longer
   longjmp past C++ destructors.
 
-- New by-group left-fold functional `reduce_by_group`, allowing for very
-  efficient binary reductions by-group.
-
-- Renamed `common_length` to `list_common_length`. `common_length` now
-  accepts `initializer_list` and variadic input.
-
-- New function `list_recycle` to recycle vectors of a list.
+- Sorting speed has been improved for both character vectors and numeric
+  vectors. Sorting is faster for character vectors when there are a
+  relatively high proportion of unique strings. Sorting is also
+  dramatically faster for double vectors when all values in the vector
+  are exact whole numbers.
 
 - `n_unique` has been sped-up for integer vectors.
 
-- New `initializer_list` overloads for common helpers.
+### New features
+
+- New `copy` member for `r_vec`, `r_factors` and `r_df`. `copy` shallow
+  copies the vector by creating a fresh copy of the atomic data, without
+  deep copying lists or attributes, just like `Rf_shallow_duplicate`.
+
+- New by-group left-fold functional `reduce_by_group`, allowing for very
+  efficient binary reductions by-group.
+
+- New function `list_recycle` to recycle vectors of a list.
 
 - New `r_sexp` visit helpers `visit_as` and `view_as`.
 
-- Integer multiplication overflow handling is now more portable.
+- New `r_str` member function `is_utf8` to check whether a string has
+  valid UTF-8 encoding, which includes ASCII strings.
+
+- New `r_str` member function `as_utf8` to convert a string to a UTF-8
+  string. If the string is already a UTF-8 string, it is a no-op and
+  simply returns the same `r_str`.
+
+- New class `string_literal` to facilitate compile-time string literal
+  NTTP programming.
+
+- `cpp_eval` gains a new argument, `cppally_header`, allowing one to
+  compile expressions using the optional light header
+  “cppally_light.hpp”.
 
 ## cppally 1.1.0 (2026-07-12)
 
