@@ -153,31 +153,32 @@ inline T subset(const T& x, const r_vec<U>& indices, bool invert = false, bool c
     using unsigned_int_t = std::make_unsigned_t<unwrap_t<U>>;
     r_size_t n = indices.length();
 
-    T out(n);
-
-    if (check){
-      r_size_t xn = x.length();
-      unsigned_int_t na_val = unwrap(na<U>());
-      unsigned_int_t j;
-  
-      for (r_size_t i = 0; i < n; ++i){
-        j = unwrap(indices.get(i));
-        if (j < static_cast<unsigned_int_t>(xn)){
-          out.set(i, x.view(static_cast<r_size_t>(j)));
-        } else if (j > na_val) [[unlikely]] {
-          // If j > n_val then it is a negative signed integer
-          abort("Negative indices are unsupported, use `invert = true`");
-        } else {
-          if constexpr (requires { data_t::na(); }){
-            out.set(i, na<data_t>());
+    T out = [&]() -> T {
+      if (check){
+        T local_out(n);
+    
+        r_size_t xn = x.length();
+        unsigned_int_t na_val = unwrap(na<U>());
+        unsigned_int_t j;
+    
+        for (r_size_t i = 0; i < n; ++i){
+          j = unwrap(indices.get(i));
+          if (j < static_cast<unsigned_int_t>(xn)){
+            local_out.set(i, x.view(static_cast<r_size_t>(j)));
+          } else if (j > na_val) [[unlikely]] {
+            abort("Negative indices are unsupported, use `invert = true`");
+          } else {
+            if constexpr (requires { data_t::na(); }){
+              local_out.set(i, na<data_t>());
+            }
           }
         }
+        return local_out;
+      } else {
+        return pmap_parallel_simd([&x](U idx){ return x.view(static_cast<r_size_t>(unwrap(idx)));}, indices);
       }
-    } else {
-      for (r_size_t i = 0; i < n; ++i){
-        out.set(i, x.view(static_cast<r_size_t>(unwrap(indices.get(i)))));
-      }
-    }
+    }();
+
     r_vec<r_str_view> nms = x.names();
     if (!nms.is_null()){
       r_vec<r_str_view> new_nms = subset(nms, indices, invert, check);
