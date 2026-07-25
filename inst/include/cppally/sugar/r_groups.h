@@ -127,28 +127,26 @@ template <RSortableType T>
 inline groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
     r_size_t n = x.length();
 
+    if (n != o.length()) [[unlikely]] {
+        abort("`x.length()` must match `o.length()`");
+    }
+
     if (n == 0) return groups(r_vec<r_int>(), 0, true, true);
     
     r_vec<r_int> group_ids(n);
-    auto* RESTRICT p_id = group_ids.data();
-    auto* RESTRICT p_o = o.data();
 
     int current_group = 0;
 
-    p_id[p_o[0]] = 0;
+    group_ids.set(unwrap(o.get(0)), r_int(0));
 
     for (r_size_t i = 1; i < n; ++i) {
-        int idx_curr = p_o[i];
-        int idx_prev = p_o[i - 1];
+        int idx_curr = unwrap(o.get(i));
+        int idx_prev = unwrap(o.get(i - 1));
 
-        bool is_equal;
-        is_equal = identical(x.view(idx_curr), x.view(idx_prev));
-
-        if (!is_equal) {
+        if (!identical(x.view(idx_curr), x.view(idx_prev))) {
             current_group++;
         }
-
-        p_id[idx_curr] = current_group;
+        group_ids.set(idx_curr, r_int(current_group));
     }
 
     int n_groups = current_group + 1;
