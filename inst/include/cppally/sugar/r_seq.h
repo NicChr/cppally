@@ -11,7 +11,7 @@ namespace cppally {
 template <RNumber T, RNumber U>
 auto sequence(int size, T from, U by){
 
-    using common_t   = common_r_t<T, U>;
+    using common_t = common_r_t<T, U>;
 
     if (size < 0){
         abort("size must be non-negative");
@@ -37,8 +37,8 @@ auto sequence(int size, T from, U by){
 }
 
 // size of the sequence from..to stepping by `by`
-template <RNumber T, RNumber U, RNumber V>
-int seq_size(T from, U to, V by){
+template <RNumber T, RNumber V>
+int seq_size(T from, T to, V by){
     auto del = to - from;
     // from == to with a zero increment is a well-defined length-1 sequence
     r_dbl ratio = ( ((del == 0) && (by == 0)).is_true() ) ? r_dbl(0.0) : del / by;
@@ -76,9 +76,9 @@ r_dbl seq_increment(int size, T from, U to){
 
 // build the sequence from..to stepping by `by`
 // `to` only sets the length; widen from/by to its type so the right vector is built directly
-template <RNumber T, RNumber U, RNumber V>
-auto seq(T from, U to, V by){
-    using out_t = common_r_t<T, U, V>;
+template <RNumber T, RNumber V>
+auto seq(T from, T to, V by){
+    using out_t = common_r_t<T, V>;
     return sequence(seq_size(from, to, by), as<out_t>(from), as<out_t>(by));
 }
 
