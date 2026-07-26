@@ -7,6 +7,7 @@
 #include <cppally/r_vec_ops.h>
 #include <cppally/r_hash_names.h>
 #include <cppally/r_attrs.h>
+#include <cppally/r_pmap.h>
 
 namespace cppally {
 
@@ -263,18 +264,6 @@ struct r_factors {
     return value.get(index);
   }
 
-  // Find factor codes associated with character vector
-  template <RStringType U>
-  r_vec<r_int> get_codes(const r_vec<U>& vals, r_int no_match = na<r_int>()) const {
-    int n = vals.length();
-    r_vec<r_int> out(n);
-    for (int i = 0; i < n; ++i){
-      r_int code = get_code(vals.view(i), no_match);
-      out.set(i, code);
-    }
-    return out;
-  }
-
   void set_code(r_size_t index, r_int val) {
     value.set(index, val);
   }
@@ -312,7 +301,12 @@ struct r_factors {
     r_factors new_lvls_fct(r_vec<r_int>(), new_levels);
 
     // For each of this factor's levels, find its position in new_levels
-    r_vec<r_int> remap = new_lvls_fct.get_codes(levels(), na<r_int>());
+    r_vec<r_int> remap = pmap(
+      /*fn = */ [&new_lvls_fct](const auto& lvl){
+        return new_lvls_fct.get_code(lvl); 
+      },
+      levels()
+    );
     r_size_t n = length();
     r_vec<r_int> out(n);
     for (r_size_t i = 0; i < n; ++i){
