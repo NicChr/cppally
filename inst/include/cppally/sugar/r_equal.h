@@ -14,7 +14,10 @@
 namespace cppally {
 
 template <RComposite T, RComposite U>
-requires (!RAtomicVector<T> || !RAtomicVector<U>)
+requires (
+  (!RAtomicVector<T> || !RAtomicVector<U>)
+  && !(RDataFrame<T> || RDataFrame<U>)
+)
 inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs){
   using common_t = common_r_t<T, U>;
 
@@ -64,68 +67,79 @@ inline r_vec<r_lgl> operator==(const r_factors& lhs, const r_factors& rhs) {
 }
 
 // Forward decl for r_df
-template <typename T, typename U>
-requires (is<T, r_sexp> || is<U, r_sexp>)
-inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs);
-
-inline r_vec<r_lgl> operator==(const r_df& lhs, const r_df& rhs) {
-    if (lhs.ncol() != rhs.ncol()){
-        abort("`operator==`: `lhs.ncol()` must match `rhs.ncol()`");
-    }
-
-    if (lhs.nrow() == 0 || rhs.nrow() == 0){
-        return r_vec<r_lgl>();
-    }
-
-    r_size_t ncols = lhs.ncol();
-    r_vec<r_str_view> colnames = lhs.colnames();
-
-    r_size_t out_size = std::max(lhs.nrow(), rhs.nrow());
-    r_vec<r_lgl> out(out_size, r_true);
-    
-    for (r_size_t i = 0; i < ncols; ++i){
-        r_str_view colname = colnames.view(i);
-        r_sexp lhs_col = lhs.view_col(colname);
-        r_sexp rhs_col = rhs.view_col(colname);
-
-        lhs.with_col(colname, [&]<typename lhs_t>(const lhs_t& left_col) -> void {
-            lhs_t right_col = lhs_t(rhs_col); // Assume right col is same type as left col (avoiding double visit dispatch)
-            if constexpr (RDataFrame<lhs_t> || RListVector<lhs_t>){
-              r_vec<r_lgl> cols_eq = left_col == right_col;
-              for (int j = 0; j < out_size; ++j){
-                out.set(j, out.get(j) && cols_eq.get(j));
-              }
-            } else {
-              int leftn = length(left_col);
-              int rightn = length(right_col);
-              for (int j = 0, li = 0, ri = 0; j < out_size;
-                recycle_index(li, leftn), 
-                recycle_index(ri, rightn), ++j) {
-                  out.set(j, out.get(j) && (left_col.view(li) == right_col.view(ri)));
-                }
-              }
-            });
-
-    }
-    return out;
-}
-
-template <typename T, typename U>
-requires (is<T, r_sexp> || is<U, r_sexp>)
-inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) {
-  if constexpr (is<T, r_sexp>){
-    return internal::visit_sexp(lhs, [&]<typename lhs_t>(const lhs_t& x) -> r_vec<r_lgl> {
-      return as<r_vec<r_lgl>>(x == lhs_t(rhs));
-    });
-  } else {
-    return internal::visit_sexp(rhs, [&]<typename rhs_t>(const rhs_t& y) -> r_vec<r_lgl> {
-      return as<r_vec<r_lgl>>(rhs_t(lhs) == y);
-    });
-  }
-}
+template <typename U>
+// requires (is<U, r_sexp> || RComposite<U>)
+requires (RComposite<U>)
+inline r_vec<r_lgl> operator==(const r_sexp& lhs, const U& rhs);
+template <RComposite T>
+inline r_vec<r_lgl> operator==(const T& lhs, const r_sexp& rhs);
 
 template <RComposite T, RComposite U>
-requires requires (const T& a, const U& b){ a == b; }
+requires (RDataFrame<T> || RDataFrame<U>)
+inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) {
+
+  r_df a = as<r_df>(lhs);
+  r_df b = as<r_df>(rhs);
+
+  if (a.ncol() != b.ncol()){
+    abort("`operator==`: `lhs.ncol()` must match `rhs.ncol()`");
+  }
+  
+  if (a.nrow() == 0 || b.nrow() == 0){
+      return r_vec<r_lgl>();
+  }
+
+  r_size_t ncols = a.ncol();
+  r_vec<r_str_view> colnames = a.colnames();
+
+  r_size_t out_size = std::max(a.nrow(), b.nrow());
+  r_vec<r_lgl> out(out_size, r_true);
+    
+  for (r_size_t i = 0; i < ncols; ++i){
+    r_str_view colname = colnames.view(i);
+    r_sexp lhs_col = a.view_col(colname);
+    r_sexp rhs_col = b.view_col(colname);
+
+    a.with_col(colname, [&]<typename lhs_t>(const lhs_t& left_col) -> void {
+        lhs_t right_col = lhs_t(rhs_col); // Assume right col is same type as left col (avoiding double visit dispatch)
+        if constexpr (RDataFrame<lhs_t> || RListVector<lhs_t>){
+          r_vec<r_lgl> cols_eq = left_col == right_col;
+          for (int j = 0; j < out_size; ++j){
+            out.set(j, out.get(j) && cols_eq.get(j));
+          }
+        } else {
+          int leftn = length(left_col);
+          int rightn = length(right_col);
+          for (int j = 0, li = 0, ri = 0; j < out_size;
+            recycle_index(li, leftn), 
+            recycle_index(ri, rightn), ++j) {
+              out.set(j, out.get(j) && (left_col.view(li) == right_col.view(ri)));
+            }
+          }
+        });
+      }
+      return out;
+}
+
+template <typename U>
+requires (RComposite<U>)
+inline r_vec<r_lgl> operator==(const r_sexp& lhs, const U& rhs) {
+  return r_sexp_view(lhs, [&]<RComposite V> (const V& v) -> r_vec<r_lgl> {
+    return v == rhs;
+  });
+}
+template <RComposite T>
+inline r_vec<r_lgl> operator==(const T& lhs, const r_sexp& rhs) {
+  return r_sexp_view(rhs, [&]<RComposite W> (const W& w) -> r_vec<r_lgl> {
+    return lhs == w;
+  });
+}
+
+template <typename T, typename U>
+requires (
+  requires (const T& a, const U& b) { a == b; } &&
+  is<decltype(std::declval<const T&>() == std::declval<const U&>()), r_vec<r_lgl>>
+)
 inline r_vec<r_lgl> operator!=(const T& lhs, const U& rhs) {
   return internal::not_equal(lhs, rhs);
 }
