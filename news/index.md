@@ -27,6 +27,10 @@
 
 - Relocated various headers to and from the sugar folder.
 
+- `r_factors` member functions `get_codes`, `set_codes`, and `new_codes`
+  have been removed. The functionality of these can be achieved with the
+  existing members.
+
 ### r_function
 
 - New class `r_function` to safely call R functions from C++.
@@ -81,6 +85,9 @@
 - `cpp_eval` gains a new argument, `cppally_header`, allowing one to
   compile expressions using the optional light header
   “cppally_light.hpp”.
+
+- `r_factors` gains a new member function, `refactor`, which creates a
+  new `r_factors` object given a new set of levels.
 
 ## cppally 1.1.0 (2026-07-12)
 

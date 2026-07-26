@@ -53,6 +53,7 @@
 <li><p>Removed <code>r_vec::subset</code> and <code>r_factors::subset</code> as they didn’t thematically fit in with the rest of the members. The free <code>subset</code> function is still available.</p></li>
 <li><p>Renamed <code>common_length</code> to <code>list_common_length</code>. <code>common_length</code> now accepts variadic inputs.</p></li>
 <li><p>Relocated various headers to and from the sugar folder.</p></li>
+<li><p><code>r_factors</code> member functions <code>get_codes</code>, <code>set_codes</code>, and <code>new_codes</code> have been removed. The functionality of these can be achieved with the existing members.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="r_function-development-version">r_function<a class="anchor" aria-label="anchor" href="#r_function-development-version"></a></h3>
@@ -77,6 +78,7 @@
 <li><p>New <code>r_str</code> member function <code>as_utf8</code> to convert a string to a UTF-8 string. If the string is already a UTF-8 string, it is a no-op and simply returns the same <code>r_str</code>.</p></li>
 <li><p>New class <code>string_literal</code> to facilitate compile-time string literal NTTP programming.</p></li>
 <li><p><code>cpp_eval</code> gains a new argument, <code>cppally_header</code>, allowing one to compile expressions using the optional light header “cppally_light.hpp”.</p></li>
+<li><p><code>r_factors</code> gains a new member function, <code>refactor</code>, which creates a new <code>r_factors</code> object given a new set of levels.</p></li>
 </ul></div>
 </div>
     <div class="section level2">
