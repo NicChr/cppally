@@ -2,10 +2,8 @@
 #define CPPALLY_R_UNIQUE_H
 
 #include <cppally/r_vec_ops.h>
-#include <cppally/sugar/r_sort.h>
 #include <cppally/sugar/r_groups.h>
 #include <cppally/sugar/r_subset.h>
-#include <cppally/sugar/r_replace_at.h>
 
 namespace cppally {
 
@@ -13,8 +11,7 @@ template <typename T>
 requires (RComposite<T> || RSexpType<T>)
 T unique(const T& x, bool sort = false) {
     groups group_info = make_groups(x, sort);
-    auto starts = group_info.starts();
-    return subset(x, starts);
+    return subset(x, group_info.starts(), false, false);
 }
 
 template <RVector T>
@@ -26,7 +23,12 @@ r_vec<r_lgl> duplicated(const T& x, bool all = false){
     return subset(is_dup, g.ids, /*invert=*/ false, /*check=*/ false);
   } else {
     r_vec<r_lgl> out(x.length(), r_true);
-    replace_at(out, g.starts(), r_vec<r_lgl>(1, r_false));
+    auto starts = g.starts();
+    r_size_t n_groups = g.n_groups;
+
+    for (r_size_t i = 0; i < n_groups; ++i){
+      out.set(static_cast<r_size_t>(unwrap(starts.get(i))), r_false);
+    }
     return out;
   }
 }
