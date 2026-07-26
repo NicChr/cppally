@@ -44,19 +44,24 @@ inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs){
   return out;
 }
 
-// inline r_vec<r_lgl> operator==(const r_factors& lhs, const r_factors& rhs) {
-//   // Position of each of rhs's levels within lhs's levels; -1 = absent from lhs
-//   r_vec<r_int> remap = lhs.get_codes(rhs.levels(), r_int(-1));
+inline r_vec<r_lgl> operator==(const r_factors& lhs, const r_factors& rhs) {
+  // Position of each of rhs's levels within lhs's levels; -1 = absent from lhs
+  r_vec<r_int> remap = pmap(
+    /*fn = */ [&lhs](const auto& lvl){
+      return lhs.get_code(lvl, /*no_match = */ r_int(-1)); 
+    },
+    rhs.levels()
+  );
 
-//   r_size_t n = rhs.length();
-//   r_vec<r_int> comparable(n);
-//   for (r_size_t i = 0; i < n; ++i){
-//     r_int c = rhs.value.get(i);
-//     // Genuine NA stays NA; a level absent from lhs is known-unequal, not unknown
-//     comparable.set(i, is_na(c) ? na<r_int>() : remap.get(unwrap(c) - 1));
-//   }
-//   return lhs.value == comparable;
-// }
+  r_size_t n = rhs.length();
+  r_vec<r_int> comparable(n);
+  for (r_size_t i = 0; i < n; ++i){
+    r_int c = rhs.value.get(i);
+    // Genuine NA stays NA; a level absent from lhs is known-unequal, not unknown
+    comparable.set(i, is_na(c) ? na<r_int>() : remap.get(unwrap(c) - 1));
+  }
+  return lhs.value == comparable;
+}
 
 // Forward decl for r_df
 template <typename T, typename U>
