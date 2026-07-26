@@ -34,7 +34,7 @@ r_vec<r_lgl> duplicated(const T& x, bool all = false){
 }
 
 inline r_vec<r_lgl> duplicated(const r_factors& x, bool all = false){
-    return duplicated(x.value);
+    return duplicated(x.value, all);
 }
 
 inline r_vec<r_lgl> duplicated(const r_df& x, bool all = false){
