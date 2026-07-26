@@ -110,6 +110,12 @@ namespace internal {
 template <typename T>
 concept RMathVector = RVector<T> && RMathType<typename std::remove_cvref_t<T>::data_type>;
 
+template <typename T, typename U>
+concept AtLeastOneMathVector =
+    (RMathVector<T> && RMathVector<U>) ||
+    (RMathVector<T> && MathType<U>) ||
+    (MathType<T> && RMathVector<U>);
+
 template <RAtomicVector T, typename U>
 bool use_in_place_ops(const T& lhs, const U& rhs) noexcept {
     if (!lhs.is_exclusive()){
@@ -123,19 +129,11 @@ bool use_in_place_ops(const T& lhs, const U& rhs) noexcept {
 }
 
 template <typename T, typename U>
-requires (
-    (internal::RMathVector<T> && internal::RMathVector<U>) ||
-    (internal::RMathVector<T> && MathType<U>) ||
-    (MathType<T> && internal::RMathVector<U>)
-)
+requires (internal::AtLeastOneMathVector<T, U>)
 using common_math_vec_t = std::remove_cvref_t<r_vec<common_math_t<typename as_r_vector_t<T>::data_type, typename as_r_vector_t<U>::data_type>>>;
 
-template<typename T, typename U>
-requires (
-    (internal::RMathVector<T> && internal::RMathVector<U>) ||
-    (internal::RMathVector<T> && MathType<U>) ||
-    (MathType<T> && internal::RMathVector<U>)
-)
+template <typename T, typename U>
+requires (internal::AtLeastOneMathVector<T, U>)
 inline common_math_vec_t<T, U> operator+(T&& lhs, const U& rhs) {
     using out_t = common_math_vec_t<T, U>;
     if constexpr (std::is_same_v<T, out_t>){
@@ -147,12 +145,8 @@ inline common_math_vec_t<T, U> operator+(T&& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, +, out_t)
 }
 
-template<typename T, typename U>
-requires (
-    (internal::RMathVector<T> && internal::RMathVector<U>) ||
-    (internal::RMathVector<T> && MathType<U>) ||
-    (MathType<T> && internal::RMathVector<U>)
-)
+template <typename T, typename U>
+requires (internal::AtLeastOneMathVector<T, U>)
 inline common_math_vec_t<T, U> operator-(T&& lhs, const U& rhs) {
     using out_t = common_math_vec_t<T, U>;
     if constexpr (std::is_same_v<T, out_t>){
@@ -163,12 +157,8 @@ inline common_math_vec_t<T, U> operator-(T&& lhs, const U& rhs) {
     }
     CPPALLY_BINARY_OP(lhs, rhs, -, out_t)
 }
-template<typename T, typename U>
-requires (
-    (internal::RMathVector<T> && internal::RMathVector<U>) ||
-    (internal::RMathVector<T> && MathType<U>) ||
-    (MathType<T> && internal::RMathVector<U>)
-)
+template <typename T, typename U>
+requires (internal::AtLeastOneMathVector<T, U>)
 inline common_math_vec_t<T, U> operator*(T&& lhs, const U& rhs) {
     using out_t = common_math_vec_t<T, U>;
     if constexpr (std::is_same_v<T, out_t>){
@@ -179,12 +169,8 @@ inline common_math_vec_t<T, U> operator*(T&& lhs, const U& rhs) {
     }
     CPPALLY_BINARY_OP(lhs, rhs, *, out_t)
 }
-template<typename T, typename U>
-requires (
-    (internal::RMathVector<T> && internal::RMathVector<U>) ||
-    (internal::RMathVector<T> && MathType<U>) ||
-    (MathType<T> && internal::RMathVector<U>)
-)
+template <typename T, typename U>
+requires (internal::AtLeastOneMathVector<T, U>)
 inline r_vec<r_dbl> operator/(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_dbl>>){
         if (internal::use_in_place_ops(lhs, rhs)){
@@ -194,12 +180,8 @@ inline r_vec<r_dbl> operator/(T&& lhs, const U& rhs) {
     }
     CPPALLY_BINARY_OP(lhs, rhs, /, r_vec<r_dbl>)
 }
-template<typename T, typename U>
-requires (
-    (internal::RMathVector<T> && internal::RMathVector<U>) ||
-    (internal::RMathVector<T> && MathType<U>) ||
-    (MathType<T> && internal::RMathVector<U>)
-)
+template <typename T, typename U>
+requires (internal::AtLeastOneMathVector<T, U>)
 inline common_math_vec_t<T, U> operator%(T&& lhs, const U& rhs) {
     using out_t = common_math_vec_t<T, U>;
     if constexpr (std::is_same_v<T, out_t>){
@@ -211,20 +193,25 @@ inline common_math_vec_t<T, U> operator%(T&& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, %, out_t)
 }
 
-template<typename T, typename U>
+template <typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && Scalar<U>) ||
-    (Scalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && RAtomicVector<U> && requires (T::data_type a, U::data_type b) { cppally::operator==(a, b); }) ||
+    (RAtomicVector<T> && Scalar<U> && requires (T::data_type a, U b) { cppally::operator==(a, b); }) ||
+    (Scalar<T> && RAtomicVector<U> && requires (T a, U::data_type b) { cppally::operator==(a, b); })
 )
 inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, ==, r_vec<r_lgl>)
 }
-template<typename T, typename U>
+
+// template <RAtomicVector T, RAtomicVector U>
+// requires (!requires (const T& a, const U& b) { cppally::operator==(a, b); })
+// inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) = delete;
+
+template <typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && Scalar<U>) ||
-    (Scalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && RAtomicVector<U> && requires (std::remove_cvref_t<T>::data_type a, U::data_type b) { cppally::operator!=(a, b); }) ||
+    (RAtomicVector<T> && Scalar<U> && requires (std::remove_cvref_t<T>::data_type a, U b) { cppally::operator!=(a, b); }) ||
+    (Scalar<T> && RAtomicVector<U> && requires (T a, U::data_type b) { cppally::operator!=(a, b); })
 )
 inline r_vec<r_lgl> operator!=(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
@@ -235,11 +222,11 @@ inline r_vec<r_lgl> operator!=(T&& lhs, const U& rhs) {
     }
     CPPALLY_BINARY_OP(lhs, rhs, !=, r_vec<r_lgl>)
 }
-template<typename T, typename U>
+template <typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && Scalar<U>) ||
-    (Scalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && RAtomicVector<U> && requires (std::remove_cvref_t<T>::data_type a, U::data_type b) { cppally::operator<=(a, b); }) ||
+    (RAtomicVector<T> && Scalar<U> && requires (std::remove_cvref_t<T>::data_type a, U b) { cppally::operator<=(a, b); }) ||
+    (Scalar<T> && RAtomicVector<U> && requires (T a, U::data_type b) { cppally::operator<=(a, b); })
 )
 inline r_vec<r_lgl> operator<=(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
@@ -250,11 +237,11 @@ inline r_vec<r_lgl> operator<=(T&& lhs, const U& rhs) {
     }
     CPPALLY_BINARY_OP(lhs, rhs, <=, r_vec<r_lgl>)
 }
-template<typename T, typename U>
+template <typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && Scalar<U>) ||
-    (Scalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && RAtomicVector<U> && requires (std::remove_cvref_t<T>::data_type a, U::data_type b) { cppally::operator<(a, b); }) ||
+    (RAtomicVector<T> && Scalar<U> && requires (std::remove_cvref_t<T>::data_type a, U b) { cppally::operator<(a, b); }) ||
+    (Scalar<T> && RAtomicVector<U> && requires (T a, U::data_type b) { cppally::operator<(a, b); })
 )
 inline r_vec<r_lgl> operator<(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
@@ -265,11 +252,11 @@ inline r_vec<r_lgl> operator<(T&& lhs, const U& rhs) {
     }
     CPPALLY_BINARY_OP(lhs, rhs, <, r_vec<r_lgl>)
 }
-template<typename T, typename U>
+template <typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && Scalar<U>) ||
-    (Scalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && RAtomicVector<U> && requires (std::remove_cvref_t<T>::data_type a, U::data_type b) { cppally::operator>=(a, b); }) ||
+    (RAtomicVector<T> && Scalar<U> && requires (std::remove_cvref_t<T>::data_type a, U b) { cppally::operator>=(a, b); }) ||
+    (Scalar<T> && RAtomicVector<U> && requires (T a, U::data_type b) { cppally::operator>=(a, b); })
 )
 inline r_vec<r_lgl> operator>=(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
@@ -280,11 +267,11 @@ inline r_vec<r_lgl> operator>=(T&& lhs, const U& rhs) {
     }
     CPPALLY_BINARY_OP(lhs, rhs, >=, r_vec<r_lgl>)
 }
-template<typename T, typename U>
+template <typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U>) ||
-    (RAtomicVector<T> && Scalar<U>) ||
-    (Scalar<T> && RAtomicVector<U>)
+    (RAtomicVector<T> && RAtomicVector<U> && requires (std::remove_cvref_t<T>::data_type a, U::data_type b) { cppally::operator>(a, b); }) ||
+    (RAtomicVector<T> && Scalar<U> && requires (std::remove_cvref_t<T>::data_type a, U b) { cppally::operator>(a, b); }) ||
+    (Scalar<T> && RAtomicVector<U> && requires (T a, U::data_type b) { cppally::operator>(a, b); })
 )
 inline r_vec<r_lgl> operator>(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
