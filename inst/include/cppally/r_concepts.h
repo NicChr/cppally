@@ -441,11 +441,11 @@ consteval uint8_t r_type_rank() {
 
     // Scalars
     if constexpr (is<T, r_lgl>)                     return 0;
-    if constexpr (is<T, r_int>)                     return 1;
-    if constexpr (is<T, r_int64>)                   return 2;
-    if constexpr (is<T, r_dbl>)                     return 3;
-    if constexpr (is<T, r_cplx>)                    return 4;
-    if constexpr (is<T, r_raw>)                     return 5;
+    if constexpr (is<T, r_raw>)                     return 1;
+    if constexpr (is<T, r_int>)                     return 2;
+    if constexpr (is<T, r_int64>)                   return 3;
+    if constexpr (is<T, r_dbl>)                     return 4;
+    if constexpr (is<T, r_cplx>)                    return 5;
     if constexpr (is<T, r_date>)                    return 6;
     if constexpr (is<T, r_psxct>)                   return 7;
     if constexpr (is<T, r_str>)                     return 8;
