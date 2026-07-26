@@ -141,7 +141,7 @@ requires (
   is<decltype(std::declval<const T&>() == std::declval<const U&>()), r_vec<r_lgl>>
 )
 inline r_vec<r_lgl> operator!=(const T& lhs, const U& rhs) {
-  return internal::not_equal(lhs, rhs);
+  return !(lhs == rhs);
 }
 
 }

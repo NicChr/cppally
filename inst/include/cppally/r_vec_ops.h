@@ -374,14 +374,6 @@ inline r_vec<r_int> operator-(const r_vec<r_lgl>& x){
     return pmap_parallel_simd([](r_lgl v) noexcept { return -v; }, x);
 }
 
-namespace internal {
-// Helper to negate result of `==` in-place
-template <typename T, typename U>
-inline r_vec<r_lgl> not_equal(const T& lhs, const U& rhs){
-    return !(lhs == rhs);
-}
-}
-
 
 #undef CPPALLY_BINARY_OP
 #undef CPPALLY_BINARY_OP_IN_PLACE
