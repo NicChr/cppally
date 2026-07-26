@@ -100,25 +100,13 @@ inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) {
     r_sexp lhs_col = a.view_col(colname);
     r_sexp rhs_col = b.view_col(colname);
 
-    a.with_col(colname, [&]<typename lhs_t>(const lhs_t& left_col) -> void {
-        lhs_t right_col = lhs_t(rhs_col); // Assume right col is same type as left col (avoiding double visit dispatch)
-        if constexpr (RDataFrame<lhs_t> || RListVector<lhs_t>){
-          r_vec<r_lgl> cols_eq = left_col == right_col;
-          for (int j = 0; j < out_size; ++j){
-            out.set(j, out.get(j) && cols_eq.get(j));
-          }
-        } else {
-          int leftn = length(left_col);
-          int rightn = length(right_col);
-          for (int j = 0, li = 0, ri = 0; j < out_size;
-            recycle_index(li, leftn), 
-            recycle_index(ri, rightn), ++j) {
-              out.set(j, out.get(j) && (left_col.view(li) == right_col.view(ri)));
-            }
-          }
-        });
-      }
-      return out;
+    r_sexp_view(lhs_col, [&]<RComposite lhs_t>(const lhs_t& left_col) -> void {
+      lhs_t right_col = visit_as<lhs_t>(rhs_col);
+      out = std::move(out) & (left_col == right_col);
+    });
+  }
+
+  return out;
 }
 
 template <typename U>
