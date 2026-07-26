@@ -436,6 +436,13 @@ using unwrap_t = typename internal::unwrapped_type<T>::type;
 
 namespace internal {
 
+// TODO
+// On the topic of lists and data frames
+// When r_df gains its own element type, the list should at that point be more generic the data frame
+// and as<r_vec<r_sexp>>(r_df) should produce a list of single rows
+// Currently it does that but only if r_df is 1 col-wide
+// This is relevant for common_r_t<> which currently places r_df as a more generic type than list
+
 template <RScalar T>
 consteval uint8_t r_type_rank() {
 
