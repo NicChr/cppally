@@ -436,7 +436,7 @@ using unwrap_t = typename internal::unwrapped_type<T>::type;
 
 namespace internal {
 
-template <RVal T>
+template <RScalar T>
 consteval uint8_t r_type_rank() {
 
     // Scalars
@@ -450,7 +450,6 @@ consteval uint8_t r_type_rank() {
     if constexpr (is<T, r_psxct>)                   return 7;
     if constexpr (is<T, r_str>)                     return 8;
     if constexpr (is<T, r_str_view>)                return 9;
-    if constexpr (is<T, r_sexp>)                    return std::numeric_limits<uint8_t>::max() - 1;
 }
 
 template <MathType T, MathType U>
@@ -473,54 +472,56 @@ struct common_r_type_impl<T, T> {
     using type = T;
 };
 
-template <RVal T, RVal U>
+template <RScalar T, RScalar U>
 struct common_r_type_impl<T, U> {
     static constexpr uint8_t rank_t = r_type_rank<T>();
     static constexpr uint8_t rank_u = r_type_rank<U>();
     using type = std::conditional_t<(rank_t >= rank_u), T, U>;
 };
 
-template <RVector T, RVal U>
+template <RAtomicVector T, RScalar U>
 struct common_r_type_impl<T, U> {
     using type = r_vec<typename common_r_type_impl<typename T::data_type, U>::type>;
 };
 
-template <RVal T, RVector U>
+template <RScalar T, RAtomicVector U>
 struct common_r_type_impl<T, U> {
     using type = r_vec<typename common_r_type_impl<T, typename U::data_type>::type>;
 };
 
-template <RVector T, RVector U>
+template <RAtomicVector T, RAtomicVector U>
 struct common_r_type_impl<T, U> {
     using type = r_vec<typename common_r_type_impl<typename T::data_type, typename U::data_type>::type>;
 };
 
-template <RVector T, RFactor U>
+template <RAtomicVector T, RFactor U>
 struct common_r_type_impl<T, U> {
     using type = r_factors;
 };
 
-template <RFactor T, RVector U>
+template <RFactor T, RAtomicVector U>
 struct common_r_type_impl<T, U> {
     using type = r_factors;
 };
 
-template <RVector T, RDataFrame U>
+template <RListVector T, typename U>
+requires (RVector<U> || RFactor<U>)
+struct common_r_type_impl<T, U> {
+    using type = r_vec<r_sexp>;
+};
+
+template <typename T, RListVector U>
+requires (RVector<T> || RFactor<T>)
+struct common_r_type_impl<T, U> {
+    using type = r_vec<r_sexp>;
+};
+
+template <RComposite T, RDataFrame U>
 struct common_r_type_impl<T, U> {
     using type = r_df;
 };
 
-template <RDataFrame T, RVector U>
-struct common_r_type_impl<T, U> {
-    using type = r_df;
-};
-
-template <RFactor T, RDataFrame U>
-struct common_r_type_impl<T, U> {
-    using type = r_df;
-};
-
-template <RDataFrame T, RFactor U>
+template <RDataFrame T, RComposite U>
 struct common_r_type_impl<T, U> {
     using type = r_df;
 };
