@@ -68,7 +68,6 @@ inline r_vec<r_lgl> operator==(const r_factors& lhs, const r_factors& rhs) {
 
 // Forward decl for r_df
 template <typename U>
-// requires (is<U, r_sexp> || RComposite<U>)
 requires (RComposite<U>)
 inline r_vec<r_lgl> operator==(const r_sexp& lhs, const U& rhs);
 template <RComposite T>
@@ -112,14 +111,18 @@ inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) {
 template <typename U>
 requires (RComposite<U>)
 inline r_vec<r_lgl> operator==(const r_sexp& lhs, const U& rhs) {
-  return r_sexp_view(lhs, [&]<RComposite V> (const V& v) -> r_vec<r_lgl> {
-    return v == rhs;
+  return r_sexp_view(lhs, [&]<RComposite V> (const V& v) -> r_vec<r_lgl> 
+  requires (requires {cppally::operator==(v, rhs);})
+  {
+    return cppally::operator==(v, rhs);
   });
 }
 template <RComposite T>
 inline r_vec<r_lgl> operator==(const T& lhs, const r_sexp& rhs) {
-  return r_sexp_view(rhs, [&]<RComposite W> (const W& w) -> r_vec<r_lgl> {
-    return lhs == w;
+  return r_sexp_view(rhs, [&]<RComposite W> (const W& w) -> r_vec<r_lgl> 
+  requires(requires {cppally::operator==(lhs, w);})
+  {
+    return cppally::operator==(lhs, w);
   });
 }
 
