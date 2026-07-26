@@ -8,37 +8,55 @@
 #include <cppally/r_length.h>
 #include <cppally/r_identical.h>
 #include <cppally/sugar/r_df_methods.h>
+#include <cppally/sugar/r_recycle.h>
 #include <cppally/sugar/r_sexp_methods.h>
 
 namespace cppally {
 
-// Equality operator for lists
-// list-comparison becomes element-wise `identical()` comparison
-inline r_vec<r_lgl> operator==(const r_vec<r_sexp>& lhs, const r_vec<r_sexp>& rhs){
-  return pmap([](auto a, auto b){ return r_lgl(identical(a, b)); }, lhs, rhs);
+template <RComposite T, RComposite U>
+requires (!RAtomicVector<T> || !RAtomicVector<U>)
+inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs){
+  using common_t = common_r_t<T, U>;
+
+  common_t a = as<common_t>(lhs);
+  common_t b = as<common_t>(rhs);
+
+  r_size_t n = common_length(a, b);
+
+  r_size_t lhsn = length(lhs);
+  r_size_t rhsn = length(rhs);
+
+  r_vec<r_lgl> out(n);
+
+  if constexpr (RListVector<common_t>){
+    for (r_size_t i = 0, li = 0, ri = 0; i < n;
+      recycle_index(li, lhsn),
+      recycle_index(ri, rhsn), ++i){
+      out.set(i, r_lgl(identical(lhs.view(li), rhs.view(ri))));
+    }
+  } else {
+    for (r_size_t i = 0, li = 0, ri = 0; i < n;
+      recycle_index(li, lhsn),
+      recycle_index(ri, rhsn), ++i){
+      out.set(i, lhs.view(li) == rhs.view(ri));
+    }
+  }
+  return out;
 }
 
-// r_factors vectorised operators
+// inline r_vec<r_lgl> operator==(const r_factors& lhs, const r_factors& rhs) {
+//   // Position of each of rhs's levels within lhs's levels; -1 = absent from lhs
+//   r_vec<r_int> remap = lhs.get_codes(rhs.levels(), r_int(-1));
 
-inline r_vec<r_lgl> operator==(const r_factors& lhs, const r_factors& rhs) {
-  r_vec<r_int> fct_codes = lhs.value;
-  r_vec<r_int> comparable_codes = rhs.new_codes(lhs.levels(), r_int(-1));
-  return fct_codes == comparable_codes;
-}
-
-template <RStringType U>
-inline r_vec<r_lgl> operator==(const r_factors& lhs, const r_vec<U>& rhs) {
-  r_vec<r_int> fct_codes = lhs.value;
-  r_vec<r_int> comparable_codes = lhs.get_codes(rhs, r_int(-1));
-  return fct_codes == comparable_codes;
-}
-
-template <RStringType U>
-inline r_vec<r_lgl> operator==(const r_vec<U>& lhs, const r_factors& rhs) {
-  r_vec<r_int> comparable_codes = rhs.get_codes(lhs, r_int(-1));
-  r_vec<r_int> fct_codes = rhs.value;
-  return fct_codes == comparable_codes;
-}
+//   r_size_t n = rhs.length();
+//   r_vec<r_int> comparable(n);
+//   for (r_size_t i = 0; i < n; ++i){
+//     r_int c = rhs.value.get(i);
+//     // Genuine NA stays NA; a level absent from lhs is known-unequal, not unknown
+//     comparable.set(i, is_na(c) ? na<r_int>() : remap.get(unwrap(c) - 1));
+//   }
+//   return lhs.value == comparable;
+// }
 
 // Forward decl for r_df
 template <typename T, typename U>
@@ -101,30 +119,8 @@ inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) {
   }
 }
 
-inline r_vec<r_lgl> operator!=(const r_factors& lhs, const r_factors& rhs) {
-  return internal::not_equal(lhs, rhs);
-}
-
-template <RStringType U>
-inline r_vec<r_lgl> operator!=(const r_factors& lhs, const r_vec<U>& rhs) {
-  return internal::not_equal(lhs, rhs);
-}
-
-template <RStringType U>
-inline r_vec<r_lgl> operator!=(const r_vec<U>& lhs, const r_factors& rhs) {
-  return internal::not_equal(lhs, rhs);
-}
-
-inline r_vec<r_lgl> operator!=(const r_df& lhs, const r_df& rhs) {
-  return internal::not_equal(lhs, rhs);
-}
-
-inline r_vec<r_lgl> operator!=(const r_vec<r_sexp>& lhs, const r_vec<r_sexp>& rhs) {
-  return internal::not_equal(lhs, rhs);
-}
-
-template <typename T, typename U>
-requires (is<T, r_sexp> || is<U, r_sexp>)
+template <RComposite T, RComposite U>
+requires requires (const T& a, const U& b){ a == b; }
 inline r_vec<r_lgl> operator!=(const T& lhs, const U& rhs) {
   return internal::not_equal(lhs, rhs);
 }
