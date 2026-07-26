@@ -3,7 +3,7 @@
 
 #include <cppally/r_vec.h>
 #include <array>
-#include <tuple>
+#include <utility>
 
 namespace cppally {
 
@@ -25,7 +25,7 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
   if constexpr (n_vecs == 0) {
     return r_vec<out_t>();
   } else {
-    bool recycle = false;
+    [[maybe_unused]] bool recycle = false;
     // Check that all vectors are of the same length
     const std::array<r_size_t, n_vecs> lens{ vecs.length()... };
     r_size_t n = lens[0];
@@ -41,16 +41,19 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
 
     r_vec<out_t> out(n);
 
-    if (recycle){
-      // Can't use SIMD or multiple threads here. Per-vector counters wrap via recycle_index
-      // (no div), each paired with its own lens[Is].
-      [&]<std::size_t... Is>(std::index_sequence<Is...>){
-        std::array<r_size_t, n_vecs> j{};
-        for (r_size_t i = 0; i < n; (recycle_index(j[Is], lens[Is]), ...), ++i){
-          out.set(i, fn(i, vecs.view(j[Is])...));
-        }
-      }(std::index_sequence_for<Ts...>{});
-      return out;
+    // With a single vector n == lens[0] always, so `recycle` is unreachable
+    if constexpr (n_vecs > 1){
+      if (recycle){
+        // Can't use SIMD or multiple threads here. Per-vector counters wrap via recycle_index
+        // (no div), each paired with its own lens[Is].
+        [&]<std::size_t... Is>(std::index_sequence<Is...>){
+          std::array<r_size_t, n_vecs> j{};
+          for (r_size_t i = 0; i < n; (recycle_index(j[Is], lens[Is]), ...), ++i){
+            out.set(i, fn(i, vecs.view(j[Is])...));
+          }
+        }(std::index_sequence_for<Ts...>{});
+        return out;
+      }
     }
 
     constexpr bool vectorisable_or_parallelisable = (RVectorisable<Ts> && ...) && RVectorisable<out_t>;
@@ -61,7 +64,7 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
       // and the loops read no closure state; only the pragma on each for-loop varies between branches.
       // RESTRICT is sound: inputs are read-only in the loops and out is freshly allocated.
       // Revisit if pmap ever writes through ps or reuses an input as out.
-      std::apply([&](auto* RESTRICT p_out, auto* RESTRICT ... ps){
+      [&](auto* RESTRICT p_out, auto* RESTRICT ... ps){
         if constexpr (parallel){
           const int n_threads = internal::calc_threads(n);
           if constexpr (simd){
@@ -85,7 +88,7 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
           OMP_SIMD
           CPPALLY_DO_MAP_WITH_DATA
         }
-      }, std::tuple{ out.data(), vecs.data()... });
+      }(out.data(), vecs.data()...);
 
     } else {
       CPPALLY_DO_MAP
