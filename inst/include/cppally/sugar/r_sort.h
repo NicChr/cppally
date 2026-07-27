@@ -30,11 +30,11 @@ r_vec<r_int> order_cmp(const T& x, bool stable = true) {
 
     if (stable){
         std::stable_sort(p, p + n, [&x](int i, int j) noexcept {
-            return is_na(x.view(i)) ? false : !(x.view(i) < x.view(j)).is_false();
+            return is_na(x.view(i)) ? false : !((x.view(i) < x.view(j)).is_false());
         });
     } else {
         std::sort(p, p + n, [&x](int i, int j) noexcept {
-            return is_na(x.view(i)) ? false : !(x.view(i) < x.view(j)).is_false();
+            return is_na(x.view(i)) ? false : !((x.view(i) < x.view(j)).is_false());
         });
     }
     return pv;
