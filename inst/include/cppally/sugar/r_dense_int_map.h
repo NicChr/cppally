@@ -34,23 +34,13 @@ inline bool use_int_table(int64_t range_span, r_size_t n) {
 // The table is a plain array of int, so it needs one int to mark unoccupied
 // slots: `empty_value` must be a value the caller never stores
 // (-1 when storing 0-indexed positions/ids, 0 when storing presence flags)
+
+// Builds the table over [min_val, max_val] and runs body. Both bounds must be
+// non-NA and the span already vetted as worth a table
 template <typename F>
-bool try_dense_int_map(const r_vec<r_int>& keys, int empty_value, F&& body) {
+bool run_dense_int_map(int min_val, int max_val, int empty_value, F&& body) {
 
-    r_size_t n = keys.length();
-
-    r_vec<r_int> rng = range(keys, /*na_rm=*/true);
-
-    int min_val = unwrap(rng.get(0));
-    int max_val = unwrap(rng.get(1));
-
-    // If keys had only NAs, result would also be c(NA, NA)
-    bool all_nas = is_na(min_val) && is_na(max_val);
-    int64_t range_span = all_nas ? 0 : static_cast<int64_t>(max_val) - static_cast<int64_t>(min_val);
-
-    if (all_nas || !use_int_table(range_span, n)) {
-        return false;
-    }
+    int64_t range_span = static_cast<int64_t>(max_val) - static_cast<int64_t>(min_val);
 
     // Table maps (key - min_val) -> int, NA keys get a side slot
     std::vector<int> table(range_span + 1, empty_value);
@@ -80,6 +70,38 @@ bool try_dense_int_map(const r_vec<r_int>& keys, int empty_value, F&& body) {
 
     body(try_emplace, find_or);
     return true;
+}
+
+// No table for these keys, the caller runs its own fallback
+template <typename T, typename F>
+bool try_dense_int_map(const T&, int, F&&) {
+    return false;
+}
+
+template <typename F>
+bool try_dense_int_map(const r_vec<r_int>& keys, int empty_value, F&& body) {
+
+    r_size_t n = keys.length();
+
+    r_vec<r_int> rng = range(keys, /*na_rm=*/true);
+
+    int min_val = unwrap(rng.get(0));
+    int max_val = unwrap(rng.get(1));
+
+    // If keys had only NAs, result would also be c(NA, NA)
+    bool all_nas = is_na(min_val) && is_na(max_val);
+    int64_t range_span = all_nas ? 0 : static_cast<int64_t>(max_val) - static_cast<int64_t>(min_val);
+
+    if (all_nas || !use_int_table(range_span, n)) {
+        return false;
+    }
+
+    return run_dense_int_map(min_val, max_val, empty_value, std::forward<F>(body));
+}
+
+template <typename F>
+bool try_dense_int_map(const r_vec<r_lgl>&, int empty_value, F&& body) {
+    return run_dense_int_map(0, 1, empty_value, std::forward<F>(body));
 }
 
 }

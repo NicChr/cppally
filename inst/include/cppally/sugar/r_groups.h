@@ -195,47 +195,31 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
     auto* RESTRICT p_x = x.data();
     auto* RESTRICT p_id = group_ids.data();
 
-    // Try the dense int table first (For int with small range)
+    // Try the dense int table first (For int storage with small range)
     // An all-NA vector falls through to the hash map, which handles NA keys
-    if constexpr (is<T, r_int>) {
 
-        int next_id = 0;
+    int next_id = 0;
 
-        bool done = internal::try_dense_int_map(x, -1, [&, p_x, p_id](auto&& try_emplace, auto&&) {
-            for (r_size_t i = 0; i < n; ++i) {
-                auto [id, inserted] = try_emplace(p_x[i], next_id);
-                // Branch instead of `next_id += inserted` so the common (found) path
-                // carries no dependency between iterations
-                if (inserted) {
-                    ++next_id;
-                }
-                p_id[i] = id;
+    bool done = internal::try_dense_int_map(x, -1, [&, p_x, p_id](auto&& try_emplace, auto&&) {
+        for (r_size_t i = 0; i < n; ++i) {
+            auto [id, inserted] = try_emplace(p_x[i], next_id);
+            // Branch instead of `next_id += inserted` so the common (found) path
+            // carries no dependency between iterations
+            if (inserted) {
+                ++next_id;
             }
-        });
-
-        if (done) {
-            n_groups = next_id;
-            // check if group IDs are sorted
-            sorted = true;
-            for (r_size_t i = 1; i < n; ++i) {
-              if (p_id[i] < p_id[i - 1]){
-                  sorted = false;
-                  break;
-              }
-            }
-            return groups(group_ids, n_groups, ordered, sorted);
+            p_id[i] = id;
         }
-    }
+    });
 
+    if (!done) {
+        
         ankerl::unordered_dense::map<
         key_type,
         int,
         internal::r_hash<T>,
         internal::r_hash_eq<T>
       > lookup;
-      lookup.reserve(internal::get_hash_map_reserve_size<T>(n));
-
-      int next_id = 0;
 
       for (r_size_t i = 0; i < n; ++i) {
         key_type key = p_x[i];
@@ -246,6 +230,8 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
             p_id[i] = it->second;
         }
       }
+
+    }
 
       // check if group IDs are sorted
       sorted = true;
