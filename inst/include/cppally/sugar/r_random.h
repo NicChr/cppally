@@ -24,7 +24,6 @@ inline uint64_t draw_seed() {
   return (hi << 32) ^ lo;
 }
 
-}
 
 // Runs `f` with R's RNG state loaded and writing it back at function exit.
 template <typename F>
@@ -33,10 +32,63 @@ decltype(auto) with_rng(F&& f) {
   return std::forward<F>(f)();
 }
 
+}
+
+// A random stream seeded from R once. set.seed() still determines everything,
+// but R's RNG is touched exactly once per object rather than once per draw
+struct random_stream {
+
+    using result_type = std::mt19937_64::result_type;
+
+    random_stream() : random_stream(internal::with_rng([]{ return internal::draw_seed(); })) {}
+
+    explicit random_stream(uint64_t seed) : seed_(seed), engine_(seed) {}
+
+    // A copy would be an identical stream, which is never what a caller wants -
+    // taking `random_stream` by value instead of `random_stream&` would silently produce two
+    // generators yielding the same numbers. Use split() to branch
+    random_stream(const random_stream&) = delete;
+    random_stream& operator=(const random_stream&) = delete;
+    random_stream(random_stream&&) = default;
+    random_stream& operator=(random_stream&&) = default;
+
+    // Modelling std::uniform_random_bit_generator means random_stream can be handed
+    // straight to any <random> distribution or algorithm - std::shuffle,
+    // std::normal_distribution and so on - without reaching for engine()
+    static constexpr result_type min() { return std::mt19937_64::min(); }
+    static constexpr result_type max() { return std::mt19937_64::max(); }
+    result_type operator()() { return engine_(); }
+
+    r_dbl unif(r_dbl a = r_dbl(0), r_dbl b = r_dbl(1)) {
+        return r_dbl(std::uniform_real_distribution<double>(a, b)(engine_));
+    }
+
+    template <typename index_t>
+    requires (any<index_t, int, r_size_t>)
+    index_t index(index_t a, index_t b) {
+        return std::uniform_int_distribution<index_t>(a, b)(engine_);
+    }
+
+    // The seed this stream started from. Log it to replay a run via random_stream(seed)
+    uint64_t seed() const { return seed_; }
+
+    // An independent child stream. R's RNG can't be touched from a worker
+    // thread, so parallel work builds its streams up front by splitting
+    random_stream split() { return random_stream(engine_()); }
+
+    void discard(uint64_t n) { engine_.discard(n); }
+
+    std::mt19937_64& engine() { return engine_; }
+
+private:
+    uint64_t seed_;
+    std::mt19937_64 engine_;
+};
+
 // Sample indices with replacement.
 template <typename index_t>
 requires (any<index_t, int, r_size_t>)
-auto sample_indices_with_replacement(index_t n, index_t size, uint64_t seed) {
+auto sample_indices_with_replacement(index_t n, index_t size, random_stream& r) {
 
     using data_t = as_r_scalar_t<index_t>;
 
@@ -52,27 +104,24 @@ auto sample_indices_with_replacement(index_t n, index_t size, uint64_t seed) {
         return r_vec<data_t>();
     }
 
-    std::mt19937_64 rng(seed);
-    std::uniform_int_distribution<index_t> dist(0, n - 1);
-
     r_vec<data_t> out(size);
     for (index_t i = 0; i < size; ++i){
-        out.set(i, data_t(dist(rng)));
+        out.set(i, data_t(r.index(0, n - 1)));
     }
     return out;
 }
 template <typename index_t>
 requires (any<index_t, int, r_size_t>)
 auto sample_indices_with_replacement(index_t n, index_t size) {
-    uint64_t seed = with_rng([]{ return internal::draw_seed(); });
-    return sample_indices_with_replacement(n, size, seed);
+    random_stream r;
+    return sample_indices_with_replacement(n, size, r);
 }
 
 // Sample indices without replacement.
 // Partial Fisher-Yates over an identity array that is never materialised.
 template <typename index_t>
 requires (any<index_t, int, r_size_t>)
-auto sample_indices_without_replacement(index_t n, index_t size, uint64_t seed) {
+auto sample_indices_without_replacement(index_t n, index_t size, random_stream& r) {
 
     using data_t = as_r_scalar_t<index_t>;
 
@@ -92,10 +141,6 @@ auto sample_indices_without_replacement(index_t n, index_t size, uint64_t seed) 
         return r_vec<data_t>();
     }
 
-    std::mt19937_64 rng(seed);
-    std::uniform_int_distribution<index_t> dist;
-    using param_t = typename std::uniform_int_distribution<index_t>::param_type;
-
     // position -> value, only where that value is no longer the identity
     ankerl::unordered_dense::map<index_t, index_t> swapped;
     swapped.reserve(static_cast<std::size_t>(size));
@@ -103,7 +148,7 @@ auto sample_indices_without_replacement(index_t n, index_t size, uint64_t seed) 
     r_vec<data_t> out(size);
 
     for (index_t i = 0; i < size; ++i){
-        index_t j = dist(rng, param_t(i, n - 1));
+        index_t j = r.index(i, n - 1);
 
         auto it_j = swapped.find(j);
         index_t val_j = it_j == swapped.end() ? j : it_j->second;
@@ -121,8 +166,8 @@ auto sample_indices_without_replacement(index_t n, index_t size, uint64_t seed) 
 template <typename index_t>
 requires (any<index_t, int, r_size_t>)
 auto sample_indices_without_replacement(index_t n, index_t size) {
-    uint64_t seed = with_rng([]{ return internal::draw_seed(); });
-    return sample_indices_without_replacement(n, size, seed);
+    random_stream r;
+    return sample_indices_without_replacement(n, size, r);
 }
 
 }
