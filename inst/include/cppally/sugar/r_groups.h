@@ -221,6 +221,8 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
         internal::r_hash_eq<T>
       > lookup;
 
+      lookup.reserve(internal::get_hash_map_reserve_size<T>(n));
+
       for (r_size_t i = 0; i < n; ++i) {
         key_type key = p_x[i];
         auto [it, inserted] = lookup.try_emplace(key, next_id);
