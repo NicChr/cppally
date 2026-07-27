@@ -40,11 +40,6 @@ r_vec<r_int> order_cmp(const T& x, bool stable = true) {
     return pv;
 }
 
-// Exact whole-number test
-inline bool is_exact_whole(double x) noexcept {
-    return (std::trunc(x) == x) && !std::isinf(x);
-}
-
 }
 
 // 0-indexed ordering permutation vector that represents in sequential order, 
@@ -67,7 +62,6 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
     // ----------------------------------------------------------------------
 
     auto rng = range(x, true);
-    auto* RESTRICT px = x.data();
     auto min_val = rng.get(0), max_val = rng.get(1);
 
     // Range is NA only when every value is NA -> sequential indices
@@ -87,6 +81,9 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
 
     std::size_t range_size = 0;
     bool usable;
+
+    const auto* RESTRICT p_x = x.data();
+
     if constexpr (CppFloatType<base_t>) {
         double span = static_cast<double>(hi) - static_cast<double>(lo);
         usable = span >= 0.0 && span < static_cast<double>(range_cap);
@@ -97,8 +94,8 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
                 usable = false;
             } else {
                 for (uint32_t i = 0; i < n; ++i) {
-                    base_t v = px[i];
-                    if (!is_na(v) && !internal::is_exact_whole(v - lo)) {
+                    base_t v = p_x[i];
+                    if (!is_na(v) && !internal::double_is_int_like(v - lo)) {
                         usable = false;
                         break;
                     }
@@ -124,7 +121,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         // First pass: count occurrences (ignore NAs)
         bool has_nas = false;
         for (uint32_t i = 0; i < n; ++i) {
-            base_t v = px[i];
+            base_t v = p_x[i];
             if (!is_na(v)) {
                 counts[static_cast<std::size_t>(v - lo)]++;
             } else {
@@ -144,7 +141,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         r_vec<r_int> out(static_cast<r_size_t>(n));
         int* RESTRICT p_out = out.data();
         for (uint32_t i = 0; i < n; ++i) {
-            base_t v = px[i];
+            base_t v = p_x[i];
             if (!is_na(v)) {
                 p_out[counts[static_cast<std::size_t>(v - lo)]++] = static_cast<int>(i);
             }
@@ -153,7 +150,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         // Append NAs at end (preserving input order)
         if (has_nas) {
             for (uint32_t i = 0; i < n; ++i) {
-                if (is_na(px[i])) {
+                if (is_na(p_x[i])) {
                     p_out[total++] = static_cast<int>(i);
                 }
             }
@@ -163,7 +160,6 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
 
     r_vec<r_int> out(static_cast<r_size_t>(n));
     int* RESTRICT p_out = out.data();
-    const auto* RESTRICT p_x = x.data();
 
     using unsigned_t = decltype(ska_sort::detail::to_unsigned_or_bool(std::declval<base_t>()));
 

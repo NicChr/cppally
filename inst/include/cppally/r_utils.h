@@ -73,6 +73,14 @@ constexpr bool numeric_can_be_cast_without_complete_loss(From x) noexcept {
   }
 }
 
+// Exact whole-number test
+// inline bool is_exact_whole(double x) noexcept {
+//     return (std::trunc(x) == x) && !std::isinf(x);
+// }
+inline bool double_is_int_like(double x) noexcept {
+    return numeric_can_be_cast_without_complete_loss<int>(x) && static_cast<double>(static_cast<int>(x)) == x;
+}
+
 template <typename T, typename U>
 inline constexpr bool between_impl(const T x, const U lo, const U hi) {
   return x >= lo && x <= hi;
