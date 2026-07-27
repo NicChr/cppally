@@ -104,6 +104,41 @@ bool try_dense_int_map(const r_vec<r_lgl>&, int empty_value, F&& body) {
     return run_dense_int_map(0, 1, empty_value, std::forward<F>(body));
 }
 
+// template <typename F>
+// bool try_dense_int_map(const r_vec<r_dbl>& keys, int empty_value, F&& body) {
+
+//     // Do all doubles fit in int and are exact whole numbers?
+//     bool keys_are_int_like = keys.reduce([]
+//         (bool acc, r_dbl curr){
+//             return !is_na(curr) && internal::double_is_int_like(unwrap(curr)) && !is_na(internal::as_int(curr)) ? keep(acc) : done(false);
+//         }, 
+//         /*init =*/ true, 
+//         /*na_skip =*/ false
+//     );
+
+//     if (!keys_are_int_like){
+//         return false;
+//     }
+
+//     r_size_t n = keys.length();
+
+//     if (n == 0){
+//         return false;
+//     }
+
+//     auto rng = range(keys, /*na_rm=*/false);
+
+//     auto min_val = unwrap(rng.get(0));
+//     auto max_val = unwrap(rng.get(1));
+//     int64_t range_span = static_cast<int64_t>(max_val) - static_cast<int64_t>(min_val);
+
+//     if (!use_int_table(range_span, n)) {
+//         return false;
+//     }
+
+//     return run_dense_int_map(min_val, max_val, empty_value, std::forward<F>(body));
+// }
+
 }
 
 }
