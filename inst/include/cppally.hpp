@@ -31,6 +31,7 @@
 #include <cppally/r_df.h>
 #include <cppally/r_coerce.h>
 #include <cppally/r_identical.h>
+#include <cppally/sugar/r_random.h>
 #include <cppally/sugar/r_list_helpers.h>
 #include <cppally/sugar/r_df_methods.h>
 #include <cppally/sugar/r_stats.h>
