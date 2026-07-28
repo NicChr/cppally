@@ -67,7 +67,7 @@ r_vec<r_int> test_rng_lemire_huge(uint64_t seed, r_size_t n) {
     for (r_size_t i = 0; i < n; ++i) {
         uint64_t v = rs.index(uint64_t(0), range - 1);
         if (v >= range) {
-            abort("bounded() returned a value outside [0, range)");
+            abort("index() returned a value outside [0, range)");
         }
 
         uint64_t bucket = v / bucket_width;
@@ -92,7 +92,7 @@ r_vec<r_int> test_rng_bounded_small(uint64_t seed, uint64_t range, r_size_t n) {
     for (r_size_t i = 0; i < n; ++i) {
         uint64_t v = rs.index(uint64_t(0), range - 1);
         if (v >= range) [[unlikely]] {
-            abort("bounded() returned a value outside [0, range)");
+            abort("index() returned a value outside [0, range)");
         }
         p_out[v]++;
     }

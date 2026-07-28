@@ -36,7 +36,8 @@ decltype(auto) draw_from_r(F&& f) {
 }
 
 // A random stream seeded from R once. set.seed() still determines everything,
-// but R's RNG is touched exactly once per object rather than once per draw.
+// but R's RNG is touched once per object - two unif_rand() draws - rather than
+// once per draw.
 //
 // Drives xoshiro256++ (Blackman & Vigna, public domain) via the bundled
 // Xoshiro-cpp. Not <random>: Writing R Extensions, "Portable C and C++ code",
@@ -102,7 +103,9 @@ struct random_stream {
 
   private:
 
-  // A whole number in [0, range), or the full 64-bit range when `range` is 0.
+  // A whole number in [0, range). `range == 0` means the full 64-bit range -
+  // index()'s full-width case, where span + 1 wraps. Load-bearing: without it
+  // mum() yields 0 and every full-width draw would return the lower bound.
   // Lemire's method, over ankerl's portable 128-bit multiply.
   uint64_t bounded(uint64_t range) {
       if (range == 0) [[unlikely]] {
