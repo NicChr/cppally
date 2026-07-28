@@ -43,88 +43,90 @@ decltype(auto) draw_from_r(F&& f) {
 // asks compiled code not to use the C++11 random number library
 struct random_stream {
 
-    using engine_type = XoshiroCpp::Xoshiro256PlusPlus;
-    using result_type = engine_type::result_type;
 
-    random_stream() : random_stream(draw_from_r([]{ return internal::draw_seed(); })) {}
+  using engine_type = XoshiroCpp::Xoshiro256PlusPlus;
+  using result_type = engine_type::result_type;
 
-    explicit random_stream(uint64_t seed) : seed_(seed), engine_(seed) {}
+  random_stream() : random_stream(draw_from_r([]{ return internal::draw_seed(); })) {}
 
-    // Neither copyable nor movable: both would duplicate a position, giving two
-    // generators that yield the same numbers while looking independent. 
-    // split() is the way to branch.
+  explicit random_stream(uint64_t seed) : seed_(seed), engine_(seed) {}
 
-    random_stream(const random_stream&) = delete;
-    random_stream& operator=(const random_stream&) = delete;
-    random_stream(random_stream&&) = delete;
-    random_stream& operator=(random_stream&&) = delete;
+  // Neither copyable nor movable: both would duplicate a position, giving two
+  // generators that yield the same numbers while looking independent. 
+  // split() is the way to branch.
 
-    // Modelling std::uniform_random_bit_generator means random_stream can be handed
-    // straight to any <random> distribution or algorithm - std::shuffle,
-    // std::normal_distribution and so on
-    static constexpr result_type min() { return engine_type::min(); }
-    static constexpr result_type max() { return engine_type::max(); }
-    result_type operator()() { return engine_(); }
+  random_stream(const random_stream&) = delete;
+  random_stream& operator=(const random_stream&) = delete;
+  random_stream(random_stream&&) = delete;
+  random_stream& operator=(random_stream&&) = delete;
 
-    // A whole number in [0, range), or the full 64-bit range when `range` is 0.
-    // Lemire's method, over ankerl's portable 128-bit multiply.
-    uint64_t bounded(uint64_t range) {
-        if (range == 0) [[unlikely]] {
-            return engine_();
-        }
+  // Modelling std::uniform_random_bit_generator means random_stream can be handed
+  // straight to any <random> distribution or algorithm - std::shuffle,
+  // std::normal_distribution and so on
+  static constexpr result_type min() { return engine_type::min(); }
+  static constexpr result_type max() { return engine_type::max(); }
+  result_type operator()() { return engine_(); }
 
-        uint64_t lo = engine_();
-        uint64_t hi = range;
-        ankerl::unordered_dense::detail::wyhash::mum(&lo, &hi);
+  r_dbl unif(r_dbl a = r_dbl(0), r_dbl b = r_dbl(1)) {
+    // Top 53 bits scaled into [0, 1)
+    double u = static_cast<double>(engine_() >> 11) * 0x1.0p-53;
+    return r_dbl(unwrap(a) * (1.0 - u) + unwrap(b) * u);
+  }
 
-        if (lo < range) {
-            uint64_t threshold = (~range + 1) % range; // (2^64 - range) % range
-            while (lo < threshold) {
-                lo = engine_();
-                hi = range;
-                ankerl::unordered_dense::detail::wyhash::mum(&lo, &hi);
-            }
-        }
-        return hi;
+  template <typename index_t>
+  requires (any<index_t, int, r_size_t, uint64_t>)
+  index_t index(index_t a, index_t b) {
+    if (b < a) [[unlikely]] {
+      abort("`index()`: upper bound must be >= lower bound");
     }
 
-    r_dbl unif(r_dbl a = r_dbl(0), r_dbl b = r_dbl(1)) {
-        // Top 53 bits scaled into [0, 1)
-        double u = static_cast<double>(engine_() >> 11) * 0x1.0p-53;
-        return r_dbl(unwrap(a) * (1.0 - u) + unwrap(b) * u);
+    // Width in unsigned arithmetic so a negative `a` wraps correctly
+    uint64_t span = static_cast<uint64_t>(b) - static_cast<uint64_t>(a);
+    return static_cast<index_t>(static_cast<uint64_t>(a) + bounded(span + 1u));
+  }
+
+  // The seed this stream started from. Log it to replay a run via random_stream(seed)
+  uint64_t seed() const { return seed_; }
+
+  // An independent child stream. R's RNG can't be touched from a worker
+  // thread, so parallel work builds its streams up front by splitting
+  random_stream split() { return random_stream(engine_()); }
+
+  // O(n) - there is no skip-ahead for an arbitrary n. xoshiro's jump() advances
+  // by a fixed 2^128, which is a tool for splitting streams, not for this
+  void discard(uint64_t n) {
+    while (n-- > 0) {
+      engine_();
     }
+  }
 
-    template <typename index_t>
-    requires (any<index_t, int, r_size_t>)
-    index_t index(index_t a, index_t b) {
+  private:
 
-        if (b < a) [[unlikely]] {
-            abort("`index()`: upper bound must be >= lower bound");
-        }
+  // A whole number in [0, range), or the full 64-bit range when `range` is 0.
+  // Lemire's method, over ankerl's portable 128-bit multiply.
+  uint64_t bounded(uint64_t range) {
+      if (range == 0) [[unlikely]] {
+          return engine_();
+      }
+  
+      uint64_t lo = engine_();
+      uint64_t hi = range;
+      ankerl::unordered_dense::detail::wyhash::mum(&lo, &hi);
+  
+      if (lo < range) {
+          uint64_t threshold = (~range + 1) % range; // (2^64 - range) % range
+          while (lo < threshold) {
+              lo = engine_();
+              hi = range;
+              ankerl::unordered_dense::detail::wyhash::mum(&lo, &hi);
+          }
+      }
+      return hi;
+  }
+  
+  uint64_t seed_;
+  engine_type engine_;
 
-        // Width in unsigned arithmetic so a negative `a` wraps correctly
-        uint64_t range = static_cast<uint64_t>(b) - static_cast<uint64_t>(a) + 1;
-        return static_cast<index_t>(static_cast<uint64_t>(a) + bounded(range));
-    }
-
-    // The seed this stream started from. Log it to replay a run via random_stream(seed)
-    uint64_t seed() const { return seed_; }
-
-    // An independent child stream. R's RNG can't be touched from a worker
-    // thread, so parallel work builds its streams up front by splitting
-    random_stream split() { return random_stream(engine_()); }
-
-    // O(n) - there is no skip-ahead for an arbitrary n. xoshiro's jump() advances
-    // by a fixed 2^128, which is a tool for splitting streams, not for this
-    void discard(uint64_t n) {
-        while (n-- > 0) {
-            engine_();
-        }
-    }
-
-private:
-    uint64_t seed_;
-    engine_type engine_;
 };
 
 // Out of scope for this header but you can implement R style vectorised sampling as shown below
