@@ -1,12 +1,11 @@
 #ifndef CPPALLY_R_EQUAL_H
 #define CPPALLY_R_EQUAL_H
 
-
-#include <cppally/r_vec_ops.h>
 #include <cppally/r_visit.h>
 #include <cppally/r_pmap.h>
 #include <cppally/r_length.h>
 #include <cppally/r_identical.h>
+#include <cppally/sugar/r_vec_ops.h>
 #include <cppally/sugar/r_df_methods.h>
 #include <cppally/sugar/r_recycle.h>
 #include <cppally/sugar/r_sexp_methods.h>

@@ -22,7 +22,6 @@
 #include <cppally/r_coerce_scalars.h>
 #include <cppally/r_vec.h>
 #include <cppally/r_pmap.h>
-#include <cppally/r_vec_ops.h>
 #include <cppally/r_factor.h>
 #include <cppally/r_attrs.h>
 #include <cppally/r_visit.h>
@@ -31,6 +30,7 @@
 #include <cppally/r_df.h>
 #include <cppally/r_coerce.h>
 #include <cppally/r_identical.h>
+#include <cppally/sugar/r_vec_ops.h>
 #include <cppally/sugar/r_list_helpers.h>
 #include <cppally/sugar/r_df_methods.h>
 #include <cppally/sugar/r_stats.h>

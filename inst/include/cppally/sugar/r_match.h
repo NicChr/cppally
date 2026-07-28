@@ -5,7 +5,6 @@
 #include <cppally/sugar/r_hash.h>
 #include <cppally/sugar/r_stats.h>
 #include <cppally/sugar/r_dense_int_map.h>
-#include <cppally/r_vec_ops.h>
 #include <cppally/r_pmap.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 #include <functional>
@@ -195,7 +194,7 @@ template <RVal T>
 r_factors::r_factors(const r_vec<T>& x, const r_vec<T>& levels) : value(match(x, levels)){
 
   // Need to turn 0-indexed matches into 1-indexed
-  value += r_int(1);
+  value.apply([](r_int a) { return a + r_int(1); });
 
   r_vec<r_str_view> str_levels;
   if constexpr (RStringType<T>) {
