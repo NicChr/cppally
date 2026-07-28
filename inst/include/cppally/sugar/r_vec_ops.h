@@ -195,9 +195,9 @@ inline common_math_vec_t<T, U> operator%(T&& lhs, const U& rhs) {
 
 template <typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U> && requires (T::data_type a, U::data_type b) { cppally::operator==(a, b); }) ||
-    (RAtomicVector<T> && Scalar<U> && requires (T::data_type a, U b) { cppally::operator==(a, b); }) ||
-    (Scalar<T> && RAtomicVector<U> && requires (T a, U::data_type b) { cppally::operator==(a, b); })
+    (RAtomicVector<T> && RAtomicVector<U> && requires (typename T::data_type a, typename U::data_type b) { cppally::operator==(a, b); }) ||
+    (RAtomicVector<T> && Scalar<U> && requires (typename T::data_type a, U b) { cppally::operator==(a, b); }) ||
+    (Scalar<T> && RAtomicVector<U> && requires (T a, typename U::data_type b) { cppally::operator==(a, b); })
 )
 inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) {
     CPPALLY_BINARY_OP(lhs, rhs, ==, r_vec<r_lgl>)
@@ -209,9 +209,9 @@ inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) {
 
 template <typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U> && requires (std::remove_cvref_t<T>::data_type a, U::data_type b) { cppally::operator!=(a, b); }) ||
-    (RAtomicVector<T> && Scalar<U> && requires (std::remove_cvref_t<T>::data_type a, U b) { cppally::operator!=(a, b); }) ||
-    (Scalar<T> && RAtomicVector<U> && requires (T a, U::data_type b) { cppally::operator!=(a, b); })
+    (RAtomicVector<T> && RAtomicVector<U> && requires (typename std::remove_cvref_t<T>::data_type a, typename U::data_type b) { cppally::operator!=(a, b); }) ||
+    (RAtomicVector<T> && Scalar<U> && requires (typename std::remove_cvref_t<T>::data_type a, U b) { cppally::operator!=(a, b); }) ||
+    (Scalar<T> && RAtomicVector<U> && requires (T a, typename U::data_type b) { cppally::operator!=(a, b); })
 )
 inline r_vec<r_lgl> operator!=(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
@@ -224,9 +224,9 @@ inline r_vec<r_lgl> operator!=(T&& lhs, const U& rhs) {
 }
 template <typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U> && requires (std::remove_cvref_t<T>::data_type a, U::data_type b) { cppally::operator<=(a, b); }) ||
-    (RAtomicVector<T> && Scalar<U> && requires (std::remove_cvref_t<T>::data_type a, U b) { cppally::operator<=(a, b); }) ||
-    (Scalar<T> && RAtomicVector<U> && requires (T a, U::data_type b) { cppally::operator<=(a, b); })
+    (RAtomicVector<T> && RAtomicVector<U> && requires (typename std::remove_cvref_t<T>::data_type a, typename U::data_type b) { cppally::operator<=(a, b); }) ||
+    (RAtomicVector<T> && Scalar<U> && requires (typename std::remove_cvref_t<T>::data_type a, U b) { cppally::operator<=(a, b); }) ||
+    (Scalar<T> && RAtomicVector<U> && requires (T a, typename U::data_type b) { cppally::operator<=(a, b); })
 )
 inline r_vec<r_lgl> operator<=(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
@@ -239,9 +239,9 @@ inline r_vec<r_lgl> operator<=(T&& lhs, const U& rhs) {
 }
 template <typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U> && requires (std::remove_cvref_t<T>::data_type a, U::data_type b) { cppally::operator<(a, b); }) ||
-    (RAtomicVector<T> && Scalar<U> && requires (std::remove_cvref_t<T>::data_type a, U b) { cppally::operator<(a, b); }) ||
-    (Scalar<T> && RAtomicVector<U> && requires (T a, U::data_type b) { cppally::operator<(a, b); })
+    (RAtomicVector<T> && RAtomicVector<U> && requires (typename std::remove_cvref_t<T>::data_type a, typename U::data_type b) { cppally::operator<(a, b); }) ||
+    (RAtomicVector<T> && Scalar<U> && requires (typename std::remove_cvref_t<T>::data_type a, U b) { cppally::operator<(a, b); }) ||
+    (Scalar<T> && RAtomicVector<U> && requires (T a, typename U::data_type b) { cppally::operator<(a, b); })
 )
 inline r_vec<r_lgl> operator<(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
@@ -254,9 +254,9 @@ inline r_vec<r_lgl> operator<(T&& lhs, const U& rhs) {
 }
 template <typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U> && requires (std::remove_cvref_t<T>::data_type a, U::data_type b) { cppally::operator>=(a, b); }) ||
-    (RAtomicVector<T> && Scalar<U> && requires (std::remove_cvref_t<T>::data_type a, U b) { cppally::operator>=(a, b); }) ||
-    (Scalar<T> && RAtomicVector<U> && requires (T a, U::data_type b) { cppally::operator>=(a, b); })
+    (RAtomicVector<T> && RAtomicVector<U> && requires (typename std::remove_cvref_t<T>::data_type a, typename U::data_type b) { cppally::operator>=(a, b); }) ||
+    (RAtomicVector<T> && Scalar<U> && requires (typename std::remove_cvref_t<T>::data_type a, U b) { cppally::operator>=(a, b); }) ||
+    (Scalar<T> && RAtomicVector<U> && requires (T a, typename U::data_type b) { cppally::operator>=(a, b); })
 )
 inline r_vec<r_lgl> operator>=(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
@@ -269,9 +269,9 @@ inline r_vec<r_lgl> operator>=(T&& lhs, const U& rhs) {
 }
 template <typename T, typename U>
 requires (
-    (RAtomicVector<T> && RAtomicVector<U> && requires (std::remove_cvref_t<T>::data_type a, U::data_type b) { cppally::operator>(a, b); }) ||
-    (RAtomicVector<T> && Scalar<U> && requires (std::remove_cvref_t<T>::data_type a, U b) { cppally::operator>(a, b); }) ||
-    (Scalar<T> && RAtomicVector<U> && requires (T a, U::data_type b) { cppally::operator>(a, b); })
+    (RAtomicVector<T> && RAtomicVector<U> && requires (typename std::remove_cvref_t<T>::data_type a, typename U::data_type b) { cppally::operator>(a, b); }) ||
+    (RAtomicVector<T> && Scalar<U> && requires (typename std::remove_cvref_t<T>::data_type a, U b) { cppally::operator>(a, b); }) ||
+    (Scalar<T> && RAtomicVector<U> && requires (T a, typename U::data_type b) { cppally::operator>(a, b); })
 )
 inline r_vec<r_lgl> operator>(T&& lhs, const U& rhs) {
     if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
