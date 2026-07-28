@@ -404,6 +404,42 @@ test_protect_burst_reserve <- function() {
   .Call(`_cppallytest_test_protect_burst_reserve`)
 }
 
+test_rng_raw_hex <- function(seed, n) {
+  .Call(`_cppallytest_test_rng_raw_hex`, seed, n)
+}
+
+test_rng_lemire_huge <- function(seed, n) {
+  .Call(`_cppallytest_test_rng_lemire_huge`, seed, n)
+}
+
+test_rng_bounded_small <- function(seed, range, n) {
+  .Call(`_cppallytest_test_rng_bounded_small`, seed, range, n)
+}
+
+test_rng_index <- function(seed, a, b, n) {
+  .Call(`_cppallytest_test_rng_index`, seed, a, b, n)
+}
+
+test_rng_index_extremes <- function(seed) {
+  .Call(`_cppallytest_test_rng_index_extremes`, seed)
+}
+
+test_rng_unif <- function(seed, a, b, n) {
+  .Call(`_cppallytest_test_rng_unif`, seed, a, b, n)
+}
+
+test_rng_from_r <- function(n) {
+  .Call(`_cppallytest_test_rng_from_r`, n)
+}
+
+test_rng_seed_from_r <- function() {
+  .Call(`_cppallytest_test_rng_seed_from_r`)
+}
+
+test_rng_error_inside_with_rng <- function() {
+  .Call(`_cppallytest_test_rng_error_inside_with_rng`)
+}
+
 test_by_value <- function(x) {
   .Call(`_cppallytest_test_by_value`, x)
 }
