@@ -18,7 +18,10 @@ static_assert(!std::is_copy_assignable_v<random_stream>);
 static_assert(!std::is_move_constructible_v<random_stream>);
 static_assert(!std::is_move_assignable_v<random_stream>);
 
-static_assert(!std::is_default_constructible_v<internal::xoshiro256pp>,
+// Guards our fork of Xoshiro-cpp: upstream defaults the seed argument, so
+// `Xoshiro256PlusPlus g;` compiles there and hands every such object the same
+// stream. Fires if the bundled copy is ever re-synced from upstream
+static_assert(!std::is_default_constructible_v<random_stream::engine_type>,
               "the engine must never be constructible without a seed");
 
 // ---------------------------------------------------------------------------

@@ -4,6 +4,7 @@
 #include <cppally/r_vec.h>
 #include <R_ext/Random.h>
 #include <ankerl/unordered_dense.h> // wyhash::mum - portable 64x64 -> 128 multiply
+#include <Xoshiro-cpp/XoshiroCpp.hpp> // xoshiro256++ (Ryo Suzuki, MIT)
 
 namespace cppally {
 
@@ -31,73 +32,18 @@ decltype(auto) with_rng(F&& f) {
   return std::forward<F>(f)();
 }
 
-template <int k>
-inline constexpr uint64_t rotl64(uint64_t x) noexcept {
-  static_assert(k > 0 && k < 64, "rotate count must be in (0, 64)");
-  return (x << k) | (x >> (64 - k));
-}
-
-// splitmix64 - expands one 64-bit seed into well-mixed state words
-inline uint64_t splitmix64(uint64_t& x) noexcept {
-  uint64_t z = (x += 0x9e3779b97f4a7c15ULL);
-  z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
-  z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
-  return z ^ (z >> 31);
-}
-
-// xoshiro256++ (Blackman & Vigna, public domain).
-//
-// Written out rather than using <random> so cppally pulls in no random number
-// library: Writing R Extensions, "Portable C and C++ code", asks compiled code
-// not to use the C++11 random number library.
-//
-struct xoshiro256pp {
-
-  using result_type = uint64_t;
-
-  explicit xoshiro256pp(uint64_t seed) {
-    uint64_t x = seed;
-    for (uint64_t& si : s) {
-      si = splitmix64(x);
-    }
-  }
-
-  static constexpr result_type min() { return 0; }
-  static constexpr result_type max() { return ~result_type{0}; }
-
-  result_type operator()() {
-    const uint64_t result = rotl64<23>(s[0] + s[3]) + s[0];
-    const uint64_t t = s[1] << 17;
-
-    s[2] ^= s[0];
-    s[3] ^= s[1];
-    s[1] ^= s[2];
-    s[0] ^= s[3];
-    s[2] ^= t;
-    s[3] = rotl64<45>(s[3]);
-
-    return result;
-  }
-
-  // O(n) - there is no skip-ahead for an arbitrary n. xoshiro's jump() advances
-  // by a fixed 2^128, which is a tool for splitting streams, not for this
-  void discard(uint64_t n) {
-    while (n-- > 0) {
-      (*this)();
-    }
-  }
-
-private:
-  uint64_t s[4];
-};
-
 }
 
 // A random stream seeded from R once. set.seed() still determines everything,
-// but R's RNG is touched exactly once per object rather than once per draw
+// but R's RNG is touched exactly once per object rather than once per draw.
+//
+// Drives xoshiro256++ (Blackman & Vigna, public domain) via the bundled
+// Xoshiro-cpp. Not <random>: Writing R Extensions, "Portable C and C++ code",
+// asks compiled code not to use the C++11 random number library
 struct random_stream {
 
-    using result_type = internal::xoshiro256pp::result_type;
+    using engine_type = XoshiroCpp::Xoshiro256PlusPlus;
+    using result_type = engine_type::result_type;
 
     random_stream() : random_stream(internal::with_rng([]{ return internal::draw_seed(); })) {}
 
@@ -114,9 +60,9 @@ struct random_stream {
 
     // Modelling std::uniform_random_bit_generator means random_stream can be handed
     // straight to any <random> distribution or algorithm - std::shuffle,
-    // std::normal_distribution and so on - without reaching for engine()
-    static constexpr result_type min() { return internal::xoshiro256pp::min(); }
-    static constexpr result_type max() { return internal::xoshiro256pp::max(); }
+    // std::normal_distribution and so on
+    static constexpr result_type min() { return engine_type::min(); }
+    static constexpr result_type max() { return engine_type::max(); }
     result_type operator()() { return engine_(); }
 
     // A whole number in [0, range), or the full 64-bit range when `range` is 0.
@@ -167,13 +113,17 @@ struct random_stream {
     // thread, so parallel work builds its streams up front by splitting
     random_stream split() { return random_stream(engine_()); }
 
-    void discard(uint64_t n) { engine_.discard(n); }
-
-    internal::xoshiro256pp& engine() { return engine_; }
+    // O(n) - there is no skip-ahead for an arbitrary n. xoshiro's jump() advances
+    // by a fixed 2^128, which is a tool for splitting streams, not for this
+    void discard(uint64_t n) {
+        while (n-- > 0) {
+            engine_();
+        }
+    }
 
 private:
     uint64_t seed_;
-    internal::xoshiro256pp engine_;
+    engine_type engine_;
 };
 
 // Out of scope for this header but you can implement R style vectorised sampling as shown below
