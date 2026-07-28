@@ -77,7 +77,7 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
             }
           } else {
             if (n_threads > 1){
-              OMP_PARALLEL(n_threads)
+              OMP_PARALLEL_FOR(n_threads)
               CPPALLY_DO_MAP_WITH_DATA
             } else {
               CPPALLY_DO_MAP_WITH_DATA

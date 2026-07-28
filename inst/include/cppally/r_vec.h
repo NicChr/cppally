@@ -552,7 +552,7 @@ struct r_vec {
       }
     } else {
       if (n_threads > 1){
-        OMP_PARALLEL(n_threads)
+        OMP_PARALLEL_FOR(n_threads)
         for (r_size_t i = 0; i < n; ++i){
           target.set(i, fn(i, view(i)));
         }
