@@ -162,9 +162,9 @@ r_str test_rng_seed_from_r() {
 // while the exception unwinds, so .Random.seed has to change despite the error
 [[cppally::register]]
 r_sexp test_rng_error_inside_with_rng() {
-    return internal::with_rng([]() -> r_sexp {
+    return draw_from_r([]() -> r_sexp {
         internal::draw_seed();
-        abort("deliberate error inside with_rng");
+        abort("deliberate error inside draw_from_r");
         return r_null;
     });
 }

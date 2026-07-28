@@ -24,14 +24,15 @@ inline uint64_t draw_seed() {
   return (hi << 32) ^ lo;
 }
 
-
-// Runs `f` with R's RNG state loaded and writing it back at function exit.
-template <typename F>
-decltype(auto) with_rng(F&& f) {
-  internal::rng_guard guard;
-  return std::forward<F>(f)();
 }
 
+
+// Runs `f` with R's RNG state loaded, writing it back on exit. 
+// You can safely call R's C API RNG functions with this.
+template <typename F>
+decltype(auto) draw_from_r(F&& f) {
+  internal::rng_guard guard;
+  return std::forward<F>(f)();
 }
 
 // A random stream seeded from R once. set.seed() still determines everything,
@@ -45,7 +46,7 @@ struct random_stream {
     using engine_type = XoshiroCpp::Xoshiro256PlusPlus;
     using result_type = engine_type::result_type;
 
-    random_stream() : random_stream(internal::with_rng([]{ return internal::draw_seed(); })) {}
+    random_stream() : random_stream(draw_from_r([]{ return internal::draw_seed(); })) {}
 
     explicit random_stream(uint64_t seed) : seed_(seed), engine_(seed) {}
 
