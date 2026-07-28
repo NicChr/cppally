@@ -9,6 +9,13 @@ Copyright: 2016 Malte Skarupke
 License: BSL-1.0 (Boost Software License, Version 1.0)
   https://www.boost.org/LICENSE_1_0.txt
 
+Files: inst/include/cppally/Xoshiro-cpp/XoshiroCpp.hpp
+Copyright: 2020 Ryo Suzuki
+License: MIT
+  Modified copy of Xoshiro-cpp v1.0, reduced to the xoshiro256++ generator
+  and its SplitMix64 seeder. Changes are listed at the top of the file.
+  https://github.com/Reputeless/Xoshiro-cpp/
+
 Files: inst/include/cppally/r_protect.h
 Copyright: 2020 Posit Software, PBC
 License: MIT
