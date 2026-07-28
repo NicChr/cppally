@@ -62,6 +62,7 @@
 #define OMP_THREAD_LIMIT omp_get_thread_limit()
 #define OMP_MAX_THREADS omp_get_max_threads()
 #define OMP_PARALLEL(n_threads) OMP_PRAGMA(omp parallel if ((n_threads) > 1) num_threads((n_threads)))
+#define OMP_PARALLEL_FOR(n_threads) OMP_PRAGMA(omp parallel for if ((n_threads) > 1) num_threads((n_threads)))
 #define OMP_FOR_SIMD OMP_PRAGMA(omp for simd)
 #define OMP_SIMD OMP_PRAGMA(omp simd)
 #define OMP_PARALLEL_FOR_SIMD(n_threads) OMP_PRAGMA(omp parallel for simd if(parallel: (n_threads) > 1) num_threads((n_threads)))
@@ -75,6 +76,7 @@
 #define OMP_THREAD_LIMIT 1
 #define OMP_MAX_THREADS 1
 #define OMP_PARALLEL(n_threads)
+#define OMP_PARALLEL_FOR(n_threads)
 #define OMP_SIMD
 #define OMP_FOR_SIMD
 #define OMP_PARALLEL_FOR_SIMD(n_threads)
