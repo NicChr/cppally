@@ -926,6 +926,69 @@ extern "C" SEXP _cppallytest_test_protect_burst_reserve() {
   return cpp_to_r(::test_protect_burst_reserve());
   END_CPPALLY
 }
+// test_random.cpp
+r_vec<r_str> test_rng_raw_hex(uint64_t seed, r_size_t n);
+extern "C" SEXP _cppallytest_test_rng_raw_hex(SEXP seed, SEXP n) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_rng_raw_hex(r_to_cpp<uint64_t>(seed), r_to_cpp<r_size_t>(n)));
+  END_CPPALLY
+}
+// test_random.cpp
+r_vec<r_int> test_rng_lemire_huge(uint64_t seed, r_size_t n);
+extern "C" SEXP _cppallytest_test_rng_lemire_huge(SEXP seed, SEXP n) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_rng_lemire_huge(r_to_cpp<uint64_t>(seed), r_to_cpp<r_size_t>(n)));
+  END_CPPALLY
+}
+// test_random.cpp
+r_vec<r_int> test_rng_bounded_small(uint64_t seed, uint64_t range, r_size_t n);
+extern "C" SEXP _cppallytest_test_rng_bounded_small(SEXP seed, SEXP range, SEXP n) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_rng_bounded_small(r_to_cpp<uint64_t>(seed), r_to_cpp<uint64_t>(range), r_to_cpp<r_size_t>(n)));
+  END_CPPALLY
+}
+// test_random.cpp
+r_vec<r_int> test_rng_index(uint64_t seed, int a, int b, r_size_t n);
+extern "C" SEXP _cppallytest_test_rng_index(SEXP seed, SEXP a, SEXP b, SEXP n) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_rng_index(r_to_cpp<uint64_t>(seed), r_to_cpp<int>(a), r_to_cpp<int>(b), r_to_cpp<r_size_t>(n)));
+  END_CPPALLY
+}
+// test_random.cpp
+bool test_rng_index_extremes(uint64_t seed);
+extern "C" SEXP _cppallytest_test_rng_index_extremes(SEXP seed) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_rng_index_extremes(r_to_cpp<uint64_t>(seed)));
+  END_CPPALLY
+}
+// test_random.cpp
+r_vec<r_dbl> test_rng_unif(uint64_t seed, r_dbl a, r_dbl b, r_size_t n);
+extern "C" SEXP _cppallytest_test_rng_unif(SEXP seed, SEXP a, SEXP b, SEXP n) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_rng_unif(r_to_cpp<uint64_t>(seed), r_to_cpp<r_dbl>(a), r_to_cpp<r_dbl>(b), r_to_cpp<r_size_t>(n)));
+  END_CPPALLY
+}
+// test_random.cpp
+r_vec<r_dbl> test_rng_from_r(r_size_t n);
+extern "C" SEXP _cppallytest_test_rng_from_r(SEXP n) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_rng_from_r(r_to_cpp<r_size_t>(n)));
+  END_CPPALLY
+}
+// test_random.cpp
+r_str test_rng_seed_from_r();
+extern "C" SEXP _cppallytest_test_rng_seed_from_r() {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_rng_seed_from_r());
+  END_CPPALLY
+}
+// test_random.cpp
+r_sexp test_rng_error_inside_with_rng();
+extern "C" SEXP _cppallytest_test_rng_error_inside_with_rng() {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_rng_error_inside_with_rng());
+  END_CPPALLY
+}
 // test_refs.h
 SEXP test_by_value(r_vec<r_dbl> x);
 extern "C" SEXP _cppallytest_test_by_value(SEXP x) {
@@ -1227,6 +1290,15 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_rep_each",                     (DL_FUNC) &_cppallytest_test_rep_each,                     2},
     {"_cppallytest_test_rep_len",                      (DL_FUNC) &_cppallytest_test_rep_len,                      2},
     {"_cppallytest_test_replace_at",                   (DL_FUNC) &_cppallytest_test_replace_at,                   3},
+    {"_cppallytest_test_rng_bounded_small",            (DL_FUNC) &_cppallytest_test_rng_bounded_small,            3},
+    {"_cppallytest_test_rng_error_inside_with_rng",    (DL_FUNC) &_cppallytest_test_rng_error_inside_with_rng,    0},
+    {"_cppallytest_test_rng_from_r",                   (DL_FUNC) &_cppallytest_test_rng_from_r,                   1},
+    {"_cppallytest_test_rng_index",                    (DL_FUNC) &_cppallytest_test_rng_index,                    4},
+    {"_cppallytest_test_rng_index_extremes",           (DL_FUNC) &_cppallytest_test_rng_index_extremes,           1},
+    {"_cppallytest_test_rng_lemire_huge",              (DL_FUNC) &_cppallytest_test_rng_lemire_huge,              2},
+    {"_cppallytest_test_rng_raw_hex",                  (DL_FUNC) &_cppallytest_test_rng_raw_hex,                  2},
+    {"_cppallytest_test_rng_seed_from_r",              (DL_FUNC) &_cppallytest_test_rng_seed_from_r,              0},
+    {"_cppallytest_test_rng_unif",                     (DL_FUNC) &_cppallytest_test_rng_unif,                     4},
     {"_cppallytest_test_rval_identity",                (DL_FUNC) &_cppallytest_test_rval_identity,                1},
     {"_cppallytest_test_scalar",                       (DL_FUNC) &_cppallytest_test_scalar,                       2},
     {"_cppallytest_test_scalar2",                      (DL_FUNC) &_cppallytest_test_scalar2,                      2},

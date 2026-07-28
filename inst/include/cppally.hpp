@@ -53,5 +53,6 @@
 #include <cppally/sugar/r_equal.h>
 #include <cppally/sugar/r_list_pmap.h>
 #include <cppally/sugar/r_reduce_by_group.h>
+#include <cppally/random/random_stream.h>
 
 #endif

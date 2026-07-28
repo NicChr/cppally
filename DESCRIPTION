@@ -8,6 +8,8 @@ Authors@R: c(
            comment = "Author of bundled ankerl::unordered_dense library"),
     person("Malte Skarupke", role = "cph",
            comment = "Author of bundled ska_sort library"),
+    person("Ryo Suzuki", role = "cph",
+           comment = "Author of bundled Xoshiro-cpp library"),
     person("Posit Software, PBC", role = "cph",
            comment = "SEXP protection mechanism in r_protect.h inspired by cpp11"))
 Maintainer: Nick Christofides <nick.christofides.r@gmail.com>

@@ -8,6 +8,7 @@
 #include <cppally/sugar/r_hash.h>
 #include <cppally/sugar/r_dense_int_map.h>
 #include <cppally/sugar/r_sort.h>
+#include <cppally/random/random_stream.h>
 #include <cppally/r_identical.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 #include <functional>
@@ -213,6 +214,32 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
     });
 
     if (!done) {
+
+        uint64_t hash_map_reserve_guess = internal::get_hash_map_reserve_size<T>(n);
+
+        // Estimate cardinality from sample to improve hash map reserve sizing.
+        // May not work so well on clustered data.
+        constexpr r_size_t k = 500;
+
+        if (n > (k * 200)){
+
+            random_stream rs(internal::mix_u64(static_cast<uint64_t>(n)));
+
+            ankerl::unordered_dense::set<
+                key_type,
+                internal::r_hash<T>,
+                internal::r_hash_eq<T>
+            > seen;
+            seen.reserve(static_cast<std::size_t>(k));
+
+            for (r_size_t i = 0; i < k; ++i) {
+                seen.insert(p_x[rs.index<r_size_t>(0, n - 1)]);
+            }
+
+            r_size_t d = static_cast<r_size_t>(seen.size());
+            hash_map_reserve_guess = std::max(hash_map_reserve_guess, static_cast<uint64_t>((n * d) / k));
+
+        }
         
         ankerl::unordered_dense::map<
         key_type,
@@ -221,7 +248,7 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
         internal::r_hash_eq<T>
       > lookup;
 
-      lookup.reserve(internal::get_hash_map_reserve_size<T>(n));
+      lookup.reserve(hash_map_reserve_guess);
 
       for (r_size_t i = 0; i < n; ++i) {
         key_type key = p_x[i];
