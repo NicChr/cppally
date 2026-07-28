@@ -1,6 +1,6 @@
 #include <cppally_light.hpp>
 #include <random>   // test-only: for the uniform_random_bit_generator check
-#include <cppally/sugar/r_random.h>
+#include <cppally/random/random_stream.h>
 #include <type_traits>
 
 using namespace cppally;

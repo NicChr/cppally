@@ -1,5 +1,5 @@
-#ifndef CPPALLY_R_RANDOM_H
-#define CPPALLY_R_RANDOM_H
+#ifndef CPPALLY_RANDOM_STREAM_H
+#define CPPALLY_RANDOM_STREAM_H
 
 #include <cppally/r_vec.h>
 #include <R_ext/Random.h>
