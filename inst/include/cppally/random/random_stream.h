@@ -52,14 +52,12 @@ struct random_stream {
 
   explicit random_stream(uint64_t seed) : seed_(seed), engine_(seed) {}
 
-  // Neither copyable nor movable: both would duplicate a position, giving two
-  // generators that yield the same numbers while looking independent. 
+  // Not copyable as this could yield 2 generators that produce the same numbers while looking independent. 
   // split() is the way to branch.
-
   random_stream(const random_stream&) = delete;
   random_stream& operator=(const random_stream&) = delete;
-  random_stream(random_stream&&) = delete;
-  random_stream& operator=(random_stream&&) = delete;
+  random_stream(random_stream&&) = default;
+  random_stream& operator=(random_stream&&) = default;
 
   // Modelling std::uniform_random_bit_generator means random_stream can be handed
   // straight to any <random> distribution or algorithm - std::shuffle,

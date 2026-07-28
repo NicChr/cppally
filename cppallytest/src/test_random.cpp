@@ -15,8 +15,8 @@ static_assert(std::uniform_random_bit_generator<random_stream>,
 
 static_assert(!std::is_copy_constructible_v<random_stream>);
 static_assert(!std::is_copy_assignable_v<random_stream>);
-static_assert(!std::is_move_constructible_v<random_stream>);
-static_assert(!std::is_move_assignable_v<random_stream>);
+static_assert(std::is_move_constructible_v<random_stream>);
+static_assert(std::is_move_assignable_v<random_stream>);
 
 // Guards our fork of Xoshiro-cpp: upstream defaults the seed argument, so
 // `Xoshiro256PlusPlus g;` compiles there and hands every such object the same
