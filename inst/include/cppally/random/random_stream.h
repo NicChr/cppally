@@ -1,7 +1,7 @@
 #ifndef CPPALLY_RANDOM_STREAM_H
 #define CPPALLY_RANDOM_STREAM_H
 
-#include <cppally/r_vec.h>
+#include <cppally/r_setup.h>
 #include <R_ext/Random.h>
 #include <ankerl/unordered_dense.h> // wyhash::mum - portable 64x64 -> 128 multiply
 #include <Xoshiro-cpp/XoshiroCpp.hpp> // xoshiro256++ (Ryo Suzuki, MIT)
@@ -68,10 +68,10 @@ struct random_stream {
   static constexpr result_type max() { return engine_type::max(); }
   result_type operator()() { return engine_(); }
 
-  r_dbl unif(r_dbl a = r_dbl(0), r_dbl b = r_dbl(1)) {
+  double unif(double a = 0, double b = 1) {
     // Top 53 bits scaled into [0, 1)
     double u = static_cast<double>(engine_() >> 11) * 0x1.0p-53;
-    return r_dbl(unwrap(a) * (1.0 - u) + unwrap(b) * u);
+    return a * (1.0 - u) + b * u;
   }
 
   template <typename index_t>
