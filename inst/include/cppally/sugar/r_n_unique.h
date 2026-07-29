@@ -21,18 +21,16 @@ inline r_size_t n_unique(const T& x) {
   auto* RESTRICT p_x = x.data();
 
   // Try the dense int table first (For int with small range)
-  if constexpr (is<data_t, r_int>) {
 
-    r_size_t n_unq = 0;
+  r_size_t n_unq = 0;
 
-    bool done = internal::try_dense_int_map(x, 0, [&, p_x](auto&& try_emplace, auto&&) {
-      for (r_size_t i = 0; i < n; ++i) {
-        n_unq += try_emplace(p_x[i], 1).second;
-      }
-    });
+  bool done = internal::try_dense_int_map(x, 0, [&, p_x](auto&& try_emplace, auto&&) {
+    for (r_size_t i = 0; i < n; ++i) {
+      n_unq += try_emplace(p_x[i], 1).second;
+    }
+  });
 
-    if (done) return n_unq;
-  }
+  if (done) return n_unq;
 
   // Hash map for O(n) de-duplication
   // A map with a discarded int payload instead of a set: it shares its
