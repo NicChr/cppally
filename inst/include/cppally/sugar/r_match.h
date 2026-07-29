@@ -213,19 +213,19 @@ namespace internal {
 
 struct in_tag {};
 
-template <RVal T>
+template <RComposite T>
 struct in_lhs {
-  const r_vec<T>& needles;
+  const T& needles;
 };
 
 // x IN table  expands to  x < in_tag{} > table, parsed as (x < in_tag{}) > table
-template <RVal T>
-in_lhs<T> operator<(const r_vec<T>& needles, in_tag) noexcept {
+template <RComposite T>
+in_lhs<T> operator<(const T& needles, in_tag) noexcept {
   return in_lhs<T>{ needles };
 }
 
-template <RVal T>
-r_vec<r_lgl> operator>(in_lhs<T> lhs, const r_vec<T>& table) {
+template <RComposite T>
+r_vec<r_lgl> operator>(in_lhs<T> lhs, const T& table) {
   auto matches = match(lhs.needles, table);
   return pmap_parallel_simd([](auto a) noexcept { return r_lgl(!is_na(a)); }, matches);
 }
