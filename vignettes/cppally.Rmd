@@ -383,6 +383,26 @@ r_vec<r_sexp> cpp_sequences(r_vec<r_int> size, r_vec<T> from, r_vec<T> by){
         return as<r_sexp>(sequence(a, b, c));
     }, size, from, by);
 }
+',
+get_today = '
+[[cppally::register]]
+r_date get_today(){
+  r_function sys_date("Sys.Date");
+  return as<r_date>(sys_date());
+}
+',
+base_sum_fn = '
+[[cppally::register]]
+r_function base_sum_fn(){
+  return r_function(cached_sym<"sum">(), pkg_env<"base">());
+}
+',
+
+base_sum = '
+[[cppally::register]]
+r_dbl base_sum(r_vec<r_dbl> x, bool na_rm){
+  return as<r_dbl>(base_sum_fn()(x, arg("na.rm") = na_rm));
+}
 '
 )
 
@@ -1094,6 +1114,41 @@ letter_fct <- new_factor(letters)
 
 letter_fct |>
     factor_codes()
+```
+
+## Calling R functions
+
+cppally provides the `r_function` class, which can be used to easily 
+call any R function. 
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["get_today"]])
+```
+
+```{r}
+get_today()
+```
+
+To get a function from a specific package, use `pkg_env`, a helper that 
+returns the namespace of a package. The result of `pkg_env` can be passed 
+to the `env` (or second) arg of `r_function`'s symbol and string constructors.
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["base_sum_fn"]])
+```
+
+```{r}
+base_sum_fn()
+```
+
+`r_function` also allows named arguments to be passed.
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["base_sum"]])
+```
+
+```{r}
+base_sum(c(NA, 1:3, NA), na_rm = TRUE)
 ```
 
 ## Value matching
