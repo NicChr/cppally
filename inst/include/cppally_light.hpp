@@ -2,7 +2,7 @@
 #define CPPALLY_LIGHT_HPP
 
 // cppally API - Light version
-// Includes everything except sugar header files
+// Includes core header files (scalars, vectors, factors, data frames, attributes, and visit machinery).
 // License: MIT
 // Author: Nick Christofides
 
