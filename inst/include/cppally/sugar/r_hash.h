@@ -179,36 +179,61 @@ inline std::vector<uint64_t> row_hashes(const r_df& x) {
     return row_ids;
 }
 
-// Estimate cardinality from sample to improve hash map reserve sizing.
-// May not work so well on clustered data.
-// template <RVector T, typename U>
-// uint64_t cardinality_estimate(const U *px, uint64_t data_size){
-    
-//     using data_t = typename T::data_type;
+// Estimate distinct count of population from a random sample using the bias-corrected Chao1
+// estimator: n_obs + f1(f1 - 1) / (2(f2 + 1)), where n_obs is the number of distinct
+// sampled values and f1/f2 count those seen exactly once/twice.
+template <RVector T, typename U>
+inline uint64_t unique_count_estimate(const U *px, uint64_t data_size){
 
-//     constexpr uint64_t k = 500;
+    using data_t = typename T::data_type;
 
-//     // If data is small then no need to sample
-//     if (data_size < k){
-//         return data_size;
-//     }
+    // Bigger sample size mainly reduces skew bias and variance
+    constexpr uint64_t sample_size = 512;
 
-//     // Setup RNG engine using custom seed
-//     random_stream rs(mix_u64(data_size));
-    
-//     ankerl::unordered_dense::set<
-//         U,
-//         r_hash<data_t>,
-//         r_hash_eq<data_t>
-//     > seen;
-//     seen.reserve(k);
+    // Setup RNG engine using custom seed
+    random_stream rs(mix_u64(data_size));
 
-//     for (uint64_t i = 0; i < k; ++i) {
-//         seen.insert(px[rs.index<r_size_t>(0, data_size - 1)]);
-//     }
-//     uint64_t d = seen.size();
-//     return static_cast<uint64_t>((data_size * d) / k);
-// }
+    ankerl::unordered_dense::map<
+        U,
+        uint32_t,
+        r_hash<data_t>,
+        r_hash_eq<data_t>
+    > counts;
+    counts.reserve(sample_size);
+
+    uint64_t f1 = 0;
+    uint64_t f2 = 0;
+
+    for (uint64_t i = 0; i < sample_size; ++i) {
+
+        r_size_t sample_pick = rs.index<r_size_t>(0, static_cast<r_size_t>(data_size) - 1);
+        uint32_t& count = counts[px[sample_pick]];
+        ++count;
+
+        if (count == 1) {
+            // Increase number of singletones by 1
+            ++f1;
+        } else if (count == 2) {
+            // Increase number of doubletones by 1
+            // Since this is a doubletone, we decrease the singleton count by 1
+            --f1;
+            ++f2;
+        } else if (count == 3) {
+            // We've seen this item more than 2 times, so it's neither a singleton nor a doubleton
+            // Reduce the doubleton count by 1 (and we already reduced the singleton count by 1 before)
+            --f2;
+        }
+    }
+
+    uint64_t est = counts.size();
+
+    // Bias-corrected chao1 estimator
+    if (f1 > 1) {
+        est += (f1 * (f1 - 1)) / (2 * (f2 + 1));
+    }
+
+    return std::min(est, data_size);
+}
 
 // Initial guess of unique size N/4
 // sampling is used where possible to refine the guess
@@ -231,14 +256,15 @@ inline uint64_t get_hash_map_reserve_size(const U *px, uint64_t data_size) {
         }
     }
 
-    uint64_t guess = std::bit_floor(data_size >> 2);
+    uint64_t guess = data_size / 4;
 
-    // if (data_size > (500u * 100u)){
-    //     uint64_t cardinality_est = cardinality_estimate<T>(px, data_size);
-    //     guess = std::min(guess, cardinality_est);
-    // }
+    // Only do sampling if data is large
+    if (data_size > static_cast<uint64_t>(internal::exp2<double>(16))){
+        guess = std::max(guess, unique_count_estimate<T>(px, data_size));
+    }
 
-    return std::min<uint64_t>(guess, 1ULL << 19); // Cap to 2^19
+    guess = std::min(guess, static_cast<uint64_t>(internal::exp2<double>(20))); // Bound to 2^20
+    return guess;
 }
 
 }
