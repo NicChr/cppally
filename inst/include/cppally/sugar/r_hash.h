@@ -8,6 +8,7 @@
 #include <cppally/random/random_stream.h>
 #include <bit>
 #include <algorithm>
+#include <cmath>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 
 // Hash functions + hash equality operators for RVal and RVector
@@ -179,16 +180,15 @@ inline std::vector<uint64_t> row_hashes(const r_df& x) {
     return row_ids;
 }
 
-// Estimate distinct count of population from a random sample using the bias-corrected Chao1
-// estimator: n_obs + f1(f1 - 1) / (2(f2 + 1)), where n_obs is the number of distinct
-// sampled values and f1/f2 count those seen exactly once/twice.
+// An extension of Chao's estimator of population size based on the first three capture frequency counts
+// doi:10.1016/j.csda.2011.01.017
 template <RVector T, typename U>
 inline uint64_t unique_count_estimate(const U *px, uint64_t data_size){
 
     using data_t = typename T::data_type;
 
     // Bigger sample size mainly reduces skew bias and variance
-    constexpr uint64_t sample_size = 512;
+    uint64_t sample_size = std::max(static_cast<uint64_t>(std::sqrt(2.0 * data_size)) + 1u, uint64_t(1024));
 
     // Setup RNG engine using custom seed
     random_stream rs(mix_u64(data_size));
@@ -203,6 +203,7 @@ inline uint64_t unique_count_estimate(const U *px, uint64_t data_size){
 
     uint64_t f1 = 0;
     uint64_t f2 = 0;
+    uint64_t f3 = 0;
 
     for (uint64_t i = 0; i < sample_size; ++i) {
 
@@ -211,24 +212,36 @@ inline uint64_t unique_count_estimate(const U *px, uint64_t data_size){
         ++count;
 
         if (count == 1) {
-            // Increase number of singletones by 1
+            // Increase number of singletons by 1
             ++f1;
         } else if (count == 2) {
-            // Increase number of doubletones by 1
-            // Since this is a doubletone, we decrease the singleton count by 1
+            // Increase number of doubletons by 1
+            // Since this is a doubleton, we decrease the singleton count by 1
             --f1;
             ++f2;
         } else if (count == 3) {
-            // We've seen this item more than 2 times, so it's neither a singleton nor a doubleton
-            // Reduce the doubleton count by 1 (and we already reduced the singleton count by 1 before)
+            // Increase number of tripletons by 1
+            // Decrease count of singletons and doubletons by 1
             --f2;
+            ++f3;
+        } else if (count == 4){
+            // Appears more than 3 times, hence decrease tripleton count by 1
+            --f3;
         }
     }
 
     uint64_t est = counts.size();
 
-    // Bias-corrected chao1 estimator
-    if (f1 > 1) {
+    // chao1 estimator formula
+    // chao1 = n_obs + ( (f1) * (f1-1) ) / ( 2 * (f2+1) )
+    //
+    // Lanumteang & Bohning extension - used when f2 and f3 are both > 10
+    // Extended chao1 estimator formula
+    // chao1_ext = n_obs + ( (3f1f3) / (2f2^2) ) * ( (f1^2) / (2f2) ) = n_obs + ( (3f1^3f3) / (4f2^3) )
+
+    if (f2 > 10 && f3 > 10) {
+        est += (3 * f1 * f1 * f1 * f3) / (4 * f2 * f2 * f2);
+    } else if (f1 > 1) {
         est += (f1 * (f1 - 1)) / (2 * (f2 + 1));
     }
 
