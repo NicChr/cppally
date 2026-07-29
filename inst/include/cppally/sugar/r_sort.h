@@ -235,7 +235,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         
         // Single Hash Map to assign group IDs and count frequencies
         ankerl::unordered_dense::map<SEXP, uint32_t, internal::r_hash<data_t>, internal::r_hash_eq<data_t>> lookup;
-        auto n_uniques_guess = internal::get_hash_map_reserve_size<data_t>(n);
+        auto n_uniques_guess = internal::get_hash_map_reserve_size<T>(px, n);
         lookup.reserve(n_uniques_guess);
         
         std::vector<SEXP> uniques;

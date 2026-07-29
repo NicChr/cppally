@@ -44,7 +44,7 @@ inline r_size_t n_unique(const T& x) {
     internal::r_hash_eq<data_t>
   > seen;
 
-  seen.reserve(internal::get_hash_map_reserve_size<data_t>(n));
+  seen.reserve(internal::get_hash_map_reserve_size<T>(p_x, n));
 
   for (r_size_t i = 0; i < n; ++i) {
     seen.try_emplace(p_x[i], 0);

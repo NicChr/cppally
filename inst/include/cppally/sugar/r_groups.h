@@ -216,7 +216,7 @@ inline groups make_unordered_groups(const T& x) {
 
     if (!done) {
 
-        uint64_t hash_map_reserve_guess = internal::cardinality_estimate<T>(p_x, n);
+        uint64_t hash_map_reserve_guess = internal::get_hash_map_reserve_size<T>(p_x, n);
         
         ankerl::unordered_dense::map<
         key_type,
@@ -281,7 +281,7 @@ inline groups make_unordered_groups(const r_df& x) {
 
     // Map: row-hash -> chain of (representative_row, group_id)
     ankerl::unordered_dense::map<uint64_t, std::vector<std::pair<int, int>>> lookup;
-    lookup.reserve(get_hash_map_reserve_size<r_int>(static_cast<uint64_t>(nrow)));
+    lookup.reserve(static_cast<uint64_t>(nrow / 4));
 
     int* RESTRICT p_id = group_ids.data();
     int next_id = 0;

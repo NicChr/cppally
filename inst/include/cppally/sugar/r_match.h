@@ -68,7 +68,7 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack, U no_match = n
 
   // Build hash table
   ankerl::unordered_dense::map<key_t, int_t, internal::r_hash<T>, internal::r_hash_eq<T>> lookup;
-  lookup.reserve(internal::get_hash_map_reserve_size<T>(n_haystack));
+  lookup.reserve(n_haystack / 4);
 
   for (r_size_t i = 0; i < n_haystack; ++i) {
     lookup.try_emplace(p_haystack[i], int_t(i));
@@ -158,8 +158,8 @@ inline r_vec<r_int> match(const r_df& needles, const r_df& haystack, r_int no_ma
 
     // hash -> chain of haystack row indices (insertion order preserved)
     ankerl::unordered_dense::map<uint64_t, std::vector<int>> lookup;
-    lookup.reserve(internal::get_hash_map_reserve_size<r_int>(
-        static_cast<uint64_t>(n_haystack)));
+    lookup.reserve(n_haystack / 4);
+    
     for (r_size_t j = 0; j < n_haystack; ++j) {
         lookup[h_hashes[j]].push_back(static_cast<int>(j));
     }

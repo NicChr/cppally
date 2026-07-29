@@ -179,65 +179,66 @@ inline std::vector<uint64_t> row_hashes(const r_df& x) {
     return row_ids;
 }
 
-
-// Initial guess of unique size is N/4 floored to the nearest power of 2
-template <typename T>
-inline uint64_t get_hash_map_reserve_size(uint64_t data_size) {
-    uint64_t res = std::bit_floor(data_size >> 2);
-    return std::min<uint64_t>(res, 1ULL << 19); // Cap to 2^19
-}
-
-template <>
-inline uint64_t get_hash_map_reserve_size<r_lgl>(uint64_t data_size) {
-    return std::min<uint64_t>(std::bit_floor(data_size >> 2), 4);
-}
-
 // Estimate cardinality from sample to improve hash map reserve sizing.
 // May not work so well on clustered data.
-template <RVector T, typename U>
-r_size_t cardinality_estimate(const U *px, r_size_t data_size){
+// template <RVector T, typename U>
+// uint64_t cardinality_estimate(const U *px, uint64_t data_size){
     
+//     using data_t = typename T::data_type;
+
+//     constexpr uint64_t k = 500;
+
+//     // If data is small then no need to sample
+//     if (data_size < k){
+//         return data_size;
+//     }
+
+//     // Setup RNG engine using custom seed
+//     random_stream rs(mix_u64(data_size));
+    
+//     ankerl::unordered_dense::set<
+//         U,
+//         r_hash<data_t>,
+//         r_hash_eq<data_t>
+//     > seen;
+//     seen.reserve(k);
+
+//     for (uint64_t i = 0; i < k; ++i) {
+//         seen.insert(px[rs.index<r_size_t>(0, data_size - 1)]);
+//     }
+//     uint64_t d = seen.size();
+//     return static_cast<uint64_t>((data_size * d) / k);
+// }
+
+// Initial guess of unique size N/4
+// sampling is used where possible to refine the guess
+template <RVector T, typename U>
+inline uint64_t get_hash_map_reserve_size(const U *px, uint64_t data_size) {
+
     using data_t = typename T::data_type;
     using primitive_t = unwrap_t<data_t>;
-    uint64_t hash_map_reserve_guess = get_hash_map_reserve_size<data_t>(data_size);
+
+    // Logical vectors can only have at most 3 unique elements
+    if constexpr (is<T, r_vec<r_lgl>>){
+        return 4;
+    }
 
     // If the range of possible values is small then no need to sample, we can use that range as the estimate
     if constexpr (CppIntegerType<primitive_t>){
         constexpr uint64_t span = static_cast<uint64_t>(std::numeric_limits<primitive_t>::max()) - static_cast<uint64_t>(std::numeric_limits<primitive_t>::min());
         if ((span + 1u) < 1000u){
-            return std::min(data_size, static_cast<r_size_t>(span + 1u));
+            return std::min(data_size, span + 1u);
         }
     }
 
-    constexpr r_size_t k = 500;
+    uint64_t guess = std::bit_floor(data_size >> 2);
 
-    // If data is small then no need to sample
-    if (data_size < k){
-        return hash_map_reserve_guess;
-    }
+    // if (data_size > (500u * 100u)){
+    //     uint64_t cardinality_est = cardinality_estimate<T>(px, data_size);
+    //     guess = std::min(guess, cardinality_est);
+    // }
 
-    // Only sample if data is large
-    if (data_size > (k * 100)){
-
-        // Setup RNG engine using custom seed
-        random_stream rs(mix_u64(static_cast<uint64_t>(data_size)));
-        
-        ankerl::unordered_dense::set<
-            U,
-            r_hash<data_t>,
-            r_hash_eq<data_t>
-        > seen;
-        seen.reserve(static_cast<std::size_t>(k));
-    
-        for (r_size_t i = 0; i < k; ++i) {
-            seen.insert(px[rs.index<r_size_t>(0, data_size - 1)]);
-        }
-    
-        r_size_t d = static_cast<r_size_t>(seen.size());
-        hash_map_reserve_guess = std::max(hash_map_reserve_guess, static_cast<uint64_t>((data_size * d) / k));
-    }
-
-    return hash_map_reserve_guess;
+    return std::min<uint64_t>(guess, 1ULL << 19); // Cap to 2^19
 }
 
 }
