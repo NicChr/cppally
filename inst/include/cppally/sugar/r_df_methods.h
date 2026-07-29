@@ -115,20 +115,26 @@ inline r_df r_df::get_row(int index) const {
     return r_df(out, 1, internal::no_checks_tag{});
 }
 
-// void r_df::set_row(r_size_t index, const r_df& row){
-//     int ncols = ncol();
-    
-//     if (ncols != row.ncol()) [[unlikely]] {
-//         abort("%s: `ncol()` must match `row.ncol()`", __func__);
-//     }
+inline void r_df::set_row(r_size_t index, const r_df& row){
+    int ncols = ncol();
 
-//     r_vec<r_str_view> nms = colnames();
-//     for (r_size_t i = 0; i < ncols; ++i){
-//         r_str_view colname = nms.view(i);
-//         int col_loc = col_index(colname);
-//         set_col(i, row.get_col(colname));
-//     }
-// }
+    if (ncols != row.ncol()) [[unlikely]] {
+        abort("%s: `ncol()` must match `row.ncol()`", __func__);
+    }
+    
+    if (!identical(colnames(), row.colnames())) [[unlikely]] {
+        abort("%s: `colnames()` must match `row.colnames()`", __func__);
+    }
+    
+    for (r_size_t i = 0; i < ncols; ++i){
+        r_sexp col = get_col(i);
+        r_sexp cell = row.get_col(i);
+        r_sexp_mutate(col, [&]<RComposite col_t>(col_t& c){
+            c.set(0, view_as<col_t>(cell).get(0));
+        });
+        value.set(i, col);
+    }
+}
 
 template <internal::RSubscript U>
 inline r_df r_df::select(const r_vec<U>& cols) const {
@@ -149,33 +155,6 @@ inline r_vec<r_str> r_df::rownames() const {
 //     // If col types aren't the same..
 //     //     abort("(compatible_dfs): `x` and `y` must have the same nrows");
 //     // }
-// }
-
-// template <internal::RSubscript T, internal::RSubscript U>
-// void r_df::fill(const r_vec<T>& row_indices, const r_vec<U>& col_indices, const r_df& replacement) {
-
-//     r_vec<r_int> row_locs = internal::clean_locs(row_indices, *this);
-//     r_vec<r_int> col_locs = internal::clean_locs(col_indices, *this);
-
-//     int ncols = col_locs.length();
-
-//     if (ncols != replacement.ncol()){
-//         abort("fill: `replacement.ncol()` must equal data frame ncol");
-//     }
-
-//     for (int i = 0; i < ncols; ++i){
-//         int col_loc = col_locs.get(i);
-//         r_sexp col = get_col(col_loc);
-//         cppally::fill(col, row_locs, replacement.value.view(i));
-//     }
-
-// }
-
-// template <internal::RSubscript T>
-// void r_df::fill(const r_vec<T>& row_indices, const r_df& replacement) {
-//     r_vec<r_int> col_locs(ncol());
-//     col_locs.iota();
-//     this->fill(row_indices, col_locs, replacement);
 // }
 
 // Make in-line data frame

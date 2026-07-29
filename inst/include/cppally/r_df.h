@@ -228,6 +228,7 @@ struct r_df {
     template <internal::RSubscript U>
     r_df select(const r_vec<U>& cols) const;
     r_df get_row(int index) const;
+    void set_row(r_size_t index, const r_df& row);
 
     r_sexp get_col(int index) const {
         return value.get(index);
@@ -273,14 +274,15 @@ struct r_df {
         set_col(r_str(colname), col);
     }
 
-    // r_df get(r_size_t index) const {
-    //     return get_row(index);
-    // }
-    // r_df view(r_size_t index) const {
-    //     return get_row(index);
-    // }
-
-    // void set_row(r_size_t index, const r_df& row);
+    r_df get(r_size_t index) const {
+        return get_row(index);
+    }
+    r_df view(r_size_t index) const {
+        return get(index);
+    }
+    void set(r_size_t index, const r_df& row) {
+        set_row(index, row);
+    }
 
 };
 
