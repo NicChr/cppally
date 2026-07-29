@@ -180,10 +180,11 @@ inline std::vector<std::function<bool(int, int)>> build_col_eq_probes(const r_df
     return eqs;
 }
 
-template <RVal T>
-inline groups make_unordered_groups(const r_vec<T>& x) {
+template <RVector T>
+inline groups make_unordered_groups(const T& x) {
 
-    using key_type = unwrap_t<T>;
+    using data_t = typename T::data_type;
+    using key_type = unwrap_t<data_t>;
     r_size_t n = x.length();
 
     if (n == 0) return groups(r_vec<r_int>(), 0, false, true);
@@ -215,37 +216,13 @@ inline groups make_unordered_groups(const r_vec<T>& x) {
 
     if (!done) {
 
-        uint64_t hash_map_reserve_guess = internal::get_hash_map_reserve_size<T>(n);
-
-        // Estimate cardinality from sample to improve hash map reserve sizing.
-        // May not work so well on clustered data.
-        constexpr r_size_t k = 500;
-
-        if (n > (k * 200)){
-
-            random_stream rs(internal::mix_u64(static_cast<uint64_t>(n)));
-
-            ankerl::unordered_dense::set<
-                key_type,
-                internal::r_hash<T>,
-                internal::r_hash_eq<T>
-            > seen;
-            seen.reserve(static_cast<std::size_t>(k));
-
-            for (r_size_t i = 0; i < k; ++i) {
-                seen.insert(p_x[rs.index<r_size_t>(0, n - 1)]);
-            }
-
-            r_size_t d = static_cast<r_size_t>(seen.size());
-            hash_map_reserve_guess = std::max(hash_map_reserve_guess, static_cast<uint64_t>((n * d) / k));
-
-        }
+        uint64_t hash_map_reserve_guess = internal::cardinality_estimate<T>(p_x, n);
         
         ankerl::unordered_dense::map<
         key_type,
         int,
-        internal::r_hash<T>,
-        internal::r_hash_eq<T>
+        internal::r_hash<data_t>,
+        internal::r_hash_eq<data_t>
       > lookup;
 
       lookup.reserve(hash_map_reserve_guess);
@@ -377,9 +354,9 @@ inline groups make_ordered_groups(const r_df& x) {
 
 
 
-template <RVal T>
-inline groups make_ordered_groups(const r_vec<T>& x) {
-    if constexpr (!RSortableType<T>){
+template <RVector T>
+inline groups make_ordered_groups(const T& x) {
+    if constexpr (!RSortableType<typename T::data_type>){
         return make_unordered_groups(x);
     } else {
         return make_groups_from_order(x, order(x, /*preserve_ties = */ false));
