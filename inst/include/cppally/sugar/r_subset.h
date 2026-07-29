@@ -195,22 +195,34 @@ inline r_factors subset(const r_factors& x, const r_vec<U>& indices, bool invert
 template <internal::RSubscript U>
 inline r_sexp subset(const r_sexp& x, const r_vec<U>& indices, bool invert = false, bool check = true);
 
-inline r_df subset(const r_df& x, const r_vec<r_int>& indices, bool invert = false, bool check = true){
+template <internal::RSubscript U>
+requires (!RStringType<U>)
+inline r_df subset(const r_df& x, const r_vec<U>& indices, bool invert = false, bool check = true){
 
-  int ncol = x.ncol();
+  if (indices.is_null()){
+    return x;
+  }
 
-  if (ncol == 0){
-    // We don't have a function atm that tells us what the resulting size should be here
-    // So subset a dummy vector
-    r_vec<r_int> dummy(x.nrow()); // Uninitialised dummy vector
-    return r_df(r_vec<r_sexp>(), false, subset(dummy, indices, invert, check).length());
+  // Normalise logicals and `invert` here so each column sees plain positive indices
+  if constexpr (RLogicalType<U>){
+    return subset(x, internal::clean_locs<r_int>(indices, x), invert, /*check=*/ false);
+  } else {
+    if (invert){
+      return subset(x, internal::exclude_locs<r_int>(indices, x.nrow()), /*invert=*/ false, /*check=*/ false);
+    }
+
+    int ncol = x.ncol();
+
+    if (ncol == 0){
+      return r_df(r_vec<r_sexp>(), false, static_cast<int>(indices.length()));
+    }
+    r_vec<r_sexp> out(ncol);
+    for (int i = 0; i < ncol; ++i){
+      out.set(i, subset(x.value.view(i), indices, /*invert=*/ false, check));
+    }
+    out.set_names(x.colnames());
+    return r_df(out, false, length(out.view(0)));
   }
-  r_vec<r_sexp> out(ncol);
-  for (int i = 0; i < ncol; ++i){
-    out.set(i, subset(x.value.view(i), indices, invert, check));
-  }
-  out.set_names(x.colnames());
-  return r_df(out, false, length(out.view(0)));
 }
 
 }
