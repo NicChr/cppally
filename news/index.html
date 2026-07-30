@@ -46,6 +46,7 @@
 <ul><li><p>Fixed a bug where matching on integer vectors with a non <code>NA</code> <code>nomatch</code> value would still return <code>NA</code>.</p></li>
 <li><p>Fixed a bug where getting <code>r_df</code> rows would return CHARSXP instead of STRSXP.</p></li>
 <li><p>Fixed a bug where <code>r_vec::apply</code> would throw a compiler error when called on lists and character vectors.</p></li>
+<li><p>Fixed a bug where the wrong OMP pragma was being used for non-SIMD parallel for loops.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
@@ -59,6 +60,11 @@
 <h3 id="r_function-development-version">r_function<a class="anchor" aria-label="anchor" href="#r_function-development-version"></a></h3>
 <ul><li><p>New class <code>r_function</code> to safely call R functions from C++.</p></li>
 <li><p>New helper <code>pkg_env</code> to return the environment of a package, allowing users to easily retrieve functions from specific packages, e.g. <code>r_function("foo", pkg_env&lt;"bar"&gt;())</code>.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="random_stream-development-version">random_stream<a class="anchor" aria-label="anchor" href="#random_stream-development-version"></a></h3>
+<ul><li><p>A new class <code>random_stream</code>, allowing one to use C++ random number generators, while preserving reproducibility from R’s seed.</p></li>
+<li><p><code>draw_from_r</code> can be used to safely used to call scalar RNG functions from ‘Rmath.h’.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="improvements-development-version">Improvements<a class="anchor" aria-label="anchor" href="#improvements-development-version"></a></h3>

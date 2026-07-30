@@ -11,6 +11,9 @@
 - **Malte Skarupke**. Copyright holder.  
   Author of bundled ska_sort library
 
+- **Ryo Suzuki**. Copyright holder.  
+  Author of bundled Xoshiro-cpp library
+
 - **Posit Software, PBC**. Copyright holder.  
   SEXP protection mechanism in r_protect.h inspired by cpp11
 

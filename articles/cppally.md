@@ -919,6 +919,61 @@ letter_fct |>
 #> [26] 26
 ```
 
+## Calling R functions
+
+cppally provides the `r_function` class, which can be used to easily
+call any R function.
+
+``` cpp
+
+[[cppally::register]]
+r_date get_today(){
+  r_function sys_date("Sys.Date");
+  return as<r_date>(sys_date());
+}
+```
+
+``` r
+
+get_today()
+#> [1] "2026-07-30"
+```
+
+To get a function from a specific package, use `pkg_env`, a helper that
+returns the namespace of a package. The result of `pkg_env` can be
+passed to the `env` (or second) arg of `r_function`’s symbol and string
+constructors.
+
+``` cpp
+
+[[cppally::register]]
+r_function base_sum_fn(){
+  return r_function(cached_sym<"sum">(), pkg_env<"base">());
+}
+```
+
+``` r
+
+base_sum_fn()
+#> function (..., na.rm = FALSE)  .Primitive("sum")
+```
+
+`r_function` also allows named arguments to be passed.
+
+``` cpp
+
+[[cppally::register]]
+r_dbl base_sum(r_vec<r_dbl> x, bool na_rm){
+  return as<r_dbl>(base_sum_fn()(x, arg("na.rm") = na_rm));
+}
+```
+
+``` r
+
+base_sum(c(NA, 1:3, NA), na_rm = TRUE)
+#> [1] 6
+```
+
 ## Value matching
 
 Use `r_vec` member [`find()`](https://rdrr.io/r/utils/apropos.html) to
@@ -1384,8 +1439,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique       709µs    791µs     1122.    1.38MB     33.7
-#> 2 cppally_n_unique    126µs    127µs     7748.        0B      0
+#> 1 base_n_unique       745µs   1.27ms      787.    1.38MB     23.1
+#> 2 cppally_n_unique    126µs 126.82µs     7721.        0B      0
 ```
 
 More useful sugar functions

@@ -13,6 +13,9 @@
 - Fixed a bug where `r_vec::apply` would throw a compiler error when
   called on lists and character vectors.
 
+- Fixed a bug where the wrong OMP pragma was being used for non-SIMD
+  parallel for loops.
+
 ### Breaking changes
 
 - Sequences no longer abort on overflow, but instead silently return
@@ -38,6 +41,14 @@
 - New helper `pkg_env` to return the environment of a package, allowing
   users to easily retrieve functions from specific packages,
   e.g. `r_function("foo", pkg_env<"bar">())`.
+
+### random_stream
+
+- A new class `random_stream`, allowing one to use C++ random number
+  generators, while preserving reproducibility from R’s seed.
+
+- `draw_from_r` can be used to safely used to call scalar RNG functions
+  from ‘Rmath.h’.
 
 ### Improvements
 
