@@ -44,7 +44,6 @@ decltype(auto) draw_from_r(F&& f) {
 // asks compiled code not to use the C++11 random number library
 struct random_stream {
 
-
   using engine_type = XoshiroCpp::Xoshiro256PlusPlus;
   using result_type = engine_type::result_type;
 
@@ -72,6 +71,9 @@ struct random_stream {
     return a * (1.0 - u) + b * u;
   }
 
+  // Returns a random index in [a, b] : b > a
+  // Lemire's divisionless method along with ankerl's portable 128bit multiply
+  // makes this fast, portable, and hence reproducible.
   template <typename index_t>
   requires (any<index_t, int, r_size_t, uint64_t>)
   index_t index(index_t a, index_t b) {
