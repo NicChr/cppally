@@ -97,6 +97,9 @@ initial reserve size for the hash maps involved.
 This improves performance on high-cardinality data, 
 where it avoids repeatedly resizing the map as new keys are added.
 
+- Algorithms that utilise hashing should now see speed improvements for strings 
+in particular, as SEXP type checking is now skipped for hashing specifically.
+
 ## New features
 
 - New `copy` member for `r_vec`, `r_factors` and `r_df`. `copy` shallow 
