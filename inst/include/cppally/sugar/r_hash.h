@@ -221,7 +221,7 @@ inline uint64_t unique_count_estimate(const U *px, uint64_t data_size){
             ++f2;
         } else if (count == 3) {
             // Increase number of tripletons by 1
-            // Decrease count of singletons and doubletons by 1
+            // Decrease count of doubletons by 1
             --f2;
             ++f3;
         } else if (count == 4){
