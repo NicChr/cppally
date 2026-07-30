@@ -51,7 +51,7 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack, U no_match = n
   auto* RESTRICT p_out = out.data();
 
   // Try the dense int table first (small-range int haystack)
-  if constexpr (is<U, r_int> && is<T, r_int>) {
+  if constexpr (is<U, r_int>) {
     bool done = internal::try_dense_int_map(haystack, -1, [&, p_needles, p_haystack, p_out](auto&& try_emplace, auto&& find_or) {
 
       // Build table: first occurrence wins
@@ -68,7 +68,7 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack, U no_match = n
 
   // Build hash table
   ankerl::unordered_dense::map<key_t, int_t, internal::r_hash<T>, internal::r_hash_eq<T>> lookup;
-  lookup.reserve(n_haystack / 4);
+  lookup.reserve(internal::get_hash_map_reserve_size<r_vec<T>>(p_haystack, n_haystack));
 
   for (r_size_t i = 0; i < n_haystack; ++i) {
     lookup.try_emplace(p_haystack[i], int_t(i));
