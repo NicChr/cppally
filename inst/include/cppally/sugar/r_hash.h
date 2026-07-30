@@ -182,10 +182,13 @@ inline std::vector<uint64_t> row_hashes(const r_df& x) {
 
 // An extension of Chao's estimator of population size based on the first three capture frequency counts
 // doi:10.1016/j.csda.2011.01.017
-template <RVector T, typename U>
-inline uint64_t unique_count_estimate(const U *px, uint64_t data_size){
-
-    using data_t = typename T::data_type;
+template <
+    typename key,
+    typename storage,
+    typename hash,
+    typename comparator
+>
+inline uint64_t unique_count_estimate(const key *px, uint64_t data_size){
 
     // Bigger sample size mainly reduces skew bias and variance
     uint64_t sample_size = std::max(static_cast<uint64_t>(std::sqrt(2.0 * data_size)) + 1u, uint64_t(1024));
@@ -193,12 +196,7 @@ inline uint64_t unique_count_estimate(const U *px, uint64_t data_size){
     // Setup RNG engine using custom seed
     random_stream rs(mix_u64(data_size));
 
-    ankerl::unordered_dense::map<
-        U,
-        uint32_t,
-        r_hash<data_t>,
-        r_hash_eq<data_t>
-    > counts;
+    ankerl::unordered_dense::map<key, storage, hash, comparator> counts;
     counts.reserve(sample_size);
 
     uint64_t f1 = 0;
@@ -208,7 +206,7 @@ inline uint64_t unique_count_estimate(const U *px, uint64_t data_size){
     for (uint64_t i = 0; i < sample_size; ++i) {
 
         r_size_t sample_pick = rs.index<r_size_t>(0, static_cast<r_size_t>(data_size) - 1);
-        uint32_t& count = counts[px[sample_pick]];
+        storage& count = counts[px[sample_pick]];
         ++count;
 
         if (count == 1) {
@@ -273,7 +271,7 @@ inline uint64_t get_hash_map_reserve_size(const U *px, uint64_t data_size) {
 
     // Only do sampling if data is large
     if (data_size > static_cast<uint64_t>(internal::exp2<double>(16))){
-        guess = std::max(guess, unique_count_estimate<T>(px, data_size));
+        guess = std::max(guess, unique_count_estimate<U, uint32_t, r_hash<data_t>, r_hash_eq<data_t>>(px, data_size));
     }
 
     guess = std::min(guess, static_cast<uint64_t>(internal::exp2<double>(20))); // Bound to 2^20
