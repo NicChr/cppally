@@ -11,10 +11,10 @@ generate_makevars <- function (
     preserve_altrep, check_factors, check_data_frames, copy_on_modify
 ){
   out <- c(
-    sprintf("CXX_STD=%s", cxx_std),
-    sprintf("PKG_CPPFLAGS=%s", paste0(includes, collapse = " ")),
     "PKG_CXXFLAGS= $(SHLIB_OPENMP_CXXFLAGS)",
-    "PKG_LIBS= $(SHLIB_OPENMP_CXXFLAGS)"
+    "PKG_LIBS= $(SHLIB_OPENMP_CXXFLAGS)",
+    sprintf("CXX_STD=%s", cxx_std),
+    sprintf("PKG_CPPFLAGS=%s", paste0(includes, collapse = " "))
   )
   if (preserve_altrep){
     out[2] <- paste(out[2], "-DCPPALLY_PRESERVE_ALTREP")
