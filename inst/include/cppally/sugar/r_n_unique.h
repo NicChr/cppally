@@ -46,10 +46,6 @@ inline r_size_t n_unique(const T& x) {
 
   for (r_size_t i = 0; i < n; ++i) {
     seen.try_emplace(p_x[i], 0);
-    // Since r_lgl can be either true, false or NA, we can safely return early if n_unique == 3
-    if constexpr (is<data_t, r_lgl>){
-      if (seen.size() == 3) return 3;
-    }
   }
   return seen.size();
 }
