@@ -32,12 +32,9 @@ inline r_size_t n_unique(const T& x) {
 
   if (done) return n_unq;
 
-  // Hash map for O(n) de-duplication
-  // A map with a discarded int payload instead of a set: it shares its
-  // instantiation with the maps in make_groups()/match()
-  ankerl::unordered_dense::map<
+  // Hash set for O(n) de-duplication
+  ankerl::unordered_dense::set<
     unwrap_t<data_t>,
-    int,
     internal::r_hash<data_t>,
     internal::r_hash_eq<data_t>
   > seen;
@@ -45,7 +42,7 @@ inline r_size_t n_unique(const T& x) {
   seen.reserve(internal::get_hash_map_reserve_size<T>(p_x, n));
 
   for (r_size_t i = 0; i < n; ++i) {
-    seen.try_emplace(p_x[i], 0);
+    seen.emplace(p_x[i]);
   }
   return seen.size();
 }
