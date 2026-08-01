@@ -11,27 +11,27 @@ generate_makevars <- function (
     preserve_altrep, check_factors, check_data_frames, copy_on_modify
 ){
   out <- c(
-    "PKG_CXXFLAGS= $(SHLIB_OPENMP_CXXFLAGS)",
-    "PKG_LIBS= $(SHLIB_OPENMP_CXXFLAGS)",
-    sprintf("CXX_STD=%s", cxx_std),
-    sprintf("PKG_CPPFLAGS=%s", paste0(includes, collapse = " "))
+    PKG_CXXFLAGS = "PKG_CXXFLAGS= $(SHLIB_OPENMP_CXXFLAGS)",
+    PKG_LIBS = "PKG_LIBS= $(SHLIB_OPENMP_CXXFLAGS)",
+    CXX_STD = sprintf("CXX_STD=%s", cxx_std),
+    PKG_CPPFLAGS = sprintf("PKG_CPPFLAGS=%s", paste0(includes, collapse = " "))
   )
   if (preserve_altrep){
-    out[2] <- paste(out[2], "-DCPPALLY_PRESERVE_ALTREP")
+    out["PKG_CPPFLAGS"] <- paste(out["PKG_CPPFLAGS"], "-DCPPALLY_PRESERVE_ALTREP")
   }
   if (check_factors){
-   out[2] <- paste(out[2], "-DCPPALLY_CHECK_FACTORS")
+    out["PKG_CPPFLAGS"] <- paste(out["PKG_CPPFLAGS"], "-DCPPALLY_CHECK_FACTORS")
   }
   if (check_data_frames){
-    out[2] <- paste(out[2], "-DCPPALLY_CHECK_DATA_FRAMES")
+    out["PKG_CPPFLAGS"] <- paste(out["PKG_CPPFLAGS"], "-DCPPALLY_CHECK_DATA_FRAMES")
   }
   if (copy_on_modify){
-    out[2] <- paste(out[2], "-DCPPALLY_COPY_ON_MODIFY")
+    out["PKG_CPPFLAGS"] <- paste(out["PKG_CPPFLAGS"], "-DCPPALLY_COPY_ON_MODIFY")
   }
   if (debug) {
     out <- c(out, "override CXXFLAGS += -O0")
   }
-  out
+  unname(out)
 }
 
 generate_cpp_name <- function (name, loaded_dlls = c("cppally", names(getLoadedDLLs()))){
