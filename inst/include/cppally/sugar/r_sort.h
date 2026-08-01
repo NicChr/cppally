@@ -89,7 +89,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         usable = span >= 0.0 && span < static_cast<double>(range_cap);
         if (usable) {
             constexpr base_t EXACT_LIMIT =
-                static_cast<base_t>(uint64_t(1) << std::numeric_limits<base_t>::digits);
+                static_cast<base_t>(uint64_t(1) << (std::numeric_limits<base_t>::digits - 1)) * 2;
             if (lo < -EXACT_LIMIT || hi > EXACT_LIMIT) {
                 usable = false;
             } else {
