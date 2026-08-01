@@ -10,6 +10,7 @@
 #include <cppally/r_coerce_scalars.h>
 #include <cppally/r_hash_names.h>
 #include <algorithm>
+#include <cstring>
 #include <utility>
 
 namespace cppally {
@@ -532,11 +533,11 @@ struct r_vec {
     if constexpr (RVectorisable<T> && RVectorisable<U>){
 
     int n_threads = parallel ? internal::calc_threads(n) : 1;
+    
+    const auto* p_x = data();
+    auto* p_target = target.data();
      
     if (simd){
-
-      auto* p_x = data();
-      auto* p_target = target.data();
 
       if (n_threads > 1){
         OMP_PARALLEL_FOR_SIMD(n_threads)
@@ -553,11 +554,11 @@ struct r_vec {
       if (n_threads > 1){
         OMP_PARALLEL_FOR(n_threads)
         for (r_size_t i = 0; i < n; ++i){
-          target.set(i, fn(i, view(i)));
+          p_target[i] = unwrap(fn(i, T(p_x[i])));
         }
       } else {
         for (r_size_t i = 0; i < n; ++i){
-          target.set(i, fn(i, view(i)));
+          p_target[i] = unwrap(fn(i, T(p_x[i])));
         }
       }
     }
@@ -972,10 +973,12 @@ inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_
 
   target.maybe_ensure_exclusive();
 
-  if constexpr (!RObject<data_t>){
+  if (n == 0) return;
 
-    auto* RESTRICT p_target = target.data();
-    auto* RESTRICT p_source = source.data();
+  if constexpr (RVectorisable<data_t>){
+
+    auto* p_target = target.data();
+    const auto* p_source = source.data();
 
     int n_threads = internal::calc_threads(n);
     if (n_threads > 1) {
@@ -984,13 +987,13 @@ inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_
         p_target[target_offset + i] = p_source[i];
       }
     } else {
-      std::copy_n(p_source, n, p_target + target_offset);
+      std::memmove(p_target + target_offset, p_source, n * sizeof(*p_target));
     }
   } else if constexpr (RStringType<data_t>){
 
     // Cast const SEXP* to SEXP* and write directly
     auto* p_target = const_cast<unwrap_t<data_t>*>(target.data());
-    std::copy_n(source.data(), n, p_target + target_offset);
+    std::memmove(p_target + target_offset, source.data(), n * sizeof(*p_target));
   } else {
     for (r_size_t i = 0; i < n; ++i) {
       target.set(target_offset + i, source.view(i));
