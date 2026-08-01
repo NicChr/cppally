@@ -18,15 +18,13 @@ inline r_size_t n_unique(const T& x) {
 
   r_size_t n = x.length();
 
-  auto* RESTRICT p_x = x.data();
-
   // Try the dense int table first (For int with small range)
 
   r_size_t n_unq = 0;
 
-  bool done = internal::try_dense_int_map(x, 0, [&, p_x](auto&& try_emplace, auto&&) {
+  bool done = internal::try_dense_int_map(x, 0, [&n_unq, &x, n](auto&& try_emplace, auto&&) {
     for (r_size_t i = 0; i < n; ++i) {
-      n_unq += try_emplace(p_x[i], 1).second;
+      n_unq += try_emplace(x.view(i), 1).second;
     }
   });
 
@@ -39,10 +37,10 @@ inline r_size_t n_unique(const T& x) {
     internal::r_hash_eq<data_t>
   > seen;
 
-  seen.reserve(internal::get_hash_map_reserve_size<T>(p_x, n));
+  seen.reserve(internal::get_hash_map_reserve_size<T>(x.data(), n));
 
   for (r_size_t i = 0; i < n; ++i) {
-    seen.emplace(p_x[i]);
+    seen.emplace(x.view(i));
   }
   return seen.size();
 }
