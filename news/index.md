@@ -45,10 +45,42 @@
 ### random_stream
 
 - A new class `random_stream`, allowing one to use C++ random number
-  generators, while preserving reproducibility from R’s seed.
+  generators, while preserving reproducibility from R’s seed. This means
+  that numbers drawn from `random_stream` are reproducible via
+  [`set.seed()`](https://rdrr.io/r/base/Random.html).
 
-- `draw_from_r` can be used to safely used to call scalar RNG functions
-  from ‘Rmath.h’.
+- `random_stream` is driven by xoshiro256++ (Blackman & Vigna) via the
+  bundled Xoshiro-cpp library (Ryo Suzuki, MIT), rather than a
+  `<random>` engine. It still models
+  `std::uniform_random_bit_generator`, so it can be handed to `<random>`
+  distributions and algorithms such as `std::shuffle`.
+
+- Default-constructing a `random_stream` seeds it from R’s RNG (via two
+  `unif_rand()` draws), so
+  [`set.seed()`](https://rdrr.io/r/base/Random.html) still determines
+  every draw, while R’s RNG state is only touched once per stream rather
+  than once per draw.
+
+- `random_stream` can also be constructed directly from a custom
+  `uint64_t` seed, allowing the generation of random numbers without
+  affecting R’s RNG state. This can be useful if you do not need
+  reproducibility from R’s
+  [`set.seed()`](https://rdrr.io/r/base/Random.html).
+
+- `random_stream::split()` returns an independent child stream. Parallel
+  code should build its streams up front via
+  [`split()`](https://rdrr.io/r/base/split.html) before dispatching
+  work.
+
+- `random_stream::index` samples random indices in \[a, b\], allowing
+  for fast sampling with replacement. It uses Lemire’s divisionless
+  method (source: arXiv:1805.10941) along with a portable 128-bit
+  multiply, provided by the ankerl library. This makes it fast and
+  platform-agnostic, therefore results should be reproducible across
+  platforms.
+
+- `draw_from_r` must be used if one wishes to call scalar RNG functions
+  from the R C API header ‘Random.h’.
 
 ### Improvements
 
@@ -69,6 +101,17 @@
   are exact whole numbers.
 
 - `n_unique` has been sped-up for integer vectors.
+
+- Some algorithms now benefit from a cardinality estimate. For large
+  inputs, an extended Chao estimator (<doi:10.1016/j.csda.2011.01.017>)
+  is applied to a random sample of the data to choose a better initial
+  reserve size for the hash maps involved. This improves performance on
+  high-cardinality data, where it avoids repeatedly resizing the map as
+  new keys are added.
+
+- Algorithms that utilise hashing should now see speed improvements for
+  strings in particular, as SEXP type checking is now skipped for
+  hashing specifically.
 
 ### New features
 
@@ -99,6 +142,9 @@
 
 - `r_factors` gains a new member function, `refactor`, which creates a
   new `r_factors` object given a new set of levels.
+
+- `r_df` gains new members, `get`, `set`, and `view`. `get` returns an
+  1-row `r_df` and similarly, `set` accepts a 1-row `r_df`.
 
 ## cppally 1.1.0 (2026-07-12)
 

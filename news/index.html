@@ -63,8 +63,13 @@
 </ul></div>
 <div class="section level3">
 <h3 id="random_stream-development-version">random_stream<a class="anchor" aria-label="anchor" href="#random_stream-development-version"></a></h3>
-<ul><li><p>A new class <code>random_stream</code>, allowing one to use C++ random number generators, while preserving reproducibility from R’s seed.</p></li>
-<li><p><code>draw_from_r</code> can be used to safely used to call scalar RNG functions from ‘Rmath.h’.</p></li>
+<ul><li><p>A new class <code>random_stream</code>, allowing one to use C++ random number generators, while preserving reproducibility from R’s seed. This means that numbers drawn from <code>random_stream</code> are reproducible via <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code>.</p></li>
+<li><p><code>random_stream</code> is driven by xoshiro256++ (Blackman &amp; Vigna) via the bundled Xoshiro-cpp library (Ryo Suzuki, MIT), rather than a <code>&lt;random&gt;</code> engine. It still models <code>std::uniform_random_bit_generator</code>, so it can be handed to <code>&lt;random&gt;</code> distributions and algorithms such as <code>std::shuffle</code>.</p></li>
+<li><p>Default-constructing a <code>random_stream</code> seeds it from R’s RNG (via two <code>unif_rand()</code> draws), so <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> still determines every draw, while R’s RNG state is only touched once per stream rather than once per draw.</p></li>
+<li><p><code>random_stream</code> can also be constructed directly from a custom <code>uint64_t</code> seed, allowing the generation of random numbers without affecting R’s RNG state. This can be useful if you do not need reproducibility from R’s <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code>.</p></li>
+<li><p><code>random_stream::split()</code> returns an independent child stream. Parallel code should build its streams up front via <code><a href="https://rdrr.io/r/base/split.html" class="external-link">split()</a></code> before dispatching work.</p></li>
+<li><p><code>random_stream::index</code> samples random indices in [a, b], allowing for fast sampling with replacement. It uses Lemire’s divisionless method (source: arXiv:1805.10941) along with a portable 128-bit multiply, provided by the ankerl library. This makes it fast and platform-agnostic, therefore results should be reproducible across platforms.</p></li>
+<li><p><code>draw_from_r</code> must be used if one wishes to call scalar RNG functions from the R C API header ‘Random.h’.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="improvements-development-version">Improvements<a class="anchor" aria-label="anchor" href="#improvements-development-version"></a></h3>
@@ -73,6 +78,8 @@
 <li><p><code>r_sym</code> now constructs symbols from strings (<code>const char*</code>, <code>r_str</code>, <code>r_str_view</code>) under unwind protection, so R errors can no longer longjmp past C++ destructors.</p></li>
 <li><p>Sorting speed has been improved for both character vectors and numeric vectors. Sorting is faster for character vectors when there are a relatively high proportion of unique strings. Sorting is also dramatically faster for double vectors when all values in the vector are exact whole numbers.</p></li>
 <li><p><code>n_unique</code> has been sped-up for integer vectors.</p></li>
+<li><p>Some algorithms now benefit from a cardinality estimate. For large inputs, an extended Chao estimator (<a href="doi:10.1016/j.csda.2011.01.017" class="uri">doi:10.1016/j.csda.2011.01.017</a>) is applied to a random sample of the data to choose a better initial reserve size for the hash maps involved. This improves performance on high-cardinality data, where it avoids repeatedly resizing the map as new keys are added.</p></li>
+<li><p>Algorithms that utilise hashing should now see speed improvements for strings in particular, as SEXP type checking is now skipped for hashing specifically.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="new-features-development-version">New features<a class="anchor" aria-label="anchor" href="#new-features-development-version"></a></h3>
@@ -85,6 +92,7 @@
 <li><p>New class <code>string_literal</code> to facilitate compile-time string literal NTTP programming.</p></li>
 <li><p><code>cpp_eval</code> gains a new argument, <code>cppally_header</code>, allowing one to compile expressions using the optional light header “cppally_light.hpp”.</p></li>
 <li><p><code>r_factors</code> gains a new member function, <code>refactor</code>, which creates a new <code>r_factors</code> object given a new set of levels.</p></li>
+<li><p><code>r_df</code> gains new members, <code>get</code>, <code>set</code>, and <code>view</code>. <code>get</code> returns an 1-row <code>r_df</code> and similarly, <code>set</code> accepts a 1-row <code>r_df</code>.</p></li>
 </ul></div>
 </div>
     <div class="section level2">
