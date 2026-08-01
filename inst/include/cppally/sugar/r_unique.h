@@ -1,6 +1,7 @@
 #ifndef CPPALLY_R_UNIQUE_H
 #define CPPALLY_R_UNIQUE_H
 
+#include <cppally/r_length.h>
 #include <cppally/sugar/r_vec_ops.h>
 #include <cppally/sugar/r_groups.h>
 #include <cppally/sugar/r_subset.h>
@@ -14,34 +15,27 @@ T unique(const T& x, bool sort = false) {
     return subset(x, group_info.starts(), false, false);
 }
 
-template <RVector T>
+template <typename T>
+requires requires (const T& vec) { make_groups(vec); }
 r_vec<r_lgl> duplicated(const T& x, bool all = false){
+  
   groups g = make_groups(x);
+
   if (all){
-    r_vec<r_int> sizes = g.counts();
-    r_vec<r_lgl> is_dup = sizes > r_int(1);
-    return subset(is_dup, g.ids, /*invert=*/ false, /*check=*/ false);
+    return subset(g.counts() > r_int(1), g.ids, /*invert=*/ false, /*check=*/ false);
   } else {
-    r_vec<r_lgl> out(x.length(), r_true);
+    r_vec<r_lgl> out(length(x), r_true);
     auto starts = g.starts();
     r_size_t n_groups = g.n_groups;
 
+    // out[starts] = r_false
     for (r_size_t i = 0; i < n_groups; ++i){
       out.set(static_cast<r_size_t>(unwrap(starts.get(i))), r_false);
     }
     return out;
   }
-}
 
-inline r_vec<r_lgl> duplicated(const r_factors& x, bool all = false){
-    return duplicated(x.value, all);
 }
-
-inline r_vec<r_lgl> duplicated(const r_df& x, bool all = false){
-    return duplicated(make_groups(x, false).ids, all);
-}
-
-inline r_vec<r_lgl> duplicated(const r_sexp& x, bool all = false);
 
 template <RVal T>
 r_factors::r_factors(const r_vec<T>& x) : r_factors(x, unique(x)) {}
