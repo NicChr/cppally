@@ -5,6 +5,7 @@
 #include <R_ext/Random.h>
 #include <ankerl/unordered_dense.h> // wyhash::mum - portable 64x64 -> 128 multiply
 #include <Xoshiro-cpp/XoshiroCpp.hpp> // xoshiro256++ (Ryo Suzuki, MIT)
+#include <cmath>
 
 namespace cppally {
 
@@ -65,10 +66,14 @@ struct random_stream {
   static constexpr result_type max() { return engine_type::max(); }
   result_type operator()() { return engine_(); }
 
-  double unif(double a = 0, double b = 1) {
-    // Top 53 bits scaled into [0, 1)
-    double u = static_cast<double>(engine_() >> 11) * 0x1.0p-53;
-    return a * (1.0 - u) + b * u;
+  double unif() {
+    // Top 53 bits scaled into [0, 1) - exact, bit-reproducible as is
+    return static_cast<double>(engine_() >> 11) * 0x1.0p-53;
+  }
+  
+  double unif(double a, double b) {
+    double u = unif(); 
+    return std::fma(b, u, a * (1.0 - u));
   }
 
   // Returns a random index in [a, b] : b > a
