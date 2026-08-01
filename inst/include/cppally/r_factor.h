@@ -267,7 +267,9 @@ struct r_factors {
     value.set(index, val);
   }
 
-  r_str get(r_size_t index) const {
+  template <typename I>
+  requires requires(const I& idx){ value.get(idx); }
+  r_str get(const I& index) const {
     r_int code = value.get(index);
     if (is_na(code)){
       return na<r_str>();
@@ -275,7 +277,9 @@ struct r_factors {
     return r_str(levels().get(unwrap(code) - 1));
   }
 
-  r_str_view view(r_size_t index) const {
+  template <typename I>
+  requires requires(const I& idx){ value.view(idx); }
+  r_str_view view(const I& index) const {
     r_int code = value.get(index);
     if (is_na(code)){
       return na<r_str_view>();
@@ -283,8 +287,9 @@ struct r_factors {
     return levels().view(unwrap(code) - 1);
   }
 
-  template <RStringType U>
-  void set(r_size_t index, const U& val) {
+  template <typename I, RStringType U>
+  requires requires(const I& idx){ value.set(idx, r_int{}); }
+  void set(const I& index, const U& val) {
     value.set(index, get_code(val));
   }
 
