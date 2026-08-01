@@ -177,7 +177,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
             key = std::numeric_limits<unsigned_t>::max();
         } else {
             key = ska_sort::detail::to_unsigned_or_bool(p_x[i]);
-            if constexpr (sizeof(unsigned_t) == sizeof(int)) {
+            if constexpr (RIntegerType<data_t> && (unwrap(na<data_t>()) == std::numeric_limits<base_t>::min())){
                 key -= 1u; // keep max real value below the NA sentinel
             }
         }
