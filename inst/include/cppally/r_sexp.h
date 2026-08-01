@@ -102,15 +102,6 @@ struct r_sexp {
     #endif
   }
 
-  r_size_t length() const {
-    static bool warned = false;
-    if (!warned) {
-        warn("`r_sexp.length()` is deprecated, please use `cppally::length()`");
-        warned = true;
-    }
-    return Rf_xlength(value);
-  }
-
   r_str address() const;
 };
 
