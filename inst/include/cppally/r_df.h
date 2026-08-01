@@ -47,6 +47,7 @@ struct r_df {
 
     r_vec<r_sexp> value;
     using value_type = r_vec<r_sexp>;
+    using data_type = r_df;
 
     private:
 
