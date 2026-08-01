@@ -38,7 +38,7 @@ auto reduce_by_group(const r_vec<T>& x, F fn, const groups& g, bool na_skip = fa
     std::vector<acc_t> accs(g.n_groups, na<acc_t>());
     std::vector<bool> seen(g.n_groups, false);
 
-    const int* RESTRICT p_id = g.ids.data();
+    const int* p_id = g.ids.data();
 
     for (r_size_t i = 0; i < n; ++i){
         if (na_skip && is_na(x.view(i))){
@@ -76,7 +76,7 @@ auto reduce_by_group(const r_vec<T>& x, F fn, const groups& g, Acc init, bool na
 
     std::vector<acc_t> accs(g.n_groups, as<acc_t>(init));
 
-    const int* RESTRICT p_id = g.ids.data();
+    const int* p_id = g.ids.data();
 
     for (r_size_t i = 0; i < n; ++i){
         if (na_skip && is_na(x.view(i))){
