@@ -31,8 +31,9 @@ inline r_size_t n_unique(const T& x) {
   if (done) return n_unq;
 
   // Hash set for O(n) de-duplication
-  ankerl::unordered_dense::set<
+  ankerl::unordered_dense::map<
     unwrap_t<data_t>,
+    int,
     internal::r_hash<data_t>,
     internal::r_hash_eq<data_t>
   > seen;
@@ -40,7 +41,7 @@ inline r_size_t n_unique(const T& x) {
   seen.reserve(internal::get_hash_map_reserve_size<T>(x.data(), n));
 
   for (r_size_t i = 0; i < n; ++i) {
-    seen.emplace(x.view(i));
+    seen.try_emplace(x.view(i), 0);
   }
   return seen.size();
 }
