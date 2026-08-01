@@ -394,7 +394,9 @@ struct r_vec {
   // this means all its elements will be valid CHARSXP and hence we can avoid re-checking on element access
 
   // Get element (no bounds-check)
-  T get(r_size_t index) const requires (!RStringType<T>) {
+  template <typename I>
+  requires (std::is_convertible_v<I, r_size_t>)
+  T get(I index) const requires (!RStringType<T>) {
     #ifdef CPPALLY_PRESERVE_ALTREP
     if (m_ptr) [[likely]] {
       return T(m_ptr[index]);
@@ -406,7 +408,9 @@ struct r_vec {
     #endif
   }
 
-  T get(r_size_t index) const requires (RStringType<T>) {
+  template <typename I>
+  requires (std::is_convertible_v<I, r_size_t>)
+  T get(I index) const requires (RStringType<T>) {
     #ifdef CPPALLY_PRESERVE_ALTREP
     if (m_ptr) [[likely]] {
       return T(m_ptr[index], internal::no_checks_tag{});
@@ -429,7 +433,9 @@ struct r_vec {
 
   // View element (like `get()` but elements must be short-lived)
   // Element must not outlive the parent vector
-  T view(r_size_t index) const requires (!RStringType<T>) {
+  template <typename I>
+  requires (std::is_convertible_v<I, r_size_t>)
+  T view(I index) const requires (!RStringType<T>) {
     if constexpr (std::is_constructible_v<data_type, unwrap_t<data_type>, internal::view_tag>) {
       #ifdef CPPALLY_PRESERVE_ALTREP
       if (m_ptr) [[likely]] {
@@ -452,7 +458,10 @@ struct r_vec {
       #endif
     }
   }
-  T view(r_size_t index) const requires (RStringType<T>) {
+
+  template <typename I>
+  requires (std::is_convertible_v<I, r_size_t>)
+  T view(I index) const requires (RStringType<T>) {
     #ifdef CPPALLY_PRESERVE_ALTREP
     if (m_ptr) [[likely]] {
       return T(m_ptr[index], internal::view_tag{}, internal::no_checks_tag{});
@@ -474,7 +483,9 @@ struct r_vec {
   }
 
   // Set element (no bounds-check)
-  void set(r_size_t index, const T& val) {
+  template <typename I>
+  requires (std::is_convertible_v<I, r_size_t>)
+  void set(I index, const T& val) {
     #ifdef CPPALLY_COPY_ON_MODIFY
     ensure_exclusive();
     #endif
@@ -488,8 +499,9 @@ struct r_vec {
     }
   }
 
-  template <typename U>
-  void set(r_size_t index, const U& val) {
+  template <typename I, typename U>
+  requires (std::is_convertible_v<I, r_size_t>)
+  void set(I index, const U& val) {
     // Lists must not hold RScalar, only RComposite (e.g. vectors) and other SEXP types
     if constexpr (is<T, r_sexp>) {
       set(index, internal::as_list_element(val));
@@ -505,19 +517,6 @@ struct r_vec {
   
   void set(const char* name, const T& val) {
       set(r_str(name), val);
-  }
-
-  // These overloads exist purely to avoid ambiguity between nullptr (int=0) and const char*
-
-  template <typename U>
-  void set(int index, const U& val) requires long_vectors_supported {
-    set(static_cast<r_size_t>(index), val); 
-  }
-  T get(int index) const requires long_vectors_supported {
-    return get(static_cast<r_size_t>(index)); 
-  }
-  T view(int index) const requires long_vectors_supported { 
-    return view(static_cast<r_size_t>(index)); 
   }
 
   private: 
