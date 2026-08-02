@@ -41,6 +41,47 @@ r_sexp as_list_element(const T& x) {
     }
 }
 
+// Internal unsafe constructors when we are reconstructing the value from its unwrapped value
+// Useful for avoiding re-checking SEXP types like for CHARSXP, where r_str(CHARSXP) would by default check that 
+// TYPEOF satisfies CHARSXP
+
+// the _view version is to avoid re-protecting underlying SEXP when it will immediately be protected by its parent vector
+
+template <RVal T, typename U>
+requires (is<unwrap_t<T>, U> && std::is_constructible_v<T, const U&, internal::view_tag, internal::no_checks_tag>)
+constexpr T unsafe_reconstruct_view(const U& x) noexcept {
+  // This must always be nothrow constructible as it is used in omp simd loops
+  static_assert(std::is_nothrow_constructible_v<T, const U&, internal::view_tag, internal::no_checks_tag>);
+  return T(x, internal::view_tag{}, internal::no_checks_tag{});
+}
+
+template <RVal T, typename U>
+requires (is<unwrap_t<T>, U> && !std::is_constructible_v<T, const U&, internal::view_tag, internal::no_checks_tag>)
+constexpr T unsafe_reconstruct_view(const U& x) noexcept(
+  std::is_constructible_v<T, const U&, internal::view_tag>
+  ? std::is_nothrow_constructible_v<T, const U&, internal::view_tag>
+  : std::is_nothrow_constructible_v<T, const U&>
+) {
+  if constexpr (std::is_constructible_v<T, const U&, internal::view_tag>){
+    return T(x, internal::view_tag{});
+  } else {
+    return T(x);
+  }
+}
+
+// No checks (like SEXP type checking)
+template <RVal T, typename U>
+requires (is<unwrap_t<T>, U> && std::is_constructible_v<T, const U&, internal::no_checks_tag>)
+constexpr T unsafe_reconstruct(const U& x) noexcept(std::is_nothrow_constructible_v<T, const U&, internal::no_checks_tag>) {
+  return T(x, internal::no_checks_tag{});
+}
+
+template <RVal T, typename U>
+requires (is<unwrap_t<T>, U> && !std::is_constructible_v<T, const U&, internal::no_checks_tag>)
+constexpr T unsafe_reconstruct(const U& x) noexcept(std::is_nothrow_constructible_v<T, const U&>){
+  return T(x);
+}
+
 // Concept helpers for location-based subset helpers
 template <typename T>
 concept RSubscript = any<T, r_lgl, r_int, r_int64, r_str_view, r_str>;
@@ -389,37 +430,18 @@ struct r_vec {
     return name_index(r_str(name), abort_on_missing);
   }
 
-  // Split get into two constrained members - r_str/r_str_view are special cases where 
-  // their SEXP type is verified on construction
-  // Since r_vec<r_str> has been verified on construction as a valid STRSXP already, 
-  // this means all its elements will be valid CHARSXP and hence we can avoid re-checking on element access
-
   // Get element (no bounds-check)
   template <typename I>
   requires (std::is_convertible_v<I, r_size_t>)
-  T get(I index) const requires (!RStringType<T>) {
+  T get(I index) const {
     #ifdef CPPALLY_PRESERVE_ALTREP
     if (m_ptr) [[likely]] {
-      return T(m_ptr[index]);
+      return internal::unsafe_reconstruct<T>(m_ptr[index]);
     } else {
-      return T(internal::elt<T>(value, index));
+      return internal::unsafe_reconstruct<T>(internal::elt<T>(value, index));
     }
     #else
-    return T(m_ptr[index]);
-    #endif
-  }
-
-  template <typename I>
-  requires (std::is_convertible_v<I, r_size_t>)
-  T get(I index) const requires (RStringType<T>) {
-    #ifdef CPPALLY_PRESERVE_ALTREP
-    if (m_ptr) [[likely]] {
-      return T(m_ptr[index], internal::no_checks_tag{});
-    } else {
-      return T(internal::elt<T>(value, index), internal::no_checks_tag{});
-    }
-    #else
-    return T(m_ptr[index], internal::no_checks_tag{});
+    return internal::unsafe_reconstruct<T>(m_ptr[index]);
     #endif
   }
   
@@ -436,41 +458,16 @@ struct r_vec {
   // Element must not outlive the parent vector
   template <typename I>
   requires (std::is_convertible_v<I, r_size_t>)
-  T view(I index) const requires (!RStringType<T>) {
-    if constexpr (std::is_constructible_v<data_type, unwrap_t<data_type>, internal::view_tag>) {
-      #ifdef CPPALLY_PRESERVE_ALTREP
-      if (m_ptr) [[likely]] {
-        return T(m_ptr[index], internal::view_tag{});
-      } else {
-        return T(internal::elt<T>(value, index), internal::view_tag{});
-      }
-      #else
-      return T(m_ptr[index], internal::view_tag{});
-      #endif
-    } else {
-      #ifdef CPPALLY_PRESERVE_ALTREP
-      if (m_ptr) [[likely]] {
-        return T(m_ptr[index]);
-      } else {
-        return T(internal::elt<T>(value, index));
-      }
-      #else
-      return T(m_ptr[index]);
-      #endif
-    }
-  }
+  T view(I index) const {
 
-  template <typename I>
-  requires (std::is_convertible_v<I, r_size_t>)
-  T view(I index) const requires (RStringType<T>) {
     #ifdef CPPALLY_PRESERVE_ALTREP
     if (m_ptr) [[likely]] {
-      return T(m_ptr[index], internal::view_tag{}, internal::no_checks_tag{});
+      return internal::unsafe_reconstruct_view<T>(m_ptr[index]);
     } else {
-      return T(internal::elt<T>(value, index), internal::view_tag{}, internal::no_checks_tag{});
+      return internal::unsafe_reconstruct_view<T>(internal::elt<T>(value, index));
     }
     #else
-    return T(m_ptr[index], internal::view_tag{}, internal::no_checks_tag{});
+    return internal::unsafe_reconstruct_view<T>(m_ptr[index]);
     #endif
   }
 
@@ -665,32 +662,24 @@ struct r_vec {
     return out;
   }
 
-  // Count the number of NAs in a vector
-  // It is marked noexcept because all `is_na()` functions are noexcept and there are no R vector allocations
-  r_size_t na_count() const noexcept {
+  // Very fast parallelised count of NAs in vector
+  r_size_t na_count() const {
+
     r_size_t out = 0;
     r_size_t n = length();
     
-    if constexpr (RVectorisable<T>){
+    const auto* RESTRICT p = data();
+    int n_threads = internal::calc_threads(n);
 
-      const auto* RESTRICT p = data();
-      int n_threads = internal::calc_threads(n);
-
-      if (n_threads > 1){
-        OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:out)
-        for (r_size_t i = 0; i < n; ++i){
-          out += static_cast<r_size_t>(is_na(T(p[i])));
-        }
-      } else {
-        OMP_SIMD_REDUCTION1(+:out)
-        for (r_size_t i = 0; i < n; ++i){
-          out += static_cast<r_size_t>(is_na(T(p[i])));
-        }
-      }
-
-    } else {
+    if (n_threads > 1){
+      OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:out)
       for (r_size_t i = 0; i < n; ++i){
-        out += static_cast<r_size_t>(is_na(view(i)));
+        out += static_cast<r_size_t>(is_na(internal::unsafe_reconstruct_view<T>(p[i])));
+      }
+    } else {
+      OMP_SIMD_REDUCTION1(+:out)
+      for (r_size_t i = 0; i < n; ++i){
+        out += static_cast<r_size_t>(is_na(internal::unsafe_reconstruct_view<T>(p[i])));
       }
     }
     return out;
