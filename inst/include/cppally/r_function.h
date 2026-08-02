@@ -101,19 +101,23 @@ struct r_function {
     // operator() to make r_function callable
     template <typename... Args>
     r_sexp operator()(Args&&... args) const {
-      r_sexp fn_args = internal::make_pairlist(std::forward<Args>(args)...);
-
-      return r_sexp(
-        internal::unwind_protect([&] { return Rf_eval(Rf_lcons(*this, fn_args), env::global_env); })
-      );
+      return call_impl(internal::make_pairlist(std::forward<Args>(args)...));
     }
   
     private:
+
     static void check_is_function(SEXP x) {
       if (!Rf_isFunction(x)) [[unlikely]] {
         abort("Bad construction from R type %s to C++ type r_function", Rf_type2char(TYPEOF(x)));
       }
     }
+
+    r_sexp call_impl(const r_sexp& args) const {
+      return r_sexp(
+        internal::unwind_protect([&] { return Rf_eval(Rf_lcons(*this, args), env::global_env); })
+      );
+    }
+
 };
 
 }
