@@ -31,7 +31,7 @@ struct r_str {
   }
   explicit r_str(r_sexp x, internal::no_checks_tag) : value(std::move(x)) {}
   explicit r_str(SEXP x, internal::no_checks_tag) : value{x} {}
-  explicit r_str(SEXP x, internal::view_tag, internal::no_checks_tag) : value(x, internal::view_tag{}) {}
+  explicit r_str(SEXP x, internal::view_tag, internal::no_checks_tag) noexcept : value(x, internal::view_tag{}) {}
 
   explicit r_str(const char *x) : value(Rf_mkCharCE(x, CE_UTF8)) {}
 
@@ -125,8 +125,8 @@ struct r_str_view {
   explicit r_str_view(SEXP x, internal::view_tag) : value(x) {
     internal::check_valid_construction<r_str_view>(value);
   }
-  explicit r_str_view(SEXP x, internal::no_checks_tag) : value{x} {}
-  explicit r_str_view(SEXP x, internal::view_tag, internal::no_checks_tag) : value(x) {}
+  explicit r_str_view(SEXP x, internal::no_checks_tag) noexcept : value{x} {}
+  explicit r_str_view(SEXP x, internal::view_tag, internal::no_checks_tag) noexcept : value(x) {}
   // Can't construct `r_str_view` from `const char*` — use `r_str` instead
   explicit r_str_view(const char *x) = delete;
   explicit r_str_view(std::string_view x) = delete;
