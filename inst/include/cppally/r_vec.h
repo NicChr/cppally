@@ -432,7 +432,7 @@ struct r_vec {
   template <CppIntegerNumber I>
   T get(I index) const {
     #ifdef CPPALLY_PRESERVE_ALTREP
-    if (m_ptr) [[likely]] {
+    if (m_ptr) {
       return internal::unsafe_reconstruct<T>(m_ptr[index]);
     } else {
       return internal::unsafe_reconstruct<T>(internal::elt<T>(value, index));
@@ -457,7 +457,7 @@ struct r_vec {
   T view(I index) const {
 
     #ifdef CPPALLY_PRESERVE_ALTREP
-    if (m_ptr) [[likely]] {
+    if (m_ptr) {
       return internal::unsafe_reconstruct_view<T>(m_ptr[index]);
     } else {
       return internal::unsafe_reconstruct_view<T>(internal::elt<T>(value, index));
