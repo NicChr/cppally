@@ -936,7 +936,7 @@ r_date get_today(){
 ``` r
 
 get_today()
-#> [1] "2026-08-01"
+#> [1] "2026-08-02"
 ```
 
 To get a function from a specific package, use `pkg_env`, a helper that
@@ -1439,8 +1439,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique       721µs    737µs     1185.    1.38MB     34.5
-#> 2 cppally_n_unique    156µs    157µs     6268.        0B      0
+#> 1 base_n_unique       545µs    563µs     1557.    1.38MB     46.9
+#> 2 cppally_n_unique    137µs    137µs     7204.        0B      0
 ```
 
 More useful sugar functions
