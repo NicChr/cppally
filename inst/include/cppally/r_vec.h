@@ -669,6 +669,12 @@ struct r_vec {
     r_size_t n = length();
     
     const auto* RESTRICT p = data();
+
+    static_assert(
+      noexcept(is_na(internal::unsafe_reconstruct_view<T>(*p))),
+      "internal error in na_count: constructor must be non-throwing"
+    );
+
     int n_threads = internal::calc_threads(n);
 
     if (n_threads > 1){
