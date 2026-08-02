@@ -18,8 +18,8 @@
 #include <cppally/r_limits.h>
 #include <cppally/r_nas.h>
 #include <cppally/r_scalar_ops.h>
-#include <cppally/r_vec_utils.h>
 #include <cppally/r_coerce_scalars.h>
+#include <cppally/r_vec_utils.h>
 #include <cppally/r_vec.h>
 #include <cppally/r_pmap.h>
 #include <cppally/r_factor.h>
