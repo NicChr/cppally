@@ -429,18 +429,22 @@ struct r_vec {
   }
 
   // Get element (no bounds-check)
+  
+  #ifdef CPPALLY_PRESERVE_ALTREP
   template <CppIntegerNumber I>
   T get(I index) const {
-    #ifdef CPPALLY_PRESERVE_ALTREP
     if (m_ptr) {
       return internal::unsafe_reconstruct<T>(m_ptr[index]);
     } else {
       return internal::unsafe_reconstruct<T>(internal::elt<T>(value, index));
     }
-    #else
-    return internal::unsafe_reconstruct<T>(m_ptr[index]);
-    #endif
   }
+  #else
+  template <CppIntegerNumber I>
+  T get(I index) const noexcept(noexcept(internal::unsafe_reconstruct<T>(m_ptr[index]))) {
+    return internal::unsafe_reconstruct<T>(m_ptr[index]);
+  }
+  #endif
   
   template <RStringType U>
   T get(const U& name) const {
@@ -453,19 +457,22 @@ struct r_vec {
 
   // View element (like `get()` but elements must be short-lived)
   // Element must not outlive the parent vector
+
+  #ifdef CPPALLY_PRESERVE_ALTREP
   template <CppIntegerNumber I>
   T view(I index) const {
-
-    #ifdef CPPALLY_PRESERVE_ALTREP
     if (m_ptr) {
       return internal::unsafe_reconstruct_view<T>(m_ptr[index]);
     } else {
       return internal::unsafe_reconstruct_view<T>(internal::elt<T>(value, index));
     }
-    #else
-    return internal::unsafe_reconstruct_view<T>(m_ptr[index]);
-    #endif
   }
+  #else
+  template <CppIntegerNumber I>
+  T view(I index) const noexcept(noexcept(internal::unsafe_reconstruct_view<T>(m_ptr[index]))) {
+    return internal::unsafe_reconstruct_view<T>(m_ptr[index]);
+  }
+  #endif
 
   template <RStringType U>
   T view(const U& name) const {
