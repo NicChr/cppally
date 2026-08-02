@@ -6,7 +6,6 @@
 #include <cppally/r_types.h>
 #include <cppally/r_limits.h>
 #include <cppally/r_nas.h>
-#include <cppally/r_vec_utils.h>
 #include <limits>
 #include <charconv> // For to_chars
 #include <cstring> // For strcmp
