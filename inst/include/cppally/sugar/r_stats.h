@@ -8,7 +8,7 @@ namespace cppally {
 namespace internal {
 
 template <RVectorisable T, typename Acc>
-void simd_reduce_add(const r_vec<T>& x, Acc& init, std::invocable<T> auto f) noexcept {
+void simd_reduce_add(const r_vec<T>& x, Acc& init, std::invocable<T> auto f) {
     r_size_t n = x.length();
     const unwrap_t<T>* RESTRICT p_x = x.data();
     int n_threads = internal::calc_threads(n);
