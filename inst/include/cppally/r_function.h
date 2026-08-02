@@ -17,7 +17,7 @@ inline r_sexp make_pairlist(Args... args) {
   constexpr int n = sizeof...(args);
 
   if constexpr (n == 0){
-    return r_sexp(Rf_allocList(0));
+    return r_sexp(safe[Rf_allocList](0));
   } else {
     r_sexp out = r_sexp(safe[Rf_allocList](n));
 
