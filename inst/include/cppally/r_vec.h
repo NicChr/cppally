@@ -485,7 +485,13 @@ struct r_vec {
 
   // Set element (no bounds-check)
   template <CppIntegerNumber I>
-  void set(I index, const T& val) {
+  void set(I index, const T& val) noexcept(
+    #if defined(CPPALLY_COPY_ON_MODIFY) || defined(CPPALLY_PRESERVE_ALTREP)
+    false
+    #else
+    !is_write_barrier_protected
+    #endif
+  ) {
     #ifdef CPPALLY_COPY_ON_MODIFY
     ensure_exclusive();
     #endif
