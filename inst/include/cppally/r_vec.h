@@ -212,15 +212,13 @@ struct r_vec {
   public:
 
   // Construct new r_vec of length n
-  template <typename N>
-  requires std::convertible_to<N, r_size_t>
+  template <CppIntegerNumber N>
   explicit r_vec(N n) : value(internal::new_vec_impl<data_type>(static_cast<r_size_t>(n))){
     initialise_ptr();
   }
 
   // Construct new r_vec of length n filled with default value
-  template <typename N>
-  requires std::convertible_to<N, r_size_t>
+  template <CppIntegerNumber N>
   explicit r_vec(N n, const T& default_value) : r_vec(n){
     fill(r_size_t{0}, static_cast<r_size_t>(n), default_value);
   }
@@ -431,8 +429,7 @@ struct r_vec {
   }
 
   // Get element (no bounds-check)
-  template <typename I>
-  requires (std::is_convertible_v<I, r_size_t>)
+  template <CppIntegerNumber I>
   T get(I index) const {
     #ifdef CPPALLY_PRESERVE_ALTREP
     if (m_ptr) [[likely]] {
@@ -456,8 +453,7 @@ struct r_vec {
 
   // View element (like `get()` but elements must be short-lived)
   // Element must not outlive the parent vector
-  template <typename I>
-  requires (std::is_convertible_v<I, r_size_t>)
+  template <CppIntegerNumber I>
   T view(I index) const {
 
     #ifdef CPPALLY_PRESERVE_ALTREP
@@ -481,8 +477,7 @@ struct r_vec {
   }
 
   // Set element (no bounds-check)
-  template <typename I>
-  requires (std::is_convertible_v<I, r_size_t>)
+  template <CppIntegerNumber I>
   void set(I index, const T& val) {
     #ifdef CPPALLY_COPY_ON_MODIFY
     ensure_exclusive();
@@ -497,8 +492,7 @@ struct r_vec {
     }
   }
 
-  template <typename I, typename U>
-  requires (std::is_convertible_v<I, r_size_t>)
+  template <CppIntegerNumber I, typename U>
   void set(I index, const U& val) {
     // Lists must not hold RScalar, only RComposite (e.g. vectors) and other SEXP types
     if constexpr (is<T, r_sexp>) {
