@@ -35,24 +35,11 @@ concept AnySexp = is_sexp<T>;
 // -> SEXP
 template <AnySexp T, typename U>
 inline T as_impl(const U& x) {
-  if constexpr (is<T, SEXP>){
-    if constexpr (RObject<U>){
-      return static_cast<SEXP>(x);
-    } else {
-      using scalar_t = as_r_scalar_t<U>;
-      return static_cast<SEXP>(r_vec<scalar_t>(1, scalar_t(x)));
-    }
+  if constexpr (std::is_constructible_v<r_sexp, const U&>){
+    return static_cast<T>(x);
   } else {
-    if constexpr (RVector<U>){
-      return x.value;
-    } else if constexpr (RComposite<U>){
-      return x.value.value;
-    } else if constexpr (RObject<U>){
-      return T(static_cast<SEXP>(x));
-    } else {
-      using scalar_t = as_r_scalar_t<U>;
-      return T(r_vec<scalar_t>(1, scalar_t(x)));
-    }
+    using scalar_t = as_r_scalar_t<U>;
+    return T(r_vec<scalar_t>(1, scalar_t(x)));
   }
 }
 
