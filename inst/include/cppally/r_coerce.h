@@ -91,7 +91,7 @@ inline T as_impl(const U& x) {
   using from_data_t = typename U::data_type;
 
   if constexpr (RStringType<to_data_t> && RStringType<from_data_t>){
-    return T(x.value);
+    return T(static_cast<r_sexp>(x), internal::no_checks_tag{});
   }
 
   if constexpr (is<to_data_t, r_str>){
