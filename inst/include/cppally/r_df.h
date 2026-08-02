@@ -155,7 +155,7 @@ struct r_df {
     // Unsafe constructor (the list is expected to be a valid data frame with ALL necessary attributes)
     // You must also supply the correct nrows
     // Use mainly for tight loops where many r_df objects are constructed
-    explicit r_df(const r_vec<r_sexp>& df, int nrows, internal::no_checks_tag) : value(df){
+    explicit r_df(const r_vec<r_sexp>& df, internal::no_checks_tag, int nrows) : value(df){
         cached_nrow = nrows;
     }
 

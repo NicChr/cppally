@@ -112,7 +112,7 @@ inline r_df r_df::get_row(int index) const {
             }
         }));
     }
-    return r_df(out, 1, internal::no_checks_tag{});
+    return r_df(out, internal::no_checks_tag{}, 1);
 }
 
 inline void r_df::set_row(r_size_t index, const r_df& row){
