@@ -7,7 +7,7 @@
 #include <vector>
 
 // Methods for reduction by group
-// Sum by group example: `reduce_by_group(x, std::plus<>{}, groups)` (cppally ensures arithmetic is overflow safe)
+// Sum by group example: `reduce_by_group(x, groups, std::plus<>{})` (cppally ensures arithmetic is overflow safe)
 
 namespace cppally {
 
@@ -26,7 +26,7 @@ void check_groups_span_data(const T& x, const groups& g){
 // Groups with no elements (e.g. unused factor levels) are NA
 template <RVal T, typename F>
 requires std::invocable<F&, T, T>
-auto reduce_by_group(const r_vec<T>& x, F fn, const groups& g, bool na_skip = false) {
+auto reduce_by_group(const r_vec<T>& x, const groups& g, F fn, bool na_skip = false) {
 
     using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, T, T>>;
     static_assert(!internal::fold_result<acc_t>::stops, "`reduce_by_group` combiner must not short-circuit (no `done()`)");
@@ -58,14 +58,14 @@ auto reduce_by_group(const r_vec<T>& x, F fn, const groups& g, bool na_skip = fa
 
 template <RVal T, typename F, RComposite G>
 requires std::invocable<F&, T, T>
-auto reduce_by_group(const r_vec<T>& x, F fn, const G& g, bool na_skip = false) {
-    return reduce_by_group(x, std::move(fn), make_groups(g), na_skip);
+auto reduce_by_group(const r_vec<T>& x, const G& g, F fn, bool na_skip = false) {
+    return reduce_by_group(x, make_groups(g), std::move(fn), na_skip);
 }
 
 // Groups with no elements reduce to `init`
-template <RVal T, typename Acc, typename F>
+template <RVal T, RVal Acc, typename F>
 requires std::invocable<F&, Acc, T>
-auto reduce_by_group(const r_vec<T>& x, F fn, const groups& g, Acc init, bool na_skip = false) {
+auto reduce_by_group(const r_vec<T>& x, const groups& g, F fn, Acc init, bool na_skip = false) {
 
     using acc_t = std::remove_cvref_t<std::invoke_result_t<F&, Acc, T>>;
     static_assert(!internal::fold_result<acc_t>::stops, "`reduce_by_group` combiner must not short-circuit (no `done()`)");
@@ -89,10 +89,10 @@ auto reduce_by_group(const r_vec<T>& x, F fn, const groups& g, Acc init, bool na
     return as<r_vec<acc_t>>(accs);
 }
 
-template <RVal T, typename Acc, typename F, RComposite G>
+template <RVal T, RVal Acc, typename F, RComposite G>
 requires std::invocable<F&, Acc, T>
-auto reduce_by_group(const r_vec<T>& x, F fn, const G& g, Acc init, bool na_skip = false) {
-    return reduce_by_group(x, std::move(fn), make_groups(g), std::move(init), na_skip);
+auto reduce_by_group(const r_vec<T>& x, const G& g, F fn, Acc init, bool na_skip = false) {
+    return reduce_by_group(x, make_groups(g), std::move(fn), std::move(init), na_skip);
 }
 
 }
