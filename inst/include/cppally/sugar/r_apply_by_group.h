@@ -70,6 +70,13 @@ auto apply_by_group(const T& x, F fn, const groups& g) {
     for (int j = 0; j < g.n_groups; ++j){
         group_order[j] = j;
     }
+    // Sort by group size so that we can reuse the same buffer and avoid R vector allocations
+    // e.g. if group_size[i] == group_size[i + 1], we can reuse the same buffer (R vectors are fixed-length once allocated).
+    // This is a nice way to get around the problem of large overhead of repeated R vector allocations
+    // because in high cardinality situations (where length(unique(g)) is close to length(x)), 
+    // We end up reusing the buffer frequently
+    // and in low cardinality situations (where length(unique(g)) is small), there aren't many
+    // allocations anyway.
     std::sort(group_order.begin(), group_order.end(), [&offsets](int a, int b){
         return (offsets[a + 1] - offsets[a]) < (offsets[b + 1] - offsets[b]);
     });
@@ -92,7 +99,6 @@ auto apply_by_group(const T& x, F fn, const groups& g) {
 
         // Every group is a contiguous run of `src`
         r_copy_n(buf, src, 0, count, start);
-
         out.set(j, fn(buf));
     }
     return out;
