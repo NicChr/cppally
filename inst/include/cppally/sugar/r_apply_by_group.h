@@ -32,7 +32,7 @@ inline std::vector<int> group_offsets(const groups& g){
 // Efficiently apply a function by-group.
 template <RVector T, typename F>
 requires (std::invocable<F&, const r_vec<typename T::data_type>&>)
-auto apply_by_group(const T& x, F fn, const groups& g) {
+auto apply_by_group(const T& x, const groups& g, F fn) {
 
     if (x.length() != g.ids.length()) [[unlikely]] {
         abort("`apply_by_group`: `x` and group IDs must have equal lengths");
