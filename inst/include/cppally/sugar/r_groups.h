@@ -395,6 +395,80 @@ inline groups make_groups(const r_df& x, bool ordered = false) {
 
 inline groups make_groups(const r_sexp& x, bool ordered);
 
+
+// inline std::vector<r_vec<r_int>> group_indices(const groups& g){
+  
+//     int n_groups = g.n_groups;
+//     r_vec<r_int> sizes = g.counts();
+//     r_vec<r_int> ord = g.order();
+
+//     std::vector<r_vec<r_int>> group_locs;
+//     group_locs.reserve(n_groups);
+
+//     int k = 0;
+//     int group_size = 0;
+    
+//     for (int i = 0; i < n_groups; ++i, k += group_size){
+//       group_size = sizes.get(i);
+//       r_vec<r_int> locs = r_vec<r_int>(group_size);
+//       r_copy_n(locs, ord, 0, group_size, k);
+//       group_locs.push_back(std::move(locs));
+//     }
+//     return group_locs;
+// }
+
+// namespace internal {
+
+// inline std::vector<std::vector<int>> group_indices(const groups& g){
+  
+//     int n_groups = g.n_groups;
+
+//     r_vec<r_int> sizes = g.counts();
+
+//     std::vector<std::vector<int>> group_locs;
+//     group_locs.reserve(n_groups);
+
+//     // Initialise locations
+//     for (int i = 0; i != n_groups; ++i){
+//         group_locs.emplace_back().reserve(unwrap(sizes.get(i)));
+//     }
+
+//     int n = g.ids.length();
+//     int curr_group;
+
+//     for (int i = 0; i < n; ++i){
+//         curr_group = g.ids.get(i);
+//         group_locs[curr_group].push_back(i);
+//     }
+
+//     return group_locs;
+// }
+
+// }
+
+// template <RVector T>
+// inline std::vector<T> split(const T& x, const groups& g){
+  
+//     std::vector<std::vector<int>> indices = internal::group_indices(g);
+
+//     int n_groups = g.n_groups;
+//     std::vector<T> out;
+//     out.reserve(n_groups);
+
+//     for (int i = 0; i < n_groups; ++i){
+//         const std::vector<int>& locs = indices[i];
+//         int m = static_cast<int>(locs.size());
+
+//         T group(m);
+//         for (int j = 0; j < m; ++j){
+//             group.set(j, x.get(locs[j]));
+//         }
+//         out.push_back(std::move(group));
+//     }
+//     return out;
+// }
+
+
 }
 
 #endif
