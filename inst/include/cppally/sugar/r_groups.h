@@ -16,6 +16,19 @@
 
 namespace cppally {
 
+namespace internal {
+
+inline bool ids_are_sorted(const int* RESTRICT p, r_size_t n) noexcept {
+    for (r_size_t i = 1; i < n; ++i) {
+        if (p[i] < p[i - 1]){
+            return false;
+        }
+    }
+    return true;
+}
+
+}
+
 // 0-indexed group IDs: [0, n - 1]
 struct groups {
   r_vec<r_int> ids;
@@ -25,12 +38,19 @@ struct groups {
 
   // Default constructor
   groups() = delete;
-  // Manual constructor
+
   explicit groups(r_vec<r_int> group_ids, int num_groups, bool groups_ordered, bool groups_sorted) :
     ids(std::move(group_ids)),
     n_groups(num_groups),
     ordered(groups_ordered),
     sorted(groups_sorted)
+    {}
+
+    explicit groups(r_vec<r_int> group_ids, int num_groups, bool groups_ordered) :
+    ids(std::move(group_ids)),
+    n_groups(num_groups),
+    ordered(groups_ordered),
+    sorted(internal::ids_are_sorted(ids.data(), ids.length()))
     {}
 
   // group start locations
@@ -107,7 +127,7 @@ r_vec<r_int> counts() const {
 
 // 0-indexed order vector
 r_vec<r_int> order() const {
-    if (sorted || is_sorted(ids)){
+    if (sorted){
         int n = ids.length();
         r_vec<r_int> out(n);
         out.iota();
@@ -151,9 +171,7 @@ inline groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
     }
 
     int n_groups = current_group + 1;
-    bool ordered = true;
-    bool sorted = is_sorted(group_ids).is_true();
-    return groups(group_ids, n_groups, ordered, sorted);
+    return groups(group_ids, n_groups, /*ordered=*/ true);
 }
 
 // Build a per-column equality probe for every column of `x`.
@@ -191,8 +209,6 @@ inline groups make_unordered_groups(const T& x) {
 
     r_vec<r_int> group_ids(n);
     int n_groups;
-    bool ordered = false;
-    bool sorted = false;
 
     auto* RESTRICT p_x = x.data();
     auto* RESTRICT p_id = group_ids.data();
@@ -238,17 +254,8 @@ inline groups make_unordered_groups(const T& x) {
       }
 
     }
-
-      // check if group IDs are sorted
-      sorted = true;
-      for (r_size_t i = 1; i < n; ++i) {
-        if (p_id[i] < p_id[i - 1]){
-            sorted = false;
-            break;
-        }
-      }
       n_groups = next_id;
-      return groups(group_ids, n_groups, ordered, sorted);
+      return groups(group_ids, n_groups, false, ids_are_sorted(p_id, n));
 }
 
 // hash each row directly into a single key
@@ -303,8 +310,7 @@ inline groups make_unordered_groups(const r_df& x) {
         }
     }
     int n_groups = next_id;
-    bool sorted = is_sorted(group_ids).is_true();
-    return groups(group_ids, n_groups, false, sorted);
+    return groups(group_ids, n_groups, false, ids_are_sorted(p_id, nrow));
 }
 
 inline groups make_ordered_groups(const r_df& x) {
@@ -348,8 +354,7 @@ inline groups make_ordered_groups(const r_df& x) {
     }
 
     int n_groups = current + 1;
-    bool sorted = is_sorted(group_ids).is_true();
-    return groups(group_ids, n_groups, true, sorted);
+    return groups(group_ids, n_groups, true, ids_are_sorted(p_id, nrow));
 }
 
 
