@@ -51,16 +51,19 @@ auto apply_by_group(const T& x, F fn, const groups& g) {
     std::vector<int> offsets = internal::group_offsets(g);
 
     // When group IDs are sorted, each group is already a contiguous run of x
-    // Otherwise scatter element locations into group-contiguous order
-    std::vector<int> idx;
+    // Otherwise gather x into group-contiguous order once, so that every group
+    // is a contiguous run of `src`
+    T scratch(0);
 
     if (!g.sorted){
-        idx.resize(n);
+        scratch = T(n);
         std::vector<int> pos(offsets.begin(), offsets.end() - 1);
         for (int i = 0; i < n; ++i){
-            idx[pos[unwrap(g.ids.get(i))]++] = i;
+            scratch.set(pos[unwrap(g.ids.get(i))]++, x.view(i));
         }
     }
+
+    const T& src = g.sorted ? x : scratch;
 
     // Group locations sorted by group size
     std::vector<int> group_order(g.n_groups);
@@ -87,14 +90,9 @@ auto apply_by_group(const T& x, F fn, const groups& g) {
             buf_len = count;
         }
 
-        if (g.sorted){
-            // Each group is a contiguous run of x
-            r_copy_n(buf, x, 0, count, start);
-        } else {
-            for (int i = 0; i < count; ++i){
-                buf.set(i, x.view(idx[start + i]));
-            }
-        }
+        // Every group is a contiguous run of `src`
+        r_copy_n(buf, src, 0, count, start);
+
         out.set(j, fn(buf));
     }
     return out;
