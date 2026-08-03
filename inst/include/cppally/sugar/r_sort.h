@@ -419,23 +419,6 @@ inline r_vec<r_int> order(const r_df& x, bool preserve_ties = true) {
 
 inline r_vec<r_int> order(const r_sexp& x, bool preserve_ties);
 
-// Is x in a sorted order? i.e is x increasing but not necessarily monotonically?
-// To retrieve a bool result, use the `is_true` member function
-template <typename T>
-requires requires (const T& v, r_size_t i){ v.view(i) >= v.view(i); }
-inline r_lgl is_sorted(const T& x) noexcept(RAtomicVector<T>) {
-    r_size_t n = x.length();
-    for (r_size_t i = 1; i < n; ++i) {
-        r_lgl is_increasing = x.view(i) >= x.view(i - 1);
-
-        // If NA return NA, if false return false
-        if (!is_increasing.is_true()){
-            return is_increasing;
-        }
-    }
-    return r_true;
-}
-
 // Sorting
 
 namespace internal {
@@ -478,11 +461,28 @@ template <typename T>
 requires requires (T&& v, r_size_t i) { order(v); v.get(i);}
 std::remove_cvref_t<T> sort(T&& x){
     
-    if (RVector<T> && RNumericType<typename std::remove_cvref_t<T>::data_type> && is_sorted(x)){
-        if constexpr (std::is_same_v<T, std::remove_cvref_t<T>>){
-            return std::move(x);
+    if constexpr (RVector<T> && RNumericType<typename std::remove_cvref_t<T>::data_type>){
+
+        r_size_t n = x.length();
+        r_lgl is_sorted = r_true;
+
+        for (r_size_t i = 1; i < n; ++i) {
+            r_lgl is_increasing = x.view(i) >= x.view(i - 1);
+    
+            // If NA return NA, if false return false
+            if (!is_increasing.is_true()){
+                is_sorted = r_false;
+                break;
+            }
+            is_sorted = is_sorted && is_increasing; // Propagate NA if it exists
         }
-        return x;
+
+        if (is_sorted.is_true()){
+            if constexpr (std::is_same_v<T, std::remove_cvref_t<T>>){
+                return std::move(x);
+            }
+            return x;
+        }
     }
 
     r_vec<r_int> o = order(x);
