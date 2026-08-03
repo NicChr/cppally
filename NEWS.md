@@ -30,7 +30,7 @@ variadic inputs.
 have been removed. The functionality of these can be achieved with the existing
 members.
 
-- `r_sexp::length` has fully deprecated and has been removed. 
+- `r_sexp::length` has been fully deprecated and removed. 
 Use `cppally::length` for returning object length.
 
 ## r_function
