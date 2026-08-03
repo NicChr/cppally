@@ -148,7 +148,7 @@ struct r_hash_eq {
     using is_transparent = void;
     using base_t = unwrap_t<T>;
 
-    bool operator()(const base_t& a, const base_t& b) const {
+    bool operator()(const base_t& a, const base_t& b) const noexcept(RScalar<T>) {
         return identical(internal::unsafe_reconstruct_view<T>(a), internal::unsafe_reconstruct_view<T>(b));
     }
 };
