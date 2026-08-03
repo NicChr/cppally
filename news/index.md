@@ -34,7 +34,7 @@
   have been removed. The functionality of these can be achieved with the
   existing members.
 
-- `r_sexp::length` has fully deprecated and has been removed. Use
+- `r_sexp::length` has been fully deprecated and removed. Use
   [`cppally::length`](https://rdrr.io/r/base/length.html) for returning
   object length.
 
