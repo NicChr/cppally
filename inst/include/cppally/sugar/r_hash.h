@@ -136,13 +136,7 @@ struct r_hash {
     // For hash map memory efficiency we use the underlying type
     using base_t = unwrap_t<T>;
     uint64_t operator()(const base_t& x) const noexcept(RScalar<T>) {
-        if constexpr (std::is_constructible_v<T, base_t, internal::view_tag, internal::no_checks_tag>){
-            return r_hash_impl(T(x, internal::view_tag{}, internal::no_checks_tag{}));
-        } else if constexpr (std::is_constructible_v<T, base_t, internal::view_tag>){
-            return r_hash_impl(T(x, internal::view_tag{}));
-        } else {
-            return r_hash_impl(T(x));
-        }
+        return r_hash_impl(internal::unsafe_reconstruct_view<T>(x));
     }
 };
 
@@ -155,13 +149,7 @@ struct r_hash_eq {
     using base_t = unwrap_t<T>;
 
     bool operator()(const base_t& a, const base_t& b) const {
-        if constexpr (std::is_constructible_v<T, base_t, internal::view_tag, internal::no_checks_tag>){
-            return identical(T(a, internal::view_tag{}, internal::no_checks_tag{}), T(b, internal::view_tag{}, internal::no_checks_tag{}));
-        } else if constexpr (std::is_constructible_v<T, base_t, internal::view_tag>){
-            return identical(T(a, internal::view_tag{}), T(b, internal::view_tag{}));
-        } else {
-            return identical(T(a), T(b));
-        }
+        return identical(internal::unsafe_reconstruct_view<T>(a), internal::unsafe_reconstruct_view<T>(b));
     }
 };
 
