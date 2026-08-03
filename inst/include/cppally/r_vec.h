@@ -20,6 +20,9 @@ template <typename T, typename U>
 inline constexpr bool identical(const T& a, const U& b) noexcept(RScalar<T>);
 
 template <RVector T>
+inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_t n, r_size_t source_offset);
+
+template <RVector T>
 inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_t n);
 
 // Defined in r_length.h
@@ -159,7 +162,7 @@ struct r_vec {
   private:
 
   template <RVector U>
-  friend void r_copy_n(U& target, const U& source, r_size_t target_offset, r_size_t n);
+  friend void r_copy_n(U& target, const U& source, r_size_t target_offset, r_size_t n, r_size_t source_offset);
 
   // Initialise data (pointer) to:
   // const SEXP* (read-only) - If T is a type convertible to SEXP
@@ -969,7 +972,7 @@ template <RVal T>
 using r_vector = r_vec<T>;
 
 template <RVector T>
-inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_t n){
+inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_t n, r_size_t source_offset){
 
   using data_t = typename T::data_type;
 
@@ -986,21 +989,26 @@ inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_
     if (n_threads > 1) {
       OMP_PARALLEL_FOR_SIMD(n_threads)
       for (r_size_t i = 0; i < n; ++i) {
-        p_target[target_offset + i] = p_source[i];
+        p_target[target_offset + i] = p_source[source_offset + i];
       }
     } else {
-      std::memmove(p_target + target_offset, p_source, n * sizeof(*p_target));
+      std::memmove(p_target + target_offset, p_source + source_offset, n * sizeof(*p_target));
     }
   } else if constexpr (RStringType<data_t>){
 
     // Cast const SEXP* to SEXP* and write directly
     auto* p_target = const_cast<unwrap_t<data_t>*>(target.data());
-    std::memmove(p_target + target_offset, source.data(), n * sizeof(*p_target));
+    std::memmove(p_target + target_offset, source.data() + source_offset, n * sizeof(*p_target));
   } else {
     for (r_size_t i = 0; i < n; ++i) {
-      target.set(target_offset + i, source.view(i));
+      target.set(target_offset + i, source.view(source_offset + i));
     }
   }
+}
+
+template <RVector T>
+inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_t n){
+  r_copy_n(target, source, target_offset, n, 0);
 }
 
 }
