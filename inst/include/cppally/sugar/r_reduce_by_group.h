@@ -56,11 +56,11 @@ auto reduce_by_group(const r_vec<T>& x, const groups& g, F fn, bool na_skip = fa
     return as<r_vec<acc_t>>(accs);
 }
 
-template <RVal T, typename F, RComposite G>
-requires std::invocable<F&, T, T>
-auto reduce_by_group(const r_vec<T>& x, const G& g, F fn, bool na_skip = false) {
-    return reduce_by_group(x, make_groups(g), std::move(fn), na_skip);
-}
+// template <RVal T, typename F, RComposite G>
+// requires std::invocable<F&, T, T>
+// auto reduce_by_group(const r_vec<T>& x, const G& g, F fn, bool na_skip = false) {
+//     return reduce_by_group(x, make_groups(g), std::move(fn), na_skip);
+// }
 
 // Groups with no elements reduce to `init`
 template <RVal T, RVal Acc, typename F>
@@ -89,11 +89,11 @@ auto reduce_by_group(const r_vec<T>& x, const groups& g, F fn, Acc init, bool na
     return as<r_vec<acc_t>>(accs);
 }
 
-template <RVal T, RVal Acc, typename F, RComposite G>
-requires std::invocable<F&, Acc, T>
-auto reduce_by_group(const r_vec<T>& x, const G& g, F fn, Acc init, bool na_skip = false) {
-    return reduce_by_group(x, make_groups(g), std::move(fn), std::move(init), na_skip);
-}
+// template <RVal T, RVal Acc, typename F, RComposite G>
+// requires std::invocable<F&, Acc, T>
+// auto reduce_by_group(const r_vec<T>& x, const G& g, F fn, Acc init, bool na_skip = false) {
+//     return reduce_by_group(x, make_groups(g), std::move(fn), std::move(init), na_skip);
+// }
 
 }
 
