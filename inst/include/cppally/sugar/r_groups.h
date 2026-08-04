@@ -400,6 +400,64 @@ inline groups make_groups(const r_df& x, bool ordered = false) {
 
 inline groups make_groups(const r_sexp& x, bool ordered);
 
+template <RComposite T>
+r_vec<r_str> group_names(const T& x, const groups& g) {
+
+    int ng = g.n_groups;
+    int n = g.ids.length();
+
+    r_vec<r_str> out(ng);
+
+    if (g.sorted){
+
+        // Group IDs are non-decreasing, so each group is one contiguous run.
+        // Take the first row of each run, then binary search past the run.
+        int i = 0;
+
+        while (i < n){
+
+            int curr_group = unwrap(g.ids.get(i));
+
+            out.set(curr_group, as<r_str>(x.view(i)));
+
+            // First index after the current run
+            int lo = i + 1;
+            int hi = n;
+
+            while (lo < hi){
+
+                int mid = lo + ((hi - lo) >> 1);
+
+                if (unwrap(g.ids.get(mid)) > curr_group){
+                    hi = mid;
+                } else {
+                    lo = mid + 1;
+                }
+            }
+            i = lo;
+        }
+
+    } else {
+
+        // Vector to keep track of whether group has been seen
+        std::vector<uint8_t> seen(ng, uint8_t(0));
+
+        int n_seen = 0;
+
+        for (int i = 0; i < n && n_seen < ng; ++i) {
+
+            int curr_group = unwrap(g.ids.get(i));
+
+            if (!seen[curr_group]) {
+                out.set(curr_group, as<r_str>(x.view(i)));
+                seen[curr_group] = uint8_t(1);
+                ++n_seen;
+            }
+        }
+    }
+
+    return out;
+}
 
 // inline std::vector<r_vec<r_int>> group_indices(const groups& g){
   
