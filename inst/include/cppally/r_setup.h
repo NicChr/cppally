@@ -70,6 +70,20 @@
 #define OMP_SIMD_REDUCTION2(OP1, OP2) OMP_PRAGMA(omp simd reduction(OP1) reduction(OP2))
 #define OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, OP) OMP_PRAGMA(omp parallel for simd if(parallel: (n_threads) > 1) num_threads((n_threads)) reduction(OP))
 #define OMP_PARALLEL_FOR_SIMD_REDUCTION2(n_threads, OP1, OP2) OMP_PRAGMA(omp parallel for simd if(parallel: (n_threads) > 1) num_threads((n_threads)) reduction(OP1) reduction(OP2))
+#define OMP_PARALLEL_FOR_REDUCTION1(n_threads, OP) OMP_PRAGMA(omp parallel for if ((n_threads) > 1) num_threads((n_threads)) reduction(OP))
+#define OMP_PARALLEL_FOR_REDUCTION2(n_threads, OP1, OP2) OMP_PRAGMA(omp parallel for if ((n_threads) > 1) num_threads((n_threads)) reduction(OP1) reduction(OP2))
+#define OMP_CRITICAL OMP_PRAGMA(omp critical)
+#define OMP_ATOMIC OMP_PRAGMA(omp atomic)
+#define OMP_BARRIER OMP_PRAGMA(omp barrier)
+#define OMP_GET_THREAD_NUM omp_get_thread_num()
+#define OMP_GET_NUM_THREADS omp_get_num_threads()
+#define OMP_IN_PARALLEL omp_in_parallel()
+#define OMP_SINGLE OMP_PRAGMA(omp single)
+#define OMP_MASTER OMP_PRAGMA(omp master)
+#define OMP_ORDERED OMP_PRAGMA(omp ordered)
+#define OMP_FLUSH OMP_PRAGMA(omp flush)
+#define OMP_TASK OMP_PRAGMA(omp task)
+#define OMP_TASKWAIT OMP_PRAGMA(omp taskwait)
 #else
 #define OMP_PRAGMA(x)
 #define OMP_NUM_PROCS 1
@@ -84,6 +98,20 @@
 #define OMP_SIMD_REDUCTION2(OP1, OP2)
 #define OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, OP)
 #define OMP_PARALLEL_FOR_SIMD_REDUCTION2(n_threads, OP1, OP2)
+#define OMP_PARALLEL_FOR_REDUCTION1(n_threads, OP)
+#define OMP_PARALLEL_FOR_REDUCTION2(n_threads, OP1, OP2)
+#define OMP_CRITICAL
+#define OMP_ATOMIC
+#define OMP_BARRIER
+#define OMP_GET_THREAD_NUM 0
+#define OMP_GET_NUM_THREADS 1
+#define OMP_IN_PARALLEL 0
+#define OMP_SINGLE
+#define OMP_MASTER
+#define OMP_ORDERED
+#define OMP_FLUSH
+#define OMP_TASK
+#define OMP_TASKWAIT
 #endif
 
 #define OMP_DO_NOTHING // Placeholder for no OMP operations
