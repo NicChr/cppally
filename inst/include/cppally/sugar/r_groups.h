@@ -151,11 +151,11 @@ struct groups {
             p_out[curr_group] = std::min(p_out[curr_group], i);
           }
 
-          for (int i = 0; i < n_groups; ++i){
-            if (p_out[i] == unwrap(r_limits<r_int>::max())) [[unlikely]] {
-                p_out[i] = unwrap(na<r_int>()); // This can happen with unused factor levels for example
-            }
-          }
+        //   for (int i = 0; i < n_groups; ++i){
+        //     if (p_out[i] == unwrap(r_limits<r_int>::max())) [[unlikely]] {
+        //         p_out[i] = unwrap(na<r_int>()); // This can happen with unused factor levels for example
+        //     }
+        //   }
 
         // This will set groups with no start locations to 0
         // (e.g. undropped factor levels)
