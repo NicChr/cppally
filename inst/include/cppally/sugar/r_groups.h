@@ -27,6 +27,62 @@ inline bool ids_are_sorted(const int* RESTRICT p, r_size_t n) noexcept {
     return true;
 }
 
+// Rows `run_end` scans linearly before galloping
+inline constexpr int min_gallop = 32;
+
+// Minimum average run length (rows per group) for `starts()` to jump from run
+// to run; below it the branchless scan wins. Break-even measured in (10, 100)
+inline constexpr int min_gallop_run = 64;
+
+// End of the run starting at `i`: the smallest j > i with p[j] != p[i], or `n`
+// when the run reaches the end. Requires non-decreasing `p`.
+// Cost scales with the run being skipped, not with `n`: linear in the run's
+// length up to `min_gallop` rows, logarithmic beyond it.
+inline int run_end(const int* RESTRICT p, int i, int n) noexcept {
+
+    int curr = p[i];
+
+    // Short runs are the common case and stream well: scan them directly.
+    // Written via `n - i` to avoid overflowing `i + min_gallop`
+    int lin_end = n - i > min_gallop ? i + min_gallop : n;
+
+    for (int j = i + 1; j < lin_end; ++j){
+        if (p[j] != curr){
+            return j;
+        }
+    }
+
+    if (lin_end == n){
+        return n;
+    }
+
+    // Long run: gallop to bracket its end. Sampling suffices because `p` is
+    // non-decreasing, so p[hi] == curr pins all of [i, hi] to `curr`
+    int lo = lin_end;      // run end is at or past `lo`
+    int hi = lo;           // next probe
+    int step = min_gallop; // always `hi - i`
+
+    while (hi < n && p[hi] == curr){
+        lo = hi + 1;
+        // Double the probe distance, clamped so `hi` cannot pass `n`
+        step = step < ((n - i) >> 1) ? step << 1 : n - i;
+        hi = i + step;
+    }
+
+    // The run end is now in [lo, hi]
+    while (lo < hi){
+
+        int mid = lo + ((hi - lo) >> 1);
+
+        if (p[mid] == curr){
+            lo = mid + 1;
+        } else {
+            hi = mid;
+        }
+    }
+    return lo;
+}
+
 }
 
 // 0-indexed group IDs: [0, n - 1]
@@ -64,21 +120,21 @@ struct groups {
         return out;
     }
 
-    if (sorted){
-        // Initialise just in-case there are groups with no group IDs (e.g. unused factor levels)
+    // Sorted ids make each group one contiguous run whose first row is the
+    // group start. Only jump from run to run when the average run is long
+    // enough to be worth skipping; below that the branchless scan wins
+    if (sorted && n / n_groups >= internal::min_gallop_run){
+
         out.fill(na<r_int>());
+
         const int* RESTRICT p_ids = ids.data();
         int* RESTRICT p_out = out.data();
 
-        if (n > 0){
-            p_out[p_ids[0]] = 0;
-        }
+        int i = 0;
 
-        for (int i = 1; i < n; ++i){
-            // New group
-            if (p_ids[i] != p_ids[i - 1]){
-                p_out[p_ids[i]] = i;
-            }
+        while (i < n){
+            p_out[p_ids[i]] = i;
+            i = internal::run_end(p_ids, i, n);
         }
     } else {
 
@@ -408,45 +464,27 @@ r_vec<r_str> group_names(const T& x, const groups& g) {
 
     r_vec<r_str> out(ng);
 
+    const int* RESTRICT p_ids = g.ids.data();
+
     if (g.sorted){
 
-        // Group IDs are non-decreasing, so each group is one contiguous run.
-        // Take the first row of each run, then binary search past the run.
+        // Each group is one contiguous run: name it from its first row
         int i = 0;
 
         while (i < n){
-
-            int curr_group = unwrap(g.ids.get(i));
-
-            out.set(curr_group, as<r_str>(x.view(i)));
-
-            // First index after the current run
-            int lo = i + 1;
-            int hi = n;
-
-            while (lo < hi){
-
-                int mid = lo + ((hi - lo) >> 1);
-
-                if (unwrap(g.ids.get(mid)) > curr_group){
-                    hi = mid;
-                } else {
-                    lo = mid + 1;
-                }
-            }
-            i = lo;
+            out.set(p_ids[i], as<r_str>(x.view(i)));
+            i = internal::run_end(p_ids, i, n);
         }
 
     } else {
 
-        // Vector to keep track of whether group has been seen
         std::vector<uint8_t> seen(ng, uint8_t(0));
-
         int n_seen = 0;
 
+        // Name each group at its first occurrence, stopping once all are seen
         for (int i = 0; i < n && n_seen < ng; ++i) {
 
-            int curr_group = unwrap(g.ids.get(i));
+            int curr_group = p_ids[i];
 
             if (!seen[curr_group]) {
                 out.set(curr_group, as<r_str>(x.view(i)));
