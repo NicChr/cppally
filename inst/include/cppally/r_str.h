@@ -61,10 +61,12 @@ struct r_str {
     return static_cast<SEXP>(*this) == NA_STRING;
   }
 
+  // Is string valid UTF-8? (ASCII is also valid UTF8)
   bool is_utf8() const noexcept {
     return static_cast<bool>(Rf_charIsUTF8(*this) || Rf_charIsASCII(*this));
   }
 
+  // Convert to UTF-8 (ASCII is left alone)
   r_str as_utf8() const {
     // Rf_translateCharUTF8 does indeed check for UTF8-ness BUT
     // We still need the CHARSXP and so we avoid the overhead of Rf_mkChar directly
