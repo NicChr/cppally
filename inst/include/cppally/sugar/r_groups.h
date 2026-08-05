@@ -12,6 +12,7 @@
 #include <cppally/r_identical.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 #include <functional>
+#include <optional>
 #include <vector>
 
 namespace cppally {
@@ -90,7 +91,15 @@ inline int run_end(const int* RESTRICT p, int i, int n) noexcept {
 
 }
 
-// 0-indexed group IDs: [0, n - 1]
+// A class for storing group information.
+// `ids` - Integer group IDs. Each unique ID corresponds to a unique data element.
+// `n_groups` - Number of unique groups.
+// `ordered` - Do the group IDs convey a sorting order? If true then this implies that unique group IDs 0...n_groups-1 correspond to unique + sorted data.
+// If `ordered` is false then it implies `order-of-first-appearance` and group IDs 0...n_groups-1 correspond to unique data collected based on first appearance.
+// `sorted` - Are the group IDs already sorted? This is calculated automatically when constructing groups(ids, n_groups, ordered) or can be explicitly 
+// passed as the 4th argument if you already know that your group IDs are sorted.
+// `sorted` is not to be confused with `ordered`, as it is entirely possible to have `ordered=false` and `sorted=true`, which would imply
+// sorted order-of-first appearance group IDs.
 struct groups {
   r_vec<r_int> ids;
   int n_groups;
@@ -114,8 +123,12 @@ struct groups {
     sorted(internal::ids_are_sorted(ids.data(), ids.length()))
     {}
 
-  // group start locations
-  r_vec<r_int> starts() const {
+  private:
+
+  mutable std::optional<r_vec<r_int>> cached_starts;
+  mutable std::optional<r_vec<r_int>> cached_counts;
+
+  r_vec<r_int> compute_starts() const {
 
     int n = ids.length();
 
@@ -171,7 +184,7 @@ struct groups {
   return out;
 }
 
-r_vec<r_int> counts() const {
+r_vec<r_int> compute_counts() const {
 
     int n = ids.length();
 
@@ -204,6 +217,24 @@ r_vec<r_int> counts() const {
 
     return out;
 }
+
+  public:
+
+  // group start locations
+  r_vec<r_int> starts() const {
+    if (!cached_starts){
+        cached_starts.emplace(compute_starts());
+    }
+    return *cached_starts;
+  }
+
+  // group sizes
+  r_vec<r_int> counts() const {
+    if (!cached_counts){
+        cached_counts.emplace(compute_counts());
+    }
+    return *cached_counts;
+  }
 
 // 0-indexed order vector
 r_vec<r_int> order() const {
