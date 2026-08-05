@@ -173,15 +173,34 @@ struct groups {
 
 r_vec<r_int> counts() const {
 
-    r_size_t n = ids.length();
+    int n = ids.length();
 
-    // Counts initialised to zero
+    // Initialise counts to zero
     r_vec<r_int> out(n_groups, r_int(0));
-    const int* RESTRICT p_group_id = ids.data();
+
+    if (n_groups == 0){
+        return out;
+    }
+
+    const int* RESTRICT p_ids = ids.data();
     int* RESTRICT p_out = out.data();
 
-    // Count groups
-    for (r_size_t i = 0; i < n; ++i) p_out[p_group_id[i]]++;
+    // Sorted ids make each group one contiguous run, so its count is the run length.
+    if (sorted && n / n_groups >= internal::min_gallop_run){
+
+        int i = 0;
+
+        while (i < n){
+            int end = internal::run_end(p_ids, i, n);
+            p_out[p_ids[i]] = end - i;
+            i = end;
+        }
+        
+    } else {
+        for (int i = 0; i < n; ++i){
+            p_out[p_ids[i]]++;
+        }
+    }
 
     return out;
 }
