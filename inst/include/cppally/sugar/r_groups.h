@@ -207,13 +207,46 @@ r_vec<r_int> counts() const {
 
 // 0-indexed order vector
 r_vec<r_int> order() const {
+    
     if (sorted){
+        
         int n = ids.length();
         r_vec<r_int> out(n);
         out.iota();
         return out;
+
     } else {
-        return cppally::order(ids, /*preserve_ties = */ false);
+        
+        // Count sort
+
+        // No need to use order() because we can write a faster custom method due to 
+        // the fact that group IDs have no NAs, and we know the range upfront (range = n_groups)
+
+        std::vector<uint32_t> counts(n_groups, uint32_t(0));
+        uint32_t n = ids.length();
+
+        auto* RESTRICT p_x = ids.data();
+
+        // Count occurrences
+        for (uint32_t i = 0; i < n; ++i) counts[p_x[i]]++;
+
+        // Prefix sum: counts[i] becomes the starting position for value i
+        uint32_t total = 0;
+        for (int i = 0; i < n_groups; ++i) {
+            uint32_t old_count = counts[i];
+            counts[i] = total;
+            total += old_count;
+        }
+
+        // Write indices in sorted order
+        
+        r_vec<r_int> out(static_cast<r_size_t>(n));
+        int* RESTRICT p_out = out.data();
+
+        for (uint32_t i = 0; i < n; ++i) {
+            p_out[counts[p_x[i]]++] = static_cast<int>(i);
+        }
+        return out;
     }
 }
 
