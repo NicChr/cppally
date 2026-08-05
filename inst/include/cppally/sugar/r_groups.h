@@ -36,29 +36,34 @@ inline constexpr int min_gallop_run = 64;
 
 // End of the run starting at `i`: the smallest j > i with p[j] != p[i], or `n`
 // when the run reaches the end. Requires non-decreasing `p`.
-// Cost scales with the run being skipped, not with `n`: linear in the run's
-// length up to `min_gallop` rows, logarithmic beyond it.
+// Cost scales with the run being skipped, not with `n`
+
+// 1. Scan linearly from `i` over the first `min_gallop` data points
+// 2. If the run is longer than that, gallop by doubling the probe distance from `i` until we overshoot the run end
+// 3. Binary search the bracket left behind: from just past the last probe still inside the run, up to the probe that overshot
 inline int run_end(const int* RESTRICT p, int i, int n) noexcept {
 
     int curr = p[i];
 
     // Short runs are the common case and stream well: scan them directly.
     // Written via `n - i` to avoid overflowing `i + min_gallop`
-    int lin_end = n - i > min_gallop ? i + min_gallop : n;
+    int linear_end = n - i > min_gallop ? i + min_gallop : n;
 
-    for (int j = i + 1; j < lin_end; ++j){
+    // Linear-search in-case short-runs are common because in that scenario this is faster
+    // By doing this we also warm up the min gallop size
+    for (int j = i + 1; j < linear_end; ++j){
         if (p[j] != curr){
             return j;
         }
     }
 
-    if (lin_end == n){
+    if (linear_end == n){
         return n;
     }
 
     // Long run: gallop to bracket its end. Sampling suffices because `p` is
     // non-decreasing, so p[hi] == curr pins all of [i, hi] to `curr`
-    int lo = lin_end;      // run end is at or past `lo`
+    int lo = linear_end;      // run end is at or past `lo`
     int hi = lo;           // next probe
     int step = min_gallop; // always `hi - i`
 
@@ -69,7 +74,7 @@ inline int run_end(const int* RESTRICT p, int i, int n) noexcept {
         hi = i + step;
     }
 
-    // The run end is now in [lo, hi]
+    // Binary search: the run end is now in [lo, hi]
     while (lo < hi){
 
         int mid = lo + ((hi - lo) >> 1);
