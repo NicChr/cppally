@@ -29,6 +29,13 @@ auto apply_by_group(const T& x, const groups& g, F fn) {
     int n = static_cast<int>(x.length());
     int ng = g.n_groups;
 
+    // If N groups is 1, just call the function on all the data
+    if (ng == 1){
+        r_vec<ret_t> out(1);
+        out.set(0, fn(x));
+        return out;
+    }
+
     // One buffer, two phases: group sizes for the sort below, then scanned in
     // place into group ends. Every group's end is the next group's start, so
     // ends alone gives both bounds - group j spans [ends[j - 1], ends[j]),
@@ -67,7 +74,8 @@ auto apply_by_group(const T& x, const groups& g, F fn) {
 
         scratch = T(n);
 
-        std::vector<int> pos(ng, 0);
+        auto pos = std::make_unique_for_overwrite<int[]>(ng);
+        pos[0] = 0;
         for (int j = 1; j < ng; ++j){
             pos[j] = p_bounds[j - 1];
         }
