@@ -14,14 +14,43 @@ namespace internal {
 inline std::vector<int> group_offsets(const groups& g){
 
     int n = static_cast<int>(g.ids.length());
+    int ng = g.n_groups;
     const int* RESTRICT p_id = g.ids.data();
 
-    std::vector<int> offsets(g.n_groups + 1, 0);
+    if (ng == 0){
+        return std::vector<int>(1, 0);
+    }
+
+    // Sorted ids are already group-contiguous, so each run start is that group's
+    // offset directly and no counting pass or prefix sum is needed
+    if (g.sorted && n / ng >= min_gallop_run){
+
+        // -1 marks a group absent from `ids`, since 0 is a valid offset
+        std::vector<int> offsets(ng + 1, -1);
+        offsets[ng] = n;
+
+        int i = 0;
+
+        while (i < n){
+            offsets[p_id[i]] = i;
+            i = run_end(p_id, i, n);
+        }
+
+        // An absent group takes the next group's offset, leaving its range empty
+        for (int j = ng - 1; j >= 0; --j){
+            if (offsets[j] < 0){
+                offsets[j] = offsets[j + 1];
+            }
+        }
+        return offsets;
+    }
+
+    std::vector<int> offsets(ng + 1, 0);
 
     for (int i = 0; i < n; ++i){
         ++offsets[p_id[i] + 1];
     }
-    for (int j = 0; j < g.n_groups; ++j){
+    for (int j = 0; j < ng; ++j){
         offsets[j + 1] += offsets[j];
     }
     return offsets;
