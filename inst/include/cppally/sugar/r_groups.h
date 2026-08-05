@@ -195,7 +195,7 @@ r_vec<r_int> counts() const {
             p_out[p_ids[i]] = end - i;
             i = end;
         }
-        
+
     } else {
         for (int i = 0; i < n; ++i){
             p_out[p_ids[i]]++;
@@ -455,7 +455,7 @@ inline groups make_groups(const T& x, bool ordered = false) {
     if (x.is_long()){
         abort("Cannot group a long-vector");
     }
-    if (ordered && RSortableType<typename T::data_type>){
+    if (ordered){
         return internal::make_ordered_groups(x);
     } else {
         return internal::make_unordered_groups(x);
@@ -463,11 +463,7 @@ inline groups make_groups(const T& x, bool ordered = false) {
 }
 
 inline groups make_groups(const r_factors& x, bool ordered = false) {
-    if (ordered){
-        return internal::make_ordered_groups(x.value);
-    } else {
-        return internal::make_unordered_groups(x.value);
-    }
+    return make_groups(x.value, ordered);
 }
 
 inline groups make_groups(const r_df& x, bool ordered = false) {
