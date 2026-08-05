@@ -87,6 +87,9 @@ inline constexpr bool between_impl(const T x, const U lo, const U hi) {
 }
 
 inline int calc_threads(r_size_t data_size){
+    if (OMP_IN_PARALLEL){
+      return 1;
+    }
     return data_size >= CPPALLY_OMP_THRESHOLD ? get_threads() : 1;
   }
 
