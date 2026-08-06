@@ -219,11 +219,26 @@ struct r_factors {
     init_factor(r_vec<r_str_view>(), false);
   }
 
-  template <RVal T>
-  explicit r_factors(const r_vec<T>& x, const r_vec<T>& levels);
 
-  template <RVal T>
-  explicit r_factors(const r_vec<T>& x);
+  // Defined in r_unique.h
+  template <RVector T>
+  explicit r_factors(const T& x);
+
+  template <RStringType T>
+  explicit r_factors(const r_vec<T>& x, const r_vec<T>& levels) : value(x.length(), na<r_int>()) {
+    // Initialise empty factor with specified levels
+    init_factor(levels, false);
+
+    r_size_t n = x.length();
+    for (r_size_t i = 0; i < n; ++i){
+      value.set(i, get_code(x.view(i)));
+    }
+  }
+
+  // Defined in r_match.h
+  template <RVector T>
+  requires (!RStringType<typename T::data_type>)
+  explicit r_factors(const T& x, const T& levels);
 
   operator SEXP() const noexcept { return static_cast<SEXP>(value); }
   explicit operator r_sexp() const noexcept { return static_cast<r_sexp>(value); }

@@ -37,8 +37,8 @@ r_vec<r_lgl> duplicated(const T& x, bool all = false){
 
 }
 
-template <RVal T>
-r_factors::r_factors(const r_vec<T>& x) : r_factors(x, unique(x)) {}
+template <RVector T>
+r_factors::r_factors(const T& x) : r_factors(x, unique(x)) {}
 
 }
 
