@@ -40,6 +40,62 @@ r_vec<r_int> order_cmp(const T& x, bool stable = true) {
     return pv;
 }
 
+template <typename key_t>
+struct key_index {
+    key_t key;
+    uint32_t index;
+};
+
+// Radix sort of pre-materialised (key, index) pairs. Keys are co-located with
+// the index so every pass is a sequential scan - no per-pass gather through
+// the permutation index. NAs must already be mapped to the max key value.
+template <typename key_t>
+inline r_vec<r_int> order_radix(std::vector<key_index<key_t>>& pairs, bool stable) {
+
+    uint32_t n = static_cast<uint32_t>(pairs.size());
+
+    // Where the sorted result ends up; usually `pairs`, but ska_sort_copy may
+    // leave it in the scratch buffer.
+    const key_index<key_t>* RESTRICT src = pairs.data();
+    std::vector<key_index<key_t>> buffer; // only allocated for the 32-bit stable path
+
+    if constexpr (sizeof(key_t) == sizeof(int)) {
+        // 32-bit key: LSD ska_sort_copy is stable by construction, so the stable
+        // case sorts on the bare key (~4 flat passes) instead of widening to a
+        // (key, index) pair. Unstable sorts in place - no scratch buffer.
+        if (stable) {
+            buffer.resize(n);
+            bool in_buffer = ska_sort::ska_sort_copy(pairs.begin(), pairs.end(), buffer.begin(),
+                [](const key_index<key_t>& k) { return k.key; });
+            if (in_buffer) {
+                src = buffer.data();
+            }
+        } else {
+            ska_sort::ska_sort(pairs.begin(), pairs.end(),
+                [](const key_index<key_t>& k) { return k.key; });
+        }
+    } else {
+        // 64-bit key: ska_sort_copy degrades to unstable in-place at this width,
+        // so stability still needs the (key, index) composite.
+        if (stable) {
+            ska_sort::ska_sort(pairs.begin(), pairs.end(),
+                [](const key_index<key_t>& k) { return std::make_pair(k.key, k.index); });
+        } else {
+            ska_sort::ska_sort(pairs.begin(), pairs.end(),
+                [](const key_index<key_t>& k) { return k.key; });
+        }
+    }
+
+    r_vec<r_int> out(static_cast<r_size_t>(n));
+    int* RESTRICT p_out = out.data();
+
+    OMP_SIMD
+    for (uint32_t i = 0; i < n; ++i) {
+        p_out[i] = static_cast<int>(src[i].index);
+    }
+    return out;
+}
+
 }
 
 // 0-indexed ordering permutation vector that represents in sequential order, 
@@ -51,6 +107,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
     using base_t = unwrap_t<data_t>;
 
     uint32_t n = x.length();
+    
     if (n < 1000){
         return internal::order_cmp(x, preserve_ties);
     }
@@ -89,37 +146,50 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
     constexpr uint64_t RANGE_RATIO = sizeof(unsigned_t) > sizeof(int) ? 16 : 4;
     const uint64_t range_cap = std::min(MAX_RANGE, static_cast<uint64_t>(n) * RANGE_RATIO);
 
+    // 64-bit types whose values are whole-number offsets from lo spanning less
+    // than a uint32 window can radix-sort on uint32 keys through the cheap
+    // 32-bit path instead of the 64-bit composite. The strict limit keeps the
+    // max real key below UINT32_MAX, which is reserved for the NA sentinel
+    constexpr uint64_t NARROW_LIMIT = std::numeric_limits<uint32_t>::max();
+
     std::size_t range_size = 0;
     bool usable;
+    bool narrow = false;
 
     const auto* RESTRICT p_x = x.data();
 
     if constexpr (CppFloatType<base_t>) {
         double span = static_cast<double>(hi) - static_cast<double>(lo);
-        usable = span >= 0.0 && span < static_cast<double>(range_cap);
-        if (usable) {
+        // whole = every value is an exact whole-number offset from lo
+        bool whole = span >= 0.0 && span < static_cast<double>(NARROW_LIMIT);
+        if (whole) {
             constexpr base_t EXACT_LIMIT =
                 static_cast<base_t>(uint64_t(1) << (std::numeric_limits<base_t>::digits - 1)) * 2;
             if (lo < -EXACT_LIMIT || hi > EXACT_LIMIT) {
-                usable = false;
+                whole = false;
             } else {
                 for (uint32_t i = 0; i < n; ++i) {
                     base_t v = p_x[i];
                     if (!is_na(v) && !internal::double_is_int_like(v - lo)) {
-                        usable = false;
+                        whole = false;
                         break;
                     }
                 }
             }
-            if (usable) {
-                range_size = static_cast<std::size_t>(span) + 1; // span is whole here
-            }
+        }
+        usable = whole && span < static_cast<double>(range_cap);
+        if (usable) {
+            range_size = static_cast<std::size_t>(span) + 1; // span is whole here
+        } else {
+            narrow = whole;
         }
     } else {
         uint64_t span = static_cast<uint64_t>(hi) - static_cast<uint64_t>(lo);
         usable = span < range_cap;
         if (usable) {
             range_size = static_cast<std::size_t>(span) + 1;
+        } else if constexpr (sizeof(base_t) > sizeof(int)) {
+            narrow = span < NARROW_LIMIT;
         }
     }
 
@@ -168,17 +238,21 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         return out;
     }
 
-    r_vec<r_int> out(static_cast<r_size_t>(n));
-    int* RESTRICT p_out = out.data();
+    // Narrow window: keys are the uint32 offsets from lo (only reachable for
+    // 64-bit base types)
+    if (narrow) {
+        std::vector<internal::key_index<uint32_t>> pairs(n);
+        for (uint32_t i = 0; i < n; ++i) {
+            base_t v = p_x[i];
+            uint32_t key = is_na(v)
+                ? std::numeric_limits<uint32_t>::max()
+                : static_cast<uint32_t>(v - lo);
+            pairs[i] = { key, i };
+        }
+        return internal::order_radix(pairs, preserve_ties);
+    }
 
-    // Keys materialised once, co-located with the index, so every radix pass is
-    // a sequential scan — no per-pass gather through the permutation index.
-    struct key_index {
-        unsigned_t key;
-        uint32_t index;
-    };
-
-    std::vector<key_index> pairs(n);
+    std::vector<internal::key_index<unsigned_t>> pairs(n);
     for (uint32_t i = 0; i < n; ++i) {
         unsigned_t key;
         if (is_na(p_x[i])) {
@@ -191,44 +265,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         }
         pairs[i] = { key, i };
     }
-
-    // Where the sorted result ends up; usually `pairs`, but ska_sort_copy may
-    // leave it in the scratch buffer.
-    const key_index* RESTRICT src = pairs.data();
-    std::vector<key_index> buffer; // only allocated for the 32-bit stable path
-
-    if constexpr (sizeof(unsigned_t) == sizeof(int)) {
-        // 32-bit key: LSD ska_sort_copy is stable by construction, so the stable
-        // case sorts on the bare key (~4 flat passes) instead of widening to a
-        // (key, index) pair. Unstable sorts in place — no scratch buffer.
-        if (preserve_ties) {
-            buffer.resize(n);
-            bool in_buffer = ska_sort::ska_sort_copy(pairs.begin(), pairs.end(), buffer.begin(),
-                [](const key_index& k) { return k.key; });
-            if (in_buffer) {
-                src = buffer.data();
-            }
-        } else {
-            ska_sort::ska_sort(pairs.begin(), pairs.end(),
-                [](const key_index& k) { return k.key; });
-        }
-    } else {
-        // 64-bit key: ska_sort_copy degrades to unstable in-place at this width,
-        // so stability still needs the (key, index) composite.
-        if (preserve_ties) {
-            ska_sort::ska_sort(pairs.begin(), pairs.end(),
-                [](const key_index& k) { return std::make_pair(k.key, k.index); });
-        } else {
-            ska_sort::ska_sort(pairs.begin(), pairs.end(),
-                [](const key_index& k) { return k.key; });
-        }
-    }
-
-    OMP_SIMD
-    for (uint32_t i = 0; i < n; ++i) {
-        p_out[i] = static_cast<int>(src[i].index);
-    }
-    return out;
+    return internal::order_radix(pairs, preserve_ties);
     }
 
     // ----------------------------------------------------------------------
