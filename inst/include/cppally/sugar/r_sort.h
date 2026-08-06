@@ -74,10 +74,20 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
     base_t lo = unwrap(min_val);
     base_t hi = unwrap(max_val);
 
-    // Absolute cap bounds the counts allocation and prefix-sum work; the
-    // relative cap stops small-n/wide-range inputs paying a range-sized scan
-    constexpr uint64_t MAX_RANGE = 10000000;
-    const uint64_t range_cap = std::min(MAX_RANGE, static_cast<uint64_t>(n) * 32);
+    using unsigned_t = decltype(ska_sort::detail::to_unsigned_or_bool(std::declval<base_t>()));
+
+    // counts costs O(range) to zero and prefix-sum whatever n is, and is probed
+    // once per element in both the count and scatter passes, so cap it in bytes
+    // as well as relative to n. 64-bit keys take the wider ratio: their radix
+    // fallback pairs into 16 bytes rather than 8, and when stable sorts on
+    // key+index rather than the key alone.
+    constexpr uint64_t MAX_COUNTS_BYTES = 32ull << 20;
+    constexpr uint64_t MAX_RANGE = std::min<uint64_t>(
+        MAX_COUNTS_BYTES / sizeof(uint32_t),
+        std::numeric_limits<int>::max()
+    ); // integer branch computes v - lo in int
+    constexpr uint64_t RANGE_RATIO = sizeof(unsigned_t) > sizeof(int) ? 16 : 4;
+    const uint64_t range_cap = std::min(MAX_RANGE, static_cast<uint64_t>(n) * RANGE_RATIO);
 
     std::size_t range_size = 0;
     bool usable;
@@ -160,8 +170,6 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
 
     r_vec<r_int> out(static_cast<r_size_t>(n));
     int* RESTRICT p_out = out.data();
-
-    using unsigned_t = decltype(ska_sort::detail::to_unsigned_or_bool(std::declval<base_t>()));
 
     // Keys materialised once, co-located with the index, so every radix pass is
     // a sequential scan — no per-pass gather through the permutation index.
