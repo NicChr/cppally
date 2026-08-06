@@ -370,7 +370,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
 }
 
 inline r_vec<r_int> order(const r_factors& x, bool preserve_ties = true) {
-    return order(x.value);
+    return order(x.value, preserve_ties);
 }
 
 inline r_vec<r_int> order(const r_sexp& x, bool preserve_ties = true);
@@ -502,20 +502,32 @@ std::remove_cvref_t<T> sort(T&& x){
     if constexpr (RVector<T> && RNumericType<typename std::remove_cvref_t<T>::data_type>){
 
         r_size_t n = x.length();
-        r_lgl is_sorted = r_true;
+        bool is_sorted = true;
 
         for (r_size_t i = 1; i < n; ++i) {
+
+            if (is_na(x.view(i))){
+                
+                // Since x[i] is NA, x is sorted IFF the rest of the values are also NA
+                for (r_size_t j = i + 1; j < n; ++j) {
+                    if (!is_na(x.view(j))){
+                        is_sorted = false;
+                        break;
+                    }
+                }
+                break;
+            }
+
             r_lgl is_increasing = x.view(i) >= x.view(i - 1);
     
             // If NA return NA, if false return false
             if (!is_increasing.is_true()){
-                is_sorted = r_false;
+                is_sorted = false;
                 break;
             }
-            is_sorted = is_sorted && is_increasing; // Propagate NA if it exists
         }
 
-        if (is_sorted.is_true()){
+        if (is_sorted){
             if constexpr (std::is_same_v<T, std::remove_cvref_t<T>>){
                 return std::move(x);
             }
@@ -523,7 +535,7 @@ std::remove_cvref_t<T> sort(T&& x){
         }
     }
 
-    r_vec<r_int> o = order(x);
+    r_vec<r_int> o = order(x, /*preserve_ties = */ false);
 
     if constexpr (std::is_same_v<T, std::remove_cvref_t<T>>){
         if (x.is_exclusive()){
@@ -531,7 +543,7 @@ std::remove_cvref_t<T> sort(T&& x){
             return std::move(x);
         }
     }
-    return pmap_parallel_simd([&](r_int a){ return x.get(a);}, std::move(o));
+    return pmap_parallel_simd([&](r_int a){ return x.get(unwrap(a));}, std::move(o));
 }
 
 }
