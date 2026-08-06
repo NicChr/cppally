@@ -108,7 +108,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
 
     uint32_t n = x.length();
     
-    if (n < 1000){
+    if (n < 200){
         return internal::order_cmp(x, preserve_ties);
     }
 
