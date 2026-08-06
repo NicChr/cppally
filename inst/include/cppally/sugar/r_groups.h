@@ -100,10 +100,11 @@ inline int run_end(const int* RESTRICT p, int i, int n) noexcept {
 // `sorted` is not to be confused with `ordered`, as it is entirely possible to have `ordered=false` and `sorted=true`, which would imply
 // sorted order-of-first appearance group IDs.
 struct groups {
-  r_vec<r_int> ids;
-  int n_groups;
-  bool ordered;
-  bool sorted;
+  
+  const r_vec<r_int> ids;
+  const int n_groups;
+  const bool ordered;
+  const bool sorted;
 
   // Default constructor
   groups() = delete;
