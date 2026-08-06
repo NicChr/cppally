@@ -41,6 +41,7 @@ auto apply_by_group(const T& x, const groups& g, F fn) {
     // ends alone gives both bounds - group j spans [ends[j - 1], ends[j]),
     // and group 0 starts at 0
     r_vec<r_int> group_bounds = g.counts();
+    group_bounds.ensure_exclusive(); // counts() may be cached, so ensure data is safe to overwrite
     int* RESTRICT p_bounds = group_bounds.data();
 
     // Group locations sorted by group size
