@@ -12,7 +12,6 @@
 #include <cppally/r_identical.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 #include <functional>
-#include <optional>
 #include <vector>
 
 namespace cppally {
@@ -123,12 +122,8 @@ struct groups {
     sorted(internal::ids_are_sorted(ids.data(), ids.length()))
     {}
 
-  private:
-
-  mutable std::optional<r_vec<r_int>> cached_starts;
-  mutable std::optional<r_vec<r_int>> cached_counts;
-
-  r_vec<r_int> compute_starts() const {
+  // group start locations
+  r_vec<r_int> starts() const {
 
     int n = ids.length();
 
@@ -184,7 +179,7 @@ struct groups {
   return out;
 }
 
-r_vec<r_int> compute_counts() const {
+r_vec<r_int> counts() const {
 
     int n = ids.length();
 
@@ -217,24 +212,6 @@ r_vec<r_int> compute_counts() const {
 
     return out;
 }
-
-  public:
-
-  // group start locations
-  r_vec<r_int> starts() const {
-    if (!cached_starts){
-        cached_starts.emplace(compute_starts());
-    }
-    return *cached_starts;
-  }
-
-  // group sizes
-  r_vec<r_int> counts() const {
-    if (!cached_counts){
-        cached_counts.emplace(compute_counts());
-    }
-    return *cached_counts;
-  }
 
 // 0-indexed order vector
 r_vec<r_int> order() const {
