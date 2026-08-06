@@ -123,64 +123,64 @@ struct groups {
     sorted(internal::ids_are_sorted(ids.data(), ids.length()))
     {}
 
-  // group start locations
-  r_vec<r_int> starts() const {
-
-    int n = ids.length();
-
-    r_vec<r_int> out(n_groups);
-
-    if (n_groups == 0){
-        return out;
-    }
-
-    // Sorted ids make each group one contiguous run whose first row is the
-    // group start. Only jump from run to run when the average run is long
-    // enough to be worth skipping; below that the branchless scan wins
-    if (sorted && n / n_groups >= internal::min_gallop_run){
-
-        out.fill(na<r_int>());
-
-        const int* RESTRICT p_ids = ids.data();
-        int* RESTRICT p_out = out.data();
-
-        int i = 0;
-
-        while (i < n){
-            p_out[p_ids[i]] = i;
-            i = internal::run_end(p_ids, i, n);
-        }
-    } else {
-
-        // Initialise with largest int
-        // so that for each group we take the min(out[i], i)
-        // After passing through all data, this should reduce to the first location for each group
-        out.fill(r_limits<r_int>::max());
-
-        const int* RESTRICT p_ids = ids.data();
-        int* RESTRICT p_out = out.data();
-
-        for (int i = 0; i < n; ++i){
-            int curr_group = p_ids[i];
-            p_out[curr_group] = std::min(p_out[curr_group], i);
+    // group start locations
+    r_vec<r_int> starts() const {
+  
+      int n = ids.length();
+  
+      r_vec<r_int> out(n_groups);
+  
+      if (n_groups == 0){
+          return out;
+      }
+  
+      // Sorted ids make each group one contiguous run whose first row is the
+      // group start. Only jump from run to run when the average run is long
+      // enough to be worth skipping; below that the branchless scan wins
+      if (sorted && n / n_groups >= internal::min_gallop_run){
+  
+          out.fill(na<r_int>());
+  
+          const int* RESTRICT p_ids = ids.data();
+          int* RESTRICT p_out = out.data();
+  
+          int i = 0;
+  
+          while (i < n){
+              p_out[p_ids[i]] = i;
+              i = internal::run_end(p_ids, i, n);
           }
+      } else {
+  
+          // Initialise with largest int
+          // so that for each group we take the min(out[i], i)
+          // After passing through all data, this should reduce to the first location for each group
+          out.fill(r_limits<r_int>::max());
+  
+          const int* RESTRICT p_ids = ids.data();
+          int* RESTRICT p_out = out.data();
+  
+          for (int i = 0; i < n; ++i){
+              int curr_group = p_ids[i];
+              p_out[curr_group] = std::min(p_out[curr_group], i);
+            }
+  
+          //   for (int i = 0; i < n_groups; ++i){
+          //     if (p_out[i] == unwrap(r_limits<r_int>::max())) [[unlikely]] {
+          //         p_out[i] = unwrap(na<r_int>()); // This can happen with unused factor levels for example
+          //     }
+          //   }
+  
+          // This will set groups with no start locations to 0
+          // (e.g. undropped factor levels)
+          // If uncommenting the below line, make sure to remove RESTRICT keyword from pointers above
+          // out.replace(0, n_groups, fill_value, 0);
+      }
+  
+    return out;
+  }
 
-        //   for (int i = 0; i < n_groups; ++i){
-        //     if (p_out[i] == unwrap(r_limits<r_int>::max())) [[unlikely]] {
-        //         p_out[i] = unwrap(na<r_int>()); // This can happen with unused factor levels for example
-        //     }
-        //   }
-
-        // This will set groups with no start locations to 0
-        // (e.g. undropped factor levels)
-        // If uncommenting the below line, make sure to remove RESTRICT keyword from pointers above
-        // out.replace(0, n_groups, fill_value, 0);
-    }
-
-  return out;
-}
-
-r_vec<r_int> counts() const {
+  r_vec<r_int> counts() const {
 
     int n = ids.length();
 
@@ -210,54 +210,55 @@ r_vec<r_int> counts() const {
             p_out[p_ids[i]]++;
         }
     }
-
-    return out;
-}
-
-// 0-indexed order vector
-r_vec<r_int> order() const {
     
-    if (sorted){
-        
-        int n = ids.length();
-        r_vec<r_int> out(n);
-        out.iota();
-        return out;
+    return out;
+  }
 
-    } else {
-        
-        // Count sort
 
-        // No need to use order() because we can write a faster custom method due to 
-        // the fact that group IDs have no NAs, and we know the range upfront (range = n_groups)
-
-        std::vector<uint32_t> counts(n_groups, uint32_t(0));
-        uint32_t n = ids.length();
-
-        auto* RESTRICT p_x = ids.data();
-
-        // Count occurrences
-        for (uint32_t i = 0; i < n; ++i) counts[p_x[i]]++;
-
-        // Prefix sum: counts[i] becomes the starting position for value i
-        uint32_t total = 0;
-        for (int i = 0; i < n_groups; ++i) {
-            uint32_t old_count = counts[i];
-            counts[i] = total;
-            total += old_count;
-        }
-
-        // Write indices in sorted order
-        
-        r_vec<r_int> out(static_cast<r_size_t>(n));
-        int* RESTRICT p_out = out.data();
-
-        for (uint32_t i = 0; i < n; ++i) {
-            p_out[counts[p_x[i]]++] = static_cast<int>(i);
-        }
-        return out;
-    }
-}
+  // 0-indexed order vector
+  r_vec<r_int> order() const {
+  
+      if (sorted){
+          
+          int n = ids.length();
+          r_vec<r_int> out(n);
+          out.iota();
+          return out;
+  
+      } else {
+          
+          // Count sort
+  
+          // No need to use order() because we can write a faster custom method due to 
+          // the fact that group IDs have no NAs, and we know the range upfront (range = n_groups)
+  
+          std::vector<uint32_t> counts(n_groups, uint32_t(0));
+          uint32_t n = ids.length();
+  
+          auto* RESTRICT p_x = ids.data();
+  
+          // Count occurrences
+          for (uint32_t i = 0; i < n; ++i) counts[p_x[i]]++;
+  
+          // Prefix sum: counts[i] becomes the starting position for value i
+          uint32_t total = 0;
+          for (int i = 0; i < n_groups; ++i) {
+              uint32_t old_count = counts[i];
+              counts[i] = total;
+              total += old_count;
+          }
+  
+          // Write indices in sorted order
+          
+          r_vec<r_int> out(static_cast<r_size_t>(n));
+          int* RESTRICT p_out = out.data();
+  
+          for (uint32_t i = 0; i < n; ++i) {
+              p_out[counts[p_x[i]]++] = static_cast<int>(i);
+          }
+          return out;
+      }
+  }
 
 };
 
