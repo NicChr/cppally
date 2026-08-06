@@ -27,21 +27,30 @@ struct r_factors {
   #endif
 
   // For methods that just return a non-factor (like length())
-  #define FORWARD_METHOD(NAME)                               \
-      template <typename... Args>                            \
-      decltype(auto) NAME(Args&&... args) const {            \
-          return value.NAME(std::forward<Args>(args)...);    \
+  #define FORWARD_METHOD(NAME)                                 \
+      template <typename... Args>                              \
+      requires requires(const r_vec<r_int>& v, Args&&... args) {\
+          v.NAME(std::forward<Args>(args)...);                 \
+      }                                                        \
+      decltype(auto) NAME(Args&&... args) const {              \
+          return value.NAME(std::forward<Args>(args)...);      \
       }
 
-  #define FORWARD_MUTATING_METHOD(NAME)                  \
-  template <typename... Args>                            \
-  decltype(auto) NAME(Args&&... args) {                  \
-      return value.NAME(std::forward<Args>(args)...);    \
+  #define FORWARD_MUTATING_METHOD(NAME)                    \
+  template <typename... Args>                              \
+  requires requires(r_vec<r_int>& v, Args&&... args) {     \
+      v.NAME(std::forward<Args>(args)...);                 \
+  }                                                        \
+  decltype(auto) NAME(Args&&... args) {                    \
+      return value.NAME(std::forward<Args>(args)...);      \
   }
 
   // For methods that return a factor
   #define FORWARD_FACTOR_METHOD(NAME)                                     \
       template <typename... Args>                                         \
+      requires requires(const r_vec<r_int>& v, Args&&... args) {          \
+          v.NAME(std::forward<Args>(args)...);                            \
+      }                                                                   \
       r_factors NAME(Args&&... args) const {                              \
           /* Call the method on the underlying r_vec<r_int> */            \
           auto new_vec = value.NAME(std::forward<Args>(args)...);         \
