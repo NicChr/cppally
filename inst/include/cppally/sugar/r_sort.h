@@ -1,6 +1,17 @@
 #ifndef CPPALLY_R_SORT_H
 #define CPPALLY_R_SORT_H
 
+// ------- Hybrid sorting for R vectors -------
+// All sorting is implemented by sorting NA values last (like `order(..., na.last = TRUE)`)
+// ska_sort is used for radix sorting. Copyright Malte Skarupke 2016.
+// Small vectors are sorted using a comparison sort via std::sort/std::stable_sort.
+// Large vectors of integers or doubles with no fractional part use a counting sort when the
+// range is relatively small. 
+// 64-bit types (int64, dates, date-times) with a wider range that still fits
+// a uint32 offset radix-sort on that narrower key instead of the full 64-bit key. Everything
+// else falls back to a full-width ska_sort.
+// Strings are sorted by first de-duplicating (getting unique) strings, and then using a counting sort.
+
 #include <cppally/r_vec.h>
 #include <cppally/sugar/r_hash.h>
 #include <cppally/sugar/r_stats.h>
