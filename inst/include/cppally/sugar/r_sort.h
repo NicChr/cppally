@@ -153,12 +153,20 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
     constexpr uint64_t NARROW_LIMIT = std::numeric_limits<uint32_t>::max();
 
     std::size_t range_size = 0;
-    bool usable;
+    bool int_count_usable = false;
     bool narrow = false;
 
     const auto* RESTRICT p_x = x.data();
 
-    if constexpr (CppFloatType<base_t>) {
+    if constexpr (CppIntegerType<base_t>){
+        uint64_t span = static_cast<uint64_t>(hi) - static_cast<uint64_t>(lo);
+        int_count_usable = span < range_cap;
+        if (int_count_usable) {
+            range_size = static_cast<std::size_t>(span) + 1;
+        } else if constexpr (sizeof(base_t) > sizeof(int)) {
+            narrow = span < NARROW_LIMIT;
+        }
+    } else if constexpr (CppFloatType<base_t>) {
         double span = static_cast<double>(hi) - static_cast<double>(lo);
         // whole = every value is an exact whole-number offset from lo
         bool whole = span >= 0.0 && span < static_cast<double>(NARROW_LIMIT);
@@ -177,31 +185,25 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
                 }
             }
         }
-        usable = whole && span < static_cast<double>(range_cap);
-        if (usable) {
+        
+        int_count_usable = whole && span < static_cast<double>(range_cap);
+
+        if (int_count_usable) {
             range_size = static_cast<std::size_t>(span) + 1; // span is whole here
         } else {
             narrow = whole;
         }
-    } else {
-        uint64_t span = static_cast<uint64_t>(hi) - static_cast<uint64_t>(lo);
-        usable = span < range_cap;
-        if (usable) {
-            range_size = static_cast<std::size_t>(span) + 1;
-        } else if constexpr (sizeof(base_t) > sizeof(int)) {
-            narrow = span < NARROW_LIMIT;
-        }
     }
 
     // Use counting sort for small range
-    if (usable) {
+    if (int_count_usable) {
 
         std::vector<uint32_t> counts(range_size, 0);
 
         // First pass: count occurrences (ignore NAs)
         for (uint32_t i = 0; i < n; ++i) {
             base_t v = p_x[i];
-            if (!is_na(r_int(static_cast<int>(v)))) {
+            if (!is_na(v)) {
                 counts[static_cast<std::size_t>(v - lo)]++;
             }
         }
@@ -219,7 +221,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         int* RESTRICT p_out = out.data();
         for (uint32_t i = 0; i < n; ++i) {
             base_t v = p_x[i];
-            if (is_na(r_int(static_cast<int>(v)))) {
+            if (is_na(v)) {
                 // Append NAs at end (preserving input order)
                 p_out[total++] = static_cast<int>(i);
             } else {
