@@ -199,13 +199,10 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         std::vector<uint32_t> counts(range_size, 0);
 
         // First pass: count occurrences (ignore NAs)
-        bool has_nas = false;
         for (uint32_t i = 0; i < n; ++i) {
             base_t v = p_x[i];
-            if (!is_na(v)) {
+            if (!is_na(r_int(static_cast<int>(v)))) {
                 counts[static_cast<std::size_t>(v - lo)]++;
-            } else {
-                has_nas = true;
             }
         }
 
@@ -217,22 +214,16 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
             total += old_count;
         }
 
-        // Second pass: write indices in sorted order (stable)
+        // Write indices in sorted order (stable)
         r_vec<r_int> out(static_cast<r_size_t>(n));
         int* RESTRICT p_out = out.data();
         for (uint32_t i = 0; i < n; ++i) {
             base_t v = p_x[i];
-            if (!is_na(v)) {
+            if (is_na(r_int(static_cast<int>(v)))) {
+                // Append NAs at end (preserving input order)
+                p_out[total++] = static_cast<int>(i);
+            } else {
                 p_out[counts[static_cast<std::size_t>(v - lo)]++] = static_cast<int>(i);
-            }
-        }
-
-        // Append NAs at end (preserving input order)
-        if (has_nas) {
-            for (uint32_t i = 0; i < n; ++i) {
-                if (is_na(p_x[i])) {
-                    p_out[total++] = static_cast<int>(i);
-                }
             }
         }
         return out;
