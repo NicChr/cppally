@@ -92,12 +92,20 @@ auto apply_by_group(const T& x, const groups& g, F fn) {
     T buf(0);
     int buf_len = 0;
 
+    // At this point the data (`src`) is sorted by group ID
+    // Such that the IDs are in ascending order
+    // But we don't run through the data in that order - we jump around it instead
+    // group_order is the permutation corresponding to ascending group sizes, and we traverse in that order,
+    // picking the groups with the smallest group size first and ending with the groups with the largest size
     for (int k = 0; k < ng; ++k){
 
         int j = group_order[k];
         int start = j > 0 ? p_bounds[j - 1] : 0;
         int count = p_bounds[j] - start;
 
+        // Only reuse buf if it's still exclusively ours
+        // If fn() returned or captured buf itself, reusing it here would silently
+        // overwrite an already-stored result instead of allocating a fresh buffer
         if (count != buf_len || !buf.is_exclusive()){
             buf = T(count);
             buf_len = count;
