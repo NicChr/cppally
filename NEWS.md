@@ -13,6 +13,9 @@ lists and character vectors.
 - Fixed a bug where the wrong OMP pragma was being used for 
 non-SIMD parallel for loops.
 
+- Fixed a bug where calling `set_attr()` on `r_df` or `r_factors` 
+would produce a compiler error.
+
 ## Breaking changes
 
 - Sequences no longer abort on overflow, but instead silently return `NA`.
@@ -91,6 +94,20 @@ a relatively high proportion of unique strings. Sorting is also
 dramatically faster for double vectors when all values in the vector are 
 exact whole numbers.
 
+- `groups` class members `starts()`, `counts()` now 
+see substantial speed improvements when data are in group-sorted order.
+When sorted, `starts()` and `counts()` may perform a 
+hybrid linear/exponential (or galloping) search. This new search strategy
+dramatically improves performance on large data with small numbers of groups.
+Time complexity now scales with the number of groups and not the size of data.
+
+- `groups::order()` also sees speed improvements for unsorted data, 
+due to the fact that it unconditionally applies a counting sort, 
+without checking for `NA` values (since group IDs do not have `NA` values) or 
+scanning the group IDs for their range, like `cppally::order()` generally 
+(and correctly) does for other integer vectors. When data are already sorted 
+it simply returns the sequence [0, n - 1] for n data points (as it did before).
+
 - `n_unique` has been sped-up for integer vectors.
 
 - Some algorithms now benefit from a cardinality estimate. 
@@ -126,7 +143,7 @@ same `r_str`.
 - New class `string_literal` to facilitate compile-time string literal NTTP 
 programming.
 
-- `cpp_eval` gains a new argument, `cppally_header`, allowing one to 
+- R function `cpp_eval` gains a new argument, `cppally_header`, allowing one to 
 compile expressions using the optional light header "cppally_light.hpp".
 
 - `r_factors` gains a new member function, `refactor`, which creates a new
