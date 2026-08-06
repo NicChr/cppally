@@ -75,10 +75,11 @@ auto apply_by_group(const T& x, const groups& g, F fn) {
 
         scratch = T(n);
 
-        auto pos = std::make_unique_for_overwrite<int[]>(ng);
-        pos[0] = 0;
+        std::vector<int> pos;
+        pos.reserve(ng);
+        pos.push_back(0);
         for (int j = 1; j < ng; ++j){
-            pos[j] = p_bounds[j - 1];
+            pos.push_back(p_bounds[j - 1]);
         }
         for (int i = 0; i < n; ++i){
             scratch.set(pos[unwrap(g.ids.get(i))]++, x.view(i));
