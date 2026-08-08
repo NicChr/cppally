@@ -61,17 +61,6 @@ template <RIntegerType T>
 inline int test_scalar(int x, T y){
   return x + unwrap(y);
 }
-template <CppIntegerType T>
-[[cppally::register]]
-inline int test_scalar2(r_int x, T y){
-  return x + unwrap(y);
-}
-
-template <IntegerType T>
-[[cppally::register]]
-inline r_int test_scalar3(r_int x, T y){
-  return as<r_int>(x + y);
-}
 
 template <RVal T>
 [[cppally::register]]
