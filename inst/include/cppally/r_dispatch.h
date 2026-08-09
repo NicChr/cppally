@@ -88,20 +88,52 @@ struct fn_traits<Ret(*)(Args...)> {
     static constexpr size_t arity = sizeof...(Args);
 };
 
-using r_types = std::tuple<
-    r_lgl, 
-    r_int, 
-    r_int64, 
-    r_dbl, 
-    r_str, 
-    r_cplx, 
-    r_raw, 
-    r_date, 
-    r_psxct,
-    r_sexp // Catch-all
->;
+// ── DISPATCH CANDIDATE SET ────────────────────────────────────────────────────
+//
+// Package-wide compile-time policy, normally set by `use_dispatch_candidates()`.
+// Narrowing it cuts the instantiations the dispatcher emits, at the cost of
+// narrowing which R types a registered templated function accepts at runtime.
+//
+// Every TU in a package MUST agree on these macros. `shared_type_table::value`
+// and the function-local `dispatch_table` are inline variables with vague
+// linkage, so two TUs disagreeing is an ODR violation the linker will not
+// diagnose. Setting them via PKG_CPPFLAGS guarantees agreement.
+//
+// Unrelated to the visitor list in r_visit.h, which is a linear switch over a
+// different set of types and is deliberately not narrowed by these macros.
 
+// The complete list is kept separately from the active one so the dispatcher can
+// tell "excluded by use_dispatch_candidates()" apart from "not a cppally type"
+#define CPPALLY_DEFAULT_DISPATCH_CANDIDATES \
+    r_lgl, r_int, r_int64, r_dbl, r_str, r_cplx, r_raw, r_date, r_psxct
+
+#ifndef CPPALLY_DISPATCH_CANDIDATES
+#define CPPALLY_DISPATCH_CANDIDATES CPPALLY_DEFAULT_DISPATCH_CANDIDATES
+#endif
+
+using r_scalar_types = std::tuple<CPPALLY_DISPATCH_CANDIDATES>;
+
+// Removes r_sexp and r_vec<r_sexp>
+#ifdef CPPALLY_NO_SEXP_CANDIDATE
+using r_sexp_candidate = std::tuple<>;
+#else
+using r_sexp_candidate = std::tuple<r_sexp>;
+#endif
+
+using r_types = decltype(std::tuple_cat(
+    std::declval<r_scalar_types>(),
+    std::declval<r_sexp_candidate>()
+));
+
+#if defined(CPPALLY_NO_FACTOR_CANDIDATE) && defined(CPPALLY_NO_DF_CANDIDATE)
+using r_classed_vector_types = std::tuple<>;
+#elif defined(CPPALLY_NO_FACTOR_CANDIDATE)
+using r_classed_vector_types = std::tuple<r_df>;
+#elif defined(CPPALLY_NO_DF_CANDIDATE)
+using r_classed_vector_types = std::tuple<r_factors>;
+#else
 using r_classed_vector_types = std::tuple<r_factors, r_df>;
+#endif
 
 
 template<typename Tuple> struct to_r_vec_tuple_impl;
@@ -128,6 +160,61 @@ inline constexpr uint16_t r_cpp_boundary_map_v<T> = r_cpp_boundary_map_v<r_vec<T
 template <CastableToRScalar T>
 requires (CppScalar<T>)
 inline constexpr uint16_t r_cpp_boundary_map_v<T> = r_cpp_boundary_map_v<as_r_scalar_t<T>>;
+
+
+// ── EXCLUDED TYPES ────────────────────────────────────────────────────────────
+
+using r_default_candidate_types = decltype(std::tuple_cat(
+    std::declval<std::tuple<CPPALLY_DEFAULT_DISPATCH_CANDIDATES>>(),
+    std::declval<std::tuple<r_factors, r_df>>()
+));
+
+using r_active_candidate_types = decltype(std::tuple_cat(
+    std::declval<std::tuple<CPPALLY_DISPATCH_CANDIDATES>>(),
+    std::declval<r_classed_vector_types>()
+));
+
+// r_sexp is deliberately absent from both: it is the wildcard, so it has no
+// meaningful boundary code and can never be excluded
+template <typename Tuple> struct boundary_codes;
+template <typename... Ts>
+struct boundary_codes<std::tuple<Ts...>> {
+    static constexpr std::array<uint32_t, sizeof...(Ts)> value{
+        static_cast<uint32_t>(r_cpp_boundary_map_v<Ts>)...
+    };
+};
+
+constexpr auto excluded_codes_pair = []{
+    constexpr auto all = boundary_codes<r_default_candidate_types>::value;
+    constexpr auto active = boundary_codes<r_active_candidate_types>::value;
+    std::array<uint32_t, all.size()> out{};
+    size_t n = 0;
+    for (size_t i = 0; i < all.size(); ++i) {
+        bool found = false;
+        for (size_t j = 0; j < active.size(); ++j) {
+            if (active[j] == all[i]) {
+                found = true;
+            }
+        }
+        if (!found) {
+            out[n] = all[i];
+            ++n;
+        }
+    }
+    return std::pair<std::array<uint32_t, all.size()>, size_t>{out, n};
+}();
+
+constexpr size_t N_EXCLUDED = excluded_codes_pair.second;
+constexpr auto excluded_codes = excluded_codes_pair.first;
+
+constexpr bool is_excluded_code(uint32_t code) {
+    for (size_t i = 0; i < N_EXCLUDED; ++i) {
+        if (excluded_codes[i] == code) {
+            return true;
+        }
+    }
+    return false;
+}
 
 
 // ── FLAT FUNCTION POINTER TABLE ───────────────────────────────────────────────
@@ -163,18 +250,35 @@ inline constexpr uint16_t r_cpp_boundary_map_v<T> = r_cpp_boundary_map_v<as_r_sc
 // number of template parameters. Only dispatch_table remains per-Functor,
 // since it requires is_combo_callable<Functor, ...> to determine valid entries.
 
+// Classed types first (highest priority in linear scan), then vectors, then
+// scalars, then r_sexp - the catch-all is its own trailing block, so it is
+// always tried last no matter which of the other switches are set
 
-// Classed types first (highest priority in linear scan), then vectors, then scalars
-// r_sexp (catch-all) is last in r_types, so it is always tried last
+#ifdef CPPALLY_NO_SCALAR_CANDIDATES
+using r_scalar_candidates = std::tuple<>;
+#else
+using r_scalar_candidates = r_scalar_types;
+#endif
+
+#ifdef CPPALLY_NO_VECTOR_CANDIDATES
+using r_vector_candidates = std::tuple<>;
+#else
+using r_vector_candidates = r_vector_types;
+#endif
+
 using all_candidate_types = decltype(std::tuple_cat(
     std::declval<r_classed_vector_types>(),
-    std::declval<r_vector_types>(),
-    std::declval<r_types>()
+    std::declval<r_vector_candidates>(),
+    std::declval<r_scalar_candidates>(),
+    std::declval<r_sexp_candidate>()
 ));
 constexpr size_t N_CANDIDATES = std::tuple_size_v<all_candidate_types>;
 
-static_assert(N_CANDIDATES > 0, "`N_CANDIDATES` must be > 0");
-
+static_assert(
+    N_CANDIDATES > 0,
+    "No dispatch candidates left:"
+    "Re-enable at least one via `use_dispatch_candidates()`"
+);
 
 constexpr size_t static_pow(size_t base, size_t exp) {
     size_t r = 1;
@@ -186,10 +290,10 @@ constexpr size_t static_pow(size_t base, size_t exp) {
 // Maps a flat index I to an N-tuple of candidate types by treating I as a
 // base-N_CANDIDATES number. Each "digit" selects one type from all_candidate_types.
 //
-// Example with N=2, N_CANDIDATES=27, I=42:
-//   digit 0 = 42 % 27 = 15  → all_candidate_types[15]
-//   digit 1 = 42 / 27 =  1  → all_candidate_types[1]
-//   result  = tuple<type_15, type_1>
+// Example with N=2, N_CANDIDATES=22, I=42:
+//   digit 0 = 42 % 22 = 20  → all_candidate_types[20]
+//   digit 1 = 42 / 22 =  1  → all_candidate_types[1]
+//   result  = tuple<type_20, type_1>
 template <size_t Val, size_t N, size_t... Is>
 struct extract_combo {
     using type = typename extract_combo<Val / N_CANDIDATES, N - 1, Val % N_CANDIDATES, Is...>::type;
@@ -347,6 +451,7 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
     bool has_undeduced = false;
     for (size_t k = 0; k < NumTemplateParams; ++k) {
         uint16_t param_type = NILSXP;
+        size_t param_arg = 0;
         for (size_t i = 0; i < NumArgs; ++i) {
             if (ArgToTemplateMap[i] != static_cast<int>(k)) {
                 continue;
@@ -357,6 +462,7 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
             }
             if (param_type == NILSXP) {
                 param_type = arg_type;
+                param_arg = i;
             } else if (arg_type != param_type) {
                 abort(
                     "R type: %s for arg %zu does not match the first instance: %s for this template arg",
@@ -367,6 +473,17 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
         runtime_types[k] = static_cast<uint32_t>(param_type);
         if (param_type == NILSXP) {
             has_undeduced = true;
+        }
+        // Reject before the scan: an excluded type has no entry of its own, so
+        // the r_sexp wildcard would otherwise claim it and reinterpret the value
+        if constexpr (N_EXCLUDED > 0) {
+            if (param_type != NILSXP && is_excluded_code(static_cast<uint32_t>(param_type))) {
+                abort(
+                    "Argument %zu is of R type %s, which this package excludes from its "
+                    "dispatch candidates. Restore it with `use_dispatch_candidates()`",
+                    param_arg + 1, r_type_to_str(param_type)
+                );
+            }
         }
     }
 
