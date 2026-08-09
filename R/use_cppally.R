@@ -3,8 +3,7 @@
 # macro. A NULL `value` just removes the flag.
 set_makevars_flag <- function(var, prefix, value) {
 
-  proj_path <- utils::getFromNamespace("proj_path", "usethis")
-  paths <- c(proj_path("src", "Makevars"), proj_path("src", "Makevars.win"))
+  paths <- c(usethis::proj_path("src", "Makevars"), usethis::proj_path("src", "Makevars.win"))
   pattern <- stringr::str_c("^\\s*", var, "\\s*[+:]?=")
 
   for (path in paths) {
@@ -55,7 +54,6 @@ add_makevars_flag <- function(var, value) {
 #' @export
 use_cppally <- function(){
   stop_unless_installed(c("rlang", "usethis", "desc", "purrr", "brio", "cli", "rstudioapi"))
-  proj_path <- utils::getFromNamespace("proj_path", "usethis")
   utils::getFromNamespace("check_is_package", "usethis")("use_cppally()")
   stop_unless_installed("cppally")
   d <- desc::desc()
@@ -75,7 +73,7 @@ use_cppally <- function(){
   desc$set(SystemRequirements = "C++20")
   desc$write()
 
-  ns_path <- proj_path("NAMESPACE")
+  ns_path <- usethis::proj_path("NAMESPACE")
   pkg_name <- utils::getFromNamespace("project_name", "usethis")()
   ns_entry <- paste0("useDynLib(", pkg_name, ", .registration = TRUE)")
   if (file.exists(ns_path)) {
@@ -106,7 +104,7 @@ use_cppally <- function(){
 
   # Re-open package doc so editor shows the @useDynLib tag added by use_src()
   pkg_name <- utils::getFromNamespace("project_name", "usethis")()
-  pkg_doc <- proj_path("R", paste0(pkg_name, "-package.R"))
+  pkg_doc <- usethis::proj_path("R", paste0(pkg_name, "-package.R"))
   if (file.exists(pkg_doc) && rstudioapi::hasFun("navigateToFile")) {
     rstudioapi::navigateToFile(pkg_doc)
   }
