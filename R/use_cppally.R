@@ -1,44 +1,45 @@
-add_makevars_flag <- function(var, value) {
+# Removes every token in `var` starting with `prefix`, then appends `value`.
+# Repeated calls must not leave two conflicting -D definitions of the same
+# macro. A NULL `value` just removes the flag.
+set_makevars_flag <- function(var, prefix, value) {
 
   proj_path <- utils::getFromNamespace("proj_path", "usethis")
-  makevars_path1 <- proj_path("src", "Makevars")
-  makevars_path2 <- proj_path("src", "Makevars.win")
+  paths <- c(proj_path("src", "Makevars"), proj_path("src", "Makevars.win"))
+  pattern <- stringr::str_c("^\\s*", var, "\\s*[+:]?=")
 
-  if (file.exists(makevars_path1)) {
-    lines1 <- brio::read_lines(makevars_path1)
-  } else {
-    lines1 <- character()
-  }
+  for (path in paths) {
 
-  if (file.exists(makevars_path2)) {
-    lines2 <- brio::read_lines(makevars_path2)
-  } else {
-    lines2 <- character()
-  }
+    file_exists <- file.exists(path)
 
-
-  pattern <- paste0("^\\s*", var, "\\s*[+:]?=")
-  idx1 <- grep(pattern, lines1)
-  idx2 <- grep(pattern, lines2)
-
-  if (length(idx1) > 0) {
-    if (!grepl(value, lines1[idx1[1]], fixed = TRUE)) {
-      lines1[idx1[1]] <- paste(lines1[idx1[1]], value)
+    # Nothing to add and no file to update - don't create an empty Makevars
+    if (!file_exists && is.null(value)) {
+      next
     }
-  } else {
-    lines1 <- c(lines1, paste(var, "=", value))
-  }
 
-  if (length(idx2) > 0) {
-    if (!grepl(value, lines2[idx2[1]], fixed = TRUE)) {
-      lines2[idx2[1]] <- paste(lines2[idx2[1]], value)
+    if (file_exists) {
+      lines <- brio::read_lines(path)
+    } else {
+      lines <- character()
     }
-  } else {
-    lines2 <- c(lines2, paste(var, "=", value))
-  }
 
-  brio::write_lines(lines1, makevars_path1)
-  brio::write_lines(lines2, makevars_path2)
+    idx <- stringr::str_which(lines, pattern)
+
+    if (length(idx) > 0) {
+      tokens <- stringr::str_split_1(lines[idx[1]], "[ \t]+")
+      # fixed() because the prefix is a literal flag, not a pattern
+      tokens <- tokens[!stringr::str_starts(tokens, stringr::fixed(prefix))]
+      lines[idx[1]] <- stringr::str_flatten(c(tokens, value), collapse = " ")
+    } else {
+      lines <- c(lines, stringr::str_c(var, " = ", value))
+    }
+
+    brio::write_lines(lines, path)
+  }
+}
+
+# A flag with no value part is its own prefix, so adding one is just setting it
+add_makevars_flag <- function(var, value) {
+  set_makevars_flag(var, prefix = value, value = value)
 }
 
 #' Helper for developing packages with cppally
