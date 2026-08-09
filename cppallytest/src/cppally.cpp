@@ -187,28 +187,6 @@ extern "C" SEXP _cppallytest_test_scalar(SEXP x, SEXP y) {
   END_CPPALLY
 }
 // test.h
-extern "C" SEXP _cppallytest_test_scalar2(SEXP x, SEXP y) {
-  BEGIN_CPPALLY
-  return dispatch_template_impl<1, 2, std::array<int, 2>{-1, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_r(::test_scalar2(std::declval<r_int>(), std::declval<T>()))) {
-        return cpp_to_r(::test_scalar2(r_to_cpp<r_int>(x_internal), r_to_cpp<T>(y_internal)));
-    },
-    x, y
-  );
-  END_CPPALLY
-}
-// test.h
-extern "C" SEXP _cppallytest_test_scalar3(SEXP x, SEXP y) {
-  BEGIN_CPPALLY
-  return dispatch_template_impl<1, 2, std::array<int, 2>{-1, 0}>(
-    []<typename T>(SEXP x_internal, SEXP y_internal) -> decltype(cpp_to_r(::test_scalar3(std::declval<r_int>(), std::declval<T>()))) {
-        return cpp_to_r(::test_scalar3(r_to_cpp<r_int>(x_internal), r_to_cpp<T>(y_internal)));
-    },
-    x, y
-  );
-  END_CPPALLY
-}
-// test.h
 extern "C" SEXP _cppallytest_test_rval_identity(SEXP x) {
   BEGIN_CPPALLY
   return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
@@ -1301,8 +1279,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_rng_unif",                     (DL_FUNC) &_cppallytest_test_rng_unif,                     4},
     {"_cppallytest_test_rval_identity",                (DL_FUNC) &_cppallytest_test_rval_identity,                1},
     {"_cppallytest_test_scalar",                       (DL_FUNC) &_cppallytest_test_scalar,                       2},
-    {"_cppallytest_test_scalar2",                      (DL_FUNC) &_cppallytest_test_scalar2,                      2},
-    {"_cppallytest_test_scalar3",                      (DL_FUNC) &_cppallytest_test_scalar3,                      2},
     {"_cppallytest_test_sexp",                         (DL_FUNC) &_cppallytest_test_sexp,                         1},
     {"_cppallytest_test_sexp2",                        (DL_FUNC) &_cppallytest_test_sexp2,                        1},
     {"_cppallytest_test_sexp3",                        (DL_FUNC) &_cppallytest_test_sexp3,                        1},
