@@ -4,9 +4,9 @@ cppally_scalar_types <- c(
   "r_raw", "r_date", "r_psxct"
 )
 
-check_dispatch_types <- function(x) {
+check_scalar_types <- function(x) {
 
-  if (!is_character(x)){
+  if (!is.character(x)){
     cli::cli_abort("{.arg x} must be a character vector")
   }
 
@@ -14,7 +14,7 @@ check_dispatch_types <- function(x) {
 
   if (length(bad) > 0) {
     cli::cli_abort(c(
-      "Unknown type{?s}: {.val {bad}}.",
+      "Invalid scalar type{?s}: {.val {bad}}.",
       "i" = "Valid types are {.val {cppally_scalar_types}}."
     ))
   }
@@ -80,6 +80,8 @@ check_dispatch_types <- function(x) {
 #' Default is `TRUE`.
 #' @param data_frames `[logical(1)]` - Should `r_df` be a candidate?
 #' Default is `TRUE`.
+#' @param quiet `[logical(1)]` - Should messages be suppressed?
+#' Default is `FALSE`.
 #' @param r_sexp `[logical(1)]` - Should `r_sexp` be a candidate?
 #' Default is `TRUE`. `r_sexp` is not a scalar type, so it has its own switch
 #' rather than belonging to `scalar_types`.
@@ -93,16 +95,10 @@ use_dispatch_candidates <- function(scalar_types = cppally_scalar_types,
                                     vectors = TRUE,
                                     factors = TRUE,
                                     data_frames = TRUE,
-                                    r_sexp = TRUE) {
+                                    r_sexp = TRUE,
+                                    quiet = FALSE) {
 
-  if ("r_sexp" %in% scalar_types) {
-    cli::cli_abort(c(
-      "{.val r_sexp} is not a scalar type.",
-      "i" = "Use the {.arg r_sexp} argument instead of listing it in {.arg scalar_types}."
-    ))
-  }
-
-  check_dispatch_types(scalar_types)
+  check_scalar_types(scalar_types)
 
   # Keep consistent order
   scalar_types <- cppally_scalar_types[cppally_scalar_types %in% scalar_types]
@@ -187,16 +183,17 @@ use_dispatch_candidates <- function(scalar_types = cppally_scalar_types,
     ))
   }
 
-  set_makevars_flag("PKG_CPPFLAGS", "-DCPPALLY_DISPATCH_CANDIDATES=", types_flag)
-  set_makevars_flag("PKG_CPPFLAGS", "-DCPPALLY_NO_SCALAR_CANDIDATES", scalars_flag)
-  set_makevars_flag("PKG_CPPFLAGS", "-DCPPALLY_NO_VECTOR_CANDIDATES", vectors_flag)
-  set_makevars_flag("PKG_CPPFLAGS", "-DCPPALLY_NO_FACTOR_CANDIDATE", factors_flag)
-  set_makevars_flag("PKG_CPPFLAGS", "-DCPPALLY_NO_DF_CANDIDATE", df_flag)
-  set_makevars_flag("PKG_CPPFLAGS", "-DCPPALLY_NO_SEXP_CANDIDATE", sexp_flag)
+  # Silenced individually - the summary below reports the whole set at once
+  set_makevars_value("PKG_CPPFLAGS", "-DCPPALLY_DISPATCH_CANDIDATES=", types_flag, quiet = TRUE)
+  set_makevars_value("PKG_CPPFLAGS", "-DCPPALLY_NO_SCALAR_CANDIDATES", scalars_flag, quiet = TRUE)
+  set_makevars_value("PKG_CPPFLAGS", "-DCPPALLY_NO_VECTOR_CANDIDATES", vectors_flag, quiet = TRUE)
+  set_makevars_value("PKG_CPPFLAGS", "-DCPPALLY_NO_FACTOR_CANDIDATE", factors_flag, quiet = TRUE)
+  set_makevars_value("PKG_CPPFLAGS", "-DCPPALLY_NO_DF_CANDIDATE", df_flag, quiet = TRUE)
+  set_makevars_value("PKG_CPPFLAGS", "-DCPPALLY_NO_SEXP_CANDIDATE", sexp_flag, quiet = TRUE)
 
   n_default <- 2 + 2 * (length(cppally_scalar_types) + 1)
 
-  cli::cli_bullets(c(
+  cppally_bullets(c(
     "v" = "Set dispatch candidates ({n_candidates} candidates, default is {n_default}).",
     "!" = "Template functions now accept only the following types at the R boundary:",
     "",
@@ -205,5 +202,5 @@ use_dispatch_candidates <- function(scalar_types = cppally_scalar_types,
     "*" = "other: {other_types}",
     "",
     "i" = "Recompile with {.run cppally::load_all()}"
-  ))
+  ), quiet = quiet)
 }

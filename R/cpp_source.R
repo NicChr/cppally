@@ -6,34 +6,6 @@ is_windows <- function(){
   .Platform$OS.type == "windows"
 }
 
-generate_makevars <- function (
-    includes, cxx_std, debug,
-    preserve_altrep, check_factors, check_data_frames, copy_on_modify
-){
-  out <- c(
-    PKG_CXXFLAGS = "PKG_CXXFLAGS= $(SHLIB_OPENMP_CXXFLAGS)",
-    PKG_LIBS = "PKG_LIBS= $(SHLIB_OPENMP_CXXFLAGS)",
-    CXX_STD = sprintf("CXX_STD=%s", cxx_std),
-    PKG_CPPFLAGS = sprintf("PKG_CPPFLAGS=%s", paste0(includes, collapse = " "))
-  )
-  if (preserve_altrep){
-    out["PKG_CPPFLAGS"] <- paste(out["PKG_CPPFLAGS"], "-DCPPALLY_PRESERVE_ALTREP")
-  }
-  if (check_factors){
-    out["PKG_CPPFLAGS"] <- paste(out["PKG_CPPFLAGS"], "-DCPPALLY_CHECK_FACTORS")
-  }
-  if (check_data_frames){
-    out["PKG_CPPFLAGS"] <- paste(out["PKG_CPPFLAGS"], "-DCPPALLY_CHECK_DATA_FRAMES")
-  }
-  if (copy_on_modify){
-    out["PKG_CPPFLAGS"] <- paste(out["PKG_CPPFLAGS"], "-DCPPALLY_COPY_ON_MODIFY")
-  }
-  if (debug) {
-    out <- c(out, "override CXXFLAGS += -O0")
-  }
-  unname(out)
-}
-
 generate_cpp_name <- function (name, loaded_dlls = c("cppally", names(getLoadedDLLs()))){
   ext <- tools::file_ext(name)
   root <- tools::file_path_sans_ext(basename(name))
@@ -275,7 +247,7 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
                        dir = tempfile()){
   stop_unless_installed(
     c("brio", "callr", "cli", "decor", "desc",
-      "glue", "purrr", "readr", "stringr", "vctrs")
+      "glue", "purrr", "readr", "stringr", "usethis", "vctrs")
   )
 
   if (!is.null(file) && !is.null(code)){
@@ -285,6 +257,7 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
   if (!is.null(file) && !file.exists(file)) {
     stop("Can't find `file` at this path:\n", file, "\n", call. = FALSE)
   }
+
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
   dir.create(file.path(dir, "R"), showWarnings = FALSE)
   dir.create(file.path(dir, "src"), showWarnings = FALSE)
@@ -327,11 +300,33 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
   }
   r_functions <- generate_r_functions(funs, package = package,
                                       use_package = TRUE)
-  makevars_content <- generate_makevars(
-    includes, cxx_std, debug,
-    preserve_altrep, check_factors, check_data_frames, copy_on_modify
+
+  # makevars flags
+  usethis::with_project(dir, force = TRUE, quiet = TRUE, code = {
+    use_openmp(quiet = TRUE)
+    use_cxx_std(cxx_std, quiet = TRUE)
+    set_makevars_value(
+      "PKG_CPPFLAGS",
+      prefix = "-I",
+      value = stringr::str_flatten(includes, collapse = " "),
+      quiet = TRUE
     )
-  brio::write_lines(makevars_content, file.path(new_dir, "Makevars"))
+    if (preserve_altrep) {
+      use_preserve_altrep_flag(quiet = TRUE)
+    }
+    if (check_factors) {
+      use_check_factors(quiet = TRUE)
+    }
+    if (check_data_frames) {
+      use_check_data_frames(quiet = TRUE)
+    }
+    if (copy_on_modify) {
+      use_copy_on_modify(quiet = TRUE)
+    }
+    if (debug) {
+      use_debug(quiet = TRUE)
+    }
+  })
   shared_lib_name <- paste0(tools::file_path_sans_ext(new_file_name), .Platform$dynlib.ext)
   res <- callr::rcmd("SHLIB", c(cpp_path, "-o", shared_lib_name),
                      user_profile = TRUE, show = !quiet, wd = new_dir)
@@ -349,8 +344,10 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
   source(r_path, local = env)
   dyn.load(shared_lib, local = TRUE, now = TRUE)
 }
-source_single_exprs <- function(exprs, env = parent.frame(), clean = TRUE,
-                                quiet = TRUE, debug = FALSE,
+source_single_exprs <- function(exprs, env = parent.frame(),
+                                clean = TRUE,
+                                quiet = TRUE,
+                                debug = FALSE,
                                 preserve_altrep = FALSE,
                                 check_factors = FALSE,
                                 check_data_frames = FALSE,

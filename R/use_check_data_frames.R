@@ -8,11 +8,13 @@
 #' The default behaviour is NOT to validate column lengths, enabling faster
 #' `r_df` creating from `SEXP`.
 #'
+#' @param quiet `[logical(1)]` - Should messages be suppressed?
+#' Default is `FALSE`.
+#'
 #' @returns
 #' Invisibly adds the `CPPALLY_CHECK_DATA_FRAMES` flag to Makevars.
 #'
 #' @export
-use_check_data_frames <- function(){
-  add_makevars_flag("PKG_CPPFLAGS", "-DCPPALLY_CHECK_DATA_FRAMES")
-  cli::cli_bullets(c("v" = "Added CPPALLY_CHECK_DATA_FRAMES flag."))
+use_check_data_frames <- function(quiet = FALSE){
+  add_makevars_flag("PKG_CPPFLAGS", "-DCPPALLY_CHECK_DATA_FRAMES", quiet = quiet)
 }

@@ -18,11 +18,13 @@
 #' and therefore most cppally parallelisation is disabled
 #' once CPPALLY_COPY_ON_MODIFY is set.
 #'
+#' @param quiet `[logical(1)]` - Should messages be suppressed?
+#' Default is `FALSE`.
+#'
 #' @returns
 #' Invisibly adds the `CPPALLY_COPY_ON_MODIFY` flag to Makevars.
 #'
 #' @export
-use_copy_on_modify <- function(){
-  add_makevars_flag("PKG_CPPFLAGS", "-DCPPALLY_COPY_ON_MODIFY")
-  cli::cli_bullets(c("v" = "Added CPPALLY_COPY_ON_MODIFY flag."))
+use_copy_on_modify <- function(quiet = FALSE){
+  add_makevars_flag("PKG_CPPFLAGS", "-DCPPALLY_COPY_ON_MODIFY", quiet = quiet)
 }

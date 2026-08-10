@@ -4,7 +4,11 @@
 \alias{use_copy_on_modify}
 \title{Adds the \code{CPPALLY_COPY_ON_MODIFY} flag to Makevars}
 \usage{
-use_copy_on_modify()
+use_copy_on_modify(quiet = FALSE)
+}
+\arguments{
+\item{quiet}{\verb{[logical(1)]} - Should messages be suppressed?
+Default is \code{FALSE}.}
 }
 \value{
 Invisibly adds the \code{CPPALLY_COPY_ON_MODIFY} flag to Makevars.

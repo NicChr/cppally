@@ -10,7 +10,8 @@ use_dispatch_candidates(
   vectors = TRUE,
   factors = TRUE,
   data_frames = TRUE,
-  r_sexp = TRUE
+  r_sexp = TRUE,
+  quiet = FALSE
 )
 }
 \arguments{
@@ -36,6 +37,9 @@ Default is \code{TRUE}.}
 \item{r_sexp}{\verb{[logical(1)]} - Should \code{r_sexp} be a candidate?
 Default is \code{TRUE}. \code{r_sexp} is not a scalar type, so it has its own switch
 rather than belonging to \code{scalar_types}.}
+
+\item{quiet}{\verb{[logical(1)]} - Should messages be suppressed?
+Default is \code{FALSE}.}
 }
 \value{
 Invisibly adds dispatch candidate flags to Makevars.
