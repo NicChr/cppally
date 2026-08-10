@@ -2,7 +2,7 @@
 % Please edit documentation in R/use_template_dispatch_candidates.R
 \name{use_template_dispatch_candidates}
 \alias{use_template_dispatch_candidates}
-\title{Restrict the C++/R types a template function will dispatch on}
+\title{Restrict the R/C++ types a template function will dispatch on}
 \usage{
 use_template_dispatch_candidates(
   scalar_types = cppally_scalar_types,
@@ -48,13 +48,12 @@ Invisibly adds dispatch candidate flags to Makevars.
 Use this when:
 \itemize{
 \item You want to speed up compilation time.
-\item Your code accepts a subset of types.
+\item Your code only ever will accept a subset of types.
 }
 
 For example, let's say you are writing a C++ matrix algebra library using
 cppally and you are only interested in working with integers
 and doubles.
-
 Because the only types your library accepts are based on these two
 types, you could restrict all template accepted types to \code{r_int} and \code{r_dbl}
 (and equivalently \verb{r_vector<r_int>} and \verb{r_vector<r_dbl>}). Doing this will

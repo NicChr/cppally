@@ -21,18 +21,17 @@ check_scalar_types <- function(x) {
 
 }
 
-#' Restrict the C++/R types a template function will dispatch on
+#' Restrict the R/C++ types a template function will dispatch on
 #'
 #' @description
 #' Use this when:
 #'
 #' - You want to speed up compilation time.
-#' - Your code accepts a subset of types.
+#' - Your code only ever will accept a subset of types.
 #'
 #' For example, let's say you are writing a C++ matrix algebra library using
 #' cppally and you are only interested in working with integers
 #' and doubles.
-#'
 #' Because the only types your library accepts are based on these two
 #' types, you could restrict all template accepted types to `r_int` and `r_dbl`
 #' (and equivalently `r_vector<r_int>` and `r_vector<r_dbl>`). Doing this will
