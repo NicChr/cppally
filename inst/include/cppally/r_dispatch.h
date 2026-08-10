@@ -94,10 +94,12 @@ struct fn_traits<Ret(*)(Args...)> {
 // Narrowing it cuts the instantiations the dispatcher emits, at the cost of
 // narrowing which R types a registered templated function accepts at runtime.
 //
-// Every TU in a package MUST agree on these macros. `shared_type_table::value`
-// and the function-local `dispatch_table` are inline variables with vague
-// linkage, so two TUs disagreeing is an ODR violation the linker will not
-// diagnose. Setting them via PKG_CPPFLAGS guarantees agreement.
+// Every TU in a package MUST agree on these macros. The function-local
+// `dispatch_table` is an inline variable with vague linkage, so two TUs
+// disagreeing is an ODR violation the linker will not diagnose. Setting them
+// via PKG_CPPFLAGS guarantees agreement. Across packages disagreement is fine:
+// `shared_type_table` carries the candidate set in its symbol name (see its
+// Config parameter) and `dispatch_table` is keyed on per-package lambda types.
 //
 // Unrelated to the visitor list in r_visit.h, which is a linear switch over a
 // different set of types and is deliberately not narrowed by these macros.
@@ -207,7 +209,9 @@ constexpr auto excluded_codes_pair = []{
 constexpr size_t N_EXCLUDED = excluded_codes_pair.second;
 constexpr auto excluded_codes = excluded_codes_pair.first;
 
-constexpr bool is_excluded_code(uint32_t code) {
+// static: reads excluded_codes, which has internal linkage, so an
+// external-linkage inline definition would be an ODR violation across TUs
+static constexpr bool is_excluded_code(uint32_t code) {
     for (size_t i = 0; i < N_EXCLUDED; ++i) {
         if (excluded_codes[i] == code) {
             return true;
@@ -280,7 +284,7 @@ static_assert(
     "Re-enable at least one via `use_template_dispatch_candidates()`"
 );
 
-constexpr size_t static_pow(size_t base, size_t exp) {
+static constexpr size_t static_pow(size_t base, size_t exp) {
     size_t r = 1;
     for (size_t i = 0; i < exp; ++i) r *= base;
     return r;
@@ -377,15 +381,34 @@ struct dispatch_entry_impl<I, NumTemplateParams, NumArgs, Functor, true> {
 };
 
 
+// The code the type table stores for one candidate: the CPPALLY_TYPEOF it is
+// matched against, or the wildcard sentinel for r_sexp. uint32_t max is outside
+// uint16_t range, so the sentinel never collides with any CPPALLY_TYPEOF value
+template <typename T>
+constexpr uint32_t candidate_code() {
+    if constexpr (is_sexp<T>) {
+        return std::numeric_limits<uint32_t>::max();
+    } else {
+        return static_cast<uint32_t>(r_cpp_boundary_map_v<T>);
+    }
+}
+
+// The active candidate set as the codes the type table is built from - this is
+// the table's identity, used to key shared_type_table's symbol name
+template <typename Tuple> struct candidate_codes;
+template <typename... Ts>
+struct candidate_codes<std::tuple<Ts...>> {
+    static constexpr std::array<uint32_t, sizeof...(Ts)> value{
+        candidate_code<Ts>()...
+    };
+};
+
 // Type table helpers: standalone constexpr functions are more reliably
 // evaluated than lambdas inside constexpr contexts
 template <size_t I, size_t NumTemplateParams, size_t K>
 constexpr uint32_t type_entry_element() {
     using T = std::tuple_element_t<K, combo_t<I, NumTemplateParams>>;
-    // uint32_t max sentinel is outside uint16_t range, so never collides
-    // with any CPPALLY_TYPEOF value
-    if constexpr (is_sexp<T>) return std::numeric_limits<uint32_t>::max();
-    else return static_cast<uint32_t>(r_cpp_boundary_map_v<T>);
+    return candidate_code<T>();
 }
 
 
@@ -408,7 +431,18 @@ constexpr auto make_dispatch_table(std::index_sequence<Is...>) {
 // type list. Hoisted into a struct so the static constexpr member is shared across
 // all Functor instantiations with the same NumTemplateParams, rather than being
 // re-instantiated once per registered function.
-template <size_t NumTemplateParams>
+//
+// Config pins the candidate set into the symbol name and must be left defaulted.
+// On Linux, GCC emits `value` as STB_GNU_UNIQUE and glibc resolves such symbols
+// process-wide, ignoring RTLD_LOCAL. Keyed on NumTemplateParams alone, two
+// shared libraries built with different dispatch candidates would silently
+// share whichever table loaded first: the later library then scans a table
+// that disagrees with its own dispatch_table, wrongly rejecting valid types,
+// dispatching to the wrong instantiation, or reading past the end of a smaller
+// table. With Config in the name, two configs share a symbol iff their tables
+// are byte-identical, which is exactly when sharing is harmless.
+template <size_t NumTemplateParams,
+          auto Config = candidate_codes<all_candidate_types>::value>
 struct shared_type_table {
     static constexpr size_t Total = static_pow(N_CANDIDATES, NumTemplateParams);
     static constexpr auto value = []<size_t... Is>(std::index_sequence<Is...>) {
