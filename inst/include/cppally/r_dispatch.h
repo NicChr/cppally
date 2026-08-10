@@ -17,35 +17,47 @@
 #include <utility>
 #include <array>
 #include <limits>
+#include <cstring>             // for strncpy
 #include <exception>           // for std::exception
 
 // Buffer size for error messages (matches cpp11 default)
 #define CPPALLY_ERROR_BUFSIZE 8192
 
-#define BEGIN_CPPALLY                   \
-  SEXP err = R_NilValue;              \
-  char buf[CPPALLY_ERROR_BUFSIZE];    \
-  buf[0] = '\0';                      \
+// Opts a vague-linkage symbol out of STB_GNU_UNIQUE binding on ELF, keeping it
+// private to its shared library. No-op elsewhere: PE and Mach-O never share
+// vague-linkage symbols across libraries in the first place
+#if defined(__GNUC__) || defined(__clang__)
+#define CPPALLY_HIDDEN __attribute__((visibility("hidden")))
+#else
+#define CPPALLY_HIDDEN
+#endif
+
+// The locals carry a cppally_ prefix so they cannot collide with a registered
+// function's parameter names, which share the outermost block with them
+#define BEGIN_CPPALLY                             \
+  SEXP cppally_err_ = R_NilValue;               \
+  char cppally_buf_[CPPALLY_ERROR_BUFSIZE];     \
+  cppally_buf_[0] = '\0';                       \
   try {
 
-#define END_CPPALLY                                               \
-  }                                                             \
-  catch (cppally::internal::unwind_exception & e) {                         \
-    err = e.token;                                              \
-  }                                                             \
-  catch (std::exception & e) {                                  \
-    strncpy(buf, e.what(), sizeof(buf) - 1);                    \
-    buf[sizeof(buf) - 1] = '\0';                                \
-  }                                                             \
-  catch (...) {                                                 \
-    strncpy(buf, "C++ error (unknown cause)", sizeof(buf) - 1); \
-    buf[sizeof(buf) - 1] = '\0';                                \
-  }                                                             \
-  if (buf[0] != '\0') {                                         \
-    Rf_errorcall(R_NilValue, "%s", buf);                        \
-  } else if (err != R_NilValue) {                               \
-    R_ContinueUnwind(err);                                      \
-  }                                                             \
+#define END_CPPALLY                                                             \
+  }                                                                           \
+  catch (cppally::internal::unwind_exception & e) {                           \
+    cppally_err_ = e.token;                                                   \
+  }                                                                           \
+  catch (std::exception & e) {                                                \
+    strncpy(cppally_buf_, e.what(), sizeof(cppally_buf_) - 1);                \
+    cppally_buf_[sizeof(cppally_buf_) - 1] = '\0';                            \
+  }                                                                           \
+  catch (...) {                                                               \
+    strncpy(cppally_buf_, "C++ error (unknown cause)", sizeof(cppally_buf_) - 1); \
+    cppally_buf_[sizeof(cppally_buf_) - 1] = '\0';                            \
+  }                                                                           \
+  if (cppally_buf_[0] != '\0') {                                              \
+    Rf_errorcall(R_NilValue, "%s", cppally_buf_);                             \
+  } else if (cppally_err_ != R_NilValue) {                                    \
+    R_ContinueUnwind(cppally_err_);                                           \
+  }                                                                           \
   return R_NilValue;
 
 
@@ -94,12 +106,12 @@ struct fn_traits<Ret(*)(Args...)> {
 // Narrowing it cuts the instantiations the dispatcher emits, at the cost of
 // narrowing which R types a registered templated function accepts at runtime.
 //
-// Every TU in a package MUST agree on these macros. The function-local
-// `dispatch_table` is an inline variable with vague linkage, so two TUs
-// disagreeing is an ODR violation the linker will not diagnose. Setting them
-// via PKG_CPPFLAGS guarantees agreement. Across packages disagreement is fine:
-// `shared_type_table` carries the candidate set in its symbol name (see its
-// Config parameter) and `dispatch_table` is keyed on per-package lambda types.
+// Every TU in a package MUST agree on these macros. The tables are vague-linkage
+// symbols, so two TUs disagreeing is an ODR violation the linker will not
+// diagnose. Setting them via PKG_CPPFLAGS guarantees agreement. Across shared
+// libraries disagreement is fine: `shared_type_table` carries the candidate set
+// in its symbol name (see its Config parameter) and `per_functor_dispatch_table`
+// is hidden, so it never crosses a library boundary.
 //
 // Unrelated to the visitor list in r_visit.h, which is a linear switch over a
 // different set of types and is deliberately not narrowed by these macros.
@@ -186,6 +198,25 @@ struct boundary_codes<std::tuple<Ts...>> {
     };
 };
 
+// Code equality is treated as type identity throughout the dispatcher (type
+// table matching, exclusion, shared_type_table's Config), so every candidate
+// must map to its own code. A future type missing its r_typeof specialisation
+// would inherit the uint16_t max default and silently alias another candidate
+static_assert([]{
+    constexpr auto codes = boundary_codes<r_default_candidate_types>::value;
+    for (size_t i = 0; i < codes.size(); ++i) {
+        if (codes[i] == std::numeric_limits<uint16_t>::max()) {
+            return false;
+        }
+        for (size_t j = i + 1; j < codes.size(); ++j) {
+            if (codes[i] == codes[j]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}(), "Every cppally candidate type must map to a distinct CPPALLY_TYPEOF code");
+
 constexpr auto excluded_codes_pair = []{
     constexpr auto all = boundary_codes<r_default_candidate_types>::value;
     constexpr auto active = boundary_codes<r_active_candidate_types>::value;
@@ -196,6 +227,7 @@ constexpr auto excluded_codes_pair = []{
         for (size_t j = 0; j < active.size(); ++j) {
             if (active[j] == all[i]) {
                 found = true;
+                break;
             }
         }
         if (!found) {
@@ -297,7 +329,10 @@ static constexpr size_t static_pow(size_t base, size_t exp) {
 // Example with N=2, N_CANDIDATES=22, I=42:
 //   digit 0 = 42 % 22 = 20  → all_candidate_types[20]
 //   digit 1 = 42 / 22 =  1  → all_candidate_types[1]
-//   result  = tuple<type_20, type_1>
+//   result  = tuple<type_1, type_20>
+// Digits are prepended as the recursion unwinds, so digit 0 lands in the LAST
+// tuple position - the last template param cycles through the candidates
+// fastest as I increments
 template <size_t Val, size_t N, size_t... Is>
 struct extract_combo {
     using type = typename extract_combo<Val / N_CANDIDATES, N - 1, Val % N_CANDIDATES, Is...>::type;
@@ -426,6 +461,20 @@ constexpr auto make_dispatch_table(std::index_sequence<Is...>) {
     };
 }
 
+// CPPALLY_HIDDEN because the Functor key alone does not make this symbol unique
+// process-wide: a rebuilt shared library of the same name reuses its lambdas'
+// mangled names, and GNU-unique binding would pin the FIRST build's table (the
+// old library is marked NODELETE, so unloading cannot evict it). The reloaded
+// library would then dispatch through stale function pointers - running the
+// previous build's code, or scanning a mis-sized table if the candidate flags
+// changed between builds. Hidden visibility keeps each library on its own table
+template <size_t NumTemplateParams, size_t NumArgs, typename Functor>
+struct CPPALLY_HIDDEN per_functor_dispatch_table {
+    static constexpr auto value = make_dispatch_table<NumTemplateParams, NumArgs, Functor>(
+        std::make_index_sequence<static_pow(N_CANDIDATES, NumTemplateParams)>{}
+    );
+};
+
 
 // type_table: NOT per-Functor — depends only on NumTemplateParams and the candidate
 // type list. Hoisted into a struct so the static constexpr member is shared across
@@ -472,8 +521,8 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
 
 
     // dispatch_table: built once per unique (Functor type x NumTemplateParams x NumArgs)
-    static constexpr auto dispatch_table =
-        make_dispatch_table<NumTemplateParams, NumArgs, F>(std::make_index_sequence<Total>{});
+    constexpr const auto& dispatch_table =
+        per_functor_dispatch_table<NumTemplateParams, NumArgs, F>::value;
     // type_table: shared across ALL Functor types with the same NumTemplateParams
     constexpr const auto& type_table = shared_type_table<NumTemplateParams>::value;
 
@@ -500,7 +549,8 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
             } else if (arg_type != param_type) {
                 abort(
                     "R type: %s for arg %zu does not match the first instance: %s for this template arg",
-                    r_type_to_str(arg_type), i + 1, r_type_to_str(param_type)
+                    r_type_to_str(static_cast<SEXPTYPE>(arg_type)), i + 1,
+                    r_type_to_str(static_cast<SEXPTYPE>(param_type))
                 );
             }
         }
@@ -619,7 +669,8 @@ SEXP dispatch(SexpArgs... args) {
     static_assert((is<SexpArgs, SEXP> && ...), "dispatch<Fn>: all arguments must be SEXP");
 
 
-    SEXP arg_array[] = { args... };
+    // Sized to at least 1 so a zero-arg Fn does not form a zero-size array
+    SEXP arg_array[sizeof...(SexpArgs) > 0 ? sizeof...(SexpArgs) : 1] = { args... };
     return []<typename... Args>(SEXP* arr, std::tuple<Args...>*) {
         return internal::invoke_impl<Fn, typename Traits::return_type, Args...>(
             arr, std::make_index_sequence<sizeof...(Args)>{}
