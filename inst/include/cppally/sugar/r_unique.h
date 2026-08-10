@@ -20,6 +20,7 @@ T unique(const T& x, bool sort = false) {
 }
 
 template <typename T>
+requires requires (const T& vec) { make_groups(vec); }
 r_vec<r_lgl> duplicated(const T& x, bool all = false){
   
   groups g = make_groups(x);
