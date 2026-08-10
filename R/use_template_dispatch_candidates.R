@@ -90,13 +90,13 @@ check_scalar_types <- function(x) {
 #' Invisibly adds dispatch candidate flags to Makevars.
 #'
 #' @export
-use_dispatch_candidates <- function(scalar_types = cppally_scalar_types,
-                                    scalars = TRUE,
-                                    vectors = TRUE,
-                                    factors = TRUE,
-                                    data_frames = TRUE,
-                                    r_sexp = TRUE,
-                                    quiet = FALSE) {
+use_template_dispatch_candidates <- function(scalar_types = cppally_scalar_types,
+                                             scalars = TRUE,
+                                             vectors = TRUE,
+                                             factors = TRUE,
+                                             data_frames = TRUE,
+                                             r_sexp = TRUE,
+                                             quiet = FALSE) {
 
   check_scalar_types(scalar_types)
 

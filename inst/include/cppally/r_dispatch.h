@@ -6,7 +6,7 @@
 // This is done by providing a map of C++20 types to SEXP tag-types
 //
 // For non-templated functions, inputs are simply coerced to the specified type
-// For templated functions, templated arguments are verified by first applying the SEXP/C++ mapping and 
+// For templated functions, templated arguments are verified by first applying the SEXP/C++ mapping and
 // then checking that the constraints of the template are satisfied.
 // Where there are one-to-many mappings, vector and scalars are both used to check if either of them can satisfy the constraints
 
@@ -90,7 +90,7 @@ struct fn_traits<Ret(*)(Args...)> {
 
 // ── DISPATCH CANDIDATE SET ────────────────────────────────────────────────────
 //
-// Package-wide compile-time policy, normally set by `use_dispatch_candidates()`.
+// Package-wide compile-time policy, normally set by `use_template_dispatch_candidates()`.
 // Narrowing it cuts the instantiations the dispatcher emits, at the cost of
 // narrowing which R types a registered templated function accepts at runtime.
 //
@@ -103,7 +103,7 @@ struct fn_traits<Ret(*)(Args...)> {
 // different set of types and is deliberately not narrowed by these macros.
 
 // The complete list is kept separately from the active one so the dispatcher can
-// tell "excluded by use_dispatch_candidates()" apart from "not a cppally type"
+// tell "excluded by use_template_dispatch_candidates()" apart from "not a cppally type"
 #define CPPALLY_DEFAULT_DISPATCH_CANDIDATES \
     r_lgl, r_int, r_int64, r_dbl, r_str, r_cplx, r_raw, r_date, r_psxct
 
@@ -277,7 +277,7 @@ constexpr size_t N_CANDIDATES = std::tuple_size_v<all_candidate_types>;
 static_assert(
     N_CANDIDATES > 0,
     "No dispatch candidates left:"
-    "Re-enable at least one via `use_dispatch_candidates()`"
+    "Re-enable at least one via `use_template_dispatch_candidates()`"
 );
 
 constexpr size_t static_pow(size_t base, size_t exp) {
@@ -480,7 +480,7 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
             if (param_type != NILSXP && is_excluded_code(static_cast<uint32_t>(param_type))) {
                 abort(
                     "Argument %zu is of R type %s, which this package excludes from its "
-                    "dispatch candidates. Restore it with `use_dispatch_candidates()`",
+                    "dispatch candidates. Restore it with `use_template_dispatch_candidates()`",
                     param_arg + 1, r_type_to_str(param_type)
                 );
             }
