@@ -9,14 +9,17 @@
 namespace cppally {
 
 template <typename T>
-requires (RComposite<T> || RSexpType<T>)
+requires requires (const T& vec) { make_groups(vec); }
 T unique(const T& x, bool sort = false) {
     groups group_info = make_groups(x, sort);
-    return subset(x, group_info.starts(), false, false);
+    if (group_info.n_groups == length(x)){
+      return x;
+    } else {
+      return subset(x, group_info.starts(), false, false);
+    }
 }
 
 template <typename T>
-requires requires (const T& vec) { make_groups(vec); }
 r_vec<r_lgl> duplicated(const T& x, bool all = false){
   
   groups g = make_groups(x);
