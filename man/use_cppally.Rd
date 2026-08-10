@@ -4,7 +4,11 @@
 \alias{use_cppally}
 \title{Helper for developing packages with cppally}
 \usage{
-use_cppally()
+use_cppally(quiet = FALSE)
+}
+\arguments{
+\item{quiet}{\verb{[logical(1)]} - Should messages be suppressed?
+Default is \code{FALSE}.}
 }
 \value{
 Invisibly sets up the necessary conditions for

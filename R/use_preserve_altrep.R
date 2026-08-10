@@ -4,11 +4,13 @@
 #' Adds a flag to Makevars which enables lazy materialisation of
 #' ALTREP vectors.
 #'
+#' @param quiet `[logical(1)]` - Should messages be suppressed?
+#' Default is `FALSE`.
+#'
 #' @returns
 #' Invisibly adds the CPPALLY_PRESERVE_ALTREP flag to Makevars.
 #'
 #' @export
-use_preserve_altrep_flag <- function(){
-  add_makevars_flag("PKG_CPPFLAGS", "-DCPPALLY_PRESERVE_ALTREP")
-  cli::cli_bullets(c("v" = "Added CPPALLY_PRESERVE_ALTREP flag."))
+use_preserve_altrep_flag <- function(quiet = FALSE){
+  add_makevars_flag("PKG_CPPFLAGS", "-DCPPALLY_PRESERVE_ALTREP", quiet = quiet)
 }

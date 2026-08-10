@@ -4,7 +4,11 @@
 \alias{use_check_factors}
 \title{Adds the \code{CPPALLY_CHECK_FACTORS} flag to Makevars}
 \usage{
-use_check_factors()
+use_check_factors(quiet = FALSE)
+}
+\arguments{
+\item{quiet}{\verb{[logical(1)]} - Should messages be suppressed?
+Default is \code{FALSE}.}
 }
 \value{
 Invisibly adds the \code{CPPALLY_CHECK_FACTORS} flag to Makevars.

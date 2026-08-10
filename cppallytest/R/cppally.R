@@ -76,14 +76,6 @@ test_scalar <- function(x, y) {
   .Call(`_cppallytest_test_scalar`, x, y)
 }
 
-test_scalar2 <- function(x, y) {
-  .Call(`_cppallytest_test_scalar2`, x, y)
-}
-
-test_scalar3 <- function(x, y) {
-  .Call(`_cppallytest_test_scalar3`, x, y)
-}
-
 test_rval_identity <- function(x) {
   .Call(`_cppallytest_test_rval_identity`, x)
 }

@@ -6,34 +6,6 @@ is_windows <- function(){
   .Platform$OS.type == "windows"
 }
 
-generate_makevars <- function (
-    includes, cxx_std, debug,
-    preserve_altrep, check_factors, check_data_frames, copy_on_modify
-){
-  out <- c(
-    PKG_CXXFLAGS = "PKG_CXXFLAGS= $(SHLIB_OPENMP_CXXFLAGS)",
-    PKG_LIBS = "PKG_LIBS= $(SHLIB_OPENMP_CXXFLAGS)",
-    CXX_STD = sprintf("CXX_STD=%s", cxx_std),
-    PKG_CPPFLAGS = sprintf("PKG_CPPFLAGS=%s", paste0(includes, collapse = " "))
-  )
-  if (preserve_altrep){
-    out["PKG_CPPFLAGS"] <- paste(out["PKG_CPPFLAGS"], "-DCPPALLY_PRESERVE_ALTREP")
-  }
-  if (check_factors){
-    out["PKG_CPPFLAGS"] <- paste(out["PKG_CPPFLAGS"], "-DCPPALLY_CHECK_FACTORS")
-  }
-  if (check_data_frames){
-    out["PKG_CPPFLAGS"] <- paste(out["PKG_CPPFLAGS"], "-DCPPALLY_CHECK_DATA_FRAMES")
-  }
-  if (copy_on_modify){
-    out["PKG_CPPFLAGS"] <- paste(out["PKG_CPPFLAGS"], "-DCPPALLY_COPY_ON_MODIFY")
-  }
-  if (debug) {
-    out <- c(out, "override CXXFLAGS += -O0")
-  }
-  unname(out)
-}
-
 generate_cpp_name <- function (name, loaded_dlls = c("cppally", names(getLoadedDLLs()))){
   ext <- tools::file_ext(name)
   root <- tools::file_path_sans_ext(basename(name))
@@ -108,6 +80,7 @@ curr_env <- function(){
 #' `r_df` objects from `SEXP`? Default is `FALSE`.
 #' @param copy_on_modify Should copy-on-modify be used everywhere? Default is
 #' `FALSE`.
+#' @param openmp Should code be compiled with OpenMP flags? Default is `TRUE`.
 #' @param dir Directory to store the source files.
 #' The default is a temporary directory via `tempfile()` which is removed when
 #' `clean = TRUE`.
@@ -117,13 +90,14 @@ curr_env <- function(){
 #' included with the registered C++ code? The default is the full library
 #' "cppally.hpp". Choose "cppally_light.hpp" for the lighter header, which may
 #' provide quicker compile times, at the cost of less features.
+#' @param ... Further arguments passed to `use_template_dispatch_candidates()`.
 #'
 #' @returns
 #' `cpp_source()` invisibly compiles the C++ code and registers
 #' the `[[cppally::register]]` tagged functions to R. \cr
 #' `cpp_eval()` returns the results of the evaluated C++ expressions.
 #'
-#' @seealso [cpp_register]
+#' @seealso [cpp_register] [use_template_dispatch_candidates]
 #'
 #' @examples
 #'
@@ -163,7 +137,7 @@ curr_env <- function(){
 #' add(1, 2)
 #' add(2, NA)
 #'
-#' ### ALTREP ###
+#' ### ALTREP
 #'
 #' # cppally also supports lazy ALTREP materialisation as an opt-in feature.
 #' # To opt-in, set `preserve_altrep = TRUE`
@@ -209,7 +183,7 @@ curr_env <- function(){
 #' mark(last_altrep_aware(1:10^5)) # No materialisation
 #' mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 #'
-#' ### Copy-on-modify ###
+#' ### Copy-on-modify
 #'
 #' # cppally supports copy-on-modify as an opt-in feature
 #' # It is disabled by default because it incurs a major performance penalty
@@ -260,22 +234,90 @@ curr_env <- function(){
 #'   cppally_no_copy_on_modify_reverse = cppally_reverse(x)
 #' )
 #'
+#' ### Speeding up template-heavy compilation
+#'
+#' # When writing C++ code that only ever uses a small subset of cppally types,
+#' # we can restrict cppally template dispatch to only ever consider these types,
+#' # potentially speeding up compilation times. Only do this if you are certain
+#' # that these are the only viable types your code will ever reasonably accept.
+#' # If you are unsure, then do not use this feature and instead use
+#' # C++ concepts and template constraints.
+#'
+#' # Example: restrict template dispatch on `r_int` and `r_dbl`
+#' # `cppally::unique()` is templated on RComposite, which accepts all R vectors,
+#' # factors, and data frames. Therefore writing our own template which depends
+#' # on `unique()` being available for any generic type, might get expensive if say we
+#' # are only interested in integers and doubles.
+#'
+#' mark(
+#'
+#'   unrestricted = cpp_source(
+#'     code = '
+#'     #include <cppally.hpp>
+#'     using namespace cppally;
+#'
+#'     template <RVector T>
+#'     requires (requires (T obj){ unique(obj); })
+#'     [[cppally::register]]
+#'     T sorted_unique(T x){
+#'       return unique(x, /*sort = */ true );
+#'     }
+#'   ',
+#'     debug = TRUE
+#'   ),
+#'   restricted = cpp_source(
+#'     code = '
+#'     #include <cppally.hpp>
+#'     using namespace cppally;
+#'
+#'     template <RVector T>
+#'     requires (requires (T obj){ unique(obj); })
+#'     [[cppally::register]]
+#'     T sorted_unique2(T x){
+#'       return unique(x, /*sort = */ true );
+#'     }
+#'   ',
+#'     debug = TRUE,
+#'     scalar_types = c("r_int", "r_dbl"),
+#'     r_sexp = FALSE,
+#'     data_frames = FALSE,
+#'     factors = FALSE
+#'   ),
+#'   check = FALSE,
+#'   memory = FALSE,
+#'   iterations = 1
+#' )
+#'
+#' sorted_unique(c(1, 1, 2, 2, 3, 3))
+#' sorted_unique2(c(1, 1, 2, 2, 3, 3))
+#'
+#' sorted_unique(c("A", "A", "B", "B", "C", "C"))
+#'
+#' # Expected to fail
+#' try(sorted_unique2(c("A", "A", "B", "B", "C", "C")))
+#'
+#' # In production code and regular usage,
+#' # you would call `use_template_dispatch_candidates(c("r_int", "r_dbl"))`
+#' # which will add the relevant flag to your Makevars file(s).
 #' }
 #' rm(cpp_eval)
 #'
 #' @rdname cpp_source
 #' @export
 cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
-                       clean = TRUE, quiet = TRUE, debug = FALSE,
+                       clean = TRUE, quiet = TRUE,
+                       debug = FALSE,
                        preserve_altrep = FALSE,
                        check_factors = FALSE,
                        check_data_frames = FALSE,
                        copy_on_modify = FALSE,
+                       openmp = TRUE,
                        cxx_std = Sys.getenv("CXX_STD", "CXX20"),
-                       dir = tempfile()){
+                       dir = tempfile(),
+                       ...){
   stop_unless_installed(
     c("brio", "callr", "cli", "decor", "desc",
-      "glue", "purrr", "readr", "stringr", "vctrs")
+      "glue", "purrr", "readr", "stringr", "usethis", "vctrs")
   )
 
   if (!is.null(file) && !is.null(code)){
@@ -285,6 +327,7 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
   if (!is.null(file) && !file.exists(file)) {
     stop("Can't find `file` at this path:\n", file, "\n", call. = FALSE)
   }
+
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
   dir.create(file.path(dir, "R"), showWarnings = FALSE)
   dir.create(file.path(dir, "src"), showWarnings = FALSE)
@@ -327,11 +370,42 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
   }
   r_functions <- generate_r_functions(funs, package = package,
                                       use_package = TRUE)
-  makevars_content <- generate_makevars(
-    includes, cxx_std, debug,
-    preserve_altrep, check_factors, check_data_frames, copy_on_modify
+
+  # makevars flags
+  usethis::with_project(dir, force = TRUE, quiet = TRUE, code = {
+
+    extra_args <- list(...)
+
+    if (length(extra_args) > 0){
+      do.call(use_template_dispatch_candidates, c(extra_args, list(quiet = TRUE)))
+    }
+
+    if (openmp){
+      use_openmp(quiet = TRUE)
+    }
+    use_cxx_std(cxx_std, quiet = TRUE)
+    set_makevars_value(
+      "PKG_CPPFLAGS",
+      prefix = "-I",
+      value = stringr::str_flatten(includes, collapse = " "),
+      quiet = TRUE
     )
-  brio::write_lines(makevars_content, file.path(new_dir, "Makevars"))
+    if (preserve_altrep) {
+      use_preserve_altrep_flag(quiet = TRUE)
+    }
+    if (check_factors) {
+      use_check_factors(quiet = TRUE)
+    }
+    if (check_data_frames) {
+      use_check_data_frames(quiet = TRUE)
+    }
+    if (copy_on_modify) {
+      use_copy_on_modify(quiet = TRUE)
+    }
+    if (debug) {
+      use_debug(quiet = TRUE)
+    }
+  })
   shared_lib_name <- paste0(tools::file_path_sans_ext(new_file_name), .Platform$dynlib.ext)
   res <- callr::rcmd("SHLIB", c(cpp_path, "-o", shared_lib_name),
                      user_profile = TRUE, show = !quiet, wd = new_dir)
@@ -349,14 +423,18 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
   source(r_path, local = env)
   dyn.load(shared_lib, local = TRUE, now = TRUE)
 }
-source_single_exprs <- function(exprs, env = parent.frame(), clean = TRUE,
-                                quiet = TRUE, debug = FALSE,
+source_single_exprs <- function(exprs, env = parent.frame(),
+                                clean = TRUE,
+                                quiet = TRUE,
+                                debug = FALSE,
                                 preserve_altrep = FALSE,
                                 check_factors = FALSE,
                                 check_data_frames = FALSE,
                                 copy_on_modify = FALSE,
+                                openmp = TRUE,
                                 cxx_std = Sys.getenv("CXX_STD", "CXX20"),
-                                cppally_header = c("cppally.hpp", "cppally_light.hpp")){
+                                cppally_header = c("cppally.hpp", "cppally_light.hpp"),
+                                ...){
   cppally_header <- match.arg(cppally_header)
   if (length(exprs) == 0){
     cli::cli_abort("{.arg exprs} is length 0, please supply a valid input")
@@ -407,7 +485,9 @@ source_single_exprs <- function(exprs, env = parent.frame(), clean = TRUE,
     preserve_altrep = preserve_altrep,
     check_factors = check_factors,
     check_data_frames = check_data_frames,
-    copy_on_modify = copy_on_modify
+    copy_on_modify = copy_on_modify,
+    openmp = openmp,
+    ...
   )
 }
 #' @rdname cpp_source
@@ -418,9 +498,11 @@ cpp_eval <- function(code, env = curr_env(), clean = TRUE,
                      check_factors = FALSE,
                      check_data_frames = FALSE,
                      copy_on_modify = FALSE,
+                     openmp = TRUE,
                      simplify = TRUE,
                      cxx_std = Sys.getenv("CXX_STD", "CXX20"),
-                     cppally_header = c("cppally.hpp", "cppally_light.hpp")){
+                     cppally_header = c("cppally.hpp", "cppally_light.hpp"),
+                     ...){
   cppally_header <- match.arg(cppally_header)
   curr_objs <- names(env)
   source_single_exprs(
@@ -430,8 +512,10 @@ cpp_eval <- function(code, env = curr_env(), clean = TRUE,
     check_factors = check_factors,
     check_data_frames = check_data_frames,
     copy_on_modify = copy_on_modify,
+    openmp = openmp,
     cxx_std = cxx_std,
-    cppally_header = cppally_header
+    cppally_header = cppally_header,
+    ...
   )
   fn_names <- paste0("f", seq_along(code))
   fns <- mget(fn_names, envir = env)

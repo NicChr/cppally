@@ -4,7 +4,11 @@
 \alias{use_preserve_altrep_flag}
 \title{Adds the CPPALLY_PRESERVE_ALTREP flag to Makevars}
 \usage{
-use_preserve_altrep_flag()
+use_preserve_altrep_flag(quiet = FALSE)
+}
+\arguments{
+\item{quiet}{\verb{[logical(1)]} - Should messages be suppressed?
+Default is \code{FALSE}.}
 }
 \value{
 Invisibly adds the CPPALLY_PRESERVE_ALTREP flag to Makevars.

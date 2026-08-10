@@ -4,7 +4,11 @@
 \alias{use_check_data_frames}
 \title{Adds the \code{CPPALLY_CHECK_DATA_FRAMES} flag to Makevars}
 \usage{
-use_check_data_frames()
+use_check_data_frames(quiet = FALSE)
+}
+\arguments{
+\item{quiet}{\verb{[logical(1)]} - Should messages be suppressed?
+Default is \code{FALSE}.}
 }
 \value{
 Invisibly adds the \code{CPPALLY_CHECK_DATA_FRAMES} flag to Makevars.

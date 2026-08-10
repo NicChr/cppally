@@ -16,8 +16,10 @@ cpp_source(
   check_factors = FALSE,
   check_data_frames = FALSE,
   copy_on_modify = FALSE,
+  openmp = TRUE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20"),
-  dir = tempfile()
+  dir = tempfile(),
+  ...
 )
 
 cpp_eval(
@@ -30,9 +32,11 @@ cpp_eval(
   check_factors = FALSE,
   check_data_frames = FALSE,
   copy_on_modify = FALSE,
+  openmp = TRUE,
   simplify = TRUE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20"),
-  cppally_header = c("cppally.hpp", "cppally_light.hpp")
+  cppally_header = c("cppally.hpp", "cppally_light.hpp"),
+  ...
 )
 }
 \arguments{
@@ -67,11 +71,15 @@ the chance of R crashing when passing factors with invalid levels.}
 \item{copy_on_modify}{Should copy-on-modify be used everywhere? Default is
 \code{FALSE}.}
 
+\item{openmp}{Should code be compiled with OpenMP flags? Default is \code{TRUE}.}
+
 \item{cxx_std}{C++ standard to use. Should be >= C++20.}
 
 \item{dir}{Directory to store the source files.
 The default is a temporary directory via \code{tempfile()} which is removed when
 \code{clean = TRUE}.}
+
+\item{...}{Further arguments passed to \code{use_template_dispatch_candidates()}.}
 
 \item{simplify}{Applies to \code{cpp_eval}. A list of results is returned unless
 \code{length(code) == 1} and \code{simplify = TRUE}.}
@@ -138,7 +146,7 @@ cpp_source(code = '
 add(1, 2)
 add(2, NA)
 
-### ALTREP ###
+### ALTREP
 
 # cppally also supports lazy ALTREP materialisation as an opt-in feature.
 # To opt-in, set `preserve_altrep = TRUE`
@@ -184,7 +192,7 @@ library(bench)
 mark(last_altrep_aware(1:10^5)) # No materialisation
 mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 
-### Copy-on-modify ###
+### Copy-on-modify
 
 # cppally supports copy-on-modify as an opt-in feature
 # It is disabled by default because it incurs a major performance penalty
@@ -235,10 +243,75 @@ mark(
   cppally_no_copy_on_modify_reverse = cppally_reverse(x)
 )
 
+### Speeding up template-heavy compilation
+
+# When writing C++ code that only ever uses a small subset of cppally types,
+# we can restrict cppally template dispatch to only ever consider these types,
+# potentially speeding up compilation times. Only do this if you are certain
+# that these are the only viable types your code will ever reasonably accept.
+# If you are unsure, then do not use this feature and instead use
+# C++ concepts and template constraints.
+
+# Example: restrict template dispatch on `r_int` and `r_dbl`
+# `cppally::unique()` is templated on RComposite, which accepts all R vectors,
+# factors, and data frames. Therefore writing our own template which depends
+# on `unique()` being available for any generic type, might get expensive if say we
+# are only interested in integers and doubles.
+
+mark(
+
+  unrestricted = cpp_source(
+    code = '
+    #include <cppally.hpp>
+    using namespace cppally;
+
+    template <RVector T>
+    requires (requires (T obj){ unique(obj); })
+    [[cppally::register]]
+    T sorted_unique(T x){
+      return unique(x, /*sort = */ true );
+    }
+  ',
+    debug = TRUE
+  ),
+  restricted = cpp_source(
+    code = '
+    #include <cppally.hpp>
+    using namespace cppally;
+
+    template <RVector T>
+    requires (requires (T obj){ unique(obj); })
+    [[cppally::register]]
+    T sorted_unique2(T x){
+      return unique(x, /*sort = */ true );
+    }
+  ',
+    debug = TRUE,
+    scalar_types = c("r_int", "r_dbl"),
+    r_sexp = FALSE,
+    data_frame = FALSE,
+    factor = FALSE
+  ),
+  check = FALSE,
+  memory = FALSE,
+  iterations = 1
+)
+
+sorted_unique(c(1, 1, 2, 2, 3, 3))
+sorted_unique2(c(1, 1, 2, 2, 3, 3))
+
+sorted_unique(c("A", "A", "B", "B", "C", "C"))
+
+# Expected to fail
+try(sorted_unique2(c("A", "A", "B", "B", "C", "C")))
+
+# In production code and regular usage,
+# you would call `use_template_dispatch_candidates(c("r_int", "r_dbl"))`
+# which will add the relevant flag to your Makevars file(s).
 }
 rm(cpp_eval)
 
 }
 \seealso{
-\link{cpp_register}
+\link{cpp_register} \link{use_template_dispatch_candidates}
 }
