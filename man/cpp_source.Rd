@@ -289,8 +289,8 @@ mark(
     debug = TRUE,
     scalar_types = c("r_int", "r_dbl"),
     r_sexp = FALSE,
-    data_frame = FALSE,
-    factor = FALSE
+    data_frames = FALSE,
+    factors = FALSE
   ),
   check = FALSE,
   memory = FALSE,
