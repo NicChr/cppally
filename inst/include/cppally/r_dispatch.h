@@ -24,13 +24,9 @@
 #define CPPALLY_ERROR_BUFSIZE 8192
 
 // Opts a vague-linkage symbol out of STB_GNU_UNIQUE binding on ELF, keeping it
-// private to its shared library. No-op elsewhere: PE and Mach-O never share
-// vague-linkage symbols across libraries in the first place
-#if defined(__GNUC__) || defined(__clang__)
-#define CPPALLY_HIDDEN __attribute__((visibility("hidden")))
-#else
-#define CPPALLY_HIDDEN
-#endif
+// private to its shared library.
+#include <R_ext/Visibility.h>
+#define CPPALLY_HIDDEN attribute_hidden
 
 // The locals carry a cppally_ prefix so they cannot collide with a registered
 // function's parameter names, which share the outermost block with them
