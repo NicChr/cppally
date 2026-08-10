@@ -433,7 +433,8 @@ source_single_exprs <- function(exprs, env = parent.frame(),
                                 copy_on_modify = FALSE,
                                 openmp = TRUE,
                                 cxx_std = Sys.getenv("CXX_STD", "CXX20"),
-                                cppally_header = c("cppally.hpp", "cppally_light.hpp")){
+                                cppally_header = c("cppally.hpp", "cppally_light.hpp"),
+                                ...){
   cppally_header <- match.arg(cppally_header)
   if (length(exprs) == 0){
     cli::cli_abort("{.arg exprs} is length 0, please supply a valid input")
@@ -485,7 +486,8 @@ source_single_exprs <- function(exprs, env = parent.frame(),
     check_factors = check_factors,
     check_data_frames = check_data_frames,
     copy_on_modify = copy_on_modify,
-    openmp = openmp
+    openmp = openmp,
+    ...
   )
 }
 #' @rdname cpp_source
