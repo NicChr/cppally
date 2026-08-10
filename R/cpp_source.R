@@ -80,6 +80,7 @@ curr_env <- function(){
 #' `r_df` objects from `SEXP`? Default is `FALSE`.
 #' @param copy_on_modify Should copy-on-modify be used everywhere? Default is
 #' `FALSE`.
+#' @param openmp Should code be compiled with OpenMP flags? Default is `TRUE`.
 #' @param dir Directory to store the source files.
 #' The default is a temporary directory via `tempfile()` which is removed when
 #' `clean = TRUE`.
@@ -238,11 +239,13 @@ curr_env <- function(){
 #' @rdname cpp_source
 #' @export
 cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
-                       clean = TRUE, quiet = TRUE, debug = FALSE,
+                       clean = TRUE, quiet = TRUE,
+                       debug = FALSE,
                        preserve_altrep = FALSE,
                        check_factors = FALSE,
                        check_data_frames = FALSE,
                        copy_on_modify = FALSE,
+                       openmp = TRUE,
                        cxx_std = Sys.getenv("CXX_STD", "CXX20"),
                        dir = tempfile()){
   stop_unless_installed(
@@ -303,7 +306,9 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
 
   # makevars flags
   usethis::with_project(dir, force = TRUE, quiet = TRUE, code = {
-    use_openmp(quiet = TRUE)
+    if (openmp){
+      use_openmp(quiet = TRUE)
+    }
     use_cxx_std(cxx_std, quiet = TRUE)
     set_makevars_value(
       "PKG_CPPFLAGS",
@@ -352,6 +357,7 @@ source_single_exprs <- function(exprs, env = parent.frame(),
                                 check_factors = FALSE,
                                 check_data_frames = FALSE,
                                 copy_on_modify = FALSE,
+                                openmp = TRUE,
                                 cxx_std = Sys.getenv("CXX_STD", "CXX20"),
                                 cppally_header = c("cppally.hpp", "cppally_light.hpp")){
   cppally_header <- match.arg(cppally_header)
@@ -404,7 +410,8 @@ source_single_exprs <- function(exprs, env = parent.frame(),
     preserve_altrep = preserve_altrep,
     check_factors = check_factors,
     check_data_frames = check_data_frames,
-    copy_on_modify = copy_on_modify
+    copy_on_modify = copy_on_modify,
+    openmp = openmp
   )
 }
 #' @rdname cpp_source
@@ -415,6 +422,7 @@ cpp_eval <- function(code, env = curr_env(), clean = TRUE,
                      check_factors = FALSE,
                      check_data_frames = FALSE,
                      copy_on_modify = FALSE,
+                     openmp = TRUE,
                      simplify = TRUE,
                      cxx_std = Sys.getenv("CXX_STD", "CXX20"),
                      cppally_header = c("cppally.hpp", "cppally_light.hpp")){
@@ -427,6 +435,7 @@ cpp_eval <- function(code, env = curr_env(), clean = TRUE,
     check_factors = check_factors,
     check_data_frames = check_data_frames,
     copy_on_modify = copy_on_modify,
+    openmp = openmp,
     cxx_std = cxx_std,
     cppally_header = cppally_header
   )
