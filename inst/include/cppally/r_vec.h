@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cstring>
 #include <utility>
+#include <initializer_list>
 
 namespace cppally {
 
@@ -257,6 +258,15 @@ struct r_vec {
   }
   explicit r_vec(const r_sexp& s, internal::view_tag, internal::no_checks_tag) : value(s.value, internal::view_tag{}){
     initialise_ptr();
+  }
+
+  explicit r_vec(std::initializer_list<T> elements) : r_vec(elements.size()) {
+    
+    r_size_t i = 0;
+    for (const auto& elem : elements) {
+      set(i++, elem);
+    }
+    
   }
 
   // Implicit conversion to SEXP
