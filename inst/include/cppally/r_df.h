@@ -284,16 +284,6 @@ struct r_df {
         set_col(r_str(colname), col);
     }
 
-    r_df get(r_size_t index) const {
-        return get_row(index);
-    }
-    r_df view(r_size_t index) const {
-        return get(index);
-    }
-    void set(r_size_t index, const r_df& row) {
-        set_row(index, row);
-    }
-
 };
 
 }

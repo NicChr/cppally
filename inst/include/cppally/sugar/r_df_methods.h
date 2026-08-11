@@ -130,7 +130,11 @@ inline void r_df::set_row(r_size_t index, const r_df& row){
         r_sexp col = get_col(i);
         r_sexp cell = row.get_col(i);
         r_sexp_mutate(col, [&]<RComposite col_t>(col_t& c){
-            c.set(0, view_as<col_t>(cell).get(0));
+            if constexpr (RDataFrame<col_t>){
+                c.set_row(0, view_as<col_t>(cell).get_row(0));
+            } else {
+                c.set(0, view_as<col_t>(cell).get(0));
+            }
         });
         value.set(i, col);
     }
