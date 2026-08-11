@@ -1,21 +1,5 @@
 # cppally (development version)
 
-## Bug fixes
-
-- Fixed a bug where matching on integer vectors with a non `NA` `nomatch` value
-would still return `NA`.
-
-- Fixed a bug where getting `r_df` rows would return CHARSXP instead of STRSXP.
-
-- Fixed a bug where `r_vec::apply` would throw a compiler error when called on 
-lists and character vectors.
-
-- Fixed a bug where the wrong OMP pragma was being used for 
-non-SIMD parallel for loops.
-
-- Fixed a bug where calling `set_attr()` on `r_df` or `r_factors` 
-would produce a compiler error.
-
 ## Breaking changes
 
 - Sequences no longer abort on overflow, but instead silently return `NA`.
@@ -35,6 +19,33 @@ members.
 
 - `r_sexp::length` has been fully deprecated and removed. 
 Use `cppally::length` for returning object length.
+
+- C++ char types (except `const char*` and `unsigned char`) 
+no longer satisfy `CastableToRScalar` and therefore 
+cannot participate in R/C++ function registration.
+
+- Many `r_sexp`-based free functions have been removed and there are a 
+few reasons for doing so. The first being that cppally didn't provide a complete 
+set of `r_sexp` free functions anyway, and so providing an incomplete set felt
+lackluster. Another reason is that removing these methods speeds up compilation 
+and makes the API more lightweight and predictable. Users are now encouraged 
+to write their own `r_sexp` methods as and when they require them.
+
+## Bug fixes
+
+- Fixed a bug where matching on integer vectors with a non `NA` `nomatch` value
+would still return `NA`.
+
+- Fixed a bug where getting `r_df` rows would return CHARSXP instead of STRSXP.
+
+- Fixed a bug where `r_vec::apply` would throw a compiler error when called on 
+lists and character vectors.
+
+- Fixed a bug where the wrong OMP pragma was being used for 
+non-SIMD parallel for loops.
+
+- Fixed a bug where calling `set_attr()` on `r_df` or `r_factors` 
+would produce a compiler error.
 
 ## r_function
 
@@ -78,9 +89,11 @@ R C API header 'Random.h'.
 
 ## Improvements
 
-- `cpp_source` now generates OpenMP flags, so its compiled functions 
+- `cpp_source` now generates OpenMP flags by default, so its compiled functions 
 can use both OpenMP SIMD vectorisation and multi-threaded execution 
 (threads set via `set_threads()`).
+
+- `cpp_source` gains the `openmp` argument.
 
 - Integer multiplication overflow handling is now more portable.
 
@@ -120,6 +133,14 @@ where it avoids repeatedly resizing the map as new keys are added.
 - Algorithms that utilise hashing should now see speed improvements for strings 
 in particular, as SEXP type checking is now skipped for hashing specifically.
 
+- `use_cppally()` now includes the "$(CXX_VISIBILITY)" Makevars flag, making dll
+symbol visibility hidden by default. 
+This should have no affect on code written with cppally, though it may slightly 
+improve compilation time. R/C++ registered functions are now registered with the 
+R C API tag `attribute_hidden`. 
+
+- `r_vec<>` gains an `initializer_list` constructor.
+
 ## New features
 
 - New `copy` member for `r_vec`, `r_factors` and `r_df`. `copy` shallow 
@@ -149,8 +170,20 @@ compile expressions using the optional light header "cppally_light.hpp".
 - `r_factors` gains a new member function, `refactor`, which creates a new
 `r_factors` object given a new set of levels. 
 
-- `r_df` gains new members, `get`, `set`, and `view`. `get` returns an 
-1-row `r_df` and similarly, `set` accepts a 1-row `r_df`. 
+- New r function `use_openmp()` to set OpenMP-enabling Makevars flags.
+
+- A new **optional** feature where users can now restrict the set of candidates 
+that participate in template dispatch for template-registered R/C++ functions 
+via `use_template_dispatch_candidates()`. 
+For example, if a user wishes to write a C++ algebra library using only ntegers and doubles,
+they can call `use_template_dispatch_candidates(c("r_int", "r_dbl"))`, and 
+any template they register to R will only ever accept **at most** those types, regardless of 
+the concepts and constraints of the template.
+This can dramatically reduce compilation times for template-heavy code when 
+specifying a small number of candidates. Generally the same effect can be 
+achieved with concepts and constraints, but this acts as an additional layer 
+to ensure faster compile-times in scenarios where it makes sense to use a small 
+candidate set.
 
 # cppally 1.1.0 (2026-07-12)
 
