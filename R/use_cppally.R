@@ -118,6 +118,11 @@ use_openmp <- function(quiet = FALSE) {
   add_makevars_flag("PKG_LIBS", "$(SHLIB_OPENMP_CXXFLAGS)", quiet = quiet)
 }
 
+# Hide all symbols by default
+use_symbol_visibility <- function(quiet = FALSE) {
+  add_makevars_flag("PKG_CXXFLAGS", "$(CXX_VISIBILITY)", quiet = quiet)
+}
+
 #' Helper for developing packages with cppally
 #'
 #' @description
@@ -167,6 +172,7 @@ use_cppally <- function(quiet = FALSE){
   cppally_bullets(c("v" = "Added {ns_entry} to NAMESPACE."), quiet = quiet)
 
   use_openmp(quiet = quiet)
+  use_symbol_visibility(quiet = quiet)
 
   # Generate code examples
   generate_cpp_regular_example()

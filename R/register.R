@@ -157,7 +157,7 @@ generate_cpp_functions <- function(funs, package = "cppally") {
     glue::glue_data(funs,
                     '
     // {basename(file)}
-    extern "C" SEXP _{package}_{name}({sexp_params}) {{
+    extern "C" attribute_visible SEXP _{package}_{name}({sexp_params}) {{
       BEGIN_CPPALLY
       {calls}
       END_CPPALLY
@@ -168,7 +168,7 @@ generate_cpp_functions <- function(funs, package = "cppally") {
                     '
     // {basename(file)}
     {declaration}
-    extern "C" SEXP _{package}_{name}({sexp_params}) {{
+    extern "C" attribute_visible SEXP _{package}_{name}({sexp_params}) {{
       BEGIN_CPPALLY
       {calls}
       END_CPPALLY

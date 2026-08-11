@@ -383,6 +383,7 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
     if (openmp){
       use_openmp(quiet = TRUE)
     }
+    use_symbol_visibility(quiet = TRUE)
     use_cxx_std(cxx_std, quiet = TRUE)
     set_makevars_value(
       "PKG_CPPFLAGS",
