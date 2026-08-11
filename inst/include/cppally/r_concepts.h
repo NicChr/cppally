@@ -337,12 +337,8 @@ struct r_scalar_mapping<T> {
         lossless_numeric_cast<T, int>(),
         r_int,
         std::conditional_t<
-        // map signed 64-bit integers onto r_int64 and everything else onto double
-        // That way, types like uint32_t get mapped onto r_dbl instead of r_int64
-        // which is slightly better because double vectors are base R.
-        // uint64_t gets mapped onto r_dbl (with potential precision loss)
-        // but there is no R vector that can hold UINT64_MAX.
-            std::integral<T> && sizeof(T) == sizeof(int64_t) && std::is_signed_v<T>,
+            // floating-point, uint64_t and wider-width (e.g. 128-bit) integers map to r_dbl with potential loss in precision.
+            lossless_numeric_cast<T, int64_t>(),
             r_int64,
             r_dbl
             >
