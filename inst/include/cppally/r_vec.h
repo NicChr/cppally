@@ -266,7 +266,20 @@ struct r_vec {
     for (const auto& elem : elements) {
       set(i++, elem);
     }
+
+  }
+
+  template <CastableToRScalar U>
+  requires (!is<U, T>)
+  explicit r_vec(std::initializer_list<U> elements) : r_vec(elements.size()) {
+
+    using scalar_t = as_r_scalar_t<U>;
     
+    r_size_t i = 0;
+    for (const U& elem : elements) {
+      set(i++, scalar_t{elem});
+    }
+
   }
 
   // Implicit conversion to SEXP
