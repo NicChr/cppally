@@ -330,14 +330,19 @@ template<> struct r_scalar_mapping<const char*>                     { using type
 template<> struct r_scalar_mapping<std::complex<double>>            { using type = r_cplx; };
 template<> struct r_scalar_mapping<unsigned char>                   { using type = r_raw; };
 
-template <CppMathType T>
+template <CppNumber T>
 struct r_scalar_mapping<T> {
     using type = 
     std::conditional_t<
         lossless_numeric_cast<T, int>(),
         r_int,
         std::conditional_t<
-            lossless_numeric_cast<T, int64_t>(),
+        // map signed 64-bit integers onto r_int64 and everything else onto double
+        // That way, types like uint32_t get mapped onto r_dbl instead of r_int64
+        // which is slightly better because double vectors are base R.
+        // uint64_t gets mapped onto r_dbl (with potential precision loss)
+        // but there is no R vector that can hold UINT64_MAX.
+            std::integral<T> && sizeof(T) == sizeof(int64_t) && std::is_signed_v<T>,
             r_int64,
             r_dbl
             >
