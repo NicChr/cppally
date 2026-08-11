@@ -48,6 +48,7 @@
 <li><p>Fixed a bug where getting <code>r_df</code> rows would return CHARSXP instead of STRSXP.</p></li>
 <li><p>Fixed a bug where <code>r_vec::apply</code> would throw a compiler error when called on lists and character vectors.</p></li>
 <li><p>Fixed a bug where the wrong OMP pragma was being used for non-SIMD parallel for loops.</p></li>
+<li><p>Fixed a bug where calling <code>set_attr()</code> on <code>r_df</code> or <code>r_factors</code> would produce a compiler error.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
@@ -79,6 +80,8 @@
 <li><p>Integer multiplication overflow handling is now more portable.</p></li>
 <li><p><code>r_sym</code> now constructs symbols from strings (<code>const char*</code>, <code>r_str</code>, <code>r_str_view</code>) under unwind protection, so R errors can no longer longjmp past C++ destructors.</p></li>
 <li><p>Sorting speed has been improved for both character vectors and numeric vectors. Sorting is faster for character vectors when there are a relatively high proportion of unique strings. Sorting is also dramatically faster for double vectors when all values in the vector are exact whole numbers.</p></li>
+<li><p><code>groups</code> class members <code>starts()</code>, <code>counts()</code> now see substantial speed improvements when data are in group-sorted order. When sorted, <code>starts()</code> and <code>counts()</code> may perform a hybrid linear/exponential (or galloping) search. This new search strategy dramatically improves performance on large data with small numbers of groups. Time complexity now scales with the number of groups and not the size of data.</p></li>
+<li><p><code>groups::order()</code> also sees speed improvements for unsorted data, due to the fact that it unconditionally applies a counting sort, without checking for <code>NA</code> values (since group IDs do not have <code>NA</code> values) or scanning the group IDs for their range, like <code><a href="https://bit64.r-lib.org/reference/bit64S3.html" class="external-link">cppally::order()</a></code> generally (and correctly) does for other integer vectors. When data are already sorted it simply returns the sequence [0, n - 1] for n data points (as it did before).</p></li>
 <li><p><code>n_unique</code> has been sped-up for integer vectors.</p></li>
 <li><p>Some algorithms now benefit from a cardinality estimate. For large inputs, an extended Chao estimator (<a href="doi:10.1016/j.csda.2011.01.017" class="uri">doi:10.1016/j.csda.2011.01.017</a>) is applied to a random sample of the data to choose a better initial reserve size for the hash maps involved. This improves performance on high-cardinality data, where it avoids repeatedly resizing the map as new keys are added.</p></li>
 <li><p>Algorithms that utilise hashing should now see speed improvements for strings in particular, as SEXP type checking is now skipped for hashing specifically.</p></li>
@@ -92,7 +95,7 @@
 <li><p>New <code>r_str</code> member function <code>is_utf8</code> to check whether a string has valid UTF-8 encoding, which includes ASCII strings.</p></li>
 <li><p>New <code>r_str</code> member function <code>as_utf8</code> to convert a string to a UTF-8 string. If the string is already a UTF-8 string, it is a no-op and simply returns the same <code>r_str</code>.</p></li>
 <li><p>New class <code>string_literal</code> to facilitate compile-time string literal NTTP programming.</p></li>
-<li><p><code>cpp_eval</code> gains a new argument, <code>cppally_header</code>, allowing one to compile expressions using the optional light header “cppally_light.hpp”.</p></li>
+<li><p>R function <code>cpp_eval</code> gains a new argument, <code>cppally_header</code>, allowing one to compile expressions using the optional light header “cppally_light.hpp”.</p></li>
 <li><p><code>r_factors</code> gains a new member function, <code>refactor</code>, which creates a new <code>r_factors</code> object given a new set of levels.</p></li>
 <li><p><code>r_df</code> gains new members, <code>get</code>, <code>set</code>, and <code>view</code>. <code>get</code> returns an 1-row <code>r_df</code> and similarly, <code>set</code> accepts a 1-row <code>r_df</code>.</p></li>
 </ul></div>

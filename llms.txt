@@ -526,6 +526,9 @@ c_cpp_properties.json accordingly.
 - [`use_preserve_altrep_flag()`](https://nicchr.github.io/cppally/reference/use_preserve_altrep_flag.md)
   : Adds the CPPALLY_PRESERVE_ALTREP flag to Makevars
 
+- [`use_template_dispatch_candidates()`](https://nicchr.github.io/cppally/reference/use_template_dispatch_candidates.md)
+  : Restrict the R/C++ types a template function will dispatch on
+
 # Articles
 
 ### All vignettes

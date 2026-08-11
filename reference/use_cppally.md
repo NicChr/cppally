@@ -6,8 +6,14 @@ users get started with writing C++ code.
 ## Usage
 
 ``` r
-use_cppally()
+use_cppally(quiet = FALSE)
 ```
+
+## Arguments
+
+- quiet:
+
+  `[logical(1)]` - Should messages be suppressed? Default is `FALSE`.
 
 ## Value
 

@@ -27,8 +27,10 @@ cpp_source(
   check_factors = FALSE,
   check_data_frames = FALSE,
   copy_on_modify = FALSE,
+  openmp = TRUE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20"),
-  dir = tempfile()
+  dir = tempfile(),
+  ...
 )
 
 cpp_eval(
@@ -41,9 +43,11 @@ cpp_eval(
   check_factors = FALSE,
   check_data_frames = FALSE,
   copy_on_modify = FALSE,
+  openmp = TRUE,
   simplify = TRUE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20"),
-  cppally_header = c("cppally.hpp", "cppally_light.hpp")
+  cppally_header = c("cppally.hpp", "cppally_light.hpp"),
+  ...
 )
 ```
 
@@ -97,6 +101,10 @@ cpp_eval(
 
   Should copy-on-modify be used everywhere? Default is `FALSE`.
 
+- openmp:
+
+  Should code be compiled with OpenMP flags? Default is `TRUE`.
+
 - cxx_std:
 
   C++ standard to use. Should be \>= C++20.
@@ -106,6 +114,11 @@ cpp_eval(
   Directory to store the source files. The default is a temporary
   directory via [`tempfile()`](https://rdrr.io/r/base/tempfile.html)
   which is removed when `clean = TRUE`.
+
+- ...:
+
+  Further arguments passed to
+  [`use_template_dispatch_candidates()`](https://nicchr.github.io/cppally/reference/use_template_dispatch_candidates.md).
 
 - simplify:
 
@@ -128,6 +141,7 @@ cpp_eval(
 ## See also
 
 [cpp_register](https://nicchr.github.io/cppally/reference/cpp_register.md)
+[use_template_dispatch_candidates](https://nicchr.github.io/cppally/reference/use_template_dispatch_candidates.md)
 
 ## Examples
 
@@ -210,7 +224,7 @@ add(1, 2)
 add(2, NA)
 #> [1] NA
 
-### ALTREP ###
+### ALTREP
 
 # cppally also supports lazy ALTREP materialisation as an opt-in feature.
 # To opt-in, set `preserve_altrep = TRUE`
@@ -257,16 +271,16 @@ mark(last_altrep_aware(1:10^5)) # No materialisation
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 4.12µs 5.57µs   179432.    3.18KB        0 10000     0     55.7ms
+#> 1 last_altrep… 3.91µs 4.95µs   193500.    3.18KB        0 10000     0     51.7ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 37.6µs 39.2µs    22048.     391KB     173.  3831    30      174ms
+#> 1 last_altrep… 37.3µs 39.4µs    20639.     391KB     167.  3707    30      180ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
-### Copy-on-modify ###
+### Copy-on-modify
 
 # cppally supports copy-on-modify as an opt-in feature
 # It is disabled by default because it incurs a major performance penalty
@@ -299,7 +313,7 @@ mark(reverse(x)) # Memory allocated, therefore x was copied before reversing
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr> <bch:tm> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 reverse(x)    256µs  262µs     3674.     391KB     28.5  1678    13      457ms
+#> 1 reverse(x)    243µs  250µs     3837.     391KB     28.6  1747    13      455ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 # The cppally preferred approach is to allocate a fresh vector or copy the
@@ -324,13 +338,88 @@ mark(
   cppally_no_copy_on_modify_reverse = cppally_reverse(x)
 )
 #> # A tibble: 3 × 13
-#>   expression     min  median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
-#>   <bch:expr> <bch:t> <bch:t>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 r_reverse  220.1µs 222.3µs     4302.     781KB     69.0  1433    23      333ms
-#> 2 cppally_c… 255.9µs 263.7µs     3617.     391KB     28.6  1645    13      455ms
-#> 3 cppally_n…  54.7µs  59.4µs    16581.     391KB    127.   5239    40      316ms
+#>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
+#>   <bch:expr>  <bch:t> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 r_reverse   220.7µs  224µs     4259.     781KB     67.8  1382    22      325ms
+#> 2 cppally_co… 242.2µs  249µs     3965.     391KB     31.1  1784    14      450ms
+#> 3 cppally_no…  56.2µs   63µs    15551.     391KB    121.   4642    36      298ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
+### Speeding up template-heavy compilation
+
+# When writing C++ code that only ever uses a small subset of cppally types,
+# we can restrict cppally template dispatch to only ever consider these types,
+# potentially speeding up compilation times. Only do this if you are certain
+# that these are the only viable types your code will ever reasonably accept.
+# If you are unsure, then do not use this feature and instead use
+# C++ concepts and template constraints.
+
+# Example: restrict template dispatch on `r_int` and `r_dbl`
+# `cppally::unique()` is templated on RComposite, which accepts all R vectors,
+# factors, and data frames. Therefore writing our own template which depends
+# on `unique()` being available for any generic type, might get expensive if say we
+# are only interested in integers and doubles.
+
+mark(
+
+  unrestricted = cpp_source(
+    code = '
+    #include <cppally.hpp>
+    using namespace cppally;
+
+    template <RVector T>
+    requires (requires (T obj){ unique(obj); })
+    [[cppally::register]]
+    T sorted_unique(T x){
+      return unique(x, /*sort = */ true );
+    }
+  ',
+    debug = TRUE
+  ),
+  restricted = cpp_source(
+    code = '
+    #include <cppally.hpp>
+    using namespace cppally;
+
+    template <RVector T>
+    requires (requires (T obj){ unique(obj); })
+    [[cppally::register]]
+    T sorted_unique2(T x){
+      return unique(x, /*sort = */ true );
+    }
+  ',
+    debug = TRUE,
+    scalar_types = c("r_int", "r_dbl"),
+    r_sexp = FALSE,
+    data_frames = FALSE,
+    factors = FALSE
+  ),
+  check = FALSE,
+  memory = FALSE,
+  iterations = 1
+)
+#> # A tibble: 2 × 13
+#>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
+#>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 unrestricted  8.85s  8.85s     0.113        NA        0     1     0      8.85s
+#> 2 restricted    5.92s  5.92s     0.169        NA        0     1     0      5.92s
+#> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
+
+sorted_unique(c(1, 1, 2, 2, 3, 3))
+#> [1] 1 2 3
+sorted_unique2(c(1, 1, 2, 2, 3, 3))
+#> [1] 1 2 3
+
+sorted_unique(c("A", "A", "B", "B", "C", "C"))
+#> [1] "A" "B" "C"
+
+# Expected to fail
+try(sorted_unique2(c("A", "A", "B", "B", "C", "C")))
+#> Error : Argument 1 is of R type character, which this package excludes from its dispatch candidates. Restore it with `use_template_dispatch_candidates()`
+
+# In production code and regular usage,
+# you would call `use_template_dispatch_candidates(c("r_int", "r_dbl"))`
+# which will add the relevant flag to your Makevars file(s).
 # }
 rm(cpp_eval)
 ```

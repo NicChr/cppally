@@ -85,8 +85,10 @@ evaluated and <code>NULL</code> is returned invisibly.</p>
 <span>  check_factors <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  check_data_frames <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  copy_on_modify <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  openmp <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  cxx_std <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"CXX_STD"</span>, <span class="st">"CXX20"</span><span class="op">)</span>,</span>
-<span>  dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">cpp_eval</span><span class="op">(</span></span>
@@ -99,9 +101,11 @@ evaluated and <code>NULL</code> is returned invisibly.</p>
 <span>  check_factors <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  check_data_frames <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  copy_on_modify <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  openmp <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  simplify <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  cxx_std <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"CXX_STD"</span>, <span class="st">"CXX20"</span><span class="op">)</span>,</span>
-<span>  cppally_header <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cppally.hpp"</span>, <span class="st">"cppally_light.hpp"</span><span class="op">)</span></span>
+<span>  cppally_header <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cppally.hpp"</span>, <span class="st">"cppally_light.hpp"</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -160,6 +164,10 @@ the chance of R crashing when passing factors with invalid levels.</p></dd>
 <code>FALSE</code>.</p></dd>
 
 
+<dt id="arg-openmp">openmp<a class="anchor" aria-label="anchor" href="#arg-openmp"></a></dt>
+<dd><p>Should code be compiled with OpenMP flags? Default is <code>TRUE</code>.</p></dd>
+
+
 <dt id="arg-cxx-std">cxx_std<a class="anchor" aria-label="anchor" href="#arg-cxx-std"></a></dt>
 <dd><p>C++ standard to use. Should be &gt;= C++20.</p></dd>
 
@@ -168,6 +176,10 @@ the chance of R crashing when passing factors with invalid levels.</p></dd>
 <dd><p>Directory to store the source files.
 The default is a temporary directory via <code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile()</a></code> which is removed when
 <code>clean = TRUE</code>.</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Further arguments passed to <code><a href="use_template_dispatch_candidates.html">use_template_dispatch_candidates()</a></code>.</p></dd>
 
 
 <dt id="arg-simplify">simplify<a class="anchor" aria-label="anchor" href="#arg-simplify"></a></dt>
@@ -189,7 +201,7 @@ the <code>[[cppally::register]]</code> tagged functions to R. <br><code>cpp_eval
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><a href="cpp_register.html">cpp_register</a></p></div>
+    <div class="dont-index"><p><a href="cpp_register.html">cpp_register</a> <a href="use_template_dispatch_candidates.html">use_template_dispatch_candidates</a></p></div>
     </div>
 
     <div class="section level2">
@@ -272,7 +284,7 @@ the <code>[[cppally::register]]</code> tagged functions to R. <br><code>cpp_eval
 <span class="r-in"><span><span class="fu">add</span><span class="op">(</span><span class="fl">2</span>, <span class="cn">NA</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] NA</span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">### ALTREP ###</span></span></span>
+<span class="r-in"><span><span class="co">### ALTREP</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># cppally also supports lazy ALTREP materialisation as an opt-in feature.</span></span></span>
 <span class="r-in"><span><span class="co"># To opt-in, set `preserve_altrep = TRUE`</span></span></span>
@@ -319,16 +331,16 @@ the <code>[[cppally::register]]</code> tagged functions to R. <br><code>cpp_eval
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 13</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> last_altrep… 4.12µs 5.57µs   <span style="text-decoration: underline;">179</span>432.    3.18KB        0 <span style="text-decoration: underline;">10</span>000     0     55.7ms</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> last_altrep… 3.91µs 4.95µs   <span style="text-decoration: underline;">193</span>500.    3.18KB        0 <span style="text-decoration: underline;">10</span>000     0     51.7ms</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: result &lt;list&gt;, memory &lt;list&gt;, time &lt;list&gt;, gc &lt;list&gt;</span></span>
 <span class="r-in"><span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">last_altrep_unaware</span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">^</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span> <span class="co"># Materialises full vector</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 13</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> last_altrep… 37.6µs 39.2µs    <span style="text-decoration: underline;">22</span>048.     391KB     173.  <span style="text-decoration: underline;">3</span>831    30      174ms</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> last_altrep… 37.3µs 39.4µs    <span style="text-decoration: underline;">20</span>639.     391KB     167.  <span style="text-decoration: underline;">3</span>707    30      180ms</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: result &lt;list&gt;, memory &lt;list&gt;, time &lt;list&gt;, gc &lt;list&gt;</span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">### Copy-on-modify ###</span></span></span>
+<span class="r-in"><span><span class="co">### Copy-on-modify</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># cppally supports copy-on-modify as an opt-in feature</span></span></span>
 <span class="r-in"><span><span class="co"># It is disabled by default because it incurs a major performance penalty</span></span></span>
@@ -361,7 +373,7 @@ the <code>[[cppally::register]]</code> tagged functions to R. <br><code>cpp_eval
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 13</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> reverse(x)    256µs  262µs     <span style="text-decoration: underline;">3</span>674.     391KB     28.5  <span style="text-decoration: underline;">1</span>678    13      457ms</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> reverse(x)    243µs  250µs     <span style="text-decoration: underline;">3</span>837.     391KB     28.6  <span style="text-decoration: underline;">1</span>747    13      455ms</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: result &lt;list&gt;, memory &lt;list&gt;, time &lt;list&gt;, gc &lt;list&gt;</span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># The cppally preferred approach is to allocate a fresh vector or copy the</span></span></span>
@@ -386,13 +398,88 @@ the <code>[[cppally::register]]</code> tagged functions to R. <br><code>cpp_eval
 <span class="r-in"><span>  cppally_no_copy_on_modify_reverse <span class="op">=</span> <span class="fu">cppally_reverse</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 13</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   expression     min  median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:t&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:t&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> r_reverse  220.1µs 222.3µs     <span style="text-decoration: underline;">4</span>302.     781KB     69.0  <span style="text-decoration: underline;">1</span>433    23      333ms</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> cppally_c… 255.9µs 263.7µs     <span style="text-decoration: underline;">3</span>617.     391KB     28.6  <span style="text-decoration: underline;">1</span>645    13      455ms</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> cppally_n…  54.7µs  59.4µs    <span style="text-decoration: underline;">16</span>581.     391KB    127.   <span style="text-decoration: underline;">5</span>239    40      316ms</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:t&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> r_reverse   220.7µs  224µs     <span style="text-decoration: underline;">4</span>259.     781KB     67.8  <span style="text-decoration: underline;">1</span>382    22      325ms</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> cppally_co… 242.2µs  249µs     <span style="text-decoration: underline;">3</span>965.     391KB     31.1  <span style="text-decoration: underline;">1</span>784    14      450ms</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> cppally_no…  56.2µs   63µs    <span style="text-decoration: underline;">15</span>551.     391KB    121.   <span style="text-decoration: underline;">4</span>642    36      298ms</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: result &lt;list&gt;, memory &lt;list&gt;, time &lt;list&gt;, gc &lt;list&gt;</span></span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">### Speeding up template-heavy compilation</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># When writing C++ code that only ever uses a small subset of cppally types,</span></span></span>
+<span class="r-in"><span><span class="co"># we can restrict cppally template dispatch to only ever consider these types,</span></span></span>
+<span class="r-in"><span><span class="co"># potentially speeding up compilation times. Only do this if you are certain</span></span></span>
+<span class="r-in"><span><span class="co"># that these are the only viable types your code will ever reasonably accept.</span></span></span>
+<span class="r-in"><span><span class="co"># If you are unsure, then do not use this feature and instead use</span></span></span>
+<span class="r-in"><span><span class="co"># C++ concepts and template constraints.</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example: restrict template dispatch on `r_int` and `r_dbl`</span></span></span>
+<span class="r-in"><span><span class="co"># `cppally::unique()` is templated on RComposite, which accepts all R vectors,</span></span></span>
+<span class="r-in"><span><span class="co"># factors, and data frames. Therefore writing our own template which depends</span></span></span>
+<span class="r-in"><span><span class="co"># on `unique()` being available for any generic type, might get expensive if say we</span></span></span>
+<span class="r-in"><span><span class="co"># are only interested in integers and doubles.</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>  unrestricted <span class="op">=</span> <span class="fu">cpp_source</span><span class="op">(</span></span></span>
+<span class="r-in"><span>    code <span class="op">=</span> <span class="st">'</span></span></span>
+<span class="r-in"><span><span class="st">    #include &lt;cppally.hpp&gt;</span></span></span>
+<span class="r-in"><span><span class="st">    using namespace cppally;</span></span></span>
+<span class="r-in"><span><span class="st"></span></span></span>
+<span class="r-in"><span><span class="st">    template &lt;RVector T&gt;</span></span></span>
+<span class="r-in"><span><span class="st">    requires (requires (T obj){ unique(obj); })</span></span></span>
+<span class="r-in"><span><span class="st">    [[cppally::register]]</span></span></span>
+<span class="r-in"><span><span class="st">    T sorted_unique(T x){</span></span></span>
+<span class="r-in"><span><span class="st">      return unique(x, /*sort = */ true );</span></span></span>
+<span class="r-in"><span><span class="st">    }</span></span></span>
+<span class="r-in"><span><span class="st">  '</span>,</span></span>
+<span class="r-in"><span>    debug <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span>,</span></span>
+<span class="r-in"><span>  restricted <span class="op">=</span> <span class="fu">cpp_source</span><span class="op">(</span></span></span>
+<span class="r-in"><span>    code <span class="op">=</span> <span class="st">'</span></span></span>
+<span class="r-in"><span><span class="st">    #include &lt;cppally.hpp&gt;</span></span></span>
+<span class="r-in"><span><span class="st">    using namespace cppally;</span></span></span>
+<span class="r-in"><span><span class="st"></span></span></span>
+<span class="r-in"><span><span class="st">    template &lt;RVector T&gt;</span></span></span>
+<span class="r-in"><span><span class="st">    requires (requires (T obj){ unique(obj); })</span></span></span>
+<span class="r-in"><span><span class="st">    [[cppally::register]]</span></span></span>
+<span class="r-in"><span><span class="st">    T sorted_unique2(T x){</span></span></span>
+<span class="r-in"><span><span class="st">      return unique(x, /*sort = */ true );</span></span></span>
+<span class="r-in"><span><span class="st">    }</span></span></span>
+<span class="r-in"><span><span class="st">  '</span>,</span></span>
+<span class="r-in"><span>    debug <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>    scalar_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"r_int"</span>, <span class="st">"r_dbl"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    r_sexp <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>    data_frames <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>    factors <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span>,</span></span>
+<span class="r-in"><span>  check <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>  memory <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>  iterations <span class="op">=</span> <span class="fl">1</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 13</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> unrestricted  8.85s  8.85s     0.113        NA        0     1     0      8.85s</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> restricted    5.92s  5.92s     0.169        NA        0     1     0      5.92s</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: result &lt;list&gt;, memory &lt;list&gt;, time &lt;list&gt;, gc &lt;list&gt;</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">sorted_unique</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1 2 3</span>
+<span class="r-in"><span><span class="fu">sorted_unique2</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1 2 3</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">sorted_unique</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"B"</span>, <span class="st">"C"</span>, <span class="st">"C"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "A" "B" "C"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Expected to fail</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu">sorted_unique2</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"B"</span>, <span class="st">"C"</span>, <span class="st">"C"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Error : Argument 1 is of R type character, which this package excludes from its dispatch candidates. Restore it with `use_template_dispatch_candidates()`</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># In production code and regular usage,</span></span></span>
+<span class="r-in"><span><span class="co"># you would call `use_template_dispatch_candidates(c("r_int", "r_dbl"))`</span></span></span>
+<span class="r-in"><span><span class="co"># which will add the relevant flag to your Makevars file(s).</span></span></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">cpp_eval</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>

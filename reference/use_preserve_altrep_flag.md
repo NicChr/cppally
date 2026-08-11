@@ -6,8 +6,14 @@ vectors.
 ## Usage
 
 ``` r
-use_preserve_altrep_flag()
+use_preserve_altrep_flag(quiet = FALSE)
 ```
+
+## Arguments
+
+- quiet:
+
+  `[logical(1)]` - Should messages be suppressed? Default is `FALSE`.
 
 ## Value
 

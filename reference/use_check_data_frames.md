@@ -10,8 +10,14 @@ The default behaviour is NOT to validate column lengths, enabling faster
 ## Usage
 
 ``` r
-use_check_data_frames()
+use_check_data_frames(quiet = FALSE)
 ```
+
+## Arguments
+
+- quiet:
+
+  `[logical(1)]` - Should messages be suppressed? Default is `FALSE`.
 
 ## Value
 

@@ -12,8 +12,14 @@ inputs.
 ## Usage
 
 ``` r
-use_check_factors()
+use_check_factors(quiet = FALSE)
 ```
+
+## Arguments
+
+- quiet:
+
+  `[logical(1)]` - Should messages be suppressed? Default is `FALSE`.
 
 ## Value
 

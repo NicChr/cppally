@@ -20,8 +20,14 @@ CPPALLY_COPY_ON_MODIFY is set.
 ## Usage
 
 ``` r
-use_copy_on_modify()
+use_copy_on_modify(quiet = FALSE)
 ```
+
+## Arguments
+
+- quiet:
+
+  `[logical(1)]` - Should messages be suppressed? Default is `FALSE`.
 
 ## Value
 
