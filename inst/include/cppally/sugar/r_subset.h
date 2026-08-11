@@ -3,6 +3,7 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/r_utils.h>
+#include <cppally/r_visit.h>
 #include <cppally/sugar/r_match.h>
 #include <cppally/r_coerce.h>
 #include <vector> // For C++ vectors
@@ -223,6 +224,11 @@ inline r_df subset(const r_df& x, const r_vec<U>& indices, bool invert = false, 
     out.set_names(x.colnames());
     return r_df(out, false, length(out.view(0)));
   }
+}
+
+template <internal::RSubscript U>
+inline r_sexp subset(const r_sexp& x, const r_vec<U>& indices, bool invert, bool check) {
+    return r_sexp_view(x, CPPALLY_MAKE_VISITOR(r_sexp, v, subset(v, indices, invert, check)));
 }
 
 }

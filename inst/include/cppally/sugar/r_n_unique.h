@@ -50,12 +50,6 @@ inline r_size_t n_unique(const r_factors& x) {
   return n_unique(x.value);
 }
 
-inline r_size_t n_unique(const r_df& x) {
-  return make_groups(x, false).n_groups;
-}
-
-inline r_size_t n_unique(const r_sexp& x);
-
 }
 
 #endif

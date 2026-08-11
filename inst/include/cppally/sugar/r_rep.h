@@ -7,14 +7,10 @@
 
 namespace cppally {
 
-template <RVector T>
+template <typename T>
+requires (requires (const T& obj, r_size_t n) { obj.rep_len(n); })
 T rep_len(const T& x, r_size_t n){
     return x.rep_len(n);
-}
-inline r_factors rep_len(const r_factors& x, r_size_t n){
-    r_vec<r_int> out = x.value.rep_len(n);
-    attr::set_attrs(out, attr::get_attrs(x));
-    return r_factors(static_cast<SEXP>(out), false);
 }
 
 // Forward decl
@@ -33,34 +29,35 @@ inline r_df rep_len(const r_df& x, r_size_t n){
       return out;
 }
 
+inline r_sexp rep_len(const r_sexp& x, r_size_t n) {
+    return r_sexp_view(x, CPPALLY_MAKE_VISITOR(r_sexp, v, rep_len(v, n)));
+}
 
-template <RVector T>
+template <typename T>
+requires (requires (const T& obj, r_size_t n) { obj.resize(n); })
 T resize(const T& x, r_size_t n){
     return x.resize(n);
-}
-inline r_factors resize(const r_factors& x, r_size_t n){
-    r_vec<r_int> out = x.value.resize(n);
-    attr::set_attrs(out, attr::get_attrs(x));
-    return r_factors(static_cast<SEXP>(out), false);
 }
 
 // Forward decl
 inline r_sexp resize(const r_sexp& x, r_size_t n);
 
 inline r_df resize(const r_df& x, r_size_t n){
-    if (n == x.nrow()){
+    if (x.nrow() == n){
         return x;
-    }
-    r_df out = x.copy();
-    out.set_nrow(n);
-    int ncols = out.ncol();
-
-    for (int i = 0; i < ncols; ++i){
-        out.set_col(i, resize(out.view_col(i), n));
-    }
-    return out;
+      }
+      r_df out = x.copy();
+      out.set_nrow(n);
+      int ncols = out.ncol();
+      for (int i = 0; i < ncols; ++i){
+          out.set_col(i, resize(out.view_col(i), n));
+      }
+      return out;
 }
 
+inline r_sexp resize(const r_sexp& x, r_size_t n) {
+    return r_sexp_view(x, CPPALLY_MAKE_VISITOR(r_sexp, v, resize(v, n)));
+}
 
 template <RVector T>
 T rep(const T& x, const r_vec<r_int>& times){
@@ -94,19 +91,6 @@ inline r_factors rep(const r_factors& x, const r_vec<r_int>& times){
     return r_factors(rep(x.value, times), x.levels());
 }
 
-inline r_sexp rep(const r_sexp& x, const r_vec<r_int>& times);
-
-inline r_df rep(const r_df& x, const r_vec<r_int>& times) {
-    r_df out = x.copy();
-    out.set_nrow(rep(r_vec<r_int>(out.nrow()), times).length());
-    int ncols = out.ncol();
-    for (int i = 0; i < ncols; ++i){
-        out.set_col(i, rep(out.view_col(i), times));
-    }
-    return out;
-}
-
-
 template <RVector T>
 T rep_each(const T& x, const r_vec<r_int>& each){
   if (length(each) == 1){
@@ -121,19 +105,6 @@ T rep_each(const T& x, const r_vec<r_int>& each){
 inline r_factors rep_each(const r_factors& x, const r_vec<r_int>& each){
     return r_factors(rep_each(x.value, each), x.levels());
 }
-
-inline r_sexp rep_each(const r_sexp& x, const r_vec<r_int>& each);
-
-inline r_df rep_each(const r_df& x, const r_vec<r_int>& each) {
-    r_df out = x.copy();
-    out.set_nrow(rep_each(r_vec<r_int>(out.nrow()), each).length());
-    int ncols = out.ncol();
-    for (int i = 0; i < ncols; ++i){
-        out.set_col(i, rep_each(out.view_col(i), each));
-    }
-    return out;
-}
-
 
 }
 

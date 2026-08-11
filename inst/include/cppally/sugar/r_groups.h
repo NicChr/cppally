@@ -11,7 +11,6 @@
 #include <cppally/random/random_stream.h>
 #include <cppally/r_identical.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
-#include <functional>
 #include <vector>
 
 namespace cppally {
@@ -262,9 +261,6 @@ struct groups {
 
 };
 
-// Forward decl
-inline groups make_groups(const r_sexp& x, bool ordered = false);
-
 namespace internal {
 
 template <RSortableType T>
@@ -295,30 +291,6 @@ inline groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
 
     int n_groups = current_group + 1;
     return groups(group_ids, n_groups, /*ordered=*/ true);
-}
-
-// Build a per-column equality probe for every column of `x`.
-// Each probe takes two row indices and returns whether the column values
-// at those rows are identical(). Columns whose type doesn't support
-// `identical(col.view(i), col.view(j))` cause an abort.
-inline std::vector<std::function<bool(int, int)>> build_col_eq_probes(const r_df& x) {
-    int ncol = x.ncol();
-    std::vector<std::function<bool(int, int)>> eqs;
-    eqs.reserve(ncol);
-    for (int c = 0; c < ncol; ++c) {
-        internal::view_sexp(x.value.view(c), [&]<typename ColT>(const ColT& col) {
-            if constexpr (requires (int i, int j) {
-                identical(col.view(i), col.view(j));
-            }) {
-                eqs.emplace_back([col](int i, int j) {
-                    return identical(col.view(i), col.view(j));
-                });
-            } else {
-                abort("make_groups(r_df): unsupported column type");
-            }
-        });
-    }
-    return eqs;
 }
 
 template <RVector T>
@@ -381,107 +353,6 @@ inline groups make_unordered_groups(const T& x) {
       return groups(group_ids, n_groups, false, ids_are_sorted(p_id, n));
 }
 
-// hash each row directly into a single key
-inline groups make_unordered_groups(const r_df& x) {
-    int nrow = x.nrow();
-    int ncol = x.ncol();
-
-    if (nrow == 0) {
-        return groups(r_vec<r_int>(), 0, false, true); 
-    }
-    if (ncol == 0) {
-        return groups(r_vec<r_int>(nrow, r_int(0)), 1, false, true);
-    }
-    // If 1-col, use regular make_groups()
-    if (ncol == 1){
-        return make_groups(x.value.view(0), false);
-    }
-
-    r_vec<r_int> group_ids(nrow);
-
-    std::vector<uint64_t> row_ids = row_hashes(x);
-    std::vector<std::function<bool(int, int)>> eqs = build_col_eq_probes(x);
-
-    auto rows_equal = [&](int i, int j) {
-        for (auto& fn : eqs) {
-            if (!fn(i, j)) return false;
-        }
-        return true;
-    };
-
-    // Map: row-hash -> chain of (representative_row, group_id)
-    ankerl::unordered_dense::map<uint64_t, std::vector<std::pair<int, int>>> lookup;
-    lookup.reserve(static_cast<uint64_t>(nrow / 4));
-
-    int* RESTRICT p_id = group_ids.data();
-    int next_id = 0;
-
-    for (int i = 0; i < nrow; ++i) {
-        auto& chain = lookup[row_ids[i]];
-        int found = -1;
-        for (auto& [rep, gid] : chain) {
-            if (rows_equal(i, rep)) {
-                found = gid; 
-                break; 
-            }
-        }
-        if (found < 0) {
-            chain.emplace_back(i, next_id);
-            p_id[i] = next_id++;
-        } else {
-            p_id[i] = found;
-        }
-    }
-    int n_groups = next_id;
-    return groups(group_ids, n_groups, false, ids_are_sorted(p_id, nrow));
-}
-
-inline groups make_ordered_groups(const r_df& x) {
-    int nrow = x.nrow();
-    int ncol = x.ncol();
-
-    if (nrow == 0) {
-        return groups(r_vec<r_int>(), 0, true, true); 
-    }
-    if (ncol == 0) {
-        return groups(r_vec<r_int>(nrow, r_int(0)), 1, true, true);
-    }
-    if (ncol == 1){
-        return make_groups(x.value.view(0), true);
-    }
-
-    r_vec<r_int> group_ids(nrow);
-    r_vec<r_int> o = order(x);
-
-    std::vector<std::function<bool(int, int)>> eqs = build_col_eq_probes(x);
-
-    const int* RESTRICT p_o = o.data();
-    int* RESTRICT p_id = group_ids.data();
-
-    int current = 0;
-    p_id[p_o[0]] = 0;
-
-    for (int i = 1; i < nrow; ++i) {
-        int cur = p_o[i];
-        int prev = p_o[i - 1];
-
-        bool all_eq = true;
-        for (auto& eq : eqs) {
-            if (!eq(cur, prev)) {
-                all_eq = false; 
-                break; 
-            }
-        }
-        current += !all_eq;
-        p_id[cur] = current;
-    }
-
-    int n_groups = current + 1;
-    return groups(group_ids, n_groups, true, ids_are_sorted(p_id, nrow));
-}
-
-
-
 template <RVector T>
 inline groups make_ordered_groups(const T& x) {
     if constexpr (!RSortableType<typename T::data_type>){
@@ -509,17 +380,8 @@ inline groups make_groups(const r_factors& x, bool ordered = false) {
     return make_groups(x.value, ordered);
 }
 
-inline groups make_groups(const r_df& x, bool ordered = false) {
-    if (ordered){
-        return internal::make_ordered_groups(x);
-    } else {
-        return internal::make_unordered_groups(x);
-    }
-}
-
-inline groups make_groups(const r_sexp& x, bool ordered);
-
-template <RComposite T>
+template <typename T>
+requires requires (const T& vec) { make_groups(vec); }
 r_vec<r_str> group_names(const T& x, const groups& g) {
 
     int ng = g.n_groups;

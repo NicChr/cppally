@@ -153,25 +153,6 @@ struct r_hash_eq {
     }
 };
 
-// Vector of data frame row hashes - combine hashes across cols
-inline std::vector<uint64_t> row_hashes(const r_df& x) {
-    int nrow = x.nrow();
-    int ncol = x.ncol();
-    std::vector<uint64_t> row_ids(size_t(nrow), 0U);
-    for (int c = 0; c < ncol; ++c) {
-        internal::view_sexp(x.value.view(c), [&]<typename ColT>(const ColT& col) {
-            if constexpr (requires (int i) { r_hash_impl(col.view(i)); }) {
-                for (int i = 0; i < nrow; ++i) {
-                    row_ids[i] = hash_combine(row_ids[i], r_hash_impl(col.view(i)));
-                }
-            } else {
-                abort("make_groups(r_df): unsupported column type");
-            }
-        });
-    }
-    return row_ids;
-}
-
 // An extension of Chao's estimator of population size based on the first three capture frequency counts
 // doi:10.1016/j.csda.2011.01.017
 template <
