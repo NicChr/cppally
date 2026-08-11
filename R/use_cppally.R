@@ -113,11 +113,6 @@ use_debug <- function(quiet = FALSE) {
   )
 }
 
-use_openmp <- function(quiet = FALSE) {
-  add_makevars_flag("PKG_CXXFLAGS", "$(SHLIB_OPENMP_CXXFLAGS)", quiet = quiet)
-  add_makevars_flag("PKG_LIBS", "$(SHLIB_OPENMP_CXXFLAGS)", quiet = quiet)
-}
-
 # Hide all symbols by default
 use_symbol_visibility <- function(quiet = FALSE) {
   add_makevars_flag("PKG_CXXFLAGS", "$(CXX_VISIBILITY)", quiet = quiet)
