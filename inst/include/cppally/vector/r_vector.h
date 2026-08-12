@@ -317,19 +317,6 @@ struct r_vec {
 
   }
 
-  template <CastableToRScalar U>
-  requires (!is<U, T>)
-  explicit r_vec(std::initializer_list<U> elements) : r_vec(elements.size()) {
-
-    using scalar_t = as_r_scalar_t<U>;
-    
-    r_size_t i = 0;
-    for (const U& elem : elements) {
-      set(i++, scalar_t{elem});
-    }
-
-  }
-
   // Implicit conversion to SEXP
   operator SEXP() const noexcept {
     return value.value;
