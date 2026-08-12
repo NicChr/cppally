@@ -86,7 +86,30 @@ inline r_vec<r_int> match(const r_factors& needles, const r_factors& haystack, r
   if (identical(needles.levels(), haystack.levels())){
     return match(needles.value, haystack.value, no_match);
   } else {
-    return match(as<r_vec<r_str_view>>(needles), as<r_vec<r_str_view>>(haystack), no_match);
+
+    // Can't use `refactor()` because invalid codes become NA which then match onto haystack's NA values. 
+    // We don't want them matching so we use an always invalid unmatchable code `r_int(-1)`. 
+
+    // Empty codes — we only need the temp's levels for lookup
+    r_factors new_lvls_fct(r_vec<r_int>(), haystack.levels());
+
+    // For each of this factor's levels, find its position in new_levels
+    r_vec<r_int> remap = pmap(
+      /*fn = */ [&new_lvls_fct](const auto& lvl){
+        return new_lvls_fct.get_code(lvl, /*no_match*/ r_int(-1));
+      },
+      needles.levels()
+    );
+
+    r_size_t n = needles.length();
+    r_vec<r_int> remapped_needles(n);
+
+    for (r_size_t i = 0; i < n; ++i){
+      r_int c = needles.value.get(i);
+      remapped_needles.set(i, is_na(c) ? na<r_int>() : remap.get(unwrap(c) - 1));
+    }
+
+    return match(remapped_needles, haystack.value, no_match);
   }
 }
 
