@@ -3,7 +3,7 @@
 
 #include <cppally/utils/r_utils.h>
 #include <cppally/vector/r_vector.h>
-#include <cppally/r_pmap.h>
+#include <cppally/functional/pmap.h>
 
 // Vectorised binary operators: +,-,*,/,&,|,+=,-=,*=,/=,==,<=,<,>=,>
 // Vectorised unary operators: !,-,

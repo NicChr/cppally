@@ -5,7 +5,7 @@
 #include <cppally/hash/hash.h>
 #include <cppally/stats/stats.h>
 #include <cppally/group/dense_int_map.h>
-#include <cppally/r_pmap.h>
+#include <cppally/functional/pmap.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 #include <vector>
 
