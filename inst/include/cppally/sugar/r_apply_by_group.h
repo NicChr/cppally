@@ -2,7 +2,7 @@
 #define CPPALLY_R_APPLY_BY_GROUP_H
 
 #include <cppally/r_vec.h>
-#include <cppally/sugar/r_groups.h>
+#include <cppally/groups/groups.h>
 #include <vector>
 #include <algorithm>
 

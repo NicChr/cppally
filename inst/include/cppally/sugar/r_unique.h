@@ -3,7 +3,7 @@
 
 #include <cppally/r_length.h>
 #include <cppally/sugar/r_vec_ops.h>
-#include <cppally/sugar/r_groups.h>
+#include <cppally/groups/groups.h>
 #include <cppally/sugar/r_subset.h>
 
 namespace cppally {

@@ -4,7 +4,7 @@
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
 #include <cppally/r_factor.h>
-#include <cppally/sugar/r_groups.h>
+#include <cppally/groups/groups.h>
 #include <cppally/sugar/r_dense_int_map.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 
