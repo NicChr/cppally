@@ -3,6 +3,7 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/r_sexp/r_sexp.h>
+#include <cppally/scalar/r_lgl.h>
 #include <cppally/r_sym.h>
 #include <cppally/r_env.h>
 #include <cppally/r_named_arg.h>
@@ -111,6 +112,13 @@ struct r_function {
     }
 
 };
+
+inline r_lgl operator==(const r_function& lhs, const r_function& rhs) noexcept {
+  return r_lgl{unwrap(lhs) == unwrap(rhs)};
+}
+inline r_lgl operator!=(const r_function& lhs, const r_function& rhs) noexcept {
+  return r_lgl{unwrap(lhs) != unwrap(rhs)};
+}
 
 }
 
