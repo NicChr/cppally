@@ -3,7 +3,7 @@
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/r_attrs.h>
-#include <cppally/r_hash_names.h>
+#include <cppally/vector/vector_names.h>
 
 namespace cppally {
 

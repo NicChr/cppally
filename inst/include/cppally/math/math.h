@@ -2,7 +2,7 @@
 #define CPPALLY_R_MATH_H
 
 #include <cppally/scalar/scalar_ops.h>
-#include <cppally/r_limits.h>
+#include <cppally/scalar/r_limits.h>
 #include <cppally/r_coerce.h>
 #include <algorithm>
 

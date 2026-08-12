@@ -15,7 +15,7 @@
 #include <cppally/r_sym.h>
 #include <cppally/r_env.h>
 #include <cppally/r_function.h>
-#include <cppally/r_limits.h>
+#include <cppally/scalar/r_limits.h>
 #include <cppally/r_nas.h>
 #include <cppally/scalar/scalar_ops.h>
 #include <cppally/vector/r_vector.h>
