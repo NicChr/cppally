@@ -21,7 +21,7 @@
 #include <cppally/scalar/r_coerce_scalars.h>
 #include <cppally/vector/r_vector.h>
 #include <cppally/r_pmap.h>
-#include <cppally/r_factor.h>
+#include <cppally/factor/r_factors.h>
 #include <cppally/r_attrs.h>
 #include <cppally/r_sexp/visit.h>
 #include <cppally/r_length.h>

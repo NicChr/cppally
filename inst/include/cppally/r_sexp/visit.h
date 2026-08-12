@@ -2,7 +2,7 @@
 #define CPPALLY_R_VISIT_H
 
 #include <cppally/vector/r_vector.h>
-#include <cppally/r_factor.h>
+#include <cppally/factor/r_factors.h>
 #include <cppally/r_sexp/r_sexp_types.h>
 #include <cppally/data_frame/r_df.h>
 #include <cppally/r_function.h>

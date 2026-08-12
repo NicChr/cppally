@@ -2,7 +2,7 @@
 #define CPPALLY_R_UNIQUE_H
 
 #include <cppally/r_length.h>
-#include <cppally/r_factor.h>
+#include <cppally/factor/r_factors.h>
 #include <cppally/group/groups.h>
 #include <cppally/sugar/r_vec_ops.h>
 #include <cppally/sugar/r_subset.h>

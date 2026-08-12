@@ -2,7 +2,7 @@
 #define CPPALLY_R_LENGTH_H
 
 #include <cppally/vector/r_vector.h>
-#include <cppally/r_factor.h>
+#include <cppally/factor/r_factors.h>
 #include <cppally/data_frame/r_df.h>
 
 namespace cppally {
