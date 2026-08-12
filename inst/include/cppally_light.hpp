@@ -19,7 +19,7 @@
 #include <cppally/r_nas.h>
 #include <cppally/scalar/scalar_ops.h>
 #include <cppally/vector/r_vector.h>
-#include <cppally/r_attrs.h>
+#include <cppally/attributes/attributes.h>
 #include <cppally/factor/r_factors.h>
 #include <cppally/data_frame/r_df.h>
 #include <cppally/r_sexp/visit.h>

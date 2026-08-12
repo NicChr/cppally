@@ -2,7 +2,7 @@
 #define CPPALLY_R_DF_H
 
 #include <cppally/vector/r_vector.h>
-#include <cppally/r_attrs.h>
+#include <cppally/attributes/attributes.h>
 #include <cppally/vector/vector_names.h>
 
 namespace cppally {

@@ -5,7 +5,7 @@
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/data_frame/r_df.h>
-#include <cppally/r_attrs.h>
+#include <cppally/attributes/attributes.h>
 #include <cppally/r_sexp/visit.h>
 #include <cppally/r_coerce.h>
 #include <cppally/sugar/r_rep.h>

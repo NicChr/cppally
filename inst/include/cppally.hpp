@@ -22,7 +22,7 @@
 #include <cppally/vector/r_vector.h>
 #include <cppally/functional/pmap.h>
 #include <cppally/factor/r_factors.h>
-#include <cppally/r_attrs.h>
+#include <cppally/attributes/attributes.h>
 #include <cppally/r_sexp/visit.h>
 #include <cppally/r_length.h>
 #include <cppally/sugar/r_copy.h>

@@ -5,7 +5,7 @@
 #include <cppally/vector/r_vector.h>
 #include <cppally/r_identical.h>
 #include <cppally/vector/vector_names.h>
-#include <cppally/r_attrs.h>
+#include <cppally/attributes/attributes.h>
 #include <cppally/functional/pmap.h>
 
 namespace cppally {
