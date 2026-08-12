@@ -3,9 +3,9 @@
 
 #include <cppally/r_concepts.h>
 #include <cppally/r_protect.h>
-#include <cppally/scalars/r_dbl.h>
-#include <cppally/scalars/r_int64.h>
-#include <cppally/scalars/r_str.h>
+#include <cppally/scalar/r_dbl.h>
+#include <cppally/scalar/r_int64.h>
+#include <cppally/scalar/r_str.h>
 #include <cstdint>
 #include <chrono> // For r_date/r_psxt
 

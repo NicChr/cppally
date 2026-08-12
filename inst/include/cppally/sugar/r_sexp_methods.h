@@ -10,7 +10,7 @@
 #include <cppally/sugar/r_subset.h>
 #include <cppally/sort/sort.h>
 #include <cppally/unique/unique.h>
-#include <cppally/groups/groups.h>
+#include <cppally/group/groups.h>
 #include <cppally/match/match.h>
 #include <cppally/sugar/r_replace_at.h>
 

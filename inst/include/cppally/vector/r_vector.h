@@ -5,9 +5,9 @@
 #include <cppally/r_concepts.h>
 #include <cppally/utils/r_utils.h>
 #include <cppally/r_limits.h>
-#include <cppally/scalars/scalar_ops.h>
+#include <cppally/scalar/scalar_ops.h>
 #include <cppally/utils/r_vec_utils.h>
-#include <cppally/scalars/r_coerce_scalars.h>
+#include <cppally/scalar/r_coerce_scalars.h>
 #include <cppally/r_hash_names.h>
 #include <algorithm>
 #include <cstring>

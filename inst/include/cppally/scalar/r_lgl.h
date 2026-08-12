@@ -4,7 +4,7 @@
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
 #include <cppally/r_protect.h>
-#include <cppally/scalars/r_int.h>
+#include <cppally/scalar/r_int.h>
 
 namespace cppally {
 

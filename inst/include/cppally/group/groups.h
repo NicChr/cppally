@@ -6,7 +6,7 @@
 #include <cppally/r_visit.h>
 #include <cppally/sugar/r_stats.h>
 #include <cppally/hash/hash.h>
-#include <cppally/groups/dense_int_map.h>
+#include <cppally/group/dense_int_map.h>
 #include <cppally/sort/sort.h>
 #include <cppally/random/random_stream.h>
 #include <cppally/r_identical.h>

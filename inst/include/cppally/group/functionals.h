@@ -4,7 +4,7 @@
 #include <cppally/vector/r_vector.h>
 #include <cppally/r_coerce.h>
 #include <cppally/r_length.h>
-#include <cppally/groups/groups.h>
+#include <cppally/group/groups.h>
 #include <vector>
 #include <algorithm>
 

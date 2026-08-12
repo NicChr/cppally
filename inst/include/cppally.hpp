@@ -17,8 +17,8 @@
 #include <cppally/r_function.h>
 #include <cppally/r_limits.h>
 #include <cppally/r_nas.h>
-#include <cppally/scalars/scalar_ops.h>
-#include <cppally/scalars/r_coerce_scalars.h>
+#include <cppally/scalar/scalar_ops.h>
+#include <cppally/scalar/r_coerce_scalars.h>
 #include <cppally/vector/r_vector.h>
 #include <cppally/r_pmap.h>
 #include <cppally/r_factor.h>
@@ -49,8 +49,8 @@
 #include <cppally/sugar/r_sexp_methods.h>
 #include <cppally/sugar/r_equal.h>
 #include <cppally/sugar/r_list_pmap.h>
-#include <cppally/groups/groups.h>
-#include <cppally/groups/functionals.h>
+#include <cppally/group/groups.h>
+#include <cppally/group/functionals.h>
 #include <cppally/random/random_stream.h>
 
 #endif
