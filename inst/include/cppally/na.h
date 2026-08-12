@@ -89,15 +89,11 @@ namespace internal {
 template <typename T, typename U>
 constexpr bool either_na(const T& x, const U& y) noexcept {
   return is_na(x) || is_na(y);
-} 
-inline constexpr bool either_na(r_lgl x, r_lgl y) noexcept {
-  return std::min(unwrap(x), unwrap(y)) == unwrap(na<r_lgl>());
 }
-inline constexpr bool either_na(r_int x, r_int y) noexcept {
-  return std::min(unwrap(x), unwrap(y)) == unwrap(na<r_int>());
-}
-inline constexpr bool either_na(r_int64 x, r_int64 y) noexcept {
-  return std::min(unwrap(x), unwrap(y)) == unwrap(na<r_int64>());
+template <RIntegerType T>
+constexpr bool either_na(const T& x, const T& y) noexcept {
+  static_assert(std::numeric_limits<unwrap_t<T>>::min() == unwrap(na<T>()), "`std::numeric_limits<unwrap_t<T>>::min() == na<T>()` must hold for all cppally integer types `T`");
+  return std::min(unwrap(x), unwrap(y)) == unwrap(na<T>());
 }
 inline constexpr bool either_na(r_dbl x, r_dbl y) noexcept {
   return is_na(std::abs(unwrap(x)) + std::abs(unwrap(y)));
