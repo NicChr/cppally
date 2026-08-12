@@ -6,6 +6,7 @@
 #include <cppally/vector/r_vector.h>
 #include <cppally/utils/r_utils.h>
 #include <cppally/r_function.h>
+#include <initializer_list>
 
 namespace cppally {
 
@@ -91,7 +92,7 @@ inline r_vec<r_sexp> get_attrs(const T& x) {
     return r_vec<r_sexp>(safe[R_getAttributes](x));
     #else
     static r_function& r_attrs_fn = *new r_function("attributes", env::base_env);
-    return r_vec<r_sexp>(r_attrs_fn(x));
+    return r_vec<r_sexp>(r_attrs_fn({static_cast<r_sexp>(x)}));
     #endif
   } else {
     return r_vec<r_sexp>(r_null);

@@ -7,10 +7,24 @@
 #include <cppally/r_env.h>
 #include <cppally/r_named_arg.h>
 #include <cppally/vector/r_vector.h>
+#include <initializer_list>
 
 namespace cppally {
 
 namespace internal {
+
+inline r_sexp make_pairlist(std::initializer_list<r_sexp> args){
+  int n = args.size();
+  r_sexp out = r_sexp(safe[Rf_allocList](n));
+
+  SEXP current = out;
+  for (const r_sexp& elem : args) {
+    SETCAR(current, elem);
+    current = CDR(current);
+  }
+
+  return out;
+}
 
 template<typename... Args>
 inline r_sexp make_pairlist(Args... args) {
@@ -103,7 +117,11 @@ struct r_function {
     r_sexp operator()(Args&&... args) const {
       return call_impl(internal::make_pairlist(std::forward<Args>(args)...));
     }
-  
+    
+    r_sexp operator()(std::initializer_list<r_sexp> args) const {
+      return call_impl(internal::make_pairlist(args));
+    }
+
     private:
 
     static void check_is_function(SEXP x) {
@@ -121,4 +139,5 @@ struct r_function {
 };
 
 }
+
 #endif
