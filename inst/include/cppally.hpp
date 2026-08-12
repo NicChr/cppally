@@ -34,10 +34,9 @@
 #include <cppally/sugar/r_df_methods.h>
 #include <cppally/sugar/r_stats.h>
 #include <cppally/hash/hash.h>
-#include <cppally/sugar/r_n_unique.h>
 #include <cppally/sort/sort.h>
 #include <cppally/match/match.h>
-#include <cppally/sugar/r_unique.h>
+#include <cppally/unique/unique.h>
 #include <cppally/sugar/r_subset.h>
 #include <cppally/sugar/r_rep.h>
 #include <cppally/sugar/r_replace_at.h>
