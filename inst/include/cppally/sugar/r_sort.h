@@ -13,7 +13,7 @@
 // Strings are sorted by first de-duplicating (getting unique) strings, and then using a counting sort.
 
 #include <cppally/r_vec.h>
-#include <cppally/sugar/r_hash.h>
+#include <cppally/hash/hash.h>
 #include <cppally/sugar/r_stats.h>
 #include <cstdint> // For uint32_t and similar
 #include <cstring> // For strcmp
@@ -283,7 +283,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         auto* RESTRICT px = x.data();
         
         // Single Hash Map to assign group IDs and count frequencies
-        ankerl::unordered_dense::map<SEXP, uint32_t, internal::r_hash<data_t>, internal::r_hash_eq<data_t>> lookup;
+        ankerl::unordered_dense::map<SEXP, uint32_t, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>> lookup;
         auto n_uniques_guess = internal::get_hash_map_reserve_size<T>(px, n);
         lookup.reserve(n_uniques_guess);
         

@@ -2,7 +2,7 @@
 #define CPPALLY_R_MATCH_H
 
 #include <cppally/r_coerce.h>
-#include <cppally/sugar/r_hash.h>
+#include <cppally/hash/hash.h>
 #include <cppally/sugar/r_stats.h>
 #include <cppally/sugar/r_dense_int_map.h>
 #include <cppally/r_pmap.h>
@@ -66,7 +66,7 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack, U no_match = n
   }
 
   // Build hash table
-  ankerl::unordered_dense::map<key_t, int_t, internal::r_hash<T>, internal::r_hash_eq<T>> lookup;
+  ankerl::unordered_dense::map<key_t, int_t, internal::r_hash_fn<T>, internal::r_hash_eq<T>> lookup;
   lookup.reserve(internal::get_hash_map_reserve_size<r_vec<T>>(p_haystack, n_haystack));
 
   for (r_size_t i = 0; i < n_haystack; ++i) {

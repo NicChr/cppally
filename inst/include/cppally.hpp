@@ -34,7 +34,7 @@
 #include <cppally/sugar/r_list_helpers.h>
 #include <cppally/sugar/r_df_methods.h>
 #include <cppally/sugar/r_stats.h>
-#include <cppally/sugar/r_hash.h>
+#include <cppally/hash/hash.h>
 #include <cppally/sugar/r_n_unique.h>
 #include <cppally/sugar/r_sort.h>
 #include <cppally/sugar/r_match.h>

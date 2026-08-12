@@ -34,7 +34,7 @@ inline r_size_t n_unique(const T& x) {
   ankerl::unordered_dense::map<
     unwrap_t<data_t>,
     int,
-    internal::r_hash<data_t>,
+    internal::r_hash_fn<data_t>,
     internal::r_hash_eq<data_t>
   > seen;
 

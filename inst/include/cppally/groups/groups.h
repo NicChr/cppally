@@ -5,7 +5,7 @@
 #include <cppally/r_df.h>
 #include <cppally/r_visit.h>
 #include <cppally/sugar/r_stats.h>
-#include <cppally/sugar/r_hash.h>
+#include <cppally/hash/hash.h>
 #include <cppally/sugar/r_dense_int_map.h>
 #include <cppally/sugar/r_sort.h>
 #include <cppally/random/random_stream.h>
@@ -332,7 +332,7 @@ inline groups make_unordered_groups(const T& x) {
         ankerl::unordered_dense::map<
         key_type,
         int,
-        internal::r_hash<data_t>,
+        internal::r_hash_fn<data_t>,
         internal::r_hash_eq<data_t>
       > lookup;
 

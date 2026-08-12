@@ -131,7 +131,7 @@ inline uint64_t r_hash_impl(const r_sexp& x) {
 
 
 template <typename T>
-struct r_hash {
+struct r_hash_fn {
     using is_avalanching = void; // Tells ankerl this is already a good quality hash
     // For hash map memory efficiency we use the underlying type
     using base_t = unwrap_t<T>;
@@ -244,7 +244,7 @@ inline uint64_t get_hash_map_reserve_size(const U *px, uint64_t data_size) {
 
     // Only do sampling if data is large
     if (data_size > static_cast<uint64_t>(internal::exp2<double>(16))){
-        auto cardinality_guess = unique_count_estimate<U, uint32_t, r_hash<data_t>, r_hash_eq<data_t>>(px, data_size);
+        auto cardinality_guess = unique_count_estimate<U, uint32_t, r_hash_fn<data_t>, r_hash_eq<data_t>>(px, data_size);
         if (cardinality_guess < guess){
             // guess = ( ( guess * (1/cardinality_guess) ) + ( cardinality_guess * (1/guess) ) ) * ( (1/guess) + (1/cardinality_guess) );
             guess = (guess + cardinality_guess) / 2;
