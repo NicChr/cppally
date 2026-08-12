@@ -7,7 +7,7 @@
 #include <cppally/coerce.h>
 #include <cppally/identical.h>
 #include <cppally/sugar/r_rep.h>
-#include <cppally/sugar/r_subset.h>
+#include <cppally/sugar/subset.h>
 #include <cppally/sort/sort.h>
 #include <cppally/unique/unique.h>
 #include <cppally/group/groups.h>

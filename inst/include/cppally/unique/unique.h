@@ -5,7 +5,7 @@
 #include <cppally/factor/r_factors.h>
 #include <cppally/group/groups.h>
 #include <cppally/vector/vector_ops.h>
-#include <cppally/sugar/r_subset.h>
+#include <cppally/sugar/subset.h>
 
 namespace cppally {
 

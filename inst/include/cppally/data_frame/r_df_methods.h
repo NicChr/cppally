@@ -9,8 +9,8 @@
 #include <cppally/r_sexp/visit.h>
 #include <cppally/coerce.h>
 #include <cppally/sugar/r_rep.h>
-#include <cppally/sugar/r_recycle.h>
-#include <cppally/sugar/r_subset.h>
+#include <cppally/sugar/recycle.h>
+#include <cppally/sugar/subset.h>
 #include <cppally/vector/make_vec.h>
 #include <cppally/sugar/r_sexp_methods.h>
 #include <string>

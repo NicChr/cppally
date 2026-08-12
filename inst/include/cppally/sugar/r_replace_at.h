@@ -3,7 +3,7 @@
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/coerce.h>
-#include <cppally/sugar/r_subset.h>
+#include <cppally/sugar/subset.h>
 
 namespace cppally {
 

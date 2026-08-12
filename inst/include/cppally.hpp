@@ -37,12 +37,12 @@
 #include <cppally/sort/sort.h>
 #include <cppally/match/match.h>
 #include <cppally/unique/unique.h>
-#include <cppally/sugar/r_subset.h>
+#include <cppally/sugar/subset.h>
 #include <cppally/sugar/r_rep.h>
 #include <cppally/sugar/r_replace_at.h>
 #include <cppally/vector/make_vec.h>
 #include <cppally/sugar/r_combine.h>
-#include <cppally/sugar/r_recycle.h>
+#include <cppally/sugar/recycle.h>
 #include <cppally/string/paste.h>
 #include <cppally/math/math.h>
 #include <cppally/sequence/sequence.h>

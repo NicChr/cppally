@@ -3,7 +3,7 @@
 
 #include <cppally/coerce.h>
 #include <cppally/list/list_utils.h>
-#include <cppally/sugar/r_subset.h>
+#include <cppally/sugar/subset.h>
 #include <cppally/sugar/r_rep.h>
 #include <cppally/vector/make_vec.h>
 #include <cppally/sugar/r_sexp_methods.h>
