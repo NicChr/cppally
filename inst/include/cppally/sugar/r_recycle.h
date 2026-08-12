@@ -2,7 +2,7 @@
 #define CPPALLY_R_RECYCLE_H
 
 #include <cppally/r_sexp/visit.h>
-#include <cppally/sugar/r_list_helpers.h>
+#include <cppally/list/list_utils.h>
 #include <cppally/sugar/r_make_vec.h>
 
 namespace cppally {

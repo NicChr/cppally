@@ -30,7 +30,7 @@
 #include <cppally/r_coerce.h>
 #include <cppally/r_identical.h>
 #include <cppally/sugar/r_vec_ops.h>
-#include <cppally/sugar/r_list_helpers.h>
+#include <cppally/list/list_utils.h>
 #include <cppally/sugar/r_df_methods.h>
 #include <cppally/sugar/r_stats.h>
 #include <cppally/hash/hash.h>
@@ -48,7 +48,7 @@
 #include <cppally/sequence/sequence.h>
 #include <cppally/sugar/r_sexp_methods.h>
 #include <cppally/sugar/r_equal.h>
-#include <cppally/sugar/r_list_pmap.h>
+#include <cppally/list/list_pmap.h>
 #include <cppally/group/groups.h>
 #include <cppally/group/functionals.h>
 #include <cppally/random/random_stream.h>
