@@ -6,8 +6,8 @@
 #include <cppally/utils/r_utils.h>
 #include <cppally/scalar/r_limits.h>
 #include <cppally/scalar/scalar_ops.h>
-#include <cppally/utils/r_vec_utils.h>
 #include <cppally/scalar/r_coerce_scalars.h>
+#include <cppally/vector/vector_utils.h>
 #include <cppally/vector/vector_names.h>
 #include <cppally/r_function.h>
 #include <algorithm>
