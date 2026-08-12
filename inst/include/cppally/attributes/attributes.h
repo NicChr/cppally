@@ -4,7 +4,7 @@
 #include <cppally/r_setup.h>
 #include <Rversion.h>
 #include <cppally/vector/r_vector.h>
-#include <cppally/utils/r_utils.h>
+#include <cppally/utils.h>
 #include <cppally/r_function.h>
 #include <initializer_list>
 

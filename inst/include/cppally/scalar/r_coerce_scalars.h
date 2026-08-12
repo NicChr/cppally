@@ -2,7 +2,7 @@
 #define CPPALLY_R_COERCE_SCALARS_H
 
 #include <cppally/r_setup.h>
-#include <cppally/utils/r_utils.h>
+#include <cppally/utils.h>
 #include <cppally/scalar/scalars.h>
 #include <cppally/scalar/r_limits.h>
 #include <cppally/na.h>

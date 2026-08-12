@@ -2,7 +2,7 @@
 #define CPPALLY_R_SUBSET_H
 
 #include <cppally/r_setup.h>
-#include <cppally/utils/r_utils.h>
+#include <cppally/utils.h>
 #include <cppally/r_sexp/visit.h>
 #include <cppally/match/match.h>
 #include <cppally/coerce.h>

@@ -13,7 +13,7 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
-#include <cppally/utils/r_utils.h>
+#include <cppally/utils.h>
 #include <cppally/scalar/scalars.h>
 #include <cppally/na.h>
 #include <cstring> // For strcmp
