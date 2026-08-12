@@ -6,7 +6,6 @@
 #include <cppally/r_sym.h>
 #include <cppally/r_env.h>
 #include <cppally/r_named_arg.h>
-#include <cppally/vector/r_vector.h>
 #include <initializer_list>
 
 namespace cppally {
@@ -26,30 +25,6 @@ inline r_sexp make_pairlist(std::initializer_list<r_sexp> args){
   return out;
 }
 
-template<typename... Args>
-inline r_sexp make_pairlist(Args... args) {
-  constexpr int n = sizeof...(args);
-
-  if constexpr (n == 0){
-    return r_sexp(safe[Rf_allocList](0));
-  } else {
-    r_sexp out = r_sexp(safe[Rf_allocList](n));
-
-    SEXP current = out;
-
-    (([&]() {
-      if constexpr (NamedArg<Args>) {
-        SETCAR(current, as_list_element(args.value));
-        SET_TAG(current, r_sym(args.name));
-      } else {
-        SETCAR(current, as_list_element(args));
-      }
-      current = CDR(current);
-    }()), ...);
-
-    return out;
-  }
-}
 inline r_sexp empty_fn(){
   static r_sexp& empty_clo = *new r_sexp(safe[R_mkClosure](R_NilValue, R_NilValue, env::empty_env));
   return empty_clo;
@@ -113,14 +88,13 @@ struct r_function {
     explicit operator r_sexp() const noexcept { return value; }
   
     // operator() to make r_function callable
-    template <typename... Args>
-    r_sexp operator()(Args&&... args) const {
-      return call_impl(internal::make_pairlist(std::forward<Args>(args)...));
-    }
-    
     r_sexp operator()(std::initializer_list<r_sexp> args) const {
       return call_impl(internal::make_pairlist(args));
     }
+    
+    template <typename... Args>
+    r_sexp operator()(Args&&... args) const; // Defined in r_vector.h
+    
 
     private:
 

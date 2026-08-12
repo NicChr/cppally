@@ -9,6 +9,7 @@
 #include <cppally/utils/r_vec_utils.h>
 #include <cppally/scalar/r_coerce_scalars.h>
 #include <cppally/vector/vector_names.h>
+#include <cppally/r_function.h>
 #include <algorithm>
 #include <cstring>
 #include <utility>
@@ -43,6 +44,32 @@ r_sexp as_list_element(const T& x) {
     } else {
       return as<r_sexp>(x);
     }
+}
+
+// variadic pairlist construction
+template<typename... Args>
+inline r_sexp make_pairlist(Args... args) {
+  constexpr int n = sizeof...(args);
+
+  if constexpr (n == 0){
+    return r_sexp(safe[Rf_allocList](0));
+  } else {
+    r_sexp out = r_sexp(safe[Rf_allocList](n));
+
+    SEXP current = out;
+
+    (([&]() {
+      if constexpr (NamedArg<Args>) {
+        SETCAR(current, as_list_element(args.value));
+        SET_TAG(current, r_sym(args.name));
+      } else {
+        SETCAR(current, as_list_element(args));
+      }
+      current = CDR(current);
+    }()), ...);
+
+    return out;
+  }
 }
 
 // Internal unsafe constructors when we are reconstructing the value from its unwrapped value
@@ -111,6 +138,13 @@ template <typename Acc>
 internal::control_flow<Acc> done(Acc v){ return { std::move(v), true }; }
 template <typename Acc>
 internal::control_flow<Acc> keep(Acc v){ return { std::move(v), false }; }
+
+
+
+template <typename... Args>
+r_sexp r_function::operator()(Args&&... args) const {
+  return call_impl(internal::make_pairlist(std::forward<Args>(args)...));
+}
 
 template <RVal T>
 struct r_vec {
