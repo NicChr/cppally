@@ -8,7 +8,7 @@
 #include <cppally/r_identical.h>
 #include <cppally/sugar/r_rep.h>
 #include <cppally/sugar/r_subset.h>
-#include <cppally/sugar/r_sort.h>
+#include <cppally/sort/sort.h>
 #include <cppally/sugar/r_unique.h>
 #include <cppally/sugar/r_n_unique.h>
 #include <cppally/groups/groups.h>
