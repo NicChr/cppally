@@ -3,7 +3,7 @@
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/r_factor.h>
-#include <cppally/r_df.h>
+#include <cppally/data_frame/r_df.h>
 
 namespace cppally {
 

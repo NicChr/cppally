@@ -167,7 +167,7 @@ struct r_df {
         cached_nrow = get_nrow();
     }
     
-    // Forward declarations, defined in r_df_methods.h
+    // Forward declarations, defined in data_frame/r_df_methods.h
     explicit r_df(const r_vec<r_sexp>& cols, bool recycle = true);
     explicit r_df(const r_vec<r_sexp>& cols, bool recycle, int nrows);
     template <RScalar T>
@@ -267,7 +267,7 @@ struct r_df {
     }
 
     // Visit the i-th column dispatched to its concrete RComposite type.
-    // Definition in r_df_methods.h (needs r_sexp_visit)
+    // Definition in data_frame/r_df_methods.h (needs r_sexp_visit)
     template <typename index_t, class F>
     decltype(auto) with_col(const index_t& index, F&& f, bool view_only = false) const;
 

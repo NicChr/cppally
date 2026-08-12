@@ -26,12 +26,12 @@
 #include <cppally/r_sexp/visit.h>
 #include <cppally/r_length.h>
 #include <cppally/sugar/r_copy.h>
-#include <cppally/r_df.h>
+#include <cppally/data_frame/r_df.h>
 #include <cppally/r_coerce.h>
 #include <cppally/r_identical.h>
 #include <cppally/sugar/r_vec_ops.h>
 #include <cppally/list/list_utils.h>
-#include <cppally/sugar/r_df_methods.h>
+#include <cppally/data_frame/r_df_methods.h>
 #include <cppally/sugar/r_stats.h>
 #include <cppally/hash/hash.h>
 #include <cppally/sort/sort.h>

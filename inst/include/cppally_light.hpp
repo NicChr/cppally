@@ -21,7 +21,7 @@
 #include <cppally/vector/r_vector.h>
 #include <cppally/r_attrs.h>
 #include <cppally/r_factor.h>
-#include <cppally/r_df.h>
+#include <cppally/data_frame/r_df.h>
 #include <cppally/r_sexp/visit.h>
 #include <cppally/r_identical.h>
 #include <cppally/r_length.h>

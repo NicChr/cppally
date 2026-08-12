@@ -2,7 +2,7 @@
 #define CPPALLY_R_GROUPS_H
 
 #include <cppally/vector/r_vector.h>
-#include <cppally/r_df.h>
+#include <cppally/data_frame/r_df.h>
 #include <cppally/r_sexp/visit.h>
 #include <cppally/sugar/r_stats.h>
 #include <cppally/hash/hash.h>
