@@ -7,7 +7,7 @@
 
 namespace cppally {
 
-template <typename T>
+template <RComposite T>
 requires (requires (const T& obj, r_size_t n) { obj.rep_len(n); })
 T rep_len(const T& x, r_size_t n){
     return x.rep_len(n);
@@ -33,7 +33,7 @@ inline r_sexp rep_len(const r_sexp& x, r_size_t n) {
     return r_sexp_view(x, CPPALLY_MAKE_VISITOR(r_sexp, v, rep_len(v, n)));
 }
 
-template <typename T>
+template <RComposite T>
 requires (requires (const T& obj, r_size_t n) { obj.resize(n); })
 T resize(const T& x, r_size_t n){
     return x.resize(n);
