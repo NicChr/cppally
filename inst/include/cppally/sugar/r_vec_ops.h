@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_VEC_OPS_H
 #define CPPALLY_R_VEC_OPS_H
 
-#include <cppally/r_utils.h>
+#include <cppally/utils/r_utils.h>
 #include <cppally/r_vec.h>
 #include <cppally/r_pmap.h>
 

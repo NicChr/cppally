@@ -3,10 +3,10 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
-#include <cppally/r_utils.h>
+#include <cppally/utils/r_utils.h>
 #include <cppally/r_limits.h>
-#include <cppally/r_scalar_ops.h>
-#include <cppally/r_vec_utils.h>
+#include <cppally/scalars/scalar_ops.h>
+#include <cppally/utils/r_vec_utils.h>
 #include <cppally/scalars/r_coerce_scalars.h>
 #include <cppally/r_hash_names.h>
 #include <algorithm>

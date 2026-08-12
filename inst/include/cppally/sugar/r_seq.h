@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_SEQ_H
 #define CPPALLY_R_SEQ_H
 
-#include <cppally/r_utils.h>
+#include <cppally/utils/r_utils.h>
 #include <cppally/r_vec.h>
 #include <cppally/math/math.h>
 #include <cppally/r_coerce.h>
