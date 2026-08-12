@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_DF_H
 #define CPPALLY_R_DF_H
 
-#include <cppally/r_vec.h>
+#include <cppally/vector/r_vector.h>
 #include <cppally/r_attrs.h>
 #include <cppally/r_hash_names.h>
 

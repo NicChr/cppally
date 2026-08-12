@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_GROUPS_H
 #define CPPALLY_R_GROUPS_H
 
-#include <cppally/r_vec.h>
+#include <cppally/vector/r_vector.h>
 #include <cppally/r_df.h>
 #include <cppally/r_visit.h>
 #include <cppally/sugar/r_stats.h>

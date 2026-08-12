@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_STATS_H
 #define CPPALLY_R_STATS_H
 
-#include <cppally/r_vec.h>
+#include <cppally/vector/r_vector.h>
 
 namespace cppally {
 

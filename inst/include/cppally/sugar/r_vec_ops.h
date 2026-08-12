@@ -2,7 +2,7 @@
 #define CPPALLY_R_VEC_OPS_H
 
 #include <cppally/utils/r_utils.h>
-#include <cppally/r_vec.h>
+#include <cppally/vector/r_vector.h>
 #include <cppally/r_pmap.h>
 
 // Vectorised binary operators: +,-,*,/,&,|,+=,-=,*=,/=,==,<=,<,>=,>

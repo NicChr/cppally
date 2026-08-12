@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_REPLACE_AT_H
 #define CPPALLY_R_REPLACE_AT_H
 
-#include <cppally/r_vec.h>
+#include <cppally/vector/r_vector.h>
 #include <cppally/r_coerce.h>
 #include <cppally/sugar/r_subset.h>
 

@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_LIST_HELPERS_H
 #define CPPALLY_R_LIST_HELPERS_H
 
-#include <cppally/r_vec.h>
+#include <cppally/vector/r_vector.h>
 #include <cppally/sugar/r_sexp_methods.h>
 #include <cppally/sugar/r_rep.h>
 #include <vector>

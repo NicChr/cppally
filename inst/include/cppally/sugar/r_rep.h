@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_REP_H
 #define CPPALLY_R_REP_H
 
-#include <cppally/r_vec.h>
+#include <cppally/vector/r_vector.h>
 #include <cppally/sugar/r_stats.h>
 #include <cppally/sugar/r_copy.h>
 

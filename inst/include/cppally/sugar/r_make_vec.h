@@ -3,7 +3,7 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/r_named_arg.h>
-#include <cppally/r_vec.h>
+#include <cppally/vector/r_vector.h>
 #include <cppally/r_attrs.h>
 #include <cppally/r_coerce.h>
 

@@ -19,7 +19,7 @@
 #include <cppally/r_nas.h>
 #include <cppally/scalars/scalar_ops.h>
 #include <cppally/scalars/r_coerce_scalars.h>
-#include <cppally/r_vec.h>
+#include <cppally/vector/r_vector.h>
 #include <cppally/r_pmap.h>
 #include <cppally/r_factor.h>
 #include <cppally/r_attrs.h>

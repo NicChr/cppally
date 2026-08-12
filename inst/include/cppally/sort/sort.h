@@ -12,7 +12,7 @@
 // else falls back to a full-width ska_sort.
 // Strings are sorted by first de-duplicating (getting unique) strings, and then using a counting sort.
 
-#include <cppally/r_vec.h>
+#include <cppally/vector/r_vector.h>
 #include <cppally/hash/hash.h>
 #include <cppally/sugar/r_stats.h>
 #include <cstdint> // For uint32_t and similar

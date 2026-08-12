@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_VISIT_H
 #define CPPALLY_R_VISIT_H
 
-#include <cppally/r_vec.h>
+#include <cppally/vector/r_vector.h>
 #include <cppally/r_factor.h>
 #include <cppally/r_sexp_types.h>
 #include <cppally/r_df.h>

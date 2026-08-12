@@ -6,7 +6,7 @@
 #include <cppally/r_sym.h>
 #include <cppally/r_env.h>
 #include <cppally/r_named_arg.h>
-#include <cppally/r_vec.h>
+#include <cppally/vector/r_vector.h>
 
 namespace cppally {
 

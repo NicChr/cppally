@@ -2,7 +2,7 @@
 #define CPPALLY_R_COERCE_H
 
 #include <cppally/scalars/r_coerce_scalars.h>
-#include <cppally/r_vec.h>
+#include <cppally/vector/r_vector.h>
 #include <cppally/r_visit.h>
 #include <cppally/r_sexp_types.h>
 #include <cppally/sugar/r_copy.h>

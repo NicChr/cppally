@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_GROUP_FUNCTIONALS_H
 #define CPPALLY_R_GROUP_FUNCTIONALS_H
 
-#include <cppally/r_vec.h>
+#include <cppally/vector/r_vector.h>
 #include <cppally/r_coerce.h>
 #include <cppally/r_length.h>
 #include <cppally/groups/groups.h>
