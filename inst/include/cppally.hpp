@@ -45,7 +45,7 @@
 #include <cppally/sugar/r_recycle.h>
 #include <cppally/sugar/r_paste.h>
 #include <cppally/math/math.h>
-#include <cppally/sugar/r_seq.h>
+#include <cppally/sequence/sequence.h>
 #include <cppally/sugar/r_sexp_methods.h>
 #include <cppally/sugar/r_equal.h>
 #include <cppally/sugar/r_list_pmap.h>
