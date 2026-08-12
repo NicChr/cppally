@@ -3,7 +3,7 @@
 
 #include <cppally/r_utils.h>
 #include <cppally/r_vec.h>
-#include <cppally/sugar/r_math.h>
+#include <cppally/math/math.h>
 #include <cppally/r_coerce.h>
 
 namespace cppally {
