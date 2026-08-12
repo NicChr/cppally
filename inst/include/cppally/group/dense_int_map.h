@@ -2,7 +2,7 @@
 #define CPPALLY_R_DENSE_INT_MAP_H
 
 #include <cppally/vector/r_vector.h>
-#include <cppally/sugar/r_stats.h>
+#include <cppally/stats/stats.h>
 #include <algorithm>
 #include <cstdint>
 #include <utility>

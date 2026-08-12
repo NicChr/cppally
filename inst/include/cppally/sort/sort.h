@@ -14,7 +14,7 @@
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/hash/hash.h>
-#include <cppally/sugar/r_stats.h>
+#include <cppally/stats/stats.h>
 #include <cstdint> // For uint32_t and similar
 #include <cstring> // For strcmp
 #include <vector> // For C++ vectors

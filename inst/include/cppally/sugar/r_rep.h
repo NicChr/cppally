@@ -2,7 +2,7 @@
 #define CPPALLY_R_REP_H
 
 #include <cppally/vector/r_vector.h>
-#include <cppally/sugar/r_stats.h>
+#include <cppally/stats/stats.h>
 #include <cppally/sugar/r_copy.h>
 
 namespace cppally {

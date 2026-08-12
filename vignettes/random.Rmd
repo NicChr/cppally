@@ -45,7 +45,7 @@ cpp_source <- function(..., code, debug = TRUE, env = parent.frame()){
   preamble <- c(
     "#include <cppally_light.hpp>", 
     "#include <cppally/random/random_stream.h>", 
-    "#include <cppally/sugar/r_stats.h>", 
+    "#include <cppally/stats/stats.h>", 
     "using namespace cppally;"
     )
   code <- paste(c(preamble, code), collapse = "\n")

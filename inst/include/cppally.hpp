@@ -32,7 +32,7 @@
 #include <cppally/sugar/r_vec_ops.h>
 #include <cppally/list/list_utils.h>
 #include <cppally/data_frame/r_df_methods.h>
-#include <cppally/sugar/r_stats.h>
+#include <cppally/stats/stats.h>
 #include <cppally/hash/hash.h>
 #include <cppally/sort/sort.h>
 #include <cppally/match/match.h>
