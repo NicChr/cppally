@@ -12,10 +12,10 @@
 
 namespace cppally {
 
-template <RComposite T, RComposite U>
+template <typename T, typename U>
 requires (
+  ( (RVector<T> || RFactor<T>) && (RVector<U> || RFactor<U>)) && 
   (!RAtomicVector<T> || !RAtomicVector<U>)
-  && !(RDataFrame<T> || RDataFrame<U>)
 )
 inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs){
   using common_t = common_r_t<T, U>;
@@ -63,66 +63,6 @@ inline r_vec<r_lgl> operator==(const r_factors& lhs, const r_factors& rhs) {
     comparable.set(i, is_na(c) ? na<r_int>() : remap.get(unwrap(c) - 1));
   }
   return lhs.value == comparable;
-}
-
-// Forward decl for r_df
-template <typename U>
-requires (RComposite<U>)
-inline r_vec<r_lgl> operator==(const r_sexp& lhs, const U& rhs);
-template <RComposite T>
-inline r_vec<r_lgl> operator==(const T& lhs, const r_sexp& rhs);
-
-template <RComposite T, RComposite U>
-requires (RDataFrame<T> || RDataFrame<U>)
-inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs) {
-
-  r_df a = as<r_df>(lhs);
-  r_df b = as<r_df>(rhs);
-
-  if (a.ncol() != b.ncol()){
-    abort("`operator==`: `lhs.ncol()` must match `rhs.ncol()`");
-  }
-  
-  if (a.nrow() == 0 || b.nrow() == 0){
-      return r_vec<r_lgl>();
-  }
-
-  r_size_t ncols = a.ncol();
-  r_vec<r_str_view> colnames = a.colnames();
-
-  r_size_t out_size = std::max(a.nrow(), b.nrow());
-  r_vec<r_lgl> out(out_size, r_true);
-    
-  for (r_size_t i = 0; i < ncols; ++i){
-    r_str_view colname = colnames.view(i);
-    r_sexp lhs_col = a.view_col(colname);
-    r_sexp rhs_col = b.view_col(colname);
-
-    r_sexp_view(lhs_col, [&]<RComposite lhs_t>(const lhs_t& left_col) -> void {
-      lhs_t right_col = visit_as<lhs_t>(rhs_col);
-      out = std::move(out) & (left_col == right_col);
-    });
-  }
-
-  return out;
-}
-
-template <typename U>
-requires (RComposite<U>)
-inline r_vec<r_lgl> operator==(const r_sexp& lhs, const U& rhs) {
-  return r_sexp_view(lhs, [&]<RComposite V> (const V& v) -> r_vec<r_lgl> 
-  requires (requires {cppally::operator==(v, rhs);})
-  {
-    return cppally::operator==(v, rhs);
-  });
-}
-template <RComposite T>
-inline r_vec<r_lgl> operator==(const T& lhs, const r_sexp& rhs) {
-  return r_sexp_view(rhs, [&]<RComposite W> (const W& w) -> r_vec<r_lgl> 
-  requires(requires {cppally::operator==(lhs, w);})
-  {
-    return cppally::operator==(lhs, w);
-  });
 }
 
 template <typename T, typename U>
