@@ -11,10 +11,10 @@
 #include <cppally/utils/r_utils.h>
 #include <cppally/r_named_arg.h>
 #include <cppally/r_sexp/r_sexp.h>
-#include <cppally/r_types.h>
+#include <cppally/scalar/scalars.h>
 #include <cppally/r_sym.h>
-#include <cppally/r_env.h>
 #include <cppally/r_function.h>
+#include <cppally/r_env.h>
 #include <cppally/scalar/r_limits.h>
 #include <cppally/r_nas.h>
 #include <cppally/scalar/scalar_ops.h>

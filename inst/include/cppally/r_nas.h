@@ -2,7 +2,8 @@
 #define CPPALLY_R_NAS_H
 
 #include <cppally/r_setup.h>
-#include <cppally/r_types.h>
+#include <cppally/scalar/scalars.h>
+#include <cppally/r_sym.h>
 #include <limits>
 #include <bit>
 

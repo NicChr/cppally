@@ -3,7 +3,8 @@
 
 #include <cppally/r_concepts.h>
 #include <cppally/r_nas.h>
-#include <cppally/r_types.h>
+#include <cppally/scalar/scalars.h>
+#include <cppally/r_sym.h>
 #include <cppally/r_function.h>
 
 namespace cppally {

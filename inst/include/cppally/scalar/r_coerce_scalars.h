@@ -3,7 +3,7 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/utils/r_utils.h>
-#include <cppally/r_types.h>
+#include <cppally/scalar/scalars.h>
 #include <cppally/scalar/r_limits.h>
 #include <cppally/r_nas.h>
 #include <limits>

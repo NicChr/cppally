@@ -14,7 +14,7 @@
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
 #include <cppally/utils/r_utils.h>
-#include <cppally/r_types.h>
+#include <cppally/scalar/scalars.h>
 #include <cppally/r_nas.h>
 #include <cstring> // For strcmp
 

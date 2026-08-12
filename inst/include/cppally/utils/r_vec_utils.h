@@ -1,8 +1,7 @@
 #ifndef CPPALLY_VECTOR_UTILS_H
 #define CPPALLY_VECTOR_UTILS_H
 
-#include <cppally/r_types.h>
-#include <cppally/r_sym.h>
+#include <cppally/scalar/scalars.h>
 #include <cstring>
 
 namespace cppally {
