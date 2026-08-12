@@ -37,7 +37,6 @@
 #include <cppally/sugar/r_hash.h>
 #include <cppally/sugar/r_n_unique.h>
 #include <cppally/sugar/r_sort.h>
-#include <cppally/groups/groups.h>
 #include <cppally/sugar/r_match.h>
 #include <cppally/sugar/r_unique.h>
 #include <cppally/sugar/r_subset.h>
@@ -52,8 +51,8 @@
 #include <cppally/sugar/r_sexp_methods.h>
 #include <cppally/sugar/r_equal.h>
 #include <cppally/sugar/r_list_pmap.h>
-#include <cppally/sugar/r_reduce_by_group.h>
-#include <cppally/sugar/r_apply_by_group.h>
+#include <cppally/groups/groups.h>
+#include <cppally/groups/functionals.h>
 #include <cppally/random/random_stream.h>
 
 #endif
