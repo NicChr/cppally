@@ -5,7 +5,7 @@
 #include <cppally/r_concepts.h>
 #include <cppally/r_sexp/r_sexp.h>
 #include <cppally/r_sexp/r_sexp_types.h>
-#include <cppally/utils/r_lazy.h>
+#include <cppally/string/string_literal.h>
 #include <string>
 #include <string_view>
 

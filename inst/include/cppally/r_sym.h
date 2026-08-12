@@ -7,7 +7,7 @@
 #include <cppally/r_sexp/r_sexp_types.h>
 #include <cppally/scalar/r_lgl.h>
 #include <cppally/scalar/r_str.h>
-#include <cppally/utils/r_lazy.h>
+#include <cppally/string/string_literal.h>
 
 namespace cppally {
 
