@@ -10,7 +10,7 @@
 #include <cppally/r_concepts.h> // Concepts and forward declarations
 #include <cppally/utils/r_utils.h>
 #include <cppally/r_named_arg.h>
-#include <cppally/r_sexp.h>
+#include <cppally/r_sexp/r_sexp.h>
 #include <cppally/r_types.h>
 #include <cppally/r_sym.h>
 #include <cppally/r_env.h>
@@ -22,7 +22,7 @@
 #include <cppally/r_attrs.h>
 #include <cppally/r_factor.h>
 #include <cppally/r_df.h>
-#include <cppally/r_visit.h>
+#include <cppally/r_sexp/visit.h>
 #include <cppally/r_identical.h>
 #include <cppally/r_length.h>
 #include <cppally/r_coerce.h>

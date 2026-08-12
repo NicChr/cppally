@@ -3,7 +3,7 @@
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/r_factor.h>
-#include <cppally/r_sexp_types.h>
+#include <cppally/r_sexp/r_sexp_types.h>
 #include <cppally/r_df.h>
 #include <cppally/r_function.h>
 #include <utility>

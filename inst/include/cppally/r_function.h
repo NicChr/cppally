@@ -2,7 +2,7 @@
 #define CPPALLY_R_FUNCTION_H
 
 #include <cppally/r_setup.h>
-#include <cppally/r_sexp.h>
+#include <cppally/r_sexp/r_sexp.h>
 #include <cppally/r_sym.h>
 #include <cppally/r_env.h>
 #include <cppally/r_named_arg.h>

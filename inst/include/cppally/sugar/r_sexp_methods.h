@@ -3,7 +3,7 @@
 
 // Type-safe methods for r_sexp
 
-#include <cppally/r_visit.h>
+#include <cppally/r_sexp/visit.h>
 #include <cppally/r_coerce.h>
 #include <cppally/r_identical.h>
 #include <cppally/sugar/r_rep.h>

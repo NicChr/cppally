@@ -2,7 +2,7 @@
 #define CPPALLY_R_HASH_H
 
 #include <cppally/vector/r_vector.h>
-#include <cppally/r_visit.h>
+#include <cppally/r_sexp/visit.h>
 #include <cppally/r_attrs.h>
 #include <cppally/r_identical.h>
 #include <cppally/random/random_stream.h>

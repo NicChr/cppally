@@ -3,7 +3,7 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
-#include <cppally/r_protect.h>
+#include <cppally/r_sexp/protect.h>
 #include <cppally/scalar/r_int.h>
 
 namespace cppally {

@@ -3,8 +3,8 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
-#include <cppally/r_sexp.h>
-#include <cppally/r_sexp_types.h>
+#include <cppally/r_sexp/r_sexp.h>
+#include <cppally/r_sexp/r_sexp_types.h>
 #include <cppally/utils/r_lazy.h>
 #include <string>
 #include <string_view>

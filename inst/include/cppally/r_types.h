@@ -2,7 +2,7 @@
 #define CPPALLY_R_TYPES_H
 
 #include <cppally/r_concepts.h>
-#include <cppally/r_sexp.h>
+#include <cppally/r_sexp/r_sexp.h>
 #include <cppally/scalar/r_lgl.h>
 #include <cppally/scalar/r_int.h>
 #include <cppally/scalar/r_int64.h>

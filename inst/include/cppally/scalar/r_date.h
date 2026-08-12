@@ -2,7 +2,7 @@
 #define CPPALLY_R_DATE_H
 
 #include <cppally/r_concepts.h>
-#include <cppally/r_protect.h>
+#include <cppally/r_sexp/protect.h>
 #include <cppally/scalar/r_dbl.h>
 #include <cppally/scalar/r_int64.h>
 #include <cppally/scalar/r_str.h>
