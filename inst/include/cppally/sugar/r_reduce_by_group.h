@@ -3,7 +3,7 @@
 
 #include <cppally/r_vec.h>
 #include <cppally/r_coerce.h>
-#include <cppally/sugar/r_groups.h>
+#include <cppally/groups/groups.h>
 #include <vector>
 
 // Methods for reduction by group
