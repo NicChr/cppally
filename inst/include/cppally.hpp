@@ -40,7 +40,7 @@
 #include <cppally/sugar/r_subset.h>
 #include <cppally/sugar/r_rep.h>
 #include <cppally/sugar/r_replace_at.h>
-#include <cppally/sugar/r_make_vec.h>
+#include <cppally/vector/make_vec.h>
 #include <cppally/sugar/r_combine.h>
 #include <cppally/sugar/r_recycle.h>
 #include <cppally/string/paste.h>
