@@ -47,7 +47,7 @@
 #include <cppally/math/math.h>
 #include <cppally/sequence/sequence.h>
 #include <cppally/sugar/r_sexp_methods.h>
-#include <cppally/sugar/r_equal.h>
+#include <cppally/vector/equality.h>
 #include <cppally/list/list_pmap.h>
 #include <cppally/group/groups.h>
 #include <cppally/group/functionals.h>
