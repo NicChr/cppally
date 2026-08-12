@@ -36,51 +36,8 @@ inline consteval uint64_t nan_bits() noexcept {
 namespace internal {
 
 template <RVal T>
-inline constexpr T na_value_impl() noexcept;
-
-template<>
-inline constexpr r_lgl na_value_impl<r_lgl>() noexcept {
-  return na_lgl;
-}
-
-template<>
-inline constexpr r_int na_value_impl<r_int>() noexcept {
-  return na_int;
-}
-
-template<>
-inline constexpr r_dbl na_value_impl<r_dbl>() noexcept {
-  return na_real;
-}
-
-template <RTimeType T>
 inline constexpr T na_value_impl() noexcept {
   return T::na();
-}
-
-template<>
-inline constexpr r_int64 na_value_impl<r_int64>() noexcept {
-  return na_int64;
-}
-
-template<>
-inline constexpr r_cplx na_value_impl<r_cplx>() noexcept {
-  return na_cplx;
-}
-
-template<>
-inline constexpr r_raw na_value_impl<r_raw>() noexcept {
-  return na_raw;
-}
-
-template<>
-inline r_str_view na_value_impl<r_str_view>() noexcept {
-  return r_str_view(na_str);
-}
-
-template<>
-inline r_str na_value_impl<r_str>() noexcept {
-  return na_str;
 }
 
 template<>
@@ -90,7 +47,7 @@ inline r_sexp na_value_impl<r_sexp>() noexcept {
 
 }
 
-template<typename T>
+template <typename T>
 inline constexpr T na() noexcept {
   return internal::na_value_impl<std::remove_cvref_t<T>>();
 }
