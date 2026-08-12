@@ -5,6 +5,7 @@
 #include <cppally/r_concepts.h>
 #include <cppally/r_sexp/r_sexp.h>
 #include <cppally/r_sexp/r_sexp_types.h>
+#include <cppally/scalar/r_lgl.h>
 #include <cppally/scalar/r_str.h>
 #include <cppally/utils/r_lazy.h>
 
@@ -44,6 +45,13 @@ struct r_sym {
   }
 
 };
+
+inline r_lgl operator==(r_sym lhs, r_sym rhs) noexcept {
+  return r_lgl{unwrap(lhs) == unwrap(rhs)};
+}
+inline r_lgl operator!=(r_sym lhs, r_sym rhs) noexcept {
+  return r_lgl{unwrap(lhs) != unwrap(rhs)};
+}
 
 template <string_literal T>
 inline r_sym cached_sym() {

@@ -115,13 +115,6 @@ inline r_lgl operator>=(const r_str& lhs, const r_str& rhs) noexcept {
   return static_cast<r_str_view>(lhs) >= static_cast<r_str_view>(rhs);
 }
 
-inline r_lgl operator==(r_sym lhs, r_sym rhs) noexcept {
-  return r_lgl{unwrap(lhs) == unwrap(rhs)};
-}
-inline r_lgl operator!=(r_sym lhs, r_sym rhs) noexcept {
-  return r_lgl{unwrap(lhs) != unwrap(rhs)};
-}
-
 template <RScalar T, RScalar U>
 requires (requires (unwrap_t<T> a, unwrap_t<U> b) { a == b; })
 inline constexpr r_lgl operator==(const T& lhs, const U& rhs) noexcept {
