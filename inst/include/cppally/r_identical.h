@@ -1,8 +1,10 @@
 #ifndef CPPALLY_R_IDENTICAL_H
 #define CPPALLY_R_IDENTICAL_H
 
-#include <cppally/r_vec.h>
-#include <cppally/r_attrs.h>
+#include <cppally/r_concepts.h>
+#include <cppally/r_nas.h>
+#include <cppally/r_types.h>
+#include <cppally/r_function.h>
 
 namespace cppally {
 
