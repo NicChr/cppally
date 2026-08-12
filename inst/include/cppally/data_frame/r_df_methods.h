@@ -12,7 +12,7 @@
 #include <cppally/sugar/recycle.h>
 #include <cppally/sugar/subset.h>
 #include <cppally/vector/make_vec.h>
-#include <cppally/sugar/r_sexp_methods.h>
+#include <cppally/r_sexp/r_sexp_methods.h>
 #include <string>
 
 namespace cppally {

@@ -6,7 +6,7 @@
 #include <cppally/sugar/subset.h>
 #include <cppally/sugar/r_rep.h>
 #include <cppally/vector/make_vec.h>
-#include <cppally/sugar/r_sexp_methods.h>
+#include <cppally/r_sexp/r_sexp_methods.h>
 
 namespace cppally {
 

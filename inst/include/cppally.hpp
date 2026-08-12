@@ -46,7 +46,7 @@
 #include <cppally/string/paste.h>
 #include <cppally/math/math.h>
 #include <cppally/sequence/sequence.h>
-#include <cppally/sugar/r_sexp_methods.h>
+#include <cppally/r_sexp/r_sexp_methods.h>
 #include <cppally/vector/equality.h>
 #include <cppally/list/list_pmap.h>
 #include <cppally/group/groups.h>

@@ -3,7 +3,7 @@
 
 #include <cppally/r_sexp/visit.h>    // common_ptype, r_sexp_view
 #include <cppally/coerce.h>
-#include <cppally/sugar/r_sexp_methods.h>
+#include <cppally/r_sexp/r_sexp_methods.h>
 #include <span>
 #include <vector>
 

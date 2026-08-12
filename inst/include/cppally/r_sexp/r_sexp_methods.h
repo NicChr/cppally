@@ -4,15 +4,7 @@
 // Type-safe methods for r_sexp
 
 #include <cppally/r_sexp/visit.h>
-#include <cppally/coerce.h>
 #include <cppally/identical.h>
-#include <cppally/sugar/r_rep.h>
-#include <cppally/sugar/subset.h>
-#include <cppally/sort/sort.h>
-#include <cppally/unique/unique.h>
-#include <cppally/group/groups.h>
-#include <cppally/match/match.h>
-#include <cppally/sugar/r_replace_at.h>
 
 namespace cppally {
 
