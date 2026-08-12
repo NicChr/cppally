@@ -3,15 +3,15 @@
 
 #include <cppally/r_concepts.h>
 #include <cppally/r_sexp.h>
-#include <cppally/r_lgl.h>
-#include <cppally/r_int.h>
-#include <cppally/r_int64.h>
-#include <cppally/r_dbl.h>
-#include <cppally/r_str.h>
-#include <cppally/r_cplx.h>
-#include <cppally/r_raw.h>
-#include <cppally/r_date.h>
-#include <cppally/r_psxct.h>
+#include <cppally/scalars/r_lgl.h>
+#include <cppally/scalars/r_int.h>
+#include <cppally/scalars/r_int64.h>
+#include <cppally/scalars/r_dbl.h>
+#include <cppally/scalars/r_str.h>
+#include <cppally/scalars/r_cplx.h>
+#include <cppally/scalars/r_raw.h>
+#include <cppally/scalars/r_date.h>
+#include <cppally/scalars/r_psxct.h>
 #include <cppally/r_sym.h>
 
 // R-based C++ types that closely align with their R equivalents

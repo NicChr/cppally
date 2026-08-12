@@ -2,7 +2,7 @@
 #define CPPALLY_R_CPLX_H
 
 #include <complex> // For complex<double>
-#include <cppally/r_dbl.h>
+#include <cppally/scalars/r_dbl.h>
 
 namespace cppally {
 

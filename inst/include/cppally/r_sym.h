@@ -5,7 +5,7 @@
 #include <cppally/r_concepts.h>
 #include <cppally/r_sexp.h>
 #include <cppally/r_sexp_types.h>
-#include <cppally/r_str.h>
+#include <cppally/scalars/r_str.h>
 #include <cppally/r_lazy.h>
 
 namespace cppally {
