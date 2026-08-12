@@ -279,8 +279,8 @@ struct r_factors {
     return no_match;
   }
 
-  r_int get_code(const char* val) const {
-    return get_code(r_str(val));
+  r_int get_code(const char* val, r_int no_match = na<r_int>()) const {
+    return get_code(r_str(val), no_match);
   }
 
   r_int get_code(r_size_t index) const {
