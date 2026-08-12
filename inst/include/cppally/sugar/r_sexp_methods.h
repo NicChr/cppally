@@ -12,7 +12,7 @@
 #include <cppally/sugar/r_unique.h>
 #include <cppally/sugar/r_n_unique.h>
 #include <cppally/groups/groups.h>
-#include <cppally/sugar/r_match.h>
+#include <cppally/match/match.h>
 #include <cppally/sugar/r_replace_at.h>
 
 namespace cppally {

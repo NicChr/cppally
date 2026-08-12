@@ -4,7 +4,7 @@
 #include <cppally/r_setup.h>
 #include <cppally/utils/r_utils.h>
 #include <cppally/r_visit.h>
-#include <cppally/sugar/r_match.h>
+#include <cppally/match/match.h>
 #include <cppally/r_coerce.h>
 #include <vector> // For C++ vectors
 
