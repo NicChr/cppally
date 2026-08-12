@@ -178,6 +178,20 @@ struct r_vec {
   ptr_t m_ptr = nullptr;
 #endif
 
+  // Names caching strategy
+  // 1. If we have to get or set the names (via Rf_getAttrib/Rf_setAttrib), we might as well also cache them at that moment (including r_null).
+  // 2. Once the cache is populated, it becomes a secondary source of truth
+  // and is assumed to be in sync with the SEXP's names attribute.
+  // The only way to violate this sync is via R C API calls which are absolutely not safe.
+  // 3. Hashing is separate to caching and is only done on 2nd-lookup via `name_index()`
+  // Any two r_vec wrappers around the same SEXP point to the same names_map via the registry
+  mutable std::shared_ptr<internal::names_map> cached_names;
+
+  // Counts name_index calls on this wrapper. First lookup uses a linear scan;
+  // the hash table is only built on the second, so one-shot callers pay no
+  // build cost and the benefit accrues to repeated-lookup C++ code.
+  mutable bool first_access = false;
+
   void initialise_ptr(){
 #ifdef CPPALLY_PRESERVE_ALTREP
     // For ALTREP leave m_ptr null so get/view go through elt<T>
@@ -325,21 +339,7 @@ struct r_vec {
     return value.address();
   }
 
-  private: 
-
-  // Names caching strategy
-  // 1. If we have to get or set the names (via Rf_getAttrib/Rf_setAttrib), we might as well also cache them at that moment (including r_null).
-  // 2. Once the cache is populated, it becomes a secondary source of truth
-  // and is assumed to be in sync with the SEXP's names attribute. 
-  // The only way to violate this sync is via R C API calls which are absolutely not safe.
-  // 3. Hashing is separate to caching and is only done on 2nd-lookup via `name_index()`
-  // Any two r_vec wrappers around the same SEXP point to the same names_map via the registry
-  mutable std::shared_ptr<internal::names_map> cached_names;
-
-  // Counts name_index calls on this wrapper. First lookup uses a linear scan;
-  // the hash table is only built on the second, so one-shot callers pay no
-  // build cost and the benefit accrues to repeated-lookup C++ code.
-  mutable bool first_access = false;
+  private:
 
   // Place names into cache (no hash map yet)
   void cache_names(const r_vec<r_str_view>& nms) const {
