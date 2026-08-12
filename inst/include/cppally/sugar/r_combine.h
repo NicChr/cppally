@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_COMBINE_H
 #define CPPALLY_R_COMBINE_H
 
-#include <cppally/r_coerce.h>
+#include <cppally/coerce.h>
 #include <cppally/list/list_utils.h>
 #include <cppally/sugar/r_subset.h>
 #include <cppally/sugar/r_rep.h>

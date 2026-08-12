@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_UNIQUE_H
 #define CPPALLY_R_UNIQUE_H
 
-#include <cppally/r_length.h>
+#include <cppally/length.h>
 #include <cppally/factor/r_factors.h>
 #include <cppally/group/groups.h>
 #include <cppally/vector/vector_ops.h>

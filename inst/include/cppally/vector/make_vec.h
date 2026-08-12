@@ -2,10 +2,10 @@
 #define CPPALLY_R_MAKE_VEC_H
 
 #include <cppally/r_setup.h>
-#include <cppally/r_named_arg.h>
+#include <cppally/named_arg.h>
 #include <cppally/vector/r_vector.h>
 #include <cppally/attributes/attributes.h>
-#include <cppally/r_coerce.h>
+#include <cppally/coerce.h>
 
 namespace cppally {
 

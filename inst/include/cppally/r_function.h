@@ -5,8 +5,8 @@
 #include <cppally/r_sexp/r_sexp.h>
 #include <cppally/scalar/r_lgl.h>
 #include <cppally/r_sym.h>
-#include <cppally/r_env.h>
-#include <cppally/r_named_arg.h>
+#include <cppally/env.h>
+#include <cppally/named_arg.h>
 #include <initializer_list>
 
 namespace cppally {

@@ -4,8 +4,8 @@
 // Type-safe methods for r_sexp
 
 #include <cppally/r_sexp/visit.h>
-#include <cppally/r_coerce.h>
-#include <cppally/r_identical.h>
+#include <cppally/coerce.h>
+#include <cppally/identical.h>
 #include <cppally/sugar/r_rep.h>
 #include <cppally/sugar/r_subset.h>
 #include <cppally/sort/sort.h>

@@ -2,7 +2,7 @@
 #define CPPALLY_R_LIST_PMAP_H
 
 #include <cppally/r_sexp/visit.h>    // common_ptype, r_sexp_view
-#include <cppally/r_coerce.h>
+#include <cppally/coerce.h>
 #include <cppally/sugar/r_sexp_methods.h>
 #include <span>
 #include <vector>

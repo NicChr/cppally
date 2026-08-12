@@ -7,7 +7,7 @@
 #include <cppally/data_frame/r_df.h>
 #include <cppally/attributes/attributes.h>
 #include <cppally/r_sexp/visit.h>
-#include <cppally/r_coerce.h>
+#include <cppally/coerce.h>
 #include <cppally/sugar/r_rep.h>
 #include <cppally/sugar/r_recycle.h>
 #include <cppally/sugar/r_subset.h>

@@ -5,7 +5,7 @@
 #include <cppally/utils/r_utils.h>
 #include <cppally/r_sexp/visit.h>
 #include <cppally/match/match.h>
-#include <cppally/r_coerce.h>
+#include <cppally/coerce.h>
 #include <vector> // For C++ vectors
 
 namespace cppally {

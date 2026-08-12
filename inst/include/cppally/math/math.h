@@ -3,7 +3,7 @@
 
 #include <cppally/scalar/scalar_ops.h>
 #include <cppally/scalar/r_limits.h>
-#include <cppally/r_coerce.h>
+#include <cppally/coerce.h>
 #include <algorithm>
 
 // R math functions that propagate NA values in the way R expects

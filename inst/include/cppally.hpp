@@ -8,15 +8,15 @@
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h> // Concepts and forward declarations
 #include <cppally/utils/r_utils.h>
-#include <cppally/r_named_arg.h>
+#include <cppally/named_arg.h>
 #include <cppally/r_sexp/r_sexp.h>
 #include <cppally/r_sexp/r_sexp_types.h>
 #include <cppally/scalar/scalars.h>
 #include <cppally/r_sym.h>
 #include <cppally/r_function.h>
-#include <cppally/r_env.h>
+#include <cppally/env.h>
 #include <cppally/scalar/r_limits.h>
-#include <cppally/r_nas.h>
+#include <cppally/na.h>
 #include <cppally/scalar/scalar_ops.h>
 #include <cppally/scalar/r_coerce_scalars.h>
 #include <cppally/vector/r_vector.h>
@@ -24,11 +24,11 @@
 #include <cppally/factor/r_factors.h>
 #include <cppally/attributes/attributes.h>
 #include <cppally/r_sexp/visit.h>
-#include <cppally/r_length.h>
+#include <cppally/length.h>
 #include <cppally/sugar/r_copy.h>
 #include <cppally/data_frame/r_df.h>
-#include <cppally/r_coerce.h>
-#include <cppally/r_identical.h>
+#include <cppally/coerce.h>
+#include <cppally/identical.h>
 #include <cppally/vector/vector_ops.h>
 #include <cppally/list/list_utils.h>
 #include <cppally/data_frame/r_df_methods.h>

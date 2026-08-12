@@ -2,8 +2,8 @@
 #define CPPALLY_R_GROUP_FUNCTIONALS_H
 
 #include <cppally/vector/r_vector.h>
-#include <cppally/r_coerce.h>
-#include <cppally/r_length.h>
+#include <cppally/coerce.h>
+#include <cppally/length.h>
 #include <cppally/group/groups.h>
 #include <vector>
 #include <algorithm>

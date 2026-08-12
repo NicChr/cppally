@@ -4,7 +4,7 @@
 #include <cppally/utils/r_utils.h>
 #include <cppally/vector/r_vector.h>
 #include <cppally/math/math.h>
-#include <cppally/r_coerce.h>
+#include <cppally/coerce.h>
 
 namespace cppally {
 

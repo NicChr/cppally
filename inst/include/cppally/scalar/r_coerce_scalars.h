@@ -5,7 +5,7 @@
 #include <cppally/utils/r_utils.h>
 #include <cppally/scalar/scalars.h>
 #include <cppally/scalar/r_limits.h>
-#include <cppally/r_nas.h>
+#include <cppally/na.h>
 #include <limits>
 #include <charconv> // For to_chars
 #include <cstring> // For strcmp

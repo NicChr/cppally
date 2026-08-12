@@ -2,8 +2,8 @@
 #define CPPALLY_R_EQUAL_H
 
 #include <cppally/functional/pmap.h>
-#include <cppally/r_length.h>
-#include <cppally/r_identical.h>
+#include <cppally/length.h>
+#include <cppally/identical.h>
 #include <cppally/vector/vector_ops.h>
 
 // Vectorised `==` operator for R vectors.

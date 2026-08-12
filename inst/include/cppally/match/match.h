@@ -1,7 +1,7 @@
 #ifndef CPPALLY_R_MATCH_H
 #define CPPALLY_R_MATCH_H
 
-#include <cppally/r_coerce.h>
+#include <cppally/coerce.h>
 #include <cppally/hash/hash.h>
 #include <cppally/stats/stats.h>
 #include <cppally/group/dense_int_map.h>

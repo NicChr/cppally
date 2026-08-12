@@ -2,7 +2,7 @@
 #define CPPALLY_R_IDENTICAL_H
 
 #include <cppally/r_concepts.h>
-#include <cppally/r_nas.h>
+#include <cppally/na.h>
 #include <cppally/scalar/scalars.h>
 #include <cppally/r_sym.h>
 #include <cppally/r_function.h>

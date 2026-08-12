@@ -17,7 +17,7 @@
 // R-based C++ types that closely align with their R equivalents
 // Further methods (e.g. operators) are defined in scalar/scalar_ops.h
 // constructing R types via e.g. r_dbl() r_int() does not account for NAs
-// For any and all `NA` safe conversions, use the `as<>` template defined in r_coerce.h
+// For any and all `NA` safe conversions, use the `as<>` template defined in coerce.h
 // For example - to construct an `r_int` from an integer `x`, simply write `r_int(x)`. 
 // To convert an integer `x` to an `r_dbl`, we can write `as<r_dbl>(x)`
 // The latter case is able to handle `NA` conversions between different types.
