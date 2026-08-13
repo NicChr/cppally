@@ -4,7 +4,7 @@
 
 # A by-value in-place mutator: reverses `x` and returns it.
 reverse_src <- '
-  #include <cppally/r_vec.h>
+  #include <cppally/vector/r_vector.h>
   using namespace cppally;
 
   [[cppally::register]]
@@ -60,7 +60,7 @@ test_that("copy-on-modify still mutates in place when the wrapper is sole owner"
   # A freshly allocated vector inside C++ is exclusively owned, so COM should
   # mutate it directly (no wasted copy) and return the correct result.
   src <- '
-    #include <cppally/r_vec.h>
+    #include <cppally/vector/r_vector.h>
     using namespace cppally;
 
     [[cppally::register]]

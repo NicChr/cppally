@@ -4,7 +4,7 @@
 # relying on benchmarks. skip_if_cannot_cpp_source() lives in helper-cpp-source.R.
 
 altrep_src <- '
-  #include <cppally/r_vec.h>
+  #include <cppally/vector/r_vector.h>
   using namespace cppally;
 
   [[cppally::register]]
