@@ -41,6 +41,9 @@
 - [`use_cppally()`](https://nicchr.github.io/cppally/reference/use_cppally.md)
   : Helper for developing packages with cppally
 
+- [`use_openmp()`](https://nicchr.github.io/cppally/reference/use_openmp.md)
+  : Add OpenMP flags to Makevars
+
 - [`use_preserve_altrep_flag()`](https://nicchr.github.io/cppally/reference/use_preserve_altrep_flag.md)
   : Adds the CPPALLY_PRESERVE_ALTREP flag to Makevars
 

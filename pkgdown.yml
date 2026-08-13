@@ -7,7 +7,7 @@ articles:
   protection: protection.html
   random: random.html
   vector_name_hashing: vector_name_hashing.html
-last_built: 2026-08-11T06:53Z
+last_built: 2026-08-13T07:10Z
 urls:
   reference: https://nicchr.github.io/cppally/reference
   article: https://nicchr.github.io/cppally/articles

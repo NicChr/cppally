@@ -43,14 +43,6 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="cppally-development-version">cppally (development version)<a class="anchor" aria-label="anchor" href="#cppally-development-version"></a></h2>
 <div class="section level3">
-<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
-<ul><li><p>Fixed a bug where matching on integer vectors with a non <code>NA</code> <code>nomatch</code> value would still return <code>NA</code>.</p></li>
-<li><p>Fixed a bug where getting <code>r_df</code> rows would return CHARSXP instead of STRSXP.</p></li>
-<li><p>Fixed a bug where <code>r_vec::apply</code> would throw a compiler error when called on lists and character vectors.</p></li>
-<li><p>Fixed a bug where the wrong OMP pragma was being used for non-SIMD parallel for loops.</p></li>
-<li><p>Fixed a bug where calling <code>set_attr()</code> on <code>r_df</code> or <code>r_factors</code> would produce a compiler error.</p></li>
-</ul></div>
-<div class="section level3">
 <h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
 <ul><li><p>Sequences no longer abort on overflow, but instead silently return <code>NA</code>.</p></li>
 <li><p>Removed <code>r_vec::subset</code> and <code>r_factors::subset</code> as they didn’t thematically fit in with the rest of the members. The free <code>subset</code> function is still available.</p></li>
@@ -58,6 +50,16 @@
 <li><p>Relocated various headers to and from the sugar folder.</p></li>
 <li><p><code>r_factors</code> member functions <code>get_codes</code>, <code>set_codes</code>, and <code>new_codes</code> have been removed. The functionality of these can be achieved with the existing members.</p></li>
 <li><p><code>r_sexp::length</code> has been fully deprecated and removed. Use <code><a href="https://rdrr.io/r/base/length.html" class="external-link">cppally::length</a></code> for returning object length.</p></li>
+<li><p>C++ char types (except <code>const char*</code> and <code>unsigned char</code>) no longer satisfy <code>CastableToRScalar</code> and therefore cannot participate in R/C++ function registration.</p></li>
+<li><p>Many <code>r_sexp</code>-based free functions have been removed and there are a few reasons for doing so. The first being that cppally didn’t provide a complete set of <code>r_sexp</code> free functions anyway, and so providing an incomplete set felt lackluster. Another reason is that removing these methods speeds up compilation and makes the API more lightweight and predictable. Users are now encouraged to write their own <code>r_sexp</code> methods as and when they require them.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<ul><li><p>Fixed a bug where matching on integer vectors with a non <code>NA</code> <code>nomatch</code> value would still return <code>NA</code>.</p></li>
+<li><p>Fixed a bug where getting <code>r_df</code> rows would return CHARSXP instead of STRSXP.</p></li>
+<li><p>Fixed a bug where <code>r_vec::apply</code> would throw a compiler error when called on lists and character vectors.</p></li>
+<li><p>Fixed a bug where the wrong OMP pragma was being used for non-SIMD parallel for loops.</p></li>
+<li><p>Fixed a bug where calling <code>set_attr()</code> on <code>r_df</code> or <code>r_factors</code> would produce a compiler error.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="r_function-development-version">r_function<a class="anchor" aria-label="anchor" href="#r_function-development-version"></a></h3>
@@ -76,7 +78,8 @@
 </ul></div>
 <div class="section level3">
 <h3 id="improvements-development-version">Improvements<a class="anchor" aria-label="anchor" href="#improvements-development-version"></a></h3>
-<ul><li><p><code>cpp_source</code> now generates OpenMP flags, so its compiled functions can use both OpenMP SIMD vectorisation and multi-threaded execution (threads set via <code>set_threads()</code>).</p></li>
+<ul><li><p><code>cpp_source</code> now generates OpenMP flags by default, so its compiled functions can use both OpenMP SIMD vectorisation and multi-threaded execution (threads set via <code>set_threads()</code>).</p></li>
+<li><p><code>cpp_source</code> gains the <code>openmp</code> argument.</p></li>
 <li><p>Integer multiplication overflow handling is now more portable.</p></li>
 <li><p><code>r_sym</code> now constructs symbols from strings (<code>const char*</code>, <code>r_str</code>, <code>r_str_view</code>) under unwind protection, so R errors can no longer longjmp past C++ destructors.</p></li>
 <li><p>Sorting speed has been improved for both character vectors and numeric vectors. Sorting is faster for character vectors when there are a relatively high proportion of unique strings. Sorting is also dramatically faster for double vectors when all values in the vector are exact whole numbers.</p></li>
@@ -85,6 +88,8 @@
 <li><p><code>n_unique</code> has been sped-up for integer vectors.</p></li>
 <li><p>Some algorithms now benefit from a cardinality estimate. For large inputs, an extended Chao estimator (<a href="doi:10.1016/j.csda.2011.01.017" class="uri">doi:10.1016/j.csda.2011.01.017</a>) is applied to a random sample of the data to choose a better initial reserve size for the hash maps involved. This improves performance on high-cardinality data, where it avoids repeatedly resizing the map as new keys are added.</p></li>
 <li><p>Algorithms that utilise hashing should now see speed improvements for strings in particular, as SEXP type checking is now skipped for hashing specifically.</p></li>
+<li><p><code><a href="../reference/use_cppally.html">use_cppally()</a></code> now includes the “$(CXX_VISIBILITY)” Makevars flag, making dll symbol visibility hidden by default. This should have no affect on code written with cppally, though it may slightly improve compilation time. R/C++ registered functions are now registered with the R C API tag <code>attribute_hidden</code>.</p></li>
+<li><p><code>r_vec&lt;&gt;</code> gains an <code>initializer_list</code> constructor.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="new-features-development-version">New features<a class="anchor" aria-label="anchor" href="#new-features-development-version"></a></h3>
@@ -97,7 +102,8 @@
 <li><p>New class <code>string_literal</code> to facilitate compile-time string literal NTTP programming.</p></li>
 <li><p>R function <code>cpp_eval</code> gains a new argument, <code>cppally_header</code>, allowing one to compile expressions using the optional light header “cppally_light.hpp”.</p></li>
 <li><p><code>r_factors</code> gains a new member function, <code>refactor</code>, which creates a new <code>r_factors</code> object given a new set of levels.</p></li>
-<li><p><code>r_df</code> gains new members, <code>get</code>, <code>set</code>, and <code>view</code>. <code>get</code> returns an 1-row <code>r_df</code> and similarly, <code>set</code> accepts a 1-row <code>r_df</code>.</p></li>
+<li><p>New r function <code><a href="../reference/use_openmp.html">use_openmp()</a></code> to set OpenMP-enabling Makevars flags.</p></li>
+<li><p>A new <strong>optional</strong> feature where users can now restrict the set of candidates that participate in template dispatch for template-registered R/C++ functions via <code><a href="../reference/use_template_dispatch_candidates.html">use_template_dispatch_candidates()</a></code>. For example, if a user wishes to write a C++ algebra library using only ntegers and doubles, they can call <code>use_template_dispatch_candidates(c("r_int", "r_dbl"))</code>, and any template they register to R will only ever accept <strong>at most</strong> those types, regardless of the concepts and constraints of the template. This can dramatically reduce compilation times for template-heavy code when specifying a small number of candidates. Generally the same effect can be achieved with concepts and constraints, but this acts as an additional layer to ensure faster compile-times in scenarios where it makes sense to use a small candidate set.</p></li>
 </ul></div>
 </div>
     <div class="section level2">
