@@ -92,7 +92,7 @@ constexpr bool either_na(const T& x, const U& y) noexcept {
 }
 template <RIntegerType T>
 constexpr bool either_na(const T& x, const T& y) noexcept {
-  static_assert(std::numeric_limits<unwrap_t<T>>::min() == unwrap(na<T>()), "`std::numeric_limits<unwrap_t<T>>::min() == na<T>()` must hold for all cppally integer types `T`");
+  static_assert(std::numeric_limits<unwrap_t<T>>::min() == unwrap(na<T>()), "`std::numeric_limits<unwrap_t<T>>::min() == unwrap(na<T>())` must hold for all cppally integer types `T`");
   return std::min(unwrap(x), unwrap(y)) == unwrap(na<T>());
 }
 inline constexpr bool either_na(r_dbl x, r_dbl y) noexcept {
