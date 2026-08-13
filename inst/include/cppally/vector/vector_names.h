@@ -2,6 +2,7 @@
 #define CPPALLY_R_HASH_NAMES_H
 
 #include <cppally/r_sexp/r_sexp.h>
+#include <cppally/vector/vector_utils.h>
 #include <ankerl/unordered_dense.h>
 #include <optional>
 #include <memory>
@@ -29,14 +30,6 @@ inline std::uint64_t sexp_data_hash(SEXP p) noexcept {
 }
 
 namespace internal {
-
-inline const SEXP* string_ptr_ro(SEXP x) {
-  #ifdef STRING_PTR_RO
-  return STRING_PTR_RO(x);
-  #else
-  return ((const SEXP *) DATAPTR_RO(x));
-  #endif
-}
 
 // Open-addressing hash from SEXP keys to indices into an external names
 // array. Keys aren't stored — comparison goes back through names_ptr_, so
@@ -201,7 +194,7 @@ struct names_map {
             abort("Long vector name hashing is not supported");
         }
 
-        const SEXP* p_names = safe[string_ptr_ro](nms);
+        const SEXP* p_names = safe[vector_ptr_ro<r_str>](nms);
         map->reserve(static_cast<std::size_t>(n), p_names);
         int n_ = static_cast<int>(n);
         for (int i = 0; i < n_; ++i){
