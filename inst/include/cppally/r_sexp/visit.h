@@ -30,30 +30,31 @@ inline void mutate_as(r_sexp& x, F&& f) {
 
 // Lambda-based dispatchers over TYPEOF(x), so call sites don't hand-roll the switch.
 
-// (code, wrapper) entries shared by every dispatcher
-#define CPPALLY_VECTOR_CASES(A)                             \
-    A(LGLSXP,                          r_vec<r_lgl>)        \
-    A(INTSXP,                          r_vec<r_int>)        \
-    A(CPPALLY_INT64SXP,                r_vec<r_int64>)      \
-    A(REALSXP,                         r_vec<r_dbl>)        \
-    A(STRSXP,                          r_vec<r_str>)        \
-    A(VECSXP,                          r_vec<r_sexp>)       \
-    A(CPLXSXP,                         r_vec<r_cplx>)       \
-    A(RAWSXP,                          r_vec<r_raw>)        \
-    A(NILSXP,                          r_vec<r_sexp>)       \
-    A(CPPALLY_REALDATESXP,             r_vec<r_date>)       \
-    A(CPPALLY_REALPSXTSXP,             r_vec<r_psxct>)
+// (case labels, wrapper) entries shared by every dispatcher. One entry per wrapper,
+// so codes that share a wrapper share an arm rather than emitting the visitor twice.
+#define CPPALLY_VECTOR_CASES(A)                                       \
+    A(case LGLSXP:,                    r_vec<r_lgl>)                  \
+    A(case INTSXP:,                    r_vec<r_int>)                  \
+    A(case CPPALLY_INT64SXP:,          r_vec<r_int64>)                \
+    A(case REALSXP:,                   r_vec<r_dbl>)                  \
+    A(case STRSXP:,                    r_vec<r_str>)                  \
+    A(case VECSXP: case NILSXP:,       r_vec<r_sexp>)                 \
+    A(case CPLXSXP:,                   r_vec<r_cplx>)                 \
+    A(case RAWSXP:,                    r_vec<r_raw>)                  \
+    A(case CPPALLY_REALDATESXP:,       r_vec<r_date>)                 \
+    A(case CPPALLY_REALPSXTSXP:,       r_vec<r_psxct>)
 
-#define CPPALLY_ALL_CASES(A)                                \
-    CPPALLY_VECTOR_CASES(A)                                 \
-    A(CPPALLY_FCTSXP,                  r_factors)           \
-    A(SYMSXP,                          r_sym)               \
-    A(CPPALLY_FUNCTIONSXP,             r_function)          \
-    A(CPPALLY_DFSXP,                   r_df)
+#define CPPALLY_ALL_CASES(A)                                          \
+    CPPALLY_VECTOR_CASES(A)                                           \
+    A(case CPPALLY_FCTSXP:,            r_factors)                     \
+    A(case SYMSXP:,                    r_sym)                         \
+    A(case CPPALLY_FUNCTIONSXP:,       r_function)                    \
+    A(case CPPALLY_DFSXP:,             r_df)
 
-#define CPPALLY_CASE_OWNING(C, W)  case C: return f(W(x, no_checks_tag{}));
-#define CPPALLY_CASE_VIEWING(C, W) case C: return f(W(x, view_tag{}, no_checks_tag{}));
-#define CPPALLY_CASE_MUTATE(C, W)  case C: mutate_as<W>(x, f); break;
+// LABELS expands to the arm's `case ...:` labels, so these bodies add only the payload
+#define CPPALLY_CASE_OWNING(LABELS, W)  LABELS return f(W(x, no_checks_tag{}));
+#define CPPALLY_CASE_VIEWING(LABELS, W) LABELS return f(W(x, view_tag{}, no_checks_tag{}));
+#define CPPALLY_CASE_MUTATE(LABELS, W)  LABELS mutate_as<W>(x, f); break;
 
 template <class F>
 decltype(auto) visit_sexp(const r_sexp& x, F&& f) {
@@ -86,7 +87,7 @@ void mutate_sexp(r_sexp& x, F&& f) {
 // concept emits no code) and handed to one shared, type-erased reject().
 
 // Candidate names, indexed to match the bit order of accepted_mask below.
-#define CPPALLY_CASE_NAME(C, W) type_str<W>(),
+#define CPPALLY_CASE_NAME(LABELS, W) type_str<W>(),
 inline const char* candidate_name(int i) {
     static const char* const names[] = { CPPALLY_ALL_CASES(CPPALLY_CASE_NAME) type_str<r_sexp>() };
     return names[i];
@@ -102,7 +103,7 @@ inline constexpr uint32_t mask_of() {
 }
 
 // One bit per candidate wrapper, set where F accepts it.
-#define CPPALLY_CASE_TYPE(C, W) W,
+#define CPPALLY_CASE_TYPE(LABELS, W) W,
 template <class F>
 inline constexpr uint32_t accepted_mask = mask_of<F, CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>();
 #undef CPPALLY_CASE_TYPE
@@ -113,33 +114,14 @@ inline constexpr uint32_t accepted_mask = mask_of<F, CPPALLY_ALL_CASES(CPPALLY_C
 // dispatcher deduces its type from the accepted arms alone
 [[noreturn]] inline void reject(const char* got, uint32_t accepted) {
     std::string out;
-
-    // Two case codes can share a wrapper (VECSXP/NILSXP), and type_str returns one
-    // pointer per type, so pointer equality dedupes the list.
-    const char* seen[32];
-    int n_seen = 0;
-
     for (int i = 0; (accepted >> i) != 0u; ++i) {
         if ((accepted & (1u << i)) == 0u) {
             continue;
         }
-        const char* name = candidate_name(i);
-        bool dup = false;
-        for (int k = 0; k < n_seen; ++k) {
-            if (seen[k] == name) {
-                dup = true;
-                break;
-            }
-        }
-        if (dup) {
-            continue;
-        }
-        seen[n_seen++] = name;
-
         if (!out.empty()) {
             out += ", ";
         }
-        out += name;
+        out += candidate_name(i);
     }
 
     abort("r_sexp visitor cannot accept the value's type: %s\n"
@@ -148,15 +130,15 @@ inline constexpr uint32_t accepted_mask = mask_of<F, CPPALLY_ALL_CASES(CPPALLY_C
 }
 
 // Guarded arms: hand `f` the wrapper only if it accepts it, else reject.
-#define CPPALLY_CASE_OWNING_G(C, W)                                          \
-    case C: if constexpr (requires { f(W(x, no_checks_tag{})); }) return f(W(x, no_checks_tag{}));             \
-            else internal::reject(internal::type_str<W>(), internal::accepted_mask<F&>);
-#define CPPALLY_CASE_VIEWING_G(C, W)                                         \
-    case C: if constexpr (requires { f(W(x, view_tag{}, no_checks_tag{})); }) return f(W(x, view_tag{}, no_checks_tag{})); \
-            else internal::reject(internal::type_str<W>(), internal::accepted_mask<F&>);
-#define CPPALLY_CASE_MUTATE_G(C, W)                                          \
-    case C: if constexpr (requires (W& w) { f(w); }) { mutate_as<W>(x, f); break; } \
-            else internal::reject(internal::type_str<W>(), internal::accepted_mask<F&>);
+#define CPPALLY_CASE_OWNING_G(LABELS, W)                                     \
+    LABELS if constexpr (requires { f(W(x, no_checks_tag{})); }) return f(W(x, no_checks_tag{}));             \
+           else internal::reject(internal::type_str<W>(), internal::accepted_mask<F&>);
+#define CPPALLY_CASE_VIEWING_G(LABELS, W)                                    \
+    LABELS if constexpr (requires { f(W(x, view_tag{}, no_checks_tag{})); }) return f(W(x, view_tag{}, no_checks_tag{})); \
+           else internal::reject(internal::type_str<W>(), internal::accepted_mask<F&>);
+#define CPPALLY_CASE_MUTATE_G(LABELS, W)                                     \
+    LABELS if constexpr (requires (W& w) { f(w); }) { mutate_as<W>(x, f); break; } \
+           else internal::reject(internal::type_str<W>(), internal::accepted_mask<F&>);
 
 // Constrained owning visit: dispatch to `f` only for the types it accepts.
 template <class F>
