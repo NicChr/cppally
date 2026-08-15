@@ -124,10 +124,12 @@ test_that("narrowed candidates reject excluded types with the exclusion error", 
   expect_error(dispatch_env$narrow_type(iris$Species), "excludes from its dispatch candidates")
   expect_error(dispatch_env$narrow_type(iris), "excludes from its dispatch candidates")
 
-  # Types that were never candidates fail the constraints instead, and must
+  # r_sexp = FALSE takes r_vec<r_sexp> with it, so a plain list is excluded too
+  expect_error(dispatch_env$narrow_type(list(1)), "excludes from its dispatch candidates")
+
+  # Types cppally never had a candidate for fail the constraints instead, and must
   # not be claimed by the (disabled) r_sexp catch-all
   expect_error(dispatch_env$narrow_type(mean), "does not satisfy the template constraints")
-  expect_error(dispatch_env$narrow_type(list(1)), "does not satisfy the template constraints")
 })
 
 test_that("two-param templates dispatch under a narrowed candidate set", {
