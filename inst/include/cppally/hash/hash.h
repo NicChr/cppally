@@ -236,7 +236,7 @@ inline uint64_t get_hash_map_reserve_size(const U *px, uint64_t data_size) {
     // If the range of possible values is small then no need to sample, we can use that range as the estimate
     if constexpr (CppIntegerType<primitive_t>){
         constexpr uint64_t span = static_cast<uint64_t>(std::numeric_limits<primitive_t>::max()) - static_cast<uint64_t>(std::numeric_limits<primitive_t>::min());
-        if ((span + 1u) < 1000u){
+        if (span < 999u){
             return std::min(data_size, span + 1u);
         }
     }
