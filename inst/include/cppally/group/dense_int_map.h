@@ -14,7 +14,7 @@ namespace internal {
 
 // Single source of truth for when a dense int table beats a hash map:
 // the table must be small in absolute terms (memory) and relative to n (build time).
-inline constexpr uint64_t max_table_bytes = 80000000;
+inline constexpr uint64_t max_table_bytes = 1280000000;
 inline constexpr uint64_t min_table_bytes = 262144;
 inline constexpr uint64_t table_bytes_per_row = 64;
 
@@ -22,7 +22,7 @@ inline bool table_fits_budget(uint64_t table_bytes, r_size_t n) {
     return table_bytes <= std::min<uint64_t>(max_table_bytes, std::max<uint64_t>(min_table_bytes, static_cast<uint64_t>(n) * table_bytes_per_row));
 }
 
-template <CppIntegerNumber Val>
+template <std::integral Val>
 inline bool use_int_table(uint64_t range_span, r_size_t n) {
 
     if (range_span > ( max_table_bytes / sizeof(Val) )) {
@@ -63,7 +63,7 @@ inline bool use_int_table(uint64_t range_span, r_size_t n) {
 
 // Builds the table over [min_val, max_val] and runs body. Both bounds must be
 // non-NA and the span already vetted as worth a table
-template <CppIntegerNumber Val, CppIntegerNumber Key, typename F>
+template <std::integral Val, std::integral Key, typename F>
 bool run_dense_int_map(Key min_val, Key max_val, Val empty_value, F&& body) {
 
     uint64_t range_span = static_cast<uint64_t>(max_val) - static_cast<uint64_t>(min_val);
@@ -100,12 +100,12 @@ bool run_dense_int_map(Key min_val, Key max_val, Val empty_value, F&& body) {
 
 // No table for these keys, the caller runs its own fallback
 // `Val` leads so that an explicit `try_dense_int_map<Val>(...)` binds the value width, not the key vector
-template <CppIntegerNumber Val, typename T, typename F>
+template <std::integral Val, typename T, typename F>
 bool try_dense_int_map(const T&, Val, F&&) {
     return false;
 }
 
-template <CppIntegerNumber Val, RIntegerNumber T, typename F>
+template <std::integral Val, RIntegerNumber T, typename F>
 bool try_dense_int_map(const r_vec<T>& keys, Val empty_value, F&& body) {
 
     r_size_t n = keys.length();
@@ -126,7 +126,7 @@ bool try_dense_int_map(const r_vec<T>& keys, Val empty_value, F&& body) {
     return run_dense_int_map<Val>(min_val, max_val, empty_value, std::forward<F>(body));
 }
 
-template <CppIntegerNumber Val, typename F>
+template <std::integral Val, typename F>
 bool try_dense_int_map(const r_vec<r_lgl>&, Val empty_value, F&& body) {
     return run_dense_int_map<Val>(0, 1, empty_value, std::forward<F>(body));
 }
@@ -143,7 +143,7 @@ bool try_dense_int_map(const r_vec<r_lgl>&, Val empty_value, F&& body) {
 
 // // Builds the bitset over [min_val, max_val] and runs body. Both bounds must be
 // // non-NA and the span already vetted as worth a table
-// template <CppIntegerNumber Key, typename F>
+// template <std::integral Key, typename F>
 // bool run_dense_int_set(Key min_val, Key max_val, F&& body) {
 
 //     uint64_t range_span = static_cast<uint64_t>(max_val) - static_cast<uint64_t>(min_val);

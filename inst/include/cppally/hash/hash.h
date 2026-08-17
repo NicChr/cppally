@@ -252,8 +252,6 @@ inline uint64_t get_hash_map_reserve_size(const U *px, uint64_t data_size) {
         }
         guess = std::max(guess, cardinality_guess);
     }
-
-    guess = std::min(guess, static_cast<uint64_t>(internal::exp2<double>(23))); // Bound to 2^23
     return guess;
 }
 

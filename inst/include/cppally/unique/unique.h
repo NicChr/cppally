@@ -57,9 +57,9 @@ inline r_size_t n_unique(const T& x) {
 
   r_size_t n_unq = 0;
 
-  bool done = internal::try_dense_int_map(x, 0, [&n_unq, &x, n](auto&& try_emplace, auto&&) {
+  bool done = internal::try_dense_int_map(x, uint8_t(0), [&n_unq, &x, n](auto&& try_emplace, auto&&) {
     for (r_size_t i = 0; i < n; ++i) {
-      n_unq += try_emplace(x.view(i), 1).second;
+      n_unq += try_emplace(x.view(i), uint8_t(1)).second;
     }
   });
 
