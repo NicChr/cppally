@@ -4,20 +4,86 @@
 #include <cppally/length.h>
 #include <cppally/factor/r_factors.h>
 #include <cppally/group/groups.h>
+#include <cppally/sort/sort.h>
 #include <cppally/vector/vector_ops.h>
 #include <cppally/sugar/subset.h>
 
 namespace cppally {
 
-template <typename T>
-requires requires (const T& vec) { make_groups(vec); }
+template <RVector T>
 T unique(const T& x, bool sort = false) {
-    groups group_info = make_groups(x, sort);
-    if (group_info.n_groups == length(x)){
-      return x;
-    } else {
-      return subset(x, group_info.starts(), false, false);
+
+  using data_t = typename T::data_type;
+
+  r_size_t n = x.length();
+
+  T out = x;
+
+  uint64_t cardinality_est = internal::get_hash_map_reserve_size<T>(x.data(), n);
+
+  // Try the dense int table first (for ints with a small range)
+  std::vector<unwrap_t<data_t>> uniques;
+  uniques.reserve(cardinality_est);
+
+  bool done = internal::try_dense_int_map(x, uint8_t(0), [&uniques, &x, n](auto&& try_emplace, auto&&) {
+    for (r_size_t i = 0; i < n; ++i) {
+      auto val = x.view(i);
+      if (try_emplace(val, uint8_t(1)).second) {
+        uniques.push_back(unwrap(val));
+      }
     }
+  });
+
+  if (done) {
+
+    r_size_t n_unq = uniques.size();
+
+    if (n_unq < n) {
+      T res(n_unq);
+      for (r_size_t i = 0; i < n_unq; ++i) {
+        res.set(i, internal::unsafe_reconstruct_view<data_t>(uniques[i]));
+      }
+      out = std::move(res);
+    }
+
+  } else {
+
+    ankerl::unordered_dense::map<
+      unwrap_t<data_t>,
+      bool,
+      internal::r_hash_fn<data_t>,
+      internal::r_hash_eq<data_t>
+    > seen;
+
+    seen.reserve(cardinality_est);
+
+    for (r_size_t i = 0; i < n; ++i) {
+      seen.try_emplace(x.view(i), false);
+    }
+
+    r_size_t n_unq = seen.size();
+
+    if (n_unq < n) {
+      const auto& vals = seen.values();
+      T res(n_unq);
+      for (r_size_t i = 0; i < n_unq; ++i) {
+        res.set(i, internal::unsafe_reconstruct_view<data_t>(vals[i].first));
+      }
+      out = std::move(res);
+    }
+  }
+
+  if constexpr (RSortableType<data_t>) {
+    if (sort) {
+      // std::move out so sort() sorts it in-place
+      return cppally::sort(std::move(out));
+    }
+  }
+  return out;
+}
+
+inline r_factors unique(const r_factors& x, bool sort = false) {
+  return r_factors(unique(x.value, sort), x.levels(), false);
 }
 
 template <typename T>
@@ -68,15 +134,16 @@ inline r_size_t n_unique(const T& x) {
   // Hash set for O(n) de-duplication
   ankerl::unordered_dense::map<
     unwrap_t<data_t>,
-    int,
+    bool,
     internal::r_hash_fn<data_t>,
     internal::r_hash_eq<data_t>
   > seen;
 
-  seen.reserve(internal::get_hash_map_reserve_size<T>(x.data(), n));
+  uint64_t cardinality_est = internal::get_hash_map_reserve_size<T>(x.data(), n);
+  seen.reserve(cardinality_est);
 
   for (r_size_t i = 0; i < n; ++i) {
-    seen.try_emplace(x.view(i), 0);
+    seen.try_emplace(x.view(i), false);
   }
   return seen.size();
 }
