@@ -133,6 +133,7 @@ inline uint64_t r_hash_impl(const r_sexp& x) {
 template <typename T>
 struct r_hash_fn {
     using is_avalanching = void; // Tells ankerl this is already a good quality hash
+    using is_transparent = void;
     // For hash map memory efficiency we use the underlying type
     using base_t = unwrap_t<T>;
     uint64_t operator()(const base_t& x) const noexcept(RScalar<T>) {
