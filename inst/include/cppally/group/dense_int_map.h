@@ -18,8 +18,8 @@ inline constexpr uint64_t max_table_bytes = 1280000000;
 inline constexpr uint64_t min_table_bytes = 262144;
 inline constexpr uint64_t table_bytes_per_row = 64;
 
-inline bool table_fits_budget(uint64_t table_bytes, r_size_t n) {
-    return table_bytes <= std::min<uint64_t>(max_table_bytes, std::max<uint64_t>(min_table_bytes, static_cast<uint64_t>(n) * table_bytes_per_row));
+inline bool table_fits_budget(uint64_t table_bytes, uint64_t n) {
+    return table_bytes <= std::min(max_table_bytes, std::max(min_table_bytes, n * table_bytes_per_row));
 }
 
 template <std::integral Val>
