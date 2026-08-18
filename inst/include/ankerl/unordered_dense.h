@@ -1,7 +1,7 @@
 ///////////////////////// ankerl::unordered_dense::{map, set} /////////////////////////
 
 // A fast & densely stored hashmap and hashset based on robin-hood backward shift deletion.
-// Version 4.9.2
+// Modified version 4.9.2
 // https://github.com/martinus/unordered_dense
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
@@ -26,13 +26,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ANKERL_UNORDERED_DENSE_H
-#define ANKERL_UNORDERED_DENSE_H
+// This version has been modified for the cppally API (MIT licensed) and requires >= C++20.
 
-// see https://semver.org/spec/v2.0.0.html
-#define ANKERL_UNORDERED_DENSE_VERSION_MAJOR 4 // NOLINT(cppcoreguidelines-macro-usage) incompatible API changes
-#define ANKERL_UNORDERED_DENSE_VERSION_MINOR 9 // NOLINT(cppcoreguidelines-macro-usage) backwards compatible functionality
-#define ANKERL_UNORDERED_DENSE_VERSION_PATCH 2 // NOLINT(cppcoreguidelines-macro-usage) backwards compatible bug fixes
+#ifndef CPPALLY_ANKERL_UNORDERED_DENSE_H
+#define CPPALLY_ANKERL_UNORDERED_DENSE_H
 
 // API versioning with inline namespace, see https://www.foonathan.net/2018/11/inline-namespaces/
 
@@ -88,8 +85,8 @@
 #    define ANKERL_UNORDERED_DENSE_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
 #endif
 
-#if ANKERL_UNORDERED_DENSE_CPP_VERSION < 201703L
-#    error ankerl::unordered_dense requires C++17 or higher
+#if ANKERL_UNORDERED_DENSE_CPP_VERSION < 202002L
+#    error ankerl::unordered_dense requires C++20 or higher
 #else
 
 #    if !defined(ANKERL_UNORDERED_DENSE_STD_MODULE)
@@ -101,25 +98,7 @@
 #        include "stl.h"
 #    endif
 
-#    if __has_cpp_attribute(likely) && __has_cpp_attribute(unlikely) && ANKERL_UNORDERED_DENSE_CPP_VERSION >= 202002L
-#        define ANKERL_UNORDERED_DENSE_LIKELY_ATTR [[likely]]     // NOLINT(cppcoreguidelines-macro-usage)
-#        define ANKERL_UNORDERED_DENSE_UNLIKELY_ATTR [[unlikely]] // NOLINT(cppcoreguidelines-macro-usage)
-#        define ANKERL_UNORDERED_DENSE_LIKELY(x) (x)              // NOLINT(cppcoreguidelines-macro-usage)
-#        define ANKERL_UNORDERED_DENSE_UNLIKELY(x) (x)            // NOLINT(cppcoreguidelines-macro-usage)
-#    else
-#        define ANKERL_UNORDERED_DENSE_LIKELY_ATTR   // NOLINT(cppcoreguidelines-macro-usage)
-#        define ANKERL_UNORDERED_DENSE_UNLIKELY_ATTR // NOLINT(cppcoreguidelines-macro-usage)
-
-#        if defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__clang__)
-#            define ANKERL_UNORDERED_DENSE_LIKELY(x) __builtin_expect(x, 1)   // NOLINT(cppcoreguidelines-macro-usage)
-#            define ANKERL_UNORDERED_DENSE_UNLIKELY(x) __builtin_expect(x, 0) // NOLINT(cppcoreguidelines-macro-usage)
-#        else
-#            define ANKERL_UNORDERED_DENSE_LIKELY(x) (x)   // NOLINT(cppcoreguidelines-macro-usage)
-#            define ANKERL_UNORDERED_DENSE_UNLIKELY(x) (x) // NOLINT(cppcoreguidelines-macro-usage)
-#        endif
-
-#    endif
-
+// LOCAL PATCH - C++20 is required in cppally.
 namespace ankerl::unordered_dense {
 inline namespace ANKERL_UNORDERED_DENSE_NAMESPACE {
 
@@ -228,75 +207,68 @@ inline void mum(std::uint64_t* a, std::uint64_t* b) {
     std::uint64_t seed = secret[0];
     std::uint64_t a{};
     std::uint64_t b{};
-    if (ANKERL_UNORDERED_DENSE_LIKELY(len <= 16))
-        ANKERL_UNORDERED_DENSE_LIKELY_ATTR {
-            if (ANKERL_UNORDERED_DENSE_LIKELY(len >= 8))
-                ANKERL_UNORDERED_DENSE_LIKELY_ATTR {
-                    // two (potentially overlapping) 8 byte reads cover the whole input
-                    a = r8(p);
-                    b = r8(p + len - 8);
-                }
-            else if (len >= 4) {
-                a = r4(p);
-                b = r4(p + len - 4);
-            } else if (ANKERL_UNORDERED_DENSE_LIKELY(len > 0))
-                ANKERL_UNORDERED_DENSE_LIKELY_ATTR {
-                    // b stays zero: r3 packs all len bytes it is given into a, and there are at
-                    // most three of them.
-                    a = r3(p, len);
-                }
-            // ... and an empty input needs no branch of its own: it hashes whatever a and b were
-            // declared with, which is the zero it has to be. Assigning it again here is what a
-            // deletion sweep of this file kept pointing at.
+    if (len <= 16) [[likely]] {
+        if (len >= 8) [[likely]] {
+            // two (potentially overlapping) 8 byte reads cover the whole input
+            a = r8(p);
+            b = r8(p + len - 8);
+        } else if (len >= 4) {
+            a = r4(p);
+            b = r4(p + len - 4);
+        } else if (len > 0) [[likely]] {
+            // b stays zero: r3 packs all len bytes it is given into a, and there are at
+            // most three of them.
+            a = r3(p, len);
         }
-    else {
+        // ... and an empty input needs no branch of its own: it hashes whatever a and b were
+        // declared with, which is the zero it has to be. Assigning it again here is what a
+        // deletion sweep of this file kept pointing at.
+    } else {
         std::size_t i = len;
-        if (ANKERL_UNORDERED_DENSE_UNLIKELY(i > 48))
-            ANKERL_UNORDERED_DENSE_UNLIKELY_ATTR {
-                std::uint64_t see1 = seed;
-                std::uint64_t see2 = seed;
-                if (i > 96) {
-                    // 6 independent lanes: twice the instruction level parallelism of the 48 byte loop below
-                    std::uint64_t see3 = seed;
-                    std::uint64_t see4 = seed;
-                    std::uint64_t see5 = seed;
-                    do {
-                        seed = mix(r8(p) ^ secret[1], r8(p + 8) ^ seed);
-                        see1 = mix(r8(p + 16) ^ secret[2], r8(p + 24) ^ see1);
-                        see2 = mix(r8(p + 32) ^ secret[3], r8(p + 40) ^ see2);
-                        see3 = mix(r8(p + 48) ^ secret[4], r8(p + 56) ^ see3);
-                        see4 = mix(r8(p + 64) ^ secret[5], r8(p + 72) ^ see4);
-                        see5 = mix(r8(p + 80) ^ secret[6], r8(p + 88) ^ see5);
-                        p += 96;
-                        i -= 96;
-                    } while (ANKERL_UNORDERED_DENSE_LIKELY(i > 96));
-                    seed ^= see3 ^ see4 ^ see5;
-                }
-                while (i > 48) {
+        if (i > 48) [[unlikely]] {
+            std::uint64_t see1 = seed;
+            std::uint64_t see2 = seed;
+            if (i > 96) {
+                // 6 independent lanes: twice the instruction level parallelism of the 48 byte loop below
+                std::uint64_t see3 = seed;
+                std::uint64_t see4 = seed;
+                std::uint64_t see5 = seed;
+                do {
                     seed = mix(r8(p) ^ secret[1], r8(p + 8) ^ seed);
                     see1 = mix(r8(p + 16) ^ secret[2], r8(p + 24) ^ see1);
                     see2 = mix(r8(p + 32) ^ secret[3], r8(p + 40) ^ see2);
-                    p += 48;
-                    i -= 48;
-                }
-                seed ^= see1 ^ see2;
-                while (i > 16) {
-                    seed = mix(r8(p) ^ secret[1], r8(p + 8) ^ seed);
-                    i -= 16;
-                    p += 16;
-                }
-
-                // the tail lane only depends on the input, not on seed, so it can execute in parallel
-                // with the lane loops above, and a single dependent mix finishes the hash
-                auto tail = mix(r8(p + i - 16) ^ secret[2], r8(p + i - 8) ^ secret[3]);
-                return mix(secret[1] ^ len, seed ^ tail);
+                    see3 = mix(r8(p + 48) ^ secret[4], r8(p + 56) ^ see3);
+                    see4 = mix(r8(p + 64) ^ secret[5], r8(p + 72) ^ see4);
+                    see5 = mix(r8(p + 80) ^ secret[6], r8(p + 88) ^ see5);
+                    p += 96;
+                    i -= 96;
+                } while (i > 96);
+                seed ^= see3 ^ see4 ^ see5;
             }
-        while (ANKERL_UNORDERED_DENSE_UNLIKELY(i > 16))
-            ANKERL_UNORDERED_DENSE_UNLIKELY_ATTR {
+            while (i > 48) {
+                seed = mix(r8(p) ^ secret[1], r8(p + 8) ^ seed);
+                see1 = mix(r8(p + 16) ^ secret[2], r8(p + 24) ^ see1);
+                see2 = mix(r8(p + 32) ^ secret[3], r8(p + 40) ^ see2);
+                p += 48;
+                i -= 48;
+            }
+            seed ^= see1 ^ see2;
+            while (i > 16) {
                 seed = mix(r8(p) ^ secret[1], r8(p + 8) ^ seed);
                 i -= 16;
                 p += 16;
             }
+
+            // the tail lane only depends on the input, not on seed, so it can execute in parallel
+            // with the lane loops above, and a single dependent mix finishes the hash
+            auto tail = mix(r8(p + i - 16) ^ secret[2], r8(p + i - 8) ^ secret[3]);
+            return mix(secret[1] ^ len, seed ^ tail);
+        }
+        while (i > 16) [[unlikely]] {
+            seed = mix(r8(p) ^ secret[1], r8(p + 8) ^ seed);
+            i -= 16;
+            p += 16;
+        }
         a = r8(p + i - 16);
         b = r8(p + i - 8);
     }
@@ -527,9 +499,7 @@ ANKERL_UNORDERED_DENSE_HASH_STATICCAST(bool);
 ANKERL_UNORDERED_DENSE_HASH_STATICCAST(char);
 ANKERL_UNORDERED_DENSE_HASH_STATICCAST(signed char);
 ANKERL_UNORDERED_DENSE_HASH_STATICCAST(unsigned char);
-#    if ANKERL_UNORDERED_DENSE_CPP_VERSION >= 202002L && defined(__cpp_char8_t)
 ANKERL_UNORDERED_DENSE_HASH_STATICCAST(char8_t);
-#    endif
 ANKERL_UNORDERED_DENSE_HASH_STATICCAST(char16_t);
 ANKERL_UNORDERED_DENSE_HASH_STATICCAST(char32_t);
 ANKERL_UNORDERED_DENSE_HASH_STATICCAST(wchar_t);
@@ -728,7 +698,8 @@ private:
 
         iter_t() noexcept = default;
 
-        template <bool OtherIsConst, typename = std::enable_if_t<IsConst && !OtherIsConst>>
+        template <bool OtherIsConst>
+            requires (IsConst && !OtherIsConst)
         // NOLINTNEXTLINE(google-explicit-constructor,hicpp-explicit-conversions)
         constexpr iter_t(iter_t<OtherIsConst> const& other) noexcept
             : m_data(other.m_data)
@@ -738,7 +709,8 @@ private:
             : m_data(data)
             , m_idx(idx) {}
 
-        template <bool OtherIsConst, typename = std::enable_if_t<IsConst && !OtherIsConst>>
+        template <bool OtherIsConst>
+            requires (IsConst && !OtherIsConst)
         constexpr auto operator=(iter_t<OtherIsConst> const& other) noexcept -> iter_t& {
             m_data = other.m_data;
             m_idx = other.m_idx;
@@ -888,7 +860,7 @@ private:
     void resize_shrink(std::size_t new_size) {
         if constexpr (!std::is_trivially_destructible_v<T>) {
             for (std::size_t ix = new_size; ix < m_size; ++ix) {
-                operator[](ix).~T();
+                std::destroy_at(&operator[](ix));
             }
         }
         m_size = new_size;
@@ -1025,7 +997,7 @@ public:
     }
 
     void pop_back() {
-        back().~T();
+        std::destroy_at(&back());
         --m_size;
     }
 
@@ -1089,8 +1061,7 @@ public:
         if (m_size == capacity()) {
             increase_capacity();
         }
-        auto* ptr = static_cast<void*>(&operator[](m_size));
-        auto& ref = *new (ptr) T(std::forward<Args>(args)...);
+        auto& ref = *std::construct_at(&operator[](m_size), std::forward<Args>(args)...);
         ++m_size;
         return ref;
     }
@@ -1098,7 +1069,7 @@ public:
     void clear() {
         if constexpr (!std::is_trivially_destructible_v<T>) {
             for (std::size_t i = 0, s = size(); i < s; ++i) {
-                operator[](i).~T();
+                std::destroy_at(&operator[](i));
             }
         }
         m_size = 0;
@@ -1515,11 +1486,10 @@ private:
     // is the three insert entry points, the only ones that reach the buckets without a prior
     // emptiness check.
     void allocate_buckets_if_none() {
-        if (ANKERL_UNORDERED_DENSE_UNLIKELY(0 == bucket_count()))
-            ANKERL_UNORDERED_DENSE_UNLIKELY_ATTR {
-                allocate_buckets_from_shift(m_shifts);
-                clear_buckets();
-            }
+        if (0 == bucket_count()) [[unlikely]] {
+            allocate_buckets_from_shift(m_shifts);
+            clear_buckets();
+        }
     }
 
     void clear_buckets() {
@@ -1669,11 +1639,9 @@ private:
         m_values.emplace_back(std::forward<Args>(args)...);
 
         auto value_idx = static_cast<value_idx_type>(m_values.size() - 1);
-        if (ANKERL_UNORDERED_DENSE_UNLIKELY(is_full()))
-            ANKERL_UNORDERED_DENSE_UNLIKELY_ATTR {
-                increase_size();
-            }
-        else {
+        if (is_full()) [[unlikely]] {
+            increase_size();
+        } else {
             place_and_shift_up({dist_and_fingerprint, value_idx}, bucket_idx);
         }
 
@@ -1708,10 +1676,9 @@ private:
 
     template <typename K>
     auto do_find(K const& key) -> iterator {
-        if (ANKERL_UNORDERED_DENSE_UNLIKELY(empty()))
-            ANKERL_UNORDERED_DENSE_UNLIKELY_ATTR {
-                return end();
-            }
+        if (empty()) [[unlikely]] {
+            return end();
+        }
 
         return do_find_hashed(key, mixed_hash(key));
     }
@@ -1761,10 +1728,9 @@ private:
 
     template <typename K>
     auto do_find(K const& key, precomputed_hash ph) -> iterator {
-        if (ANKERL_UNORDERED_DENSE_UNLIKELY(empty()))
-            ANKERL_UNORDERED_DENSE_UNLIKELY_ATTR {
-                return end();
-            }
+        if (empty()) [[unlikely]] {
+            return end();
+        }
 
         return do_find_hashed(key, ph.m_mixed_hash);
     }
@@ -1774,30 +1740,32 @@ private:
         return const_cast<table*>(this)->do_find(key, ph); // NOLINT(cppcoreguidelines-pro-type-const-cast)
     }
 
-    template <typename K, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <typename K, typename Q = T>
+        requires is_map_v<Q>
     auto do_at(K const& key) -> Q& {
-        if (auto it = find(key); ANKERL_UNORDERED_DENSE_LIKELY(end() != it))
-            ANKERL_UNORDERED_DENSE_LIKELY_ATTR {
-                return it->second;
-            }
+        if (auto it = find(key); end() != it) [[likely]] {
+            return it->second;
+        }
         on_error_key_not_found();
     }
 
-    template <typename K, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <typename K, typename Q = T>
+        requires is_map_v<Q>
     auto do_at(K const& key) const -> Q const& {
         return const_cast<table*>(this)->at(key); // NOLINT(cppcoreguidelines-pro-type-const-cast)
     }
 
-    template <typename K, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <typename K, typename Q = T>
+        requires is_map_v<Q>
     auto do_at(K const& key, precomputed_hash ph) -> Q& {
-        if (auto it = find(key, ph); ANKERL_UNORDERED_DENSE_LIKELY(end() != it))
-            ANKERL_UNORDERED_DENSE_LIKELY_ATTR {
-                return it->second;
-            }
+        if (auto it = find(key, ph); end() != it) [[likely]] {
+            return it->second;
+        }
         on_error_key_not_found();
     }
 
-    template <typename K, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <typename K, typename Q = T>
+        requires is_map_v<Q>
     auto do_at(K const& key, precomputed_hash ph) const -> Q const& {
         return const_cast<table*>(this)->do_at(key, ph); // NOLINT(cppcoreguidelines-pro-type-const-cast)
     }
@@ -2042,7 +2010,8 @@ public:
         return emplace(std::move(value));
     }
 
-    template <class P, std::enable_if_t<std::is_constructible_v<value_type, P&&>, bool> = true>
+    template <class P>
+        requires std::is_constructible_v<value_type, P&&>
     auto insert(P&& value) -> std::pair<iterator, bool> {
         return emplace(std::forward<P>(value));
     }
@@ -2055,7 +2024,8 @@ public:
         return insert(std::move(value)).first;
     }
 
-    template <class P, std::enable_if_t<std::is_constructible_v<value_type, P&&>, bool> = true>
+    template <class P>
+        requires std::is_constructible_v<value_type, P&&>
     auto insert(const_iterator /*hint*/, P&& value) -> iterator {
         return insert(std::forward<P>(value)).first;
     }
@@ -2088,10 +2058,9 @@ public:
     // nonstandard API:
     // Discards the internally held container and replaces it with the one passed. Erases non-unique elements.
     auto replace(value_container_type&& container) {
-        if (ANKERL_UNORDERED_DENSE_UNLIKELY(container.size() > max_size()))
-            ANKERL_UNORDERED_DENSE_UNLIKELY_ATTR {
-                on_error_too_many_elements();
-            }
+        if (container.size() > max_size()) [[unlikely]] {
+            on_error_too_many_elements();
+        }
         auto shifts = calc_shifts_for_size(container.size());
         if (0 == bucket_count() || shifts < m_shifts || container.get_allocator() != m_values.get_allocator()) {
             allocate_buckets_from_shift(shifts);
@@ -2144,52 +2113,45 @@ public:
         }
     }
 
-    template <class M, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <class M>
+        requires is_map_v<T>
     auto insert_or_assign(Key const& key, M&& mapped) -> std::pair<iterator, bool> {
         return do_insert_or_assign(key, std::forward<M>(mapped));
     }
 
-    template <class M, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <class M>
+        requires is_map_v<T>
     auto insert_or_assign(Key&& key, M&& mapped) -> std::pair<iterator, bool> {
         return do_insert_or_assign(std::move(key), std::forward<M>(mapped));
     }
 
-    template <typename K,
-              typename M,
-              typename Q = T,
-              typename H = Hash,
-              typename KE = KeyEqual,
-              std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE>, bool> = true>
+    template <typename K, typename M>
+        requires is_map_v<T> && is_transparent_v<Hash, KeyEqual>
     auto insert_or_assign(K&& key, M&& mapped) -> std::pair<iterator, bool> {
         return do_insert_or_assign(std::forward<K>(key), std::forward<M>(mapped));
     }
 
-    template <class M, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <class M>
+        requires is_map_v<T>
     auto insert_or_assign(const_iterator /*hint*/, Key const& key, M&& mapped) -> iterator {
         return do_insert_or_assign(key, std::forward<M>(mapped)).first;
     }
 
-    template <class M, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <class M>
+        requires is_map_v<T>
     auto insert_or_assign(const_iterator /*hint*/, Key&& key, M&& mapped) -> iterator {
         return do_insert_or_assign(std::move(key), std::forward<M>(mapped)).first;
     }
 
-    template <typename K,
-              typename M,
-              typename Q = T,
-              typename H = Hash,
-              typename KE = KeyEqual,
-              std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE>, bool> = true>
+    template <typename K, typename M>
+        requires is_map_v<T> && is_transparent_v<Hash, KeyEqual>
     auto insert_or_assign(const_iterator /*hint*/, K&& key, M&& mapped) -> iterator {
         return do_insert_or_assign(std::forward<K>(key), std::forward<M>(mapped)).first;
     }
 
     // Single arguments for unordered_set can be used without having to construct the value_type
-    template <class K,
-              typename Q = T,
-              typename H = Hash,
-              typename KE = KeyEqual,
-              std::enable_if_t<!is_map_v<Q> && is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires (!is_map_v<T>) && is_transparent_v<Hash, KeyEqual>
     auto emplace(K&& key) -> std::pair<iterator, bool> {
         allocate_buckets_if_none();
         auto hash = mixed_hash(key);
@@ -2233,12 +2195,10 @@ public:
 
         // value is new, place the bucket and shift up until we find an empty spot
         auto value_idx = static_cast<value_idx_type>(m_values.size() - 1);
-        if (ANKERL_UNORDERED_DENSE_UNLIKELY(is_full()))
-            ANKERL_UNORDERED_DENSE_UNLIKELY_ATTR {
-                // increase_size just rehashes all the data we have in m_values
-                increase_size();
-            }
-        else {
+        if (is_full()) [[unlikely]] {
+            // increase_size just rehashes all the data we have in m_values
+            increase_size();
+        } else {
             // place element and shift up until we find an empty spot
             place_and_shift_up({dist_and_fingerprint, value_idx}, bucket_idx);
         }
@@ -2250,46 +2210,40 @@ public:
         return emplace(std::forward<Args>(args)...).first;
     }
 
-    template <class... Args, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <class... Args>
+        requires is_map_v<T>
     auto try_emplace(Key const& key, Args&&... args) -> std::pair<iterator, bool> {
         return do_try_emplace(key, std::forward<Args>(args)...);
     }
 
-    template <class... Args, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <class... Args>
+        requires is_map_v<T>
     auto try_emplace(Key&& key, Args&&... args) -> std::pair<iterator, bool> {
         return do_try_emplace(std::move(key), std::forward<Args>(args)...);
     }
 
-    template <class... Args, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <class... Args>
+        requires is_map_v<T>
     auto try_emplace(const_iterator /*hint*/, Key const& key, Args&&... args) -> iterator {
         return do_try_emplace(key, std::forward<Args>(args)...).first;
     }
 
-    template <class... Args, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <class... Args>
+        requires is_map_v<T>
     auto try_emplace(const_iterator /*hint*/, Key&& key, Args&&... args) -> iterator {
         return do_try_emplace(std::move(key), std::forward<Args>(args)...).first;
     }
 
-    template <
-        typename K,
-        typename... Args,
-        typename Q = T,
-        typename H = Hash,
-        typename KE = KeyEqual,
-        std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE> && is_neither_convertible_v<K&&, iterator, const_iterator>,
-                         bool> = true>
+    template <typename K, typename... Args>
+        requires is_map_v<T> && is_transparent_v<Hash, KeyEqual> &&
+                 is_neither_convertible_v<K&&, iterator, const_iterator>
     auto try_emplace(K&& key, Args&&... args) -> std::pair<iterator, bool> {
         return do_try_emplace(std::forward<K>(key), std::forward<Args>(args)...);
     }
 
-    template <
-        typename K,
-        typename... Args,
-        typename Q = T,
-        typename H = Hash,
-        typename KE = KeyEqual,
-        std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE> && is_neither_convertible_v<K&&, iterator, const_iterator>,
-                         bool> = true>
+    template <typename K, typename... Args>
+        requires is_map_v<T> && is_transparent_v<Hash, KeyEqual> &&
+                 is_neither_convertible_v<K&&, iterator, const_iterator>
     auto try_emplace(const_iterator /*hint*/, K&& key, Args&&... args) -> iterator {
         return do_try_emplace(std::forward<K>(key), std::forward<Args>(args)...).first;
     }
@@ -2379,12 +2333,14 @@ public:
         return std::move(tmp).value();
     }
 
-    template <typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <typename Q = T>
+        requires is_map_v<Q>
     auto erase(const_iterator it) -> iterator {
         return erase(begin() + (it - cbegin()));
     }
 
-    template <typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <typename Q = T>
+        requires is_map_v<Q>
     auto extract(const_iterator it) -> value_type {
         return extract(begin() + (it - cbegin()));
     }
@@ -2426,13 +2382,15 @@ public:
         return tmp;
     }
 
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires is_transparent_v<Hash, KeyEqual>
     auto erase(K&& key) -> std::size_t {
         return do_erase_key(std::forward<K>(key), [](value_type const& /*unused*/) noexcept -> void {
         });
     }
 
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires is_transparent_v<Hash, KeyEqual>
     auto extract(K&& key) -> std::optional<value_type> {
         auto tmp = std::optional<value_type>{};
         do_erase_key(std::forward<K>(key), [&tmp](value_type&& val) -> void {
@@ -2468,49 +2426,44 @@ public:
 
     // lookup /////////////////////////////////////////////////////////////////
 
-    template <typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <typename Q = T>
+        requires is_map_v<Q>
     auto at(key_type const& key) -> Q& {
         return do_at(key);
     }
 
-    template <typename K,
-              typename Q = T,
-              typename H = Hash,
-              typename KE = KeyEqual,
-              std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE>, bool> = true>
+    template <typename K, typename Q = T>
+        requires is_map_v<Q> && is_transparent_v<Hash, KeyEqual>
     auto at(K const& key) -> Q& {
         return do_at(key);
     }
 
-    template <typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <typename Q = T>
+        requires is_map_v<Q>
     auto at(key_type const& key) const -> Q const& {
         return do_at(key);
     }
 
-    template <typename K,
-              typename Q = T,
-              typename H = Hash,
-              typename KE = KeyEqual,
-              std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE>, bool> = true>
+    template <typename K, typename Q = T>
+        requires is_map_v<Q> && is_transparent_v<Hash, KeyEqual>
     auto at(K const& key) const -> Q const& {
         return do_at(key);
     }
 
-    template <typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <typename Q = T>
+        requires is_map_v<Q>
     auto operator[](Key const& key) -> Q& {
         return try_emplace(key).first->second;
     }
 
-    template <typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <typename Q = T>
+        requires is_map_v<Q>
     auto operator[](Key&& key) -> Q& {
         return try_emplace(std::move(key)).first->second;
     }
 
-    template <typename K,
-              typename Q = T,
-              typename H = Hash,
-              typename KE = KeyEqual,
-              std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE>, bool> = true>
+    template <typename K, typename Q = T>
+        requires is_map_v<Q> && is_transparent_v<Hash, KeyEqual>
     auto operator[](K&& key) -> Q& {
         return try_emplace(std::forward<K>(key)).first->second;
     }
@@ -2519,7 +2472,8 @@ public:
         return find(key) == end() ? 0 : 1;
     }
 
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires is_transparent_v<Hash, KeyEqual>
     auto count(K const& key) const -> std::size_t {
         return find(key) == end() ? 0 : 1;
     }
@@ -2532,12 +2486,14 @@ public:
         return do_find(key);
     }
 
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires is_transparent_v<Hash, KeyEqual>
     auto find(K const& key) -> iterator {
         return do_find(key);
     }
 
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires is_transparent_v<Hash, KeyEqual>
     auto find(K const& key) const -> const_iterator {
         return do_find(key);
     }
@@ -2546,7 +2502,8 @@ public:
         return find(key) != end();
     }
 
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires is_transparent_v<Hash, KeyEqual>
     auto contains(K const& key) const -> bool {
         return find(key) != end();
     }
@@ -2561,13 +2518,15 @@ public:
         return {it, it == end() ? end() : it + 1};
     }
 
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires is_transparent_v<Hash, KeyEqual>
     auto equal_range(K const& key) -> std::pair<iterator, iterator> {
         auto it = do_find(key);
         return {it, it == end() ? end() : it + 1};
     }
 
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires is_transparent_v<Hash, KeyEqual>
     auto equal_range(K const& key) const -> std::pair<const_iterator, const_iterator> {
         auto it = do_find(key);
         return {it, it == end() ? end() : it + 1};
@@ -2603,7 +2562,8 @@ public:
         return {mixed_hash(key)};
     }
 
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires is_transparent_v<Hash, KeyEqual>
     [[nodiscard]] auto hash_for(K const& key) const -> precomputed_hash {
         return {mixed_hash(key)};
     }
@@ -2616,12 +2576,14 @@ public:
         return do_find(key, ph);
     }
 
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires is_transparent_v<Hash, KeyEqual>
     auto find(K const& key, precomputed_hash ph) -> iterator {
         return do_find(key, ph);
     }
 
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires is_transparent_v<Hash, KeyEqual>
     auto find(K const& key, precomputed_hash ph) const -> const_iterator {
         return do_find(key, ph);
     }
@@ -2630,7 +2592,8 @@ public:
         return find(key, ph) != end();
     }
 
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires is_transparent_v<Hash, KeyEqual>
     auto contains(K const& key, precomputed_hash ph) const -> bool {
         return find(key, ph) != end();
     }
@@ -2639,7 +2602,8 @@ public:
         return find(key, ph) == end() ? 0 : 1;
     }
 
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires is_transparent_v<Hash, KeyEqual>
     auto count(K const& key, precomputed_hash ph) const -> std::size_t {
         return find(key, ph) == end() ? 0 : 1;
     }
@@ -2654,42 +2618,40 @@ public:
         return {it, it == end() ? end() : it + 1};
     }
 
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires is_transparent_v<Hash, KeyEqual>
     auto equal_range(K const& key, precomputed_hash ph) -> std::pair<iterator, iterator> {
         auto it = do_find(key, ph);
         return {it, it == end() ? end() : it + 1};
     }
 
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+    template <class K>
+        requires is_transparent_v<Hash, KeyEqual>
     auto equal_range(K const& key, precomputed_hash ph) const -> std::pair<const_iterator, const_iterator> {
         auto it = do_find(key, ph);
         return {it, it == end() ? end() : it + 1};
     }
 
-    template <typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <typename Q = T>
+        requires is_map_v<Q>
     auto at(key_type const& key, precomputed_hash ph) -> Q& {
         return do_at(key, ph);
     }
 
-    template <typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
+    template <typename Q = T>
+        requires is_map_v<Q>
     auto at(key_type const& key, precomputed_hash ph) const -> Q const& {
         return do_at(key, ph);
     }
 
-    template <typename K,
-              typename Q = T,
-              typename H = Hash,
-              typename KE = KeyEqual,
-              std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE>, bool> = true>
+    template <typename K, typename Q = T>
+        requires is_map_v<Q> && is_transparent_v<Hash, KeyEqual>
     auto at(K const& key, precomputed_hash ph) -> Q& {
         return do_at(key, ph);
     }
 
-    template <typename K,
-              typename Q = T,
-              typename H = Hash,
-              typename KE = KeyEqual,
-              std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE>, bool> = true>
+    template <typename K, typename Q = T>
+        requires is_map_v<Q> && is_transparent_v<Hash, KeyEqual>
     auto at(K const& key, precomputed_hash ph) const -> Q const& {
         return do_at(key, ph);
     }
