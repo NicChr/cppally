@@ -1555,7 +1555,8 @@ private:
         }
     }
 
-    void increase_size() {
+    // LOCAL PATCH - noinline.
+    ANKERL_UNORDERED_DENSE_NOINLINE void increase_size() {
         if (m_max_bucket_capacity == max_bucket_count()) {
             // remove the value again, we can't add it!
             m_values.pop_back();
@@ -1658,8 +1659,10 @@ private:
         return it_isinserted;
     }
 
+    // LOCAL PATCH - noinline.
     template <typename... Args>
-    auto do_place_element(dist_and_fingerprint_type dist_and_fingerprint, value_idx_type bucket_idx, Args&&... args)
+    ANKERL_UNORDERED_DENSE_NOINLINE auto
+    do_place_element(dist_and_fingerprint_type dist_and_fingerprint, value_idx_type bucket_idx, Args&&... args)
         -> std::pair<iterator, bool> {
 
         // emplace the new value. If that throws an exception, no harm done; index is still in a valid state
