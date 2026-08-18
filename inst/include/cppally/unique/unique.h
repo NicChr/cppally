@@ -15,6 +15,9 @@ T unique(const T& x, bool sort = false) {
 
   using data_t = typename T::data_type;
 
+  uint8_t zero(0);
+  uint8_t one(1);
+
   r_size_t n = x.length();
 
   T out = x;
@@ -25,10 +28,10 @@ T unique(const T& x, bool sort = false) {
   std::vector<unwrap_t<data_t>> uniques;
   uniques.reserve(cardinality_est);
 
-  bool done = internal::try_dense_int_map(x, uint8_t(0), [&uniques, &x, n](auto&& try_emplace, auto&&) {
+  bool done = internal::try_dense_int_map(x, zero, [&uniques, &x, one, n](auto&& try_emplace, auto&&) {
     for (r_size_t i = 0; i < n; ++i) {
       auto val = x.view(i);
-      if (try_emplace(val, uint8_t(1)).second) {
+      if (try_emplace(val, one).second) {
         uniques.push_back(unwrap(val));
       }
     }
@@ -50,7 +53,7 @@ T unique(const T& x, bool sort = false) {
 
     ankerl::unordered_dense::map<
       unwrap_t<data_t>,
-      bool,
+      uint8_t,
       internal::r_hash_fn<data_t>,
       internal::r_hash_eq<data_t>
     > seen;
@@ -58,7 +61,7 @@ T unique(const T& x, bool sort = false) {
     seen.reserve(cardinality_est);
 
     for (r_size_t i = 0; i < n; ++i) {
-      seen.try_emplace(x.view(i), false);
+      seen.try_emplace(x.view(i), zero);
     }
 
     r_size_t n_unq = seen.size();
@@ -117,15 +120,19 @@ inline r_size_t n_unique(const T& x) {
 
   using data_t = typename T::data_type;
 
+  // Writing these in-line apparently prevents compiler-inlining, strange..
+  uint8_t zero(0);
+  uint8_t one(1);
+
   r_size_t n = x.length();
 
   // Try the dense int table first (For int with small range)
 
   r_size_t n_unq = 0;
 
-  bool done = internal::try_dense_int_map(x, uint8_t(0), [&n_unq, &x, n](auto&& try_emplace, auto&&) {
+  bool done = internal::try_dense_int_map(x, zero, [&n_unq, &x, one, n](auto&& try_emplace, auto&&) {
     for (r_size_t i = 0; i < n; ++i) {
-      n_unq += try_emplace(x.view(i), uint8_t(1)).second;
+      n_unq += try_emplace(x.view(i), one).second;
     }
   });
 
@@ -134,7 +141,7 @@ inline r_size_t n_unique(const T& x) {
   // Hash set for O(n) de-duplication
   ankerl::unordered_dense::map<
     unwrap_t<data_t>,
-    bool,
+    uint8_t,
     internal::r_hash_fn<data_t>,
     internal::r_hash_eq<data_t>
   > seen;
@@ -143,7 +150,7 @@ inline r_size_t n_unique(const T& x) {
   seen.reserve(cardinality_est);
 
   for (r_size_t i = 0; i < n; ++i) {
-    seen.try_emplace(x.view(i), false);
+    seen.try_emplace(x.view(i), zero);
   }
   return seen.size();
 }
