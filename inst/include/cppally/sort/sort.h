@@ -446,8 +446,7 @@ std::remove_cvref_t<T> sort(T&& x){
             }
 
             r_lgl is_increasing = x.view(i) >= x.view(i - 1);
-    
-            // If NA return NA, if false return false
+
             if (!is_increasing.is_true()){
                 is_sorted = false;
                 break;
