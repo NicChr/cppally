@@ -241,18 +241,11 @@ inline uint64_t get_hash_map_reserve_size(const U *px, uint64_t data_size) {
         }
     }
 
-    uint64_t guess = data_size / 4;
-
-    // Only do sampling if data is large
-    if (data_size > static_cast<uint64_t>(internal::exp2<double>(16))){
-        auto cardinality_guess = unique_count_estimate<U, uint32_t, r_hash_fn<data_t>, r_hash_eq<data_t>>(px, data_size);
-        if (cardinality_guess < guess){
-            // guess = ( ( guess * (1/cardinality_guess) ) + ( cardinality_guess * (1/guess) ) ) * ( (1/guess) + (1/cardinality_guess) );
-            guess = (guess + cardinality_guess) / 2;
-        }
-        guess = std::max(guess, cardinality_guess);
+    if (data_size < static_cast<uint64_t>(internal::exp2<double>(16))){
+        return data_size / 4;
     }
-    return guess;
+
+    return std::min(data_size, 10 * unique_count_estimate<U, uint32_t, r_hash_fn<data_t>, r_hash_eq<data_t>>(px, data_size));
 }
 
 }
