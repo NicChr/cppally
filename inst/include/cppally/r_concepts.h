@@ -540,28 +540,13 @@ struct common_r_type_impl<T, U> {
     using type = r_df;
 };
 
-// Variadic fold: reduces N types by pairwise application of common_r_type_impl.
-// Base case is 1 type (returns itself); recursive case peels two off the front,
-// computes their common type, and folds it back in with the rest.
-template <typename...>
-struct common_r_fold;
-
 template <typename T>
-struct common_r_fold<T> { using type = T; };
+struct type_t { using type = T; };
 
 template <typename T, typename U>
     requires requires { typename common_r_type_impl<T, U>::type; }
-struct common_r_fold<T, U> { using type = typename common_r_type_impl<T, U>::type; };
-
-template <typename T, typename U, typename... Rest>
-    requires requires { typename common_r_type_impl<T, U>::type; }
-struct common_r_fold<T, U, Rest...> {
-    using type = typename common_r_fold<
-        typename common_r_type_impl<T, U>::type,
-        Rest...
-    >::type;
-};
-
+type_t<typename common_r_type_impl<T, U>::type>
+operator->*(type_t<T>, type_t<U>);
 
 }
 
@@ -570,7 +555,7 @@ requires (RMathType<T> || RMathType<U>) // At least one RMathType
 using common_math_t = typename internal::common_r_math_impl<T, U>::type;
 
 template <typename... Ts>
-using common_r_t = typename internal::common_r_fold<Ts...>::type;
+using common_r_t = typename decltype((... ->* internal::type_t<Ts>{}))::type;
 
 }
 
