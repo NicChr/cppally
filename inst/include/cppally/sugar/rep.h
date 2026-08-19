@@ -3,7 +3,7 @@
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/stats/stats.h>
-#include <cppally/sugar/r_copy.h>
+#include <cppally/sugar/copy.h>
 
 namespace cppally {
 

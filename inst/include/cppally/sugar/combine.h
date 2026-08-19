@@ -4,7 +4,7 @@
 #include <cppally/coerce.h>
 #include <cppally/list/list_utils.h>
 #include <cppally/sugar/subset.h>
-#include <cppally/sugar/r_rep.h>
+#include <cppally/sugar/rep.h>
 #include <cppally/vector/make_vec.h>
 #include <cppally/r_sexp/r_sexp_methods.h>
 

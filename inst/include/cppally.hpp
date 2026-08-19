@@ -25,7 +25,7 @@
 #include <cppally/attributes/attributes.h>
 #include <cppally/r_sexp/visit.h>
 #include <cppally/length.h>
-#include <cppally/sugar/r_copy.h>
+#include <cppally/sugar/copy.h>
 #include <cppally/data_frame/r_df.h>
 #include <cppally/coerce.h>
 #include <cppally/identical.h>
@@ -38,10 +38,10 @@
 #include <cppally/match/match.h>
 #include <cppally/unique/unique.h>
 #include <cppally/sugar/subset.h>
-#include <cppally/sugar/r_rep.h>
-#include <cppally/sugar/r_replace_at.h>
+#include <cppally/sugar/rep.h>
+#include <cppally/sugar/replace_at.h>
 #include <cppally/vector/make_vec.h>
-#include <cppally/sugar/r_combine.h>
+#include <cppally/sugar/combine.h>
 #include <cppally/sugar/recycle.h>
 #include <cppally/string/paste.h>
 #include <cppally/math/math.h>

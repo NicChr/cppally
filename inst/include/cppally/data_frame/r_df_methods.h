@@ -8,7 +8,7 @@
 #include <cppally/attributes/attributes.h>
 #include <cppally/r_sexp/visit.h>
 #include <cppally/coerce.h>
-#include <cppally/sugar/r_rep.h>
+#include <cppally/sugar/rep.h>
 #include <cppally/sugar/recycle.h>
 #include <cppally/sugar/subset.h>
 #include <cppally/vector/make_vec.h>

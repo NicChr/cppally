@@ -3,7 +3,7 @@
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/r_sexp/r_sexp_methods.h>
-#include <cppally/sugar/r_rep.h>
+#include <cppally/sugar/rep.h>
 #include <vector>
 
 namespace cppally {
