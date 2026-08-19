@@ -117,10 +117,8 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
             hi = max(hi, v);
         }
     }
-    r_vec<T> out(2);
-    out.set(0, lo);
-    out.set(1, hi);
-    return out;
+    
+    return r_vec<T>( {lo, hi} );
 }
 
 template <RStringType T>
@@ -145,10 +143,7 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
         lo = hi = na<r_str_view>();
     }
 
-    r_vec<T> out(2);
-    out.set(0, T(lo));
-    out.set(1, T(hi));
-    return out;
+    return r_vec<T>( {lo, hi} );
 }
 
 // SIMD optimisation for integer types
@@ -204,10 +199,8 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
             hi = na<T>();
         }
     }
-    r_vec<T> out(2);
-    out.set(0, lo);
-    out.set(1, hi);
-    return out;
+
+    return r_vec<T>( {lo, hi} );
 }
 
 template <RMathType T>
