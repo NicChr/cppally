@@ -11,38 +11,11 @@
 
 namespace cppally {
 
-template <typename T, typename U>
-requires (
-  ( (RVector<T> || RFactor<T>) && (RVector<U> || RFactor<U>)) && 
-  (!RAtomicVector<T> || !RAtomicVector<U>)
-)
-inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs){
-  using common_t = common_r_t<T, U>;
-
-  common_t a = as<common_t>(lhs);
-  common_t b = as<common_t>(rhs);
-
-  r_size_t n = common_length(a, b);
-
-  r_size_t lhsn = length(lhs);
-  r_size_t rhsn = length(rhs);
-
-  r_vec<r_lgl> out(n);
-
-  if constexpr (RListVector<common_t>){
-    for (r_size_t i = 0, li = 0, ri = 0; i < n;
-      recycle_index(li, lhsn),
-      recycle_index(ri, rhsn), ++i){
-      out.set(i, r_lgl(identical(lhs.view(li), rhs.view(ri))));
-    }
-  } else {
-    for (r_size_t i = 0, li = 0, ri = 0; i < n;
-      recycle_index(li, lhsn),
-      recycle_index(ri, rhsn), ++i){
-      out.set(i, lhs.view(li) == rhs.view(ri));
-    }
-  }
-  return out;
+inline r_vec<r_lgl> operator==(const r_vec<r_sexp>& lhs, const r_vec<r_sexp>& rhs) {
+  return pmap([](const r_sexp& a, const r_sexp& b) {
+    return r_lgl(identical(a, b));
+  }, 
+  lhs, rhs);
 }
 
 inline r_vec<r_lgl> operator==(const r_factors& lhs, const r_factors& rhs) {
@@ -62,6 +35,21 @@ inline r_vec<r_lgl> operator==(const r_factors& lhs, const r_factors& rhs) {
     comparable.set(i, is_na(c) ? na<r_int>() : remap.get(unwrap(c) - 1));
   }
   return lhs.value == comparable;
+}
+
+template <typename T, typename U>
+requires (
+  ( (RVector<T> || RFactor<T>) && (RVector<U> || RFactor<U>)) && 
+  (!RAtomicVector<T> || !RAtomicVector<U>)
+)
+inline r_vec<r_lgl> operator==(const T& lhs, const U& rhs){
+  
+  using common_t = common_r_t<T, U>;
+
+  common_t a = as<common_t>(lhs);
+  common_t b = as<common_t>(rhs);
+
+  return a == b;
 }
 
 template <typename T, typename U>
