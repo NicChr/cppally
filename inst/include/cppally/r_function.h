@@ -89,8 +89,8 @@ struct r_function {
     explicit operator r_sexp() const noexcept { return value; }
   
     // operator() to make r_function callable
-    r_sexp operator()(std::initializer_list<r_sexp> args) const {
-      return call_impl(internal::make_pairlist(args));
+    r_sexp operator()(std::initializer_list<r_sexp> args, const r_sexp& env = env::global_env) const {
+      return call_impl(internal::make_pairlist(args), env);
     }
     
     template <typename... Args>
@@ -105,9 +105,9 @@ struct r_function {
       }
     }
 
-    r_sexp call_impl(const r_sexp& args) const {
+    r_sexp call_impl(const r_sexp& args, const r_sexp& env = env::global_env) const {
       return r_sexp(
-        internal::unwind_protect([&] { return Rf_eval(Rf_lcons(*this, args), env::global_env); })
+        internal::unwind_protect([&] { return Rf_eval(Rf_lcons(*this, args), env); })
       );
     }
 
