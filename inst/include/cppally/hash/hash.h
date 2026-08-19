@@ -163,9 +163,13 @@ template <
     typename comparator
 >
 inline uint64_t unique_count_estimate(const key *px, uint64_t data_size){
+    
+    if (data_size == 0){
+        return 0;
+    }
 
     // Bigger sample size mainly reduces skew bias and variance
-    uint64_t sample_size = std::max(static_cast<uint64_t>(std::sqrt(2.0 * data_size)) + 1u, uint64_t(1024));
+    uint64_t sample_size = static_cast<uint64_t>(std::sqrt(2.0 * data_size)) + 1u;
 
     // Setup RNG engine using custom seed
     random_stream rs(mix_u64(data_size));
