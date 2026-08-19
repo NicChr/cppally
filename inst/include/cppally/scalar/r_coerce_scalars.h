@@ -140,8 +140,7 @@ inline r_raw as_raw(const T& x){
   if constexpr (is<unwrapped_t, unsigned char>){
     return r_raw(unwrap(x));
   } else if constexpr (MathType<unwrapped_t>){
-    using r_t = unwrap_t<T>;
-    return is_na(x) || !between_impl(unwrap(x), r_t(0), r_t(255)) ? na<r_raw>() : r_raw(static_cast<unsigned char>(unwrap(x)));
+    return is_na(x) || !numeric_can_be_cast_without_complete_loss<unsigned char>(unwrap(x)) ? na<r_raw>() : r_raw(static_cast<unsigned char>(unwrap(x)));
   } else {
     return na<r_raw>();
   }

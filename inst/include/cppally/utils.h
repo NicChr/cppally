@@ -81,11 +81,6 @@ inline bool double_is_int_like(double x) noexcept {
     return numeric_can_be_cast_without_complete_loss<int>(x) && static_cast<double>(static_cast<int>(x)) == x;
 }
 
-template <typename T, typename U>
-inline constexpr bool between_impl(const T x, const U lo, const U hi) {
-  return x >= lo && x <= hi;
-}
-
 inline int calc_threads(r_size_t data_size){
     if (OMP_IN_PARALLEL){
       return 1;
