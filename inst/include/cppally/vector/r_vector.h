@@ -140,7 +140,6 @@ template <typename Acc>
 internal::control_flow<Acc> keep(Acc v){ return { std::move(v), false }; }
 
 
-
 template <typename... Args>
 r_sexp r_function::operator()(Args&&... args) const {
   return call_impl(internal::make_pairlist(std::forward<Args>(args)...));
@@ -150,6 +149,7 @@ template <RVal T>
 struct r_vec {
 
   r_sexp value;
+  using value_type = r_sexp;
   using data_type = std::remove_cvref_t<T>;
 
   bool is_null() const noexcept {
