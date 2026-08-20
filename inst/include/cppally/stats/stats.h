@@ -130,7 +130,7 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
     bool any_na = false;
 
     for (r_size_t i = 0; i < n; ++i){
-        const auto v = x.view(i);
+        const r_str_view v = x.view(i);
         if (is_na(v)) {
             any_na = true;
             continue;
@@ -143,7 +143,7 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
         lo = hi = na<r_str_view>();
     }
 
-    return r_vec<T>( {lo, hi} );
+    return r_vec<T>( {T(lo, internal::view_tag{}), T(hi, internal::view_tag{})} );
 }
 
 // SIMD optimisation for integer types

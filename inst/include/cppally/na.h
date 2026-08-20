@@ -23,13 +23,18 @@ inline r_sexp na<r_sexp>() noexcept {
   return r_null;
 }
 
-template <RScalar T>
+template <RVal T>
 inline constexpr bool is_na(const T& x) noexcept {
   return x.is_na();
 }
 
-template <typename T>
-inline constexpr bool is_na(const T& x) {
+template <>
+inline constexpr bool is_na<r_sexp>(const r_sexp& x) noexcept {
+  return false;
+}
+
+template <CppMathType T>
+inline constexpr bool is_na(const T& x) noexcept {
   if constexpr (CastableToRScalar<T>){
     return as_r_scalar_t<T>(x).is_na();
   } else {
@@ -70,7 +75,7 @@ constexpr bool either_na(const T& x, const T& y) noexcept {
   return std::min(unwrap(x), unwrap(y)) == unwrap(na<T>());
 }
 inline constexpr bool either_na(r_dbl x, r_dbl y) noexcept {
-  return is_na(std::abs(unwrap(x)) + std::abs(unwrap(y)));
+  return is_na(r_dbl(std::abs(unwrap(x)) + std::abs(unwrap(y))));
 }
 
 }
