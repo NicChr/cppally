@@ -2,6 +2,7 @@
 #define CPPALLY_R_STATS_H
 
 #include <cppally/vector/r_vector.h>
+#include <cppally/math/math.h>
 
 namespace cppally {
 
