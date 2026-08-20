@@ -5,6 +5,7 @@
 #include <cppally/stats/stats.h>
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -129,6 +130,58 @@ bool try_dense_int_map(const r_vec<T>& keys, Val empty_value, F&& body) {
 template <std::integral Val, typename F>
 bool try_dense_int_map(const r_vec<r_lgl>&, Val empty_value, F&& body) {
     return run_dense_int_map<Val>(0, 1, empty_value, std::forward<F>(body));
+}
+
+template <std::integral Val, typename F>
+bool try_dense_int_map(const r_vec<r_dbl>& keys, Val empty_value, F&& body) {
+
+    r_size_t n = keys.length();
+
+    if (n == 0){
+        return false;
+    }
+
+    int lo = std::numeric_limits<int>::max();
+    int hi = std::numeric_limits<int>::min();
+
+    // Check if all keys are finite and in (-2^31, 2^31)
+
+    for (r_size_t i = 0; i < n; ++i){
+        r_dbl key = keys.get(i);
+
+        // This will return false for NA, fractional numbers and Inf/-Inf
+        if (!double_is_int_like(key)){
+            return false;
+        }
+
+        int int_key = static_cast<int>(unwrap(key));
+
+        lo = std::min(lo, int_key);
+        hi = std::max(hi, int_key);
+    }
+
+    // reject -2^31 as while it's a valid int in C/C++, it is reserved for NA_INTEGER
+    if (r_int(lo).is_na()){
+        return false;
+    }
+
+    uint64_t range_span = static_cast<uint64_t>(hi) - static_cast<uint64_t>(lo);
+
+    if (!use_int_table<Val>(range_span, n)){
+        return false;
+    }
+
+    return run_dense_int_map<Val>(lo, hi, empty_value,
+        [&body](auto&& try_emplace, auto&& find_or) {
+            body(
+                [&try_emplace](double key, Val v) {
+                    return try_emplace(static_cast<int>(key), v);
+                },
+                [&find_or](double key, Val not_found) {
+                    return double_is_int_like(key) ? find_or(static_cast<int>(key), not_found) : not_found;
+                }
+            );
+        });
 }
 
 // Presence-only counterpart of the dense int table, for callers that only ask "have I seen this
