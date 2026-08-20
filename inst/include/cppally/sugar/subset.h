@@ -6,7 +6,8 @@
 #include <cppally/r_sexp/visit.h>
 #include <cppally/match/match.h>
 #include <cppally/coerce.h>
-#include <vector> // For C++ vectors
+#include <cppally/length.h>
+#include <vector>
 
 namespace cppally {
 

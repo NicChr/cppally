@@ -7,6 +7,7 @@
 #include <cppally/sugar/rep.h>
 #include <cppally/vector/make_vec.h>
 #include <cppally/r_sexp/r_sexp_methods.h>
+#include <cppally/length.h>
 
 namespace cppally {
 

@@ -4,6 +4,7 @@
 #include <cppally/vector/r_vector.h>
 #include <cppally/stats/stats.h>
 #include <cppally/sugar/copy.h>
+#include <cppally/length.h>
 
 namespace cppally {
 

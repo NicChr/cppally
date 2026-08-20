@@ -98,7 +98,7 @@ r_vec<r_lgl> duplicated(const T& x, bool all = false){
   if (all){
     return subset(g.counts() > r_int(1), g.ids, /*invert=*/ false, /*check=*/ false);
   } else {
-    r_vec<r_lgl> out(length(x), r_true);
+    r_vec<r_lgl> out(x.length(), r_true);
     auto starts = g.starts();
     r_size_t n_groups = g.n_groups;
 
