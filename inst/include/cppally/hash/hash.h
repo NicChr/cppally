@@ -224,7 +224,7 @@ inline uint64_t unique_count_estimate(const key *px, uint64_t data_size){
     // Extended chao1 estimator formula
     // chao1_ext = n_obs + ( (3f1f3) / (2f2^2) ) * ( (f1^2) / (2f2) ) = n_obs + ( (3f1^3f3) / (4f2^3) )
 
-    if (f2 > 10 && f3 > 10) {
+    if (f2 > 5 && f3 > 5) {
         est += (3 * f1 * f1 * f1 * f3) / (4 * f2 * f2 * f2);
     } else if (f1 > 1) {
         est += (f1 * (f1 - 1)) / (2 * (f2 + 1));
