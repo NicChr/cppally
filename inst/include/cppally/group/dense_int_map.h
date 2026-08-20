@@ -132,8 +132,9 @@ bool try_dense_int_map(const r_vec<r_lgl>&, Val empty_value, F&& body) {
     return run_dense_int_map<Val>(0, 1, empty_value, std::forward<F>(body));
 }
 
-template <std::integral Val, typename F>
-bool try_dense_int_map(const r_vec<r_dbl>& keys, Val empty_value, F&& body) {
+template <std::integral Val, typename F, typename key_t>
+requires (any<key_t, r_dbl, r_date, r_psxct>)
+bool try_dense_int_map(const r_vec<key_t>& keys, Val empty_value, F&& body) {
 
     r_size_t n = keys.length();
 
@@ -147,14 +148,15 @@ bool try_dense_int_map(const r_vec<r_dbl>& keys, Val empty_value, F&& body) {
     // Check if all keys are finite and in (-2^31, 2^31)
 
     for (r_size_t i = 0; i < n; ++i){
-        r_dbl key = keys.get(i);
+        
+        double key = static_cast<double>(keys.get(i));
 
         // This will return false for NA, fractional numbers and Inf/-Inf
         if (!double_is_int_like(key)){
             return false;
         }
 
-        int int_key = static_cast<int>(unwrap(key));
+        int int_key = static_cast<int>(key);
 
         lo = std::min(lo, int_key);
         hi = std::max(hi, int_key);
