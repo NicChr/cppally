@@ -55,15 +55,21 @@ struct r_dbl {
   }
 
   constexpr bool is_infinite() const noexcept {
-    return value > 0 ? value > std::numeric_limits<double>::max() : -value > std::numeric_limits<double>::max();
+    return constexpr_fabs(value) == static_cast<double>(inf());
   }
 
   constexpr bool is_finite() const noexcept {
-    return value <= std::numeric_limits<double>::max() && value >= -std::numeric_limits<double>::max();
+    return constexpr_fabs(value) < static_cast<double>(inf());
   }
 
   constexpr bool is_nan() const noexcept {
     return is_na() && !internal::has_na_real_payload(value);
+  }
+
+  private: 
+
+  static constexpr double constexpr_fabs(double x) noexcept {
+    return x > 0 ? x : -x;
   }
 
 };
