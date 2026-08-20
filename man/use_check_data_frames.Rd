@@ -2,7 +2,7 @@
 % Please edit documentation in R/use_check_data_frames.R
 \name{use_check_data_frames}
 \alias{use_check_data_frames}
-\title{Adds the \code{CPPALLY_CHECK_DATA_FRAMES} flag to Makevars}
+\title{Deprecated.}
 \usage{
 use_check_data_frames(quiet = FALSE)
 }
@@ -14,10 +14,9 @@ Default is \code{FALSE}.}
 Invisibly adds the \code{CPPALLY_CHECK_DATA_FRAMES} flag to Makevars.
 }
 \description{
-Adds a flag to Makevars which enables stricter validation on data frames
-at the point of \code{r_df} construction. This ensures that column lengths are
-always valid, avoiding potential R crashes downstream.
-
-The default behaviour is NOT to validate column lengths, enabling faster
-\code{r_df} creating from \code{SEXP}.
+Deprecated.
 }
+\section{}{
+Deprecated, do not use.
+}
+

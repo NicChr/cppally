@@ -97,15 +97,6 @@ struct r_df {
 
     private: 
 
-    void validate_col_sizes(){
-        int ncols = ncol();
-        for (int i = 0; i < ncols; ++i){
-            if (length(value.view(i)) != static_cast<r_size_t>(cached_nrow)) [[unlikely]] {
-                abort("All data frame col lengths must match `nrow()`");
-            }
-        }
-    }
-
     void validate_df(){
 
         if (value.is_null()) return;
@@ -127,9 +118,6 @@ struct r_df {
       void init_df() {
         validate_df();
         cached_nrow = get_nrow();
-        #ifdef CPPALLY_CHECK_DATA_FRAMES
-        validate_col_sizes();
-        #endif
       }
 
     public: 

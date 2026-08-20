@@ -1,12 +1,7 @@
-#' Adds the `CPPALLY_CHECK_DATA_FRAMES` flag to Makevars
+#' Deprecated.
 #'
-#' @description
-#' Adds a flag to Makevars which enables stricter validation on data frames
-#' at the point of `r_df` construction. This ensures that column lengths are
-#' always valid, avoiding potential R crashes downstream.
-#'
-#' The default behaviour is NOT to validate column lengths, enabling faster
-#' `r_df` creating from `SEXP`.
+#' @description#
+#' Deprecated, do not use.
 #'
 #' @param quiet `[logical(1)]` - Should messages be suppressed?
 #' Default is `FALSE`.
