@@ -8,6 +8,7 @@
 #include <cppally/attributes/attributes.h>
 #include <cppally/r_sexp/visit.h>
 #include <cppally/coerce.h>
+#include <cppally/length.h>
 #include <cppally/sugar/rep.h>
 #include <cppally/sugar/recycle.h>
 #include <cppally/sugar/subset.h>

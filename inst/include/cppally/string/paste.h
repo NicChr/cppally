@@ -3,6 +3,7 @@
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/list/list_utils.h>
+#include <cppally/coerce.h>
 #include <initializer_list>
 #include <string>
 #include <vector>

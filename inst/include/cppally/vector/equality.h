@@ -4,6 +4,7 @@
 #include <cppally/functional/pmap.h>
 #include <cppally/length.h>
 #include <cppally/identical.h>
+#include <cppally/coerce.h>
 #include <cppally/vector/vector_ops.h>
 
 // Vectorised `==` operator for R vectors.
