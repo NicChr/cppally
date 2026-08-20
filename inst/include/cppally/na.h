@@ -23,15 +23,14 @@ inline r_sexp na<r_sexp>() noexcept {
   return r_null;
 }
 
-template<typename T>
+template <RScalar T>
 inline constexpr bool is_na(const T& x) noexcept {
-  if constexpr (RScalar<T>){
-    if constexpr (RScalar<typename T::value_type>){
-      return x.value.is_na();
-    } else {
-      return x.is_na();
-    }
-  } else if constexpr (CastableToRScalar<T>){
+  return x.is_na();
+}
+
+template <typename T>
+inline constexpr bool is_na(const T& x) {
+  if constexpr (CastableToRScalar<T>){
     return as_r_scalar_t<T>(x).is_na();
   } else {
     return false;
@@ -46,6 +45,10 @@ inline constexpr bool is_nan(const T& x) noexcept {
 template <>
 inline constexpr bool is_nan(const r_dbl& x) noexcept {
   return x.is_nan();
+}
+template <>
+inline constexpr bool is_nan(const double& x) noexcept {
+  return r_dbl(x).is_nan();
 }
 
 // Inspired by SQL COALESCE: returns x, or y if x is NA.
@@ -71,7 +74,6 @@ inline constexpr bool either_na(r_dbl x, r_dbl y) noexcept {
 }
 
 }
-
 
 }
 
