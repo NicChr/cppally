@@ -26,9 +26,6 @@ inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_
 
 template <RVector T>
 inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_t n);
-
-// Defined in length.h
-inline r_size_t length(const r_sexp& x);
   
 namespace internal {
 
