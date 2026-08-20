@@ -13,28 +13,6 @@ namespace cppally {
 
 namespace internal {
 
-inline consteval uint64_t na_real_bits() noexcept {
-  return std::bit_cast<uint64_t>(na_real);
-}
-
-// Important: assumes x is already NA (via x != x)
-// Matches R's R_IsNA: a NaN carrying NA_real_'s payload (1954) in its low word.
-// Checks the payload rather than the full bit pattern so NA survives FP operations
-// (add/sub/mul, negation) that quiet the signaling NaN or flip its sign bit.
-inline constexpr bool has_na_real_payload(double x) noexcept {
-  return (std::bit_cast<uint64_t>(x) & 0xFFFFFFFFULL) == 1954ULL;
-}
-
-// Different NaN have different bit representations, so use with care
-// Mainly used to normalise NaN which may have different bit representations (excluding NA_real_)
-inline consteval uint64_t nan_bits() noexcept {
-  return std::bit_cast<uint64_t>(std::numeric_limits<double>::quiet_NaN());
-}
-
-}
-
-namespace internal {
-
 template <RVal T>
 inline constexpr T na_value_impl() noexcept {
   return T::na();
@@ -74,7 +52,7 @@ inline constexpr bool is_nan(const T& x) noexcept {
 // NaN but not NA_REAL
 template <>
 inline constexpr bool is_nan(const r_dbl& x) noexcept {
-  return is_na(x) && !internal::has_na_real_payload(unwrap(x));
+  return x.is_nan();
 }
 
 // Inspired by SQL COALESCE: returns x, or y if x is NA.

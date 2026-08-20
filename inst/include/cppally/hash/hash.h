@@ -17,6 +17,15 @@ namespace cppally {
 
 namespace internal {
 
+// Different NaN have different bit representations so this normalises NaN hashing, and r_dbl::nan is guaranteed to not collide with r_dbl::na
+inline consteval uint64_t nan_bits() noexcept {
+    return std::bit_cast<uint64_t>(static_cast<double>(r_dbl::nan()));
+}
+
+inline consteval uint64_t na_real_bits() noexcept {
+    return std::bit_cast<uint64_t>(static_cast<double>(na<r_dbl>()));
+}
+
 // Hashing
 
 // Hash combine helper
