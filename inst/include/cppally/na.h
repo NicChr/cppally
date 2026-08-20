@@ -11,23 +11,16 @@ namespace cppally {
 
 // NAs
 
-namespace internal {
-
 template <RVal T>
-inline constexpr T na_value_impl() noexcept {
-  return T::na();
+inline constexpr std::remove_cvref_t<T> na() noexcept {
+  return std::remove_cvref_t<T>::na();
 }
 
+// Special case, it's technically not a valid NA but it is very useful for template programming, so it stays. 
+// `is_na()` for `r_sexp` does return false, which is correct.
 template<>
-inline r_sexp na_value_impl<r_sexp>() noexcept {
+inline r_sexp na<r_sexp>() noexcept {
   return r_null;
-}
-
-}
-
-template <typename T>
-inline constexpr T na() noexcept {
-  return internal::na_value_impl<std::remove_cvref_t<T>>();
 }
 
 template<typename T>
