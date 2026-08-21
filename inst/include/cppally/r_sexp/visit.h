@@ -83,8 +83,8 @@ void mutate_sexp(r_sexp& x, F&& f) {
 
 // The reject path is deliberately not templated on F. F is a lambda, so it is unique
 // per call site; anything instantiated on it is emitted once per visit in the package.
-// Instead the set of wrappers F accepts is folded into a constexpr bitmask (probing a
-// concept emits no code) and handed to one shared, type-erased reject().
+// Instead the set of wrappers F accepts is folded into a bitmask (probing a concept
+// emits no code) and handed to one shared, type-erased reject().
 
 // Candidate names, indexed to match the bit order of accepted_mask below.
 #define CPPALLY_CASE_NAME(LABELS, W) type_str<W>(),
@@ -95,7 +95,7 @@ inline const char* candidate_name(int i) {
 #undef CPPALLY_CASE_NAME
 
 template <class F, class... Cs>
-inline constexpr uint32_t mask_of() {
+inline uint32_t mask_of() noexcept {
     uint32_t m = 0;
     int i = 0;
     ((((requires { std::declval<F>()(std::declval<Cs&>()); }) ? (m |= (1u << i)) : 0u), ++i), ...);
@@ -105,7 +105,9 @@ inline constexpr uint32_t mask_of() {
 // One bit per candidate wrapper, set where F accepts it.
 #define CPPALLY_CASE_TYPE(LABELS, W) W,
 template <class F>
-inline constexpr uint32_t accepted_mask = mask_of<F, CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>();
+inline uint32_t accepted_mask() noexcept {
+    return mask_of<F, CPPALLY_ALL_CASES(CPPALLY_CASE_TYPE) r_sexp>();
+}
 #undef CPPALLY_CASE_TYPE
 
 // Terminal for a constrained dispatcher that meets a type its visitor rejects.
@@ -132,13 +134,13 @@ inline constexpr uint32_t accepted_mask = mask_of<F, CPPALLY_ALL_CASES(CPPALLY_C
 // Guarded arms: hand `f` the wrapper only if it accepts it, else reject.
 #define CPPALLY_CASE_OWNING_G(LABELS, W)                                     \
     LABELS if constexpr (requires { f(W(x, no_checks_tag{})); }) return f(W(x, no_checks_tag{}));             \
-           else internal::reject(internal::type_str<W>(), internal::accepted_mask<F&>);
+           else internal::reject(internal::type_str<W>(), internal::accepted_mask<F&>());
 #define CPPALLY_CASE_VIEWING_G(LABELS, W)                                    \
     LABELS if constexpr (requires { f(W(x, view_tag{}, no_checks_tag{})); }) return f(W(x, view_tag{}, no_checks_tag{})); \
-           else internal::reject(internal::type_str<W>(), internal::accepted_mask<F&>);
+           else internal::reject(internal::type_str<W>(), internal::accepted_mask<F&>());
 #define CPPALLY_CASE_MUTATE_G(LABELS, W)                                     \
     LABELS if constexpr (requires (W& w) { f(w); }) { mutate_as<W>(x, f); break; } \
-           else internal::reject(internal::type_str<W>(), internal::accepted_mask<F&>);
+           else internal::reject(internal::type_str<W>(), internal::accepted_mask<F&>());
 
 // Constrained owning visit: dispatch to `f` only for the types it accepts.
 template <class F>
@@ -146,7 +148,7 @@ decltype(auto) visit_constrained(const r_sexp& x, F&& f) {
     switch (CPPALLY_TYPEOF(x)) {
         CPPALLY_ALL_CASES(CPPALLY_CASE_OWNING_G)
         default: if constexpr (requires { f(r_sexp(x)); }) return f(r_sexp(x));
-                 else internal::reject(internal::type_str<r_sexp>(), internal::accepted_mask<F&>);
+                 else internal::reject(internal::type_str<r_sexp>(), internal::accepted_mask<F&>());
     }
 }
 
@@ -156,7 +158,7 @@ decltype(auto) view_constrained(const r_sexp& x, F&& f) {
     switch (CPPALLY_TYPEOF(x)) {
         CPPALLY_ALL_CASES(CPPALLY_CASE_VIEWING_G)
         default: if constexpr (requires { f(r_sexp(x, view_tag{})); }) return f(r_sexp(x, view_tag{}));
-                 else internal::reject(internal::type_str<r_sexp>(), internal::accepted_mask<F&>);
+                 else internal::reject(internal::type_str<r_sexp>(), internal::accepted_mask<F&>());
     }
 }
 
@@ -166,7 +168,7 @@ void mutate_constrained(r_sexp& x, F&& f) {
     switch (CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
         CPPALLY_ALL_CASES(CPPALLY_CASE_MUTATE_G)
         default: if constexpr (requires (r_sexp& s) { f(s); }) { mutate_as<r_sexp>(x, f); break; }
-                 else internal::reject(internal::type_str<r_sexp>(), internal::accepted_mask<F&>);
+                 else internal::reject(internal::type_str<r_sexp>(), internal::accepted_mask<F&>());
     }
 }
 
