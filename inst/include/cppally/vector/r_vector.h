@@ -6,6 +6,7 @@
 #include <cppally/utils.h>
 #include <cppally/scalar/r_limits.h>
 #include <cppally/scalar/scalar_ops.h>
+#include <cppally/na.h>
 #include <cppally/scalar/coerce_scalars.h>
 #include <cppally/vector/vector_utils.h>
 #include <cppally/vector/vector_names.h>
