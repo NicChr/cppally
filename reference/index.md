@@ -24,9 +24,7 @@
   specifically for cppally
 
 - [`use_check_data_frames()`](https://nicchr.github.io/cppally/reference/use_check_data_frames.md)
-  :
-
-  Adds the `CPPALLY_CHECK_DATA_FRAMES` flag to Makevars
+  : Deprecated.
 
 - [`use_check_factors()`](https://nicchr.github.io/cppally/reference/use_check_factors.md)
   :

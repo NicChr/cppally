@@ -149,6 +149,11 @@ cpp_eval(
 
 library(cppally)
 library(bit64)
+#> ********************************************************
+#> R-core is collecting use cases for 64-bit integers as they explore native support for these vectors.
+#> 
+#> See https://stat.ethz.ch/pipermail/r-devel/2026-July/084631.html and reach out to Luke Tierney (luke-tierney@uiowa.edu).
+#> ********************************************************
 #> 
 #> Attaching package: ‘bit64’
 #> The following object is masked from ‘package:utils’:
@@ -270,14 +275,14 @@ library(bench)
 mark(last_altrep_aware(1:10^5)) # No materialisation
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
-#>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 4.06µs  5.1µs   187755.    3.18KB        0 10000     0     53.3ms
+#>   <bch:expr>    <bch> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 last_altrep_… 2.6µs  3.8µs   249640.    3.18KB        0 10000     0     40.1ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
-#>   <bch:expr>    <bch> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep_…  37µs 38.7µs    21027.     391KB     170.  3707    30      176ms
+#>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 last_altrep… 31.1µs 35.7µs    23727.     391KB     190.  4733    38      199ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 ### Copy-on-modify
@@ -313,7 +318,7 @@ mark(reverse(x)) # Memory allocated, therefore x was copied before reversing
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr> <bch:tm> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 reverse(x)    243µs  250µs     3831.     391KB     28.6  1740    13      454ms
+#> 1 reverse(x)    211µs  267µs     3646.     391KB     27.8  1706    13      468ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 # The cppally preferred approach is to allocate a fresh vector or copy the
@@ -338,11 +343,11 @@ mark(
   cppally_no_copy_on_modify_reverse = cppally_reverse(x)
 )
 #> # A tibble: 3 × 13
-#>   expression     min  median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
-#>   <bch:expr> <bch:t> <bch:t>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 r_reverse  220.1µs 222.7µs     4291.     781KB     71.2  1387    23      323ms
-#> 2 cppally_c… 244.2µs 249.3µs     3870.     391KB     28.7  1750    13      452ms
-#> 3 cppally_n…  56.2µs  63.2µs    15573.     391KB    124.   4777    38      307ms
+#>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
+#>   <bch:expr>  <bch:t> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 r_reverse   170.5µs  196µs     4636.     781KB     76.1  1219    20      263ms
+#> 2 cppally_co… 213.6µs  272µs     3362.     391KB     25.4  1587    12      472ms
+#> 3 cppally_no…  44.1µs   47µs    13199.     391KB    101.   5493    42      416ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 ### Speeding up template-heavy compilation
@@ -401,8 +406,8 @@ mark(
 #> # A tibble: 2 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 unrestricted  8.38s  8.38s     0.119        NA        0     1     0      8.38s
-#> 2 restricted     5.1s   5.1s     0.196        NA        0     1     0       5.1s
+#> 1 unrestricted  6.85s  6.85s     0.146        NA        0     1     0      6.85s
+#> 2 restricted    4.35s  4.35s     0.230        NA        0     1     0      4.35s
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 sorted_unique(c(1, 1, 2, 2, 3, 3))
