@@ -26,10 +26,6 @@ struct r_raw {
       }
 };
 
-namespace internal {
-inline constexpr r_raw na_raw = r_raw::na();
-}
-
 }
 
 #endif

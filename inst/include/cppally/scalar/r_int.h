@@ -26,10 +26,6 @@ struct r_int {
     }
 };
 
-namespace internal {
-inline constexpr r_int na_int = r_int::na();
-}
-
 }
 
 #endif

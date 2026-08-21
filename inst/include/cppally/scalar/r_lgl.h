@@ -53,7 +53,6 @@ inline constexpr r_lgl r_false{0};
 inline constexpr r_lgl r_na = r_lgl::na();
 
 namespace internal {
-inline constexpr r_lgl na_lgl = r_lgl::na();
 
 // Internal fast r_lgl constructor for pre-normalised input
 inline constexpr r_lgl new_r_lgl(int x) noexcept {

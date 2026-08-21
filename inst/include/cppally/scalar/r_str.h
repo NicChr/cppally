@@ -177,8 +177,6 @@ inline r_str_view c_str_to_r_str_view(const char* x){
   return r_str_view(Rf_mkCharCE(x, CE_UTF8), internal::no_checks_tag{});
 }
 
-// NA
-inline const r_str na_str = r_str::na();
 }
 
 }

@@ -79,7 +79,7 @@ struct r_psxct {
     public: 
 
     r_str datetime_str() const {
-        if (is_na()) return internal::na_str;
+        if (is_na()) return r_str::na();
         auto ymd = chrono_ymd();
         auto hms = chrono_hms();
         char buf[34];
@@ -95,11 +95,6 @@ struct r_psxct {
         return r_str(static_cast<const char*>(buf));
     }
 };
-
-namespace internal {
-inline constexpr r_psxct na_psxct = r_psxct::na();
-}
-
 
 // template <typename T>
 // requires (any<T, r_int64, r_dbl>)

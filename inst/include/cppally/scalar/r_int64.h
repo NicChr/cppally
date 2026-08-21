@@ -26,11 +26,6 @@ struct r_int64 {
     }
 };
 
-namespace internal {
-inline constexpr r_int64 na_int64 = r_int64::na();
-
-}
-
 }
 
 #endif

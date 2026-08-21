@@ -74,10 +74,6 @@ struct r_dbl {
 
 };
 
-namespace internal {
-inline constexpr r_dbl na_real = r_dbl::na();
-}
-
 }
 
 #endif
