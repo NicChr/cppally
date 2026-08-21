@@ -21,6 +21,7 @@
 #include <cppally/scalar/coerce_scalars.h>
 #include <cppally/vector/r_vector.h>
 #include <cppally/functional/pmap.h>
+#include <cppally/functional/group_functionals.h>
 #include <cppally/factor/r_factors.h>
 #include <cppally/attributes/attributes.h>
 #include <cppally/r_sexp/visit.h>
@@ -50,7 +51,6 @@
 #include <cppally/vector/equality.h>
 #include <cppally/list/list_pmap.h>
 #include <cppally/group/groups.h>
-#include <cppally/group/functionals.h>
 #include <cppally/random/random_stream.h>
 
 #endif
