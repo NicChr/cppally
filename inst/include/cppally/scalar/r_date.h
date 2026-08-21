@@ -3,6 +3,7 @@
 
 #include <cppally/r_concepts.h>
 #include <cppally/r_sexp/protect.h>
+#include <cppally/scalar/r_int.h>
 #include <cppally/scalar/r_dbl.h>
 #include <cppally/scalar/r_int64.h>
 #include <cppally/scalar/r_str.h>
@@ -67,6 +68,41 @@ struct r_date {
         std::snprintf(buf, sizeof(buf), "%04d-%02u-%02u", static_cast<int32_t>(ymd.year()), static_cast<uint32_t>(ymd.month()), static_cast<uint32_t>(ymd.day()));
         return r_str(static_cast<const char*>(buf));
     }
+
+    constexpr r_date add_days(r_dbl n) const noexcept {
+        return is_na() || n.is_na() ? na() : r_date(unwrap(*this) + unwrap(n));
+    }
+
+    // Impossible dates are returned as NA
+    constexpr r_date add_months(r_int n) const noexcept {
+        
+        using namespace std::chrono;
+
+        if (is_na()){
+            return *this;
+        }
+
+        if (n.is_na()){
+            return na();
+        }
+    
+        int days_since_epoch = static_cast<int>(unwrap(*this));
+        int n_months = static_cast<int>(unwrap(n));
+    
+        year_month_day ymd = year_month_day(sys_days(days(days_since_epoch)));
+        ymd += months{n_months};
+
+        if (!ymd.ok()) {
+            return na();
+        }
+
+        return r_date(static_cast<double>(sys_days{ymd}.time_since_epoch().count()));
+    }
+
+    constexpr r_date add_months(int n) const noexcept {
+        return add_months(r_int(n));
+    }
+
 };
 
 // A more flexible templated version that allows for more integer storage
