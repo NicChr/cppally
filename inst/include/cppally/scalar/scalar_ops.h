@@ -355,7 +355,7 @@ inline constexpr auto operator%(T lhs, U rhs) noexcept {
     return common_t(internal::floor_mod(a, b));
   } else {
     if (unwrap(rhs) == 0){
-      return r_dbl(R_NaN);
+      return r_dbl::nan();
     } else if (internal::either_na(lhs, rhs)){
       return na<r_dbl>();
     }
