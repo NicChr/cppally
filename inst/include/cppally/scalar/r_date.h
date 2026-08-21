@@ -36,9 +36,14 @@ struct r_date {
     explicit constexpr r_date(double days_since_epoch) noexcept : value{days_since_epoch} {}
 
     // Construct r_date year/month/day
-    constexpr explicit r_date(int32_t year, uint32_t month, uint32_t day) noexcept {
+    constexpr explicit r_date(int32_t year, uint8_t month, uint8_t day) noexcept {
         
         namespace chrono = std::chrono;
+
+        if (month > 12 || day > 31) {
+            value = r_dbl::na();
+            return;
+        }
 
         auto ymd = chrono::year{year} / chrono::month{month} / chrono::day{day};
 
