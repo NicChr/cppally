@@ -11,18 +11,6 @@
 #include <chrono> // For r_date/r_psxt
 
 namespace cppally {
-    
-namespace internal {
-// Construct r_date from year/month/day
-inline r_int64 get_days_since_epoch(int32_t year, uint32_t month, uint32_t day) {
-    namespace chrono = std::chrono;
-    auto ymd = chrono::year{year} / chrono::month{month} / chrono::day{day};
-    if (!ymd.ok()) {
-        return r_int64::na();
-    }
-    return r_int64(static_cast<int64_t>(chrono::sys_days{ymd}.time_since_epoch().count()));
-}
-}
 
 // R date that captures the number of days since epoch (1st Jan 1970)
 struct r_date {
@@ -36,10 +24,10 @@ struct r_date {
     
     private: 
 
-    auto chrono_ymd() const {
-    return std::chrono::year_month_day{
-        std::chrono::sys_days{std::chrono::days{static_cast<int32_t>(value.value)}}
-    };
+    constexpr auto chrono_ymd() const noexcept {
+        return std::chrono::year_month_day{
+            std::chrono::sys_days{std::chrono::days{static_cast<int32_t>(value.value)}}
+        };
     }
 
     public:
@@ -47,9 +35,19 @@ struct r_date {
     explicit constexpr r_date(double days_since_epoch) noexcept : value{days_since_epoch} {}
 
     // Construct r_date year/month/day
-    explicit r_date(int32_t year, uint32_t month, uint32_t day) {
-        r_int64 res = internal::get_days_since_epoch(year, month, day);
-        r_dbl out = res.is_na() ? r_dbl::na() : r_dbl(static_cast<double>(res.value));
+    constexpr explicit r_date(int32_t year, uint32_t month, uint32_t day) noexcept {
+        
+        namespace chrono = std::chrono;
+        auto ymd = chrono::year{year} / chrono::month{month} / chrono::day{day};
+
+        r_dbl out;
+
+        if (!ymd.ok()) {
+            out = r_dbl::na();
+        } else {
+            out = r_dbl(static_cast<double>(chrono::sys_days{ymd}.time_since_epoch().count()));
+        }
+
         value = out;
     }
 
@@ -68,13 +66,13 @@ struct r_date {
         std::snprintf(buf, sizeof(buf), "%04d-%02u-%02u", static_cast<int32_t>(ymd.year()), static_cast<uint32_t>(ymd.month()), static_cast<uint32_t>(ymd.day()));
         return r_str(static_cast<const char*>(buf));
     }
-
-    constexpr r_date add_days(r_dbl n) const noexcept {
-        return is_na() || n.is_na() ? na() : r_date(unwrap(*this) + unwrap(n));
+    
+    constexpr r_date add_days(double n) const noexcept {
+        return is_na() || r_dbl(n).is_na() ? na() : r_date(unwrap(*this) + n);
     }
 
     // Impossible dates are returned as NA
-    constexpr r_date add_months(r_int n) const noexcept {
+    constexpr r_date add_months(int n) const noexcept {
         
         using namespace std::chrono;
 
@@ -82,25 +80,20 @@ struct r_date {
             return *this;
         }
 
-        if (n.is_na()){
+        if (r_int(n).is_na()){
             return na();
         }
     
         int days_since_epoch = static_cast<int>(unwrap(*this));
-        int n_months = static_cast<int>(unwrap(n));
     
         year_month_day ymd = year_month_day(sys_days(days(days_since_epoch)));
-        ymd += months{n_months};
+        ymd += months{n};
 
         if (!ymd.ok()) {
             return na();
         }
 
         return r_date(static_cast<double>(sys_days{ymd}.time_since_epoch().count()));
-    }
-
-    constexpr r_date add_months(int n) const noexcept {
-        return add_months(r_int(n));
     }
 
 };
