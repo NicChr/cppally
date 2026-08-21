@@ -372,7 +372,7 @@ inline constexpr T& operator+=(T& lhs, U rhs) noexcept {
     lhs = res;
   } else {
     using unwrapped_t = unwrap_t<T>;
-    lhs = is_na(res) || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
+    lhs = is_na(res) || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? na<T>() : T(static_cast<unwrapped_t>(unwrap(res)));
   }
   return lhs;
 }
@@ -384,7 +384,7 @@ inline constexpr T& operator-=(T& lhs, U rhs) noexcept {
     lhs = res;
   } else {
     using unwrapped_t = unwrap_t<T>;
-    lhs = is_na(res) || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
+    lhs = is_na(res) || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? na<T>() : T(static_cast<unwrapped_t>(unwrap(res)));
   }
   return lhs;
 }
@@ -396,7 +396,7 @@ inline constexpr T& operator*=(T& lhs, U rhs) noexcept {
     lhs = res;
   } else {
     using unwrapped_t = unwrap_t<T>;
-    lhs = is_na(res) || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
+    lhs = is_na(res) || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? na<T>() : T(static_cast<unwrapped_t>(unwrap(res)));
   }
   return lhs;
 }
@@ -408,7 +408,7 @@ inline constexpr T& operator%=(T& lhs, U rhs) noexcept {
     lhs = res;
   } else {
     using unwrapped_t = unwrap_t<T>;
-    lhs = is_na(res) || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? na<T>() : T(static_cast<unwrap_t<T>>(unwrap(res)));
+    lhs = is_na(res) || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? na<T>() : T(static_cast<unwrapped_t>(unwrap(res)));
   }
   return lhs;
 }
