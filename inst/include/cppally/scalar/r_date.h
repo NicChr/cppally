@@ -7,6 +7,7 @@
 #include <cppally/scalar/r_dbl.h>
 #include <cppally/scalar/r_int64.h>
 #include <cppally/scalar/r_str.h>
+#include <cmath>
 #include <cstdint>
 #include <chrono> // For r_date/r_psxt
 
@@ -24,9 +25,9 @@ struct r_date {
     
     private: 
 
-    constexpr auto chrono_ymd() const noexcept {
+    auto chrono_ymd() const noexcept {
         return std::chrono::year_month_day{
-            std::chrono::sys_days{std::chrono::days{static_cast<int32_t>(value.value)}}
+            std::chrono::sys_days{std::chrono::days{static_cast<int32_t>(std::floor(unwrap(value)))}}
         };
     }
 
@@ -38,6 +39,7 @@ struct r_date {
     constexpr explicit r_date(int32_t year, uint32_t month, uint32_t day) noexcept {
         
         namespace chrono = std::chrono;
+
         auto ymd = chrono::year{year} / chrono::month{month} / chrono::day{day};
 
         r_dbl out;
@@ -67,12 +69,12 @@ struct r_date {
         return r_str(static_cast<const char*>(buf));
     }
     
-    constexpr r_date add_days(double n) const noexcept {
+    r_date add_days(double n) const noexcept {
         return is_na() || r_dbl(n).is_na() ? na() : r_date(unwrap(*this) + n);
     }
 
     // Impossible dates are returned as NA
-    constexpr r_date add_months(int n) const noexcept {
+    r_date add_months(int n) const noexcept {
         
         using namespace std::chrono;
 
@@ -83,17 +85,17 @@ struct r_date {
         if (r_int(n).is_na()){
             return na();
         }
-    
-        int days_since_epoch = static_cast<int>(unwrap(*this));
-    
-        year_month_day ymd = year_month_day(sys_days(days(days_since_epoch)));
+        
+        year_month_day ymd = chrono_ymd();
         ymd += months{n};
-
+        
         if (!ymd.ok()) {
             return na();
         }
 
-        return r_date(static_cast<double>(sys_days{ymd}.time_since_epoch().count()));
+        double res = sys_days{ymd}.time_since_epoch().count();
+        double remainder = unwrap(*this) - std::floor(unwrap(*this));
+        return r_date(res + remainder);
     }
 
 };
