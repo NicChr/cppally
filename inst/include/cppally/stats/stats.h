@@ -231,9 +231,7 @@ r_dbl var(const r_vec<T>& x, bool na_rm = false){
         return na<r_dbl>();
     }
 
-    auto total = sum(x, na_rm);
-    r_dbl mu = total.is_na() ? na<r_dbl>() : r_dbl(static_cast<double>(unwrap(total)));
-    mu = mu / N;
+    r_dbl mu = sum(x, na_rm) / N;
 
     if (is_na(mu)){
         return mu;
