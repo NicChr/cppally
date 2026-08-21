@@ -4,6 +4,7 @@
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
 #include <cppally/r_sexp/protect.h>
+#include <cppally/scalar/r_lgl.h>
 
 namespace cppally {
 
@@ -104,6 +105,15 @@ struct r_sexp {
 
   r_str address() const;
 };
+
+
+inline r_lgl operator==(const r_sexp& lhs, const r_sexp& rhs) noexcept {
+  return r_lgl{lhs.value == rhs.value};
+}
+inline r_lgl operator!=(const r_sexp& lhs, const r_sexp& rhs) noexcept {
+  return r_lgl{lhs.value != rhs.value};
+}
+
 
 // R C NULL constant
 inline const r_sexp r_null = r_sexp();
