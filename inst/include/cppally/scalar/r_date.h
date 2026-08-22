@@ -5,7 +5,6 @@
 #include <cppally/r_sexp/protect.h>
 #include <cppally/scalar/r_int.h>
 #include <cppally/scalar/r_dbl.h>
-#include <cppally/scalar/r_int64.h>
 #include <cppally/scalar/r_str.h>
 #include <cstdint>
 #include <chrono> // For r_date/r_psxt
@@ -49,6 +48,11 @@ struct r_date {
         namespace chrono = std::chrono;
 
         if (r_int(year).is_na()){
+            value = r_dbl::na();
+            return;
+        }
+        
+        if (year < static_cast<int>(chrono::year::min()) || year > static_cast<int>(chrono::year::max())) {
             value = r_dbl::na();
             return;
         }

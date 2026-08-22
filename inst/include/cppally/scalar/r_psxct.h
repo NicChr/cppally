@@ -85,6 +85,11 @@ struct r_psxct {
             return;
         }
 
+        if (year < static_cast<int>(chrono::year::min()) || year > static_cast<int>(chrono::year::max())) {
+            value = r_dbl::na();
+            return;
+        }
+
         unsigned int mo = static_cast<unsigned int>(month);
         unsigned int d = static_cast<unsigned int>(day);
         unsigned int h = static_cast<unsigned int>(hour);
