@@ -15,7 +15,7 @@
 #include <cppally/scalar/r_psxct.h>
 
 // R-based C++ types that closely align with their R equivalents
-// Further methods (e.g. operators) are defined in scalar/scalar_ops.h
+// Further methods (e.g. operators) are defined in scalar/arithmetic_ops.h and scalar/relational_ops.h
 // constructing R types via e.g. r_dbl() r_int() does not account for NAs
 // For any and all `NA` safe conversions, use the `as<>` template defined in coerce.h
 // For example - to construct an `r_int` from an integer `x`, simply write `r_int(x)`. 

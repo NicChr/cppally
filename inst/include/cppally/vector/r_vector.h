@@ -5,7 +5,8 @@
 #include <cppally/r_concepts.h>
 #include <cppally/utils.h>
 #include <cppally/scalar/r_limits.h>
-#include <cppally/scalar/scalar_ops.h>
+#include <cppally/scalar/arithmetic_ops.h>
+#include <cppally/scalar/relational_ops.h>
 #include <cppally/na.h>
 #include <cppally/scalar/coerce_scalars.h>
 #include <cppally/vector/vector_utils.h>

@@ -63,6 +63,46 @@ inline constexpr r_lgl new_r_lgl(int x) noexcept {
 
 }
 
+// Logical operators
+
+inline constexpr r_lgl operator!(r_lgl x) noexcept {
+  return x.is_na() ? r_lgl::na() : r_lgl(x.value == 0);
+}
+
+// r_true = 1, r_false = 0, r_na = INT_MIN
+
+// ---------------------------------------------------------
+// OPTIMIZED OR (||) for r_lgl
+// If LSB is set (1), return 1
+// Otherwise return (a|b).
+// ---------------------------------------------------------
+inline constexpr r_lgl operator||(r_lgl lhs, r_lgl rhs) noexcept {
+    int val = lhs.value | rhs.value;
+    return (val & 1) ? r_true : internal::new_r_lgl(val);
+}
+
+// ---------------------------------------------------------
+// OPTIMIZED AND (&&) for r_lgl
+// If either is 0, return 0.
+// if either is NA (negative), return NA.
+// otherwise return 1.
+// ---------------------------------------------------------
+
+inline constexpr r_lgl operator&&(r_lgl lhs, r_lgl rhs) noexcept {
+  int a = lhs.value;
+  int b = rhs.value;
+  int o = a | b;
+  int res = (a & b) | ((o & r_na.value) & -(o & 1));
+  return internal::new_r_lgl(res);
+}
+
+inline constexpr r_lgl operator|(r_lgl lhs, r_lgl rhs) noexcept {
+  return lhs || rhs;
+}
+inline constexpr r_lgl operator&(r_lgl lhs, r_lgl rhs) noexcept {
+  return lhs && rhs;
+}
+
 }
 
 #endif
