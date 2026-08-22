@@ -7,7 +7,6 @@
 #include <cppally/scalar/r_dbl.h>
 #include <cppally/scalar/r_str.h>
 #include <cstdint>
-#include <string>
 #include <chrono> // For r_date/r_psxt
 
 namespace cppally {
@@ -52,12 +51,6 @@ struct r_psxct {
     // Sub-second fraction, always in [0, 1)
     constexpr double chrono_frac() const noexcept {
         return unwrap(value) - static_cast<double>(chrono_tp().time_since_epoch().count());
-    }
-
-    static std::string pad(int64_t x, std::size_t width) {
-        std::string s = std::to_string(x < 0 ? -x : x);
-        std::size_t str_size = s.size();
-        return (x < 0 ? "-" : "") + std::string(width - (width < str_size ? width : str_size), '0') + s;
     }
 
     public:
@@ -180,83 +173,32 @@ struct r_psxct {
         auto ymd = chrono_ymd();
         auto hms = chrono_hms();
 
-        std::string frac = std::to_string(chrono_frac()); // "X.Y00000"
-        frac.erase(frac.find_last_not_of('0') + 1);       // "X.Y"
-        frac.erase(frac.find_last_not_of('.') + 1);       // "X" when there is no fractional part
-        frac.erase(0, 1);                                 // ".Y", or ""
+        // "0.500000" -> "0.5" -> ".5", and "0.000000" -> "0" -> "" once the leading digit is skipped
+        char frac[10];
+        int n = std::snprintf(frac, sizeof(frac), "%.6f", chrono_frac());
+        while (frac[n - 1] == '0') {
+            --n;
+        }
+        if (frac[n - 1] == '.') {
+            --n;
+        }
+        frac[n] = '\0';
 
-        std::string out =
-            pad(static_cast<int>(ymd.year()), 4)
-            + "-" + pad(static_cast<unsigned int>(ymd.month()), 2)
-            + "-" + pad(static_cast<unsigned int>(ymd.day()), 2)
-            + " " + pad(hms.hours().count(), 2)
-            + ":" + pad(hms.minutes().count(), 2)
-            + ":" + pad(hms.seconds().count(), 2)
-            + frac + " UTC";
-
-        return r_str(out.c_str());
+        char buf[48];
+        std::snprintf(buf, sizeof(buf),
+            "%04d-%02u-%02u %02u:%02u:%02u%s UTC",
+            static_cast<int32_t>(ymd.year()),
+            static_cast<uint32_t>(ymd.month()),
+            static_cast<uint32_t>(ymd.day()),
+            static_cast<uint32_t>(hms.hours().count()),
+            static_cast<uint32_t>(hms.minutes().count()),
+            static_cast<uint32_t>(hms.seconds().count()),
+            frac + 1
+        );
+        return r_str(static_cast<const char*>(buf));
     }
 
 };
-
-// template <typename T>
-// requires (any<T, r_int64, r_dbl>)
-// struct r_psxct_t : T {
-
-//     using inherited_type = T;
-
-//     r_psxct_t() : T{0} {}
-//     template <CppMathType U>
-//     explicit constexpr r_psxct_t(U seconds_since_epoch) : T{seconds_since_epoch} {}
-//     explicit constexpr r_psxct_t(T seconds_since_epoch) : T{seconds_since_epoch} {}
-
-//     // Construct r_date year/month/day
-//     explicit r_psxct_t(
-//     int32_t year, uint32_t month, uint32_t day, 
-//     uint32_t hour, uint32_t minute, uint32_t second
-//     ) : T(internal::get_seconds_since_epoch(year, month, day, hour, minute, second)) {}
-
-//     private: 
-    
-//     auto chrono_tp() const {
-//     return std::chrono::time_point{
-//         std::chrono::sys_seconds{std::chrono::seconds{static_cast<int64_t>(T::value)}}
-//     };
-//     }
-
-//     // Decomposed date + time-of-day
-//     auto chrono_ymd() const {
-//     using namespace std::chrono;
-//     auto tp = chrono_tp();
-//     auto dp = floor<days>(tp);
-//     return year_month_day{dp};
-//     }
-
-//     auto chrono_hms() const {
-//     using namespace std::chrono;
-//     auto tp = chrono_tp();
-//     auto dp = floor<days>(tp);
-//     return hh_mm_ss{tp - dp};
-//     }
-
-//     public: 
-
-//     r_str datetime_str() const {
-//     auto ymd = chrono_ymd();
-//     auto hms = chrono_hms();
-//     char buf[30];
-//     std::snprintf(buf, sizeof(buf),
-//         "%04d-%02u-%02u %02u:%02u:%02u",
-//         static_cast<int32_t>(ymd.year()),
-//         static_cast<uint32_t>(ymd.month()),
-//         static_cast<uint32_t>(ymd.day()),
-//         static_cast<uint32_t>(hms.hours().count()),
-//         static_cast<uint32_t>(hms.minutes().count()),
-//         static_cast<uint32_t>(hms.seconds().count())
-//     );
-//     return r_str(static_cast<const char*>(buf));
-//     }
-// };
 
 }
 
