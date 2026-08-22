@@ -134,8 +134,8 @@ struct r_psxct {
     }
 
     // We can do an exact calculation using seconds because we're UTC and hence no DST
-    constexpr r_psxct add_days(double n) const noexcept {
-        return is_na() || r_dbl(n).is_na() ? na() : r_psxct(unwrap(*this) + (n * 86400.0));
+    constexpr r_psxct add_days(int n) const noexcept {
+        return is_na() || r_int(n).is_na() ? na() : r_psxct(unwrap(*this) + (86400.0 * n));
     }
 
     // Impossible date-times are returned as NA
