@@ -79,15 +79,15 @@ struct r_date {
     }
 
     constexpr r_int year() const noexcept {
-        return is_na() ? r_int::na() : r_int(static_cast<int>(chrono_ymd().year()));
+        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(chrono_ymd().year()));
     }
     
     constexpr r_int month() const noexcept {
-        return is_na() ? r_int::na() : r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().month())));
+        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().month())));
     }
     
     constexpr r_int day() const noexcept {
-        return is_na() ? r_int::na() : r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().day())));
+        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().day())));
     }
     
     constexpr r_date add_days(int n) const noexcept {
@@ -99,12 +99,12 @@ struct r_date {
         
         using namespace std::chrono;
 
-        if (is_na()){
-            return *this;
-        }
-
         if (r_int(n).is_na()){
             return na();
+        }
+
+        if (!value.is_finite()){
+            return *this;
         }
         
         year_month_day ymd = chrono_ymd();
@@ -118,7 +118,15 @@ struct r_date {
     }
 
     r_str date_str() const {
-        if (is_na()) return r_str::na();
+        
+        if (is_na()){
+            return r_str::na();
+        }
+
+        if (value.is_infinite()){
+            return r_str(unwrap(value) > 0 ? "Inf" : "-Inf");
+        }
+
         auto ymd = chrono_ymd();
         char buf[16];
         std::snprintf(buf, sizeof(buf), "%04d-%02u-%02u", static_cast<int32_t>(ymd.year()), static_cast<uint32_t>(ymd.month()), static_cast<uint32_t>(ymd.day()));

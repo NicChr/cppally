@@ -109,27 +109,27 @@ struct r_psxct {
     }
 
     constexpr r_int year() const noexcept {
-        return is_na() ? r_int::na() : r_int(static_cast<int>(chrono_ymd().year()));
+        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(chrono_ymd().year()));
     }
 
     constexpr r_int month() const noexcept {
-        return is_na() ? r_int::na() : r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().month())));
+        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().month())));
     }
 
     constexpr r_int day() const noexcept {
-        return is_na() ? r_int::na() : r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().day())));
+        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().day())));
     }
 
     constexpr r_int hour() const noexcept {
-        return is_na() ? r_int::na() : r_int(static_cast<int>(chrono_hms().hours().count()));
+        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(chrono_hms().hours().count()));
     }
 
     constexpr r_int minute() const noexcept {
-        return is_na() ? r_int::na() : r_int(static_cast<int>(chrono_hms().minutes().count()));
+        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(chrono_hms().minutes().count()));
     }
 
     constexpr r_dbl second() const noexcept {
-        return is_na() ? r_dbl::na() : r_dbl(static_cast<double>(chrono_hms().seconds().count()) + chrono_frac());
+        return !value.is_finite() ? r_dbl::na() : r_dbl(static_cast<double>(chrono_hms().seconds().count()) + chrono_frac());
     }
 
     constexpr r_psxct add_seconds(double n) const noexcept {
@@ -146,12 +146,12 @@ struct r_psxct {
 
         using namespace std::chrono;
 
-        if (is_na()){
-            return *this;
-        }
-
         if (r_int(n).is_na()){
             return na();
+        }
+
+        if (!value.is_finite()){
+            return *this;
         }
 
         sys_days dp = chrono_days();
@@ -169,7 +169,15 @@ struct r_psxct {
     }
 
     r_str datetime_str() const {
-        if (is_na()) return r_str::na();
+        
+        if (is_na()){
+            return r_str::na();
+        }
+
+        if (value.is_infinite()){
+            return r_str(unwrap(value) > 0 ? "Inf" : "-Inf");
+        }
+
         auto ymd = chrono_ymd();
         auto hms = chrono_hms();
 
