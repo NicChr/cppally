@@ -7,6 +7,7 @@
 #include <cppally/scalar/r_dbl.h>
 #include <cppally/scalar/r_str.h>
 #include <cstdint>
+#include <string>
 #include <chrono> // For r_date/r_psxt
 
 namespace cppally {
@@ -51,6 +52,12 @@ struct r_psxct {
     // Sub-second fraction, always in [0, 1)
     constexpr double chrono_frac() const noexcept {
         return unwrap(value) - static_cast<double>(chrono_tp().time_since_epoch().count());
+    }
+
+    static std::string pad(int64_t x, std::size_t width) {
+        std::string s = std::to_string(x < 0 ? -x : x);
+        std::size_t str_size = s.size();
+        return (x < 0 ? "-" : "") + std::string(width - (width < str_size ? width : str_size), '0') + s;
     }
 
     public:
@@ -162,17 +169,22 @@ struct r_psxct {
         if (is_na()) return r_str::na();
         auto ymd = chrono_ymd();
         auto hms = chrono_hms();
-        char buf[34];
-        std::snprintf(buf, sizeof(buf),
-            "%04d-%02u-%02u %02u:%02u:%02u UTC",
-            static_cast<int32_t>(ymd.year()),
-            static_cast<uint32_t>(ymd.month()),
-            static_cast<uint32_t>(ymd.day()),
-            static_cast<uint32_t>(hms.hours().count()),
-            static_cast<uint32_t>(hms.minutes().count()),
-            static_cast<uint32_t>(hms.seconds().count())
-        );
-        return r_str(static_cast<const char*>(buf));
+
+        std::string frac = std::to_string(chrono_frac()); // "X.Y00000"
+        frac.erase(frac.find_last_not_of('0') + 1);       // "X.Y"
+        frac.erase(frac.find_last_not_of('.') + 1);       // "X" when there is no fractional part
+        frac.erase(0, 1);                                 // ".Y", or ""
+
+        std::string out =
+            pad(static_cast<int>(ymd.year()), 4)
+            + "-" + pad(static_cast<unsigned int>(ymd.month()), 2)
+            + "-" + pad(static_cast<unsigned int>(ymd.day()), 2)
+            + " " + pad(hms.hours().count(), 2)
+            + ":" + pad(hms.minutes().count(), 2)
+            + ":" + pad(hms.seconds().count(), 2)
+            + frac + " UTC";
+
+        return r_str(out.c_str());
     }
 
 };
