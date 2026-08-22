@@ -80,6 +80,11 @@ struct r_psxct {
 
         namespace chrono = std::chrono;
 
+        if (r_int(year).is_na()){
+            value = r_dbl::na();
+            return;
+        }
+
         unsigned int mo = static_cast<unsigned int>(month);
         unsigned int d = static_cast<unsigned int>(day);
         unsigned int h = static_cast<unsigned int>(hour);
