@@ -3,6 +3,7 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/scalar/scalars.h>
+#include <cppally/scalar/arithmetic_ops.h> // for any_arithmetic_na
 #include <cppally/r_sym.h>
 #include <limits>
 #include <bit>
@@ -65,17 +66,14 @@ inline constexpr T coalesce(const T& x, const T& y) noexcept {
 }
 
 namespace internal {
+  
 template <typename T, typename U>
 constexpr bool either_na(const T& x, const U& y) noexcept {
-  return is_na(x) || is_na(y);
-}
-template <RIntegerType T>
-constexpr bool either_na(const T& x, const T& y) noexcept {
-  static_assert(std::numeric_limits<unwrap_t<T>>::min() == unwrap(na<T>()), "`std::numeric_limits<unwrap_t<T>>::min() == unwrap(na<T>())` must hold for all cppally integer types `T`");
-  return std::min(unwrap(x), unwrap(y)) == unwrap(na<T>());
-}
-inline constexpr bool either_na(r_dbl x, r_dbl y) noexcept {
-  return is_na(r_dbl(std::abs(unwrap(x)) + std::abs(unwrap(y))));
+  if constexpr (requires { any_arithmetic_na(x, y); }) {
+    return any_arithmetic_na(x, y);
+  } else {
+    return is_na(x) || is_na(y);
+  }
 }
 
 }
