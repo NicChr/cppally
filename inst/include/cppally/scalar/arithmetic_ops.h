@@ -16,7 +16,6 @@
 #include <cppally/scalar/r_int.h>
 #include <cppally/scalar/r_int64.h>
 #include <cppally/scalar/r_dbl.h>
-#include <cppally/na.h>
 
 namespace cppally {
 
@@ -58,6 +57,42 @@ inline constexpr bool mul_overflow(I a, I b, I& out) noexcept {
     return (out / b) != a;
     #endif
     }
+}
+
+// constexpr abs() since std::abs isn't constexpr until C++23
+// Only defined for arithmetic types.
+// This may retain -0.0 and negative-signed NaN but 
+// that's okay since we never want to distinguish those in outputs the user cares about. 
+// For more info: cppally has 2 NaN types, R's NA_REAL and all other NaN. 
+// Negative zeroes are explicitly converted into positive ones where it matters (e.g. hashing), and this function
+// has no effect on those anyway. 
+template <CppMathType T>
+constexpr T abs2(T x) noexcept {
+  return x < 0 ? -x : x;
+}
+
+template <RMathType T, RMathType U>
+constexpr bool any_na(const T& x, const U& y) noexcept {
+  return x.is_na() || y.is_na(); // This is mostly only reached for when !is<T, U>
+}
+template <RIntegerType T>
+constexpr bool any_na(const T& x, const T& y) noexcept {
+  using x_t = std::remove_cvref_t<T>;
+  static_assert(std::numeric_limits<unwrap_t<T>>::min() == unwrap(x_t::na()), "`std::numeric_limits<unwrap_t<T>>::min() == unwrap(na<T>())` must hold for all cppally integer types `T`");
+  return std::min(unwrap(x), unwrap(y)) == unwrap(x_t::na());
+}
+
+inline constexpr bool any_na(r_dbl x, r_dbl y) noexcept {
+  return r_dbl(abs2(unwrap(x)) + abs2(unwrap(y))).is_na();
+}
+
+template <RMathType T, CppMathType U>
+constexpr bool any_na(const T& x, const U& y) noexcept {
+  return any_na(x, as_r_scalar_t<U>(y));
+}
+template <CppMathType T, RMathType U>
+constexpr bool any_na(const T& x, const U& y) noexcept {
+  return any_na(as_r_scalar_t<T>(x), y);
 }
 
 // Floored quotient, matching R's %/%
@@ -113,12 +148,12 @@ inline constexpr auto operator+(T lhs, U rhs) noexcept {
     I s = static_cast<I>(static_cast<UI>(a) + static_cast<UI>(b));
 
     // Overflowed iff a and b share a sign that s does not
-    bool bad = (((a ^ s) & (b ^ s)) < 0) | internal::either_na(lhs, rhs);
+    bool bad = (((a ^ s) & (b ^ s)) < 0) | internal::any_na(lhs, rhs);
     return bad ? common_t::na() : common_t(s);
   } else if constexpr (is<T, r_dbl> && is<U, r_dbl>){
     return r_dbl(static_cast<double>(unwrap(lhs)) + static_cast<double>(unwrap(rhs)));
   } else {
-    return ( internal::either_na(lhs, rhs) ) ? 
+    return internal::any_na(lhs, rhs) ? 
     common_t::na() : 
     common_t(static_cast<unwrap_t<common_t>>(unwrap(lhs)) + static_cast<unwrap_t<common_t>>(unwrap(rhs)));
   }
@@ -141,12 +176,12 @@ inline constexpr auto operator-(T lhs, U rhs) noexcept {
     I s = static_cast<I>(static_cast<UI>(a) - static_cast<UI>(b));
 
     // Overflowed iff a and b differ in sign and s does not share a's sign
-    bool bad = (((a ^ b) & (a ^ s)) < 0) | internal::either_na(lhs, rhs);
+    bool bad = (((a ^ b) & (a ^ s)) < 0) | internal::any_na(lhs, rhs);
     return bad ? common_t::na() : common_t(s);
   } else if constexpr (is<T, r_dbl> && is<U, r_dbl>){
     return r_dbl(static_cast<double>(unwrap(lhs)) - static_cast<double>(unwrap(rhs)));
   } else {
-    return ( internal::either_na(lhs, rhs) ) ?
+    return internal::any_na(lhs, rhs) ?
     common_t::na() :
     common_t(static_cast<unwrap_t<common_t>>(unwrap(lhs)) - static_cast<unwrap_t<common_t>>(unwrap(rhs)));
   }
@@ -163,12 +198,12 @@ inline constexpr auto operator*(T lhs, U rhs) noexcept {
     I a = static_cast<I>(unwrap(lhs));
     I b = static_cast<I>(unwrap(rhs));
     I p;
-    bool bad = internal::either_na(lhs, rhs) || internal::mul_overflow(a, b, p);
+    bool bad = internal::any_na(lhs, rhs) || internal::mul_overflow(a, b, p);
     return bad ? common_t::na() : common_t(p);
   } else if constexpr (is<T, r_dbl> && is<U, r_dbl>){
     return r_dbl(static_cast<double>(unwrap(lhs)) * static_cast<double>(unwrap(rhs)));
   } else {
-    return ( internal::either_na(lhs, rhs) ) ?
+    return internal::any_na(lhs, rhs) ?
     common_t::na() :
     common_t(static_cast<unwrap_t<common_t>>(unwrap(lhs)) * static_cast<unwrap_t<common_t>>(unwrap(rhs)));
   }
@@ -177,7 +212,7 @@ inline constexpr auto operator*(T lhs, U rhs) noexcept {
 template <MathType T, MathType U>
   requires (RMathType<T> || RMathType<U>)
 inline constexpr r_dbl operator/(T lhs, U rhs) noexcept {
-  return ( internal::either_na(lhs, rhs) ) ? r_dbl::na() : r_dbl(static_cast<double>(unwrap(lhs)) / static_cast<double>(unwrap(rhs)));
+  return internal::any_na(lhs, rhs) ? r_dbl::na() : r_dbl(static_cast<double>(unwrap(lhs)) / static_cast<double>(unwrap(rhs)));
 }
 
 template <MathType T, MathType U>
@@ -186,10 +221,12 @@ inline constexpr auto operator%(T lhs, U rhs) noexcept {
 
   using common_t = common_math_t<T, U>;
 
+  const bool has_na = internal::any_na(lhs, rhs);
+
   if constexpr (RIntegerType<common_t>){
     using I = unwrap_t<common_t>;
 
-    if (internal::either_na(lhs, rhs) || unwrap(rhs) == 0){
+    if (has_na || unwrap(rhs) == 0){
       return common_t::na();
     }
     I a = static_cast<I>(unwrap(lhs));
@@ -198,7 +235,7 @@ inline constexpr auto operator%(T lhs, U rhs) noexcept {
   } else {
     if (unwrap(rhs) == 0){
       return r_dbl::nan();
-    } else if (internal::either_na(lhs, rhs)){
+    } else if (has_na){
       return r_dbl::na();
     }
     double a = static_cast<double>(unwrap(lhs));
@@ -262,7 +299,7 @@ inline constexpr T& operator/=(T& lhs, U rhs) noexcept {
   using unwrapped_common_t = unwrap_t<common_t>;
   using unwrapped_t = unwrap_t<T>;
 
-  if (internal::either_na(lhs, rhs)){
+  if (internal::any_na(lhs, rhs)){
     lhs = std::remove_cvref_t<T>::na();
     return lhs;
   }
