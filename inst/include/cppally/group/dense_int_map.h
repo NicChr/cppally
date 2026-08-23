@@ -152,7 +152,7 @@ bool try_dense_int_map(const r_vec<key_t>& keys, Val empty_value, F&& body) {
         double key = static_cast<double>(keys.get(i));
 
         // This will return false for NA, fractional numbers and Inf/-Inf
-        if (!double_is_int_like(key)){
+        if (!numeric_cast_is_lossless<int>(key)){
             return false;
         }
 
@@ -180,7 +180,7 @@ bool try_dense_int_map(const r_vec<key_t>& keys, Val empty_value, F&& body) {
                     return try_emplace(static_cast<int>(key), v);
                 },
                 [&find_or](double key, Val not_found) {
-                    return double_is_int_like(key) ? find_or(static_cast<int>(key), not_found) : not_found;
+                    return numeric_cast_is_lossless<int>(key) ? find_or(static_cast<int>(key), not_found) : not_found;
                 }
             );
         });

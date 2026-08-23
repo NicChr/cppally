@@ -77,8 +77,11 @@ constexpr bool numeric_can_be_cast_without_complete_loss(From x) noexcept {
 // inline bool is_exact_whole(double x) noexcept {
 //     return (std::trunc(x) == x) && !std::isinf(x);
 // }
-inline bool double_is_int_like(double x) noexcept {
-    return numeric_can_be_cast_without_complete_loss<int>(x) && static_cast<double>(static_cast<int>(x)) == x;
+
+// Safely check at runtime that numeric cast is lossless
+template <CppMathType To, CppMathType From>
+inline bool numeric_cast_is_lossless(From x) noexcept {
+    return numeric_can_be_cast_without_complete_loss<To>(x) && numeric_can_be_cast_without_complete_loss<From>(static_cast<To>(x)) && static_cast<From>(static_cast<To>(x)) == x;
 }
 
 inline int calc_threads(r_size_t data_size){

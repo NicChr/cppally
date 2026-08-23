@@ -189,7 +189,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
             } else {
                 for (uint32_t i = 0; i < n; ++i) {
                     base_t v = p_x[i];
-                    if (!is_na(v) && !internal::double_is_int_like(v - lo)) {
+                    if (!is_na(v) && !internal::numeric_cast_is_lossless<int>(v - lo)) {
                         whole = false;
                         break;
                     }
