@@ -22,7 +22,7 @@ namespace cppally {
 // Operators for r_str_view
 
 inline r_lgl operator<(r_str_view lhs, r_str_view rhs) noexcept {
-  if (internal::either_na(lhs, rhs)){
+  if (lhs.is_na() || rhs.is_na()){
     return r_na;
   } else if (unwrap(lhs) == unwrap(rhs)){
     return r_false;
@@ -31,7 +31,7 @@ inline r_lgl operator<(r_str_view lhs, r_str_view rhs) noexcept {
   }
 }
 inline r_lgl operator<=(r_str_view lhs, r_str_view rhs) noexcept {
-  if (internal::either_na(lhs, rhs)){
+  if (lhs.is_na() || rhs.is_na()){
     return r_na;
   } else if (unwrap(lhs) == unwrap(rhs)){
     return r_true;
@@ -40,7 +40,7 @@ inline r_lgl operator<=(r_str_view lhs, r_str_view rhs) noexcept {
   }
 }
 inline r_lgl operator>(r_str_view lhs, r_str_view rhs) noexcept {
-  if (internal::either_na(lhs, rhs)){
+  if (lhs.is_na() || rhs.is_na()){
     return r_na;
   } else if (unwrap(lhs) == unwrap(rhs)){
     return r_false;
@@ -49,7 +49,7 @@ inline r_lgl operator>(r_str_view lhs, r_str_view rhs) noexcept {
   }
 }
 inline r_lgl operator>=(r_str_view lhs, r_str_view rhs) noexcept {
-  if (internal::either_na(lhs, rhs)){
+  if (lhs.is_na() || rhs.is_na()){
     return r_na;
   } else if (unwrap(lhs) == unwrap(rhs)){
     return r_true;
