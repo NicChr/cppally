@@ -11,6 +11,16 @@
 
 namespace cppally {
 
+// Rollover policy for month arithmetic that lands on a day that doesn't exist
+// (e.g. Jan 31 + 1 month)
+enum roll : uint8_t {
+    none = 0,       // does not roll and impossible dates are returned as NA
+    backward = 1,   // rolls backwards until the last day of the current month is reached
+    forward = 2,    // rolls to first day of next month
+    away = 3,       // rolls forward when adding and backward when subtracting (my favourite)
+    nearest = 4     // rolls backward when adding and forward when subtracting
+};
+
 // R date that captures the number of days since epoch (1st Jan 1970)
 // While r_date is stored as a double to match R storage, fractional dates are NOT supported and are discouraged - use `r_psxct` instead for date-times.
 struct r_date {
@@ -94,8 +104,10 @@ struct r_date {
         return is_na() || r_int(n).is_na() ? na() : r_date(unwrap(*this) + n);
     }
 
-    // Impossible dates are returned as NA
-    constexpr r_date add_months(int n) const noexcept {
+    // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls 
+    // to the start of the next month when `n >= 0` and to the last day of the current month when 
+    // `n < 0`
+    constexpr r_date add_months(int n, roll on_impossible_date = roll::none) const noexcept {
         
         using namespace std::chrono;
 
@@ -111,9 +123,20 @@ struct r_date {
         ymd += months{n};
         
         if (!ymd.ok()) {
-            return na();
+            bool forward = false;
+            switch (on_impossible_date) {
+                case roll::forward:  { forward = true;      break; }
+                case roll::backward: { forward = false;     break; }
+                case roll::away:     { forward = (n >= 0);  break; }
+                case roll::nearest:  { forward = (n < 0);   break; }
+                default:             { return na(); }
+            }
+            if (forward) {
+                ymd = (year_month{ymd.year(), ymd.month()} + months{1}) / std::chrono::day{1};
+            } else {
+                ymd = ymd.year() / ymd.month() / last;
+            }
         }
-
         return r_date(static_cast<double>(sys_days{ymd}.time_since_epoch().count()));
     }
 
