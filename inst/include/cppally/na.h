@@ -4,9 +4,6 @@
 #include <cppally/r_setup.h>
 #include <cppally/scalar/scalars.h>
 #include <cppally/scalar/arithmetic_ops.h> // for any_arithmetic_na
-#include <cppally/r_sym.h>
-#include <limits>
-#include <bit>
 
 namespace cppally {
 

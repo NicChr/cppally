@@ -2,6 +2,7 @@
 #define CPPALLY_VECTOR_UTILS_H
 
 #include <cppally/scalar/scalars.h>
+#include <cppally/r_sym.h>
 #include <cstring>
 
 namespace cppally {
