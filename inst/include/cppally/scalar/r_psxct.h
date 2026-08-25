@@ -6,6 +6,7 @@
 #include <cppally/scalar/r_int.h>
 #include <cppally/scalar/r_dbl.h>
 #include <cppally/scalar/r_str.h>
+#include <cppally/scalar/r_date.h> // For rolling impossible dates
 #include <cstdint>
 #include <chrono> // For r_date/r_psxt
 
@@ -141,8 +142,10 @@ struct r_psxct {
         return is_na() || r_int(n).is_na() ? na() : r_psxct(unwrap(*this) + (86400.0 * n));
     }
 
-    // Impossible date-times are returned as NA
-    constexpr r_psxct add_months(int n) const noexcept {
+    // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls 
+    // to the start of the next month when `n >= 0` and to the last day of the current month when 
+    // `n < 0`
+    constexpr r_psxct add_months(int n, roll on_impossible_date = roll::none) const noexcept {
 
         using namespace std::chrono;
 
@@ -160,7 +163,19 @@ struct r_psxct {
         ymd += months{n};
 
         if (!ymd.ok()) {
-            return na();
+            bool forward = false;
+            switch (on_impossible_date) {
+                case roll::forward:  { forward = true;      break; }
+                case roll::backward: { forward = false;     break; }
+                case roll::away:     { forward = (n >= 0);  break; }
+                case roll::nearest:  { forward = (n < 0);   break; }
+                default:             { return na(); }
+            }
+            if (forward) {
+                ymd = (year_month{ymd.year(), ymd.month()} + months{1}) / std::chrono::day{1};
+            } else {
+                ymd = ymd.year() / ymd.month() / last;
+            }
         }
 
         double rem = unwrap(*this) - static_cast<double>(dp.time_since_epoch().count()) * 86400.0;
