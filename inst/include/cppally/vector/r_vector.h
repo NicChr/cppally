@@ -993,10 +993,10 @@ struct r_vec {
     r_vec<r_str_view> tz(Rf_getAttrib(value, cached_sym<"tzone">()));
     
     if (tz.length() == 0){
-      abort("`r_vec<r_psxct_t>` vector must have a valid tzone attribute");
+      return cached_str<"">();
     } else {
       r_str_view tz_str = tz.view(0);
-      if (is_na(tz_str)){
+      if (is_na(tz_str)) [[unlikely]] {
         abort("tzone cannot be NA");
       }
       return r_str(tz_str);
