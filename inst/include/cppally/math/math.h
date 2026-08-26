@@ -82,11 +82,11 @@ inline r_str max(const r_str& x, const r_str& y){
 
 template <RNumber T>
 constexpr T abs(T x) noexcept {
-  return is_na(x) ? x : T{std::abs(unwrap(x))};
+  return is_na(x) ? x : T{internal::abs2(unwrap(x))};
 }
 template <>
 inline constexpr r_dbl abs(r_dbl x) noexcept {
-  return r_dbl(std::abs(unwrap(x)));
+  return r_dbl(internal::abs2(unwrap(x)));
 }
 inline constexpr r_int abs(r_lgl x) noexcept {
   return abs(r_int(unwrap(x)));
@@ -97,7 +97,7 @@ constexpr T floor(T x) noexcept {
   if constexpr (RIntegerNumber<T>){
     return x;
   } else {
-    return is_na(x) ? x : T{std::floor(unwrap(x))};
+    return is_na(x) ? x : T{internal::floor2(unwrap(x))};
   }
 }
 inline constexpr r_int floor(r_lgl x) noexcept {
@@ -109,7 +109,7 @@ constexpr T ceiling(T x) noexcept {
   if constexpr (RIntegerNumber<T>){
     return x;
   } else {
-    return is_na(x) ? x : T{std::ceil(unwrap(x))};
+    return is_na(x) ? x : T{internal::ceiling2(unwrap(x))};
   }
 }
 inline constexpr r_int ceiling(r_lgl x) noexcept {

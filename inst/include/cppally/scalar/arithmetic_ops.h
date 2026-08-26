@@ -62,35 +62,6 @@ inline constexpr bool mul_overflow(I a, I b, I& out) noexcept {
     }
 }
 
-// constexpr abs() since std::abs isn't constexpr until C++23
-// Only defined for arithmetic types.
-// This may retain -0.0 and negative-signed NaN but 
-// that's okay since we never want to distinguish those in outputs the user cares about. 
-// For more info: cppally has 2 NaN types, R's NA_REAL and all other NaN. 
-// Negative zeroes are explicitly converted into positive ones where it matters (e.g. hashing), and this function
-// has no effect on those anyway. 
-template <CppNumber T>
-constexpr T abs2(T x) noexcept {
-  return x < 0 ? -x : x;
-}
-
-// constexpr floor
-template <CppFloatType T>
-constexpr T floor2(T x) noexcept {
-
-  // If x is very large then it won't have a fractional part anyway
-  if (!numeric_can_be_cast_without_complete_loss<int64_t>(x)){
-    return x;
-  }
-
-  // If the round-trip from double -> int64_t -> double is lossless (i.e identity preserving), then it needs no flooring since it's a whole number
-  if (numeric_cast_is_lossless<int64_t>(x)){
-    return x;
-  }
-  int64_t int_res = x < 0 ? static_cast<int64_t>(x) - 1 : static_cast<int64_t>(x);
-  return static_cast<T>(int_res);
-}
-
 // Floored quotient, matching R's %/%
 template <CppIntegerType I>
 inline constexpr I floor_div(I a, I b) noexcept {
@@ -336,7 +307,7 @@ inline constexpr T& operator/=(T& lhs, U rhs) noexcept {
   } else {
     double res = unwrap(lhs / rhs);
     if constexpr (RIntegerType<T>){
-      res = std::floor(res); // integer target matches R's %/%
+      res = internal::floor2(res); // integer target matches R's %/%
     }
     lhs.value = !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(res) ? unwrap(std::remove_cvref_t<T>::na()) : static_cast<unwrapped_t>(res);
   }

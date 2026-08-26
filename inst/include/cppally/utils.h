@@ -5,6 +5,8 @@
 #include <cppally/r_concepts.h>
 #include <utility>
 #include <limits>
+#include <cmath>
+#include <version>
 
 namespace cppally {
 
@@ -82,6 +84,61 @@ constexpr bool numeric_can_be_cast_without_complete_loss(From x) noexcept {
 template <CppMathType To, CppMathType From>
 constexpr bool numeric_cast_is_lossless(From x) noexcept {
     return numeric_can_be_cast_without_complete_loss<To>(x) && numeric_can_be_cast_without_complete_loss<From>(static_cast<To>(x)) && static_cast<From>(static_cast<To>(x)) == x;
+}
+
+// constexpr abs() since std::abs isn't constexpr until C++23
+// Only defined for arithmetic types.
+// This may retain negative-signed NaN but 
+// that's okay since we never want to distinguish those in outputs the user cares about because cppally has 2 NaN types, R's NA_REAL and all other NaN. 
+template <CppIntegerNumber T>
+constexpr T abs2(T x) noexcept {
+    return x < 0 ? -x : x;
+}
+
+template <CppFloatType T>
+constexpr T abs2(T x) noexcept {
+    return (x < 0 ? -x : x) + T(0.0);
+}
+
+// constexpr floor
+template <CppFloatType T>
+constexpr T floor2(T x) noexcept {
+
+  #if defined(__cpp_lib_constexpr_cmath) && __cpp_lib_constexpr_cmath >= 202202L
+    return std::floor(x);
+  #else
+    // If x is very large then it won't have a fractional part anyway
+    if (!numeric_can_be_cast_without_complete_loss<int64_t>(x)){
+      return x;
+    }
+
+    // If the round-trip from double -> int64_t -> double is lossless (i.e identity preserving), then it needs no flooring since it's a whole number
+    if (numeric_cast_is_lossless<int64_t>(x)){
+      return x;
+    }
+    int64_t int_res = x < 0 ? static_cast<int64_t>(x) - 1 : static_cast<int64_t>(x);
+    return static_cast<T>(int_res);
+  #endif
+}
+
+template <CppFloatType T>
+constexpr T ceiling2(T x) noexcept {
+
+  #if defined(__cpp_lib_constexpr_cmath) && __cpp_lib_constexpr_cmath >= 202202L
+    return std::ceil(x);
+  #else
+    // If x is very large then it won't have a fractional part anyway
+    if (!numeric_can_be_cast_without_complete_loss<int64_t>(x)){
+      return x;
+    }
+
+    // If the round-trip from double -> int64_t -> double is lossless (i.e identity preserving), then it needs no flooring since it's a whole number
+    if (numeric_cast_is_lossless<int64_t>(x)){
+      return x;
+    }
+    int64_t int_res = x > 0 ? static_cast<int64_t>(x) + 1 : static_cast<int64_t>(x);
+    return static_cast<T>(int_res);
+  #endif
 }
 
 inline int calc_threads(r_size_t data_size){
