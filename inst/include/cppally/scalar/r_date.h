@@ -120,10 +120,7 @@ struct r_date {
         return r_date(static_cast<r_dbl>(*this) + r_int(n));
     }
 
-    // Defined in r_psxct.h, where r_psxct is complete
-    constexpr r_psxct as_datetime() const noexcept;
-
-    // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls 
+    // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls
     // to the start of the next month when `n >= 0` and to the last day of the current month when 
     // `n < 0`
     constexpr r_date add_months(int n, roll on_impossible_date = roll::none) const noexcept {

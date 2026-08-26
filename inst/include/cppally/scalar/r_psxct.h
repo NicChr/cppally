@@ -111,15 +111,15 @@ struct r_psxct {
     }
 
     constexpr r_int year() const noexcept {
-        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(chrono_ymd().year()));
+        return as_date().year();
     }
 
     constexpr r_int month() const noexcept {
-        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().month())));
+        return as_date().month();
     }
 
     constexpr r_int day() const noexcept {
-        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().day())));
+        return as_date().day();
     }
 
     constexpr r_int hour() const noexcept {
@@ -135,12 +135,12 @@ struct r_psxct {
     }
 
     constexpr r_psxct add_seconds(double n) const noexcept {
-        return is_na() || r_dbl(n).is_na() ? na() : r_psxct(unwrap(*this) + n);
+        return r_psxct(static_cast<r_dbl>(*this) + r_dbl(n));
     }
 
     // We can do an exact calculation using seconds because we're UTC and hence no DST
     constexpr r_psxct add_days(int n) const noexcept {
-        return is_na() || r_int(n).is_na() ? na() : r_psxct(unwrap(*this) + (86400.0 * n));
+        return r_psxct(static_cast<r_dbl>(*this) + r_dbl(86400.0) * r_int(n));
     }
 
     // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls 
@@ -223,7 +223,7 @@ struct r_psxct {
     }
 
     constexpr r_date as_date() const noexcept {
-        return r_date(static_cast<r_dbl>(*this) / r_dbl(86400.0));
+        return is_na() ? r_date::na() : r_date(internal::floor2(unwrap(*this) / 86400.0));
     }
 
 };
