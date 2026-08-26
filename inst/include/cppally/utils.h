@@ -80,7 +80,7 @@ constexpr bool numeric_can_be_cast_without_complete_loss(From x) noexcept {
 
 // Safely check at runtime that numeric cast is lossless
 template <CppMathType To, CppMathType From>
-inline bool numeric_cast_is_lossless(From x) noexcept {
+constexpr bool numeric_cast_is_lossless(From x) noexcept {
     return numeric_can_be_cast_without_complete_loss<To>(x) && numeric_can_be_cast_without_complete_loss<From>(static_cast<To>(x)) && static_cast<From>(static_cast<To>(x)) == x;
 }
 

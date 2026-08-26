@@ -110,7 +110,18 @@ inline constexpr I floor_div(I a, I b) noexcept {
 
 template <CppFloatType F>
 inline constexpr F floor_div(F a, F b) noexcept {
-    return std::floor(a / b);
+  F c = a / b;
+
+  // If c is very large then it won't have a fractional part anyway
+  if (!numeric_can_be_cast_without_complete_loss<int64_t>(c)){
+    return c;
+  }
+  // If the round-trip from double -> int64_t -> double is lossless (i.e identity preserving), then it needs no flooring since it's a whole number
+  if (numeric_cast_is_lossless<int64_t>(c)){
+    return c;
+  }
+  int64_t int_res = c < 0 ? static_cast<int64_t>(c) - 1 : static_cast<int64_t>(c);
+  return static_cast<F>(int_res);
 }
 
 // Floored remainder, matching R's %%
