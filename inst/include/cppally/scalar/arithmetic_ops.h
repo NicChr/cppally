@@ -74,6 +74,53 @@ constexpr T abs2(T x) noexcept {
   return x < 0 ? -x : x;
 }
 
+// constexpr floor
+template <CppFloatType T>
+constexpr T floor2(T x) noexcept {
+
+  // If x is very large then it won't have a fractional part anyway
+  if (!numeric_can_be_cast_without_complete_loss<int64_t>(x)){
+    return x;
+  }
+
+  // If the round-trip from double -> int64_t -> double is lossless (i.e identity preserving), then it needs no flooring since it's a whole number
+  if (numeric_cast_is_lossless<int64_t>(x)){
+    return x;
+  }
+  int64_t int_res = x < 0 ? static_cast<int64_t>(x) - 1 : static_cast<int64_t>(x);
+  return static_cast<T>(int_res);
+}
+
+// Floored quotient, matching R's %/%
+template <CppIntegerType I>
+inline constexpr I floor_div(I a, I b) noexcept {
+    I q = a / b;
+    if ((a % b) != 0 && ((a > 0) != (b > 0))){
+    --q;
+    }
+    return q;
+}
+
+template <CppFloatType F>
+inline constexpr F floor_div(F a, F b) noexcept {
+  return floor2(a / b);
+}
+
+// Floored remainder, matching R's %%
+template <CppIntegerType I>
+inline constexpr I floor_mod(I a, I b) noexcept {
+    I r = a % b;
+    if (r != 0 && ((a > 0) != (b > 0))){
+    r += b;
+    }
+    return r;
+}
+
+template <CppFloatType F>
+inline constexpr F floor_mod(F a, F b) noexcept {
+    return a - (b * floor_div(a, b));
+}
+
 template <RMathType T, RMathType U>
 constexpr bool any_arithmetic_na(T x, U y) noexcept {
   return x.is_na() || y.is_na(); // This is mostly only reached for when !is<T, U>
@@ -96,47 +143,6 @@ constexpr bool any_arithmetic_na(T x, U y) noexcept {
 template <CppMathType T, RMathType U>
 constexpr bool any_arithmetic_na(T x, U y) noexcept {
   return any_arithmetic_na(as_r_scalar_t<T>(x), y);
-}
-
-// Floored quotient, matching R's %/%
-template <CppIntegerType I>
-inline constexpr I floor_div(I a, I b) noexcept {
-    I q = a / b;
-    if ((a % b) != 0 && ((a > 0) != (b > 0))){
-    --q;
-    }
-    return q;
-}
-
-template <CppFloatType F>
-inline constexpr F floor_div(F a, F b) noexcept {
-  F c = a / b;
-
-  // If c is very large then it won't have a fractional part anyway
-  if (!numeric_can_be_cast_without_complete_loss<int64_t>(c)){
-    return c;
-  }
-  // If the round-trip from double -> int64_t -> double is lossless (i.e identity preserving), then it needs no flooring since it's a whole number
-  if (numeric_cast_is_lossless<int64_t>(c)){
-    return c;
-  }
-  int64_t int_res = c < 0 ? static_cast<int64_t>(c) - 1 : static_cast<int64_t>(c);
-  return static_cast<F>(int_res);
-}
-
-// Floored remainder, matching R's %%
-template <CppIntegerType I>
-inline constexpr I floor_mod(I a, I b) noexcept {
-    I r = a % b;
-    if (r != 0 && ((a > 0) != (b > 0))){
-    r += b;
-    }
-    return r;
-}
-
-template <CppFloatType F>
-inline constexpr F floor_mod(F a, F b) noexcept {
-    return a - (b * floor_div(a, b));
 }
 
 #undef CPPALLY_HAS_BUILTIN_MUL_OVERFLOW
