@@ -6,6 +6,7 @@
 #include <cppally/scalar/r_int.h>
 #include <cppally/scalar/r_dbl.h>
 #include <cppally/scalar/r_str.h>
+#include <cppally/scalar/arithmetic_ops.h>
 #include <cstdint>
 #include <chrono> // For r_date/r_psxt
 
@@ -88,20 +89,35 @@ struct r_date {
         value = out;
     }
 
+    // Year number
     constexpr r_int year() const noexcept {
         return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(chrono_ymd().year()));
     }
     
+    // Month of the year
     constexpr r_int month() const noexcept {
         return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().month())));
     }
     
+    // Week of the year
+    constexpr r_int week() const noexcept {
+        r_int res = yday() - r_int(1);
+        res /= r_int(7); // Floor integer division
+        return res + r_int(1);
+    }
+    
+    // Day of the month
     constexpr r_int day() const noexcept {
         return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().day())));
     }
-    
+
+    // Day of the year
+    constexpr r_int yday() const noexcept {
+        return value.is_finite() ? r_int(static_cast<int>(unwrap(static_cast<r_dbl>(*this) - static_cast<r_dbl>(r_date(unwrap(year()), 1, 1)) + 1.0))) : r_int::na();
+    }
+
     constexpr r_date add_days(int n) const noexcept {
-        return is_na() || r_int(n).is_na() ? na() : r_date(unwrap(*this) + n);
+        return r_date(static_cast<r_dbl>(*this) + r_int(n));
     }
 
     // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls 
