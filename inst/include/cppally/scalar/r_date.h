@@ -120,6 +120,9 @@ struct r_date {
         return r_date(static_cast<r_dbl>(*this) + r_int(n));
     }
 
+    // Defined in r_psxct.h, where r_psxct is complete
+    constexpr r_psxct as_datetime() const noexcept;
+
     // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls 
     // to the start of the next month when `n >= 0` and to the last day of the current month when 
     // `n < 0`
@@ -171,6 +174,8 @@ struct r_date {
         std::snprintf(buf, sizeof(buf), "%04d-%02u-%02u", static_cast<int32_t>(ymd.year()), static_cast<uint32_t>(ymd.month()), static_cast<uint32_t>(ymd.day()));
         return r_str(static_cast<const char*>(buf));
     }
+
+    constexpr r_psxct as_datetime() const noexcept;
 
 };
 

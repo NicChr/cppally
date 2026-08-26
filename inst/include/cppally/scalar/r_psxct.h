@@ -6,6 +6,7 @@
 #include <cppally/scalar/r_int.h>
 #include <cppally/scalar/r_dbl.h>
 #include <cppally/scalar/r_str.h>
+#include <cppally/scalar/arithmetic_ops.h>
 #include <cppally/scalar/r_date.h> // For rolling impossible dates
 #include <cstdint>
 #include <chrono> // For r_date/r_psxt
@@ -221,7 +222,15 @@ struct r_psxct {
         return r_str(static_cast<const char*>(buf));
     }
 
+    constexpr r_date as_date() const noexcept {
+        return r_date(static_cast<r_dbl>(*this) / r_dbl(86400.0));
+    }
+
 };
+
+inline constexpr r_psxct r_date::as_datetime() const noexcept {
+    return r_psxct(static_cast<r_dbl>(*this) * r_dbl(86400.0));
+}
 
 }
 
