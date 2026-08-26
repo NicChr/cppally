@@ -69,7 +69,7 @@ inline constexpr bool mul_overflow(I a, I b, I& out) noexcept {
 // For more info: cppally has 2 NaN types, R's NA_REAL and all other NaN. 
 // Negative zeroes are explicitly converted into positive ones where it matters (e.g. hashing), and this function
 // has no effect on those anyway. 
-template <CppMathType T>
+template <CppNumber T>
 constexpr T abs2(T x) noexcept {
   return x < 0 ? -x : x;
 }
