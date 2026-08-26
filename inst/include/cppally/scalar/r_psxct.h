@@ -118,8 +118,16 @@ struct r_psxct {
         return as_date().month();
     }
 
+    constexpr r_int week() const noexcept {
+        return as_date().week();
+    }
+
     constexpr r_int day() const noexcept {
         return as_date().day();
+    }
+
+    constexpr r_int yday() const noexcept {
+        return as_date().yday();
     }
 
     constexpr r_int hour() const noexcept {
