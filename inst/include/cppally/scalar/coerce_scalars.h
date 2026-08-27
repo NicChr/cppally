@@ -229,10 +229,10 @@ inline T scalar_coerce_impl(const U& x) {
   } else if constexpr (RTimeType<T>){
     using value_t = typename T::value_type;
     if constexpr (RDateType<T> && RPsxctType<U>){
-      double days = std::floor(static_cast<double>(unwrap(x)) / 86400.0);
+      double days = unwrap(x.as_date());
       return T(scalar_coerce_impl<value_t, r_dbl>(r_dbl(days)));
     } else if constexpr (RPsxctType<T> && RDateType<U>){
-      auto seconds = unwrap(x) * 86400;
+      auto seconds = unwrap(x.as_datetime());
       using scalar_t = as_r_scalar_t<decltype(seconds)>;
       return T(scalar_coerce_impl<value_t, scalar_t>(scalar_t(seconds)));
     } else if constexpr (RTimeType<U>){
