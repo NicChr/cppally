@@ -122,6 +122,12 @@ struct r_psxct {
         return as_date().week();
     }
 
+    // ISO-8601 weeks.
+    // A year has either 52 or 53 full ISO weeks, which has the advantage that all ISO weeks have 7 days.
+    constexpr r_int iso_week() const noexcept {
+        return as_date().iso_week();
+    }
+
     constexpr r_int day() const noexcept {
         return as_date().day();
     }
