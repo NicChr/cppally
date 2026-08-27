@@ -130,6 +130,12 @@ struct r_psxct {
         return as_date().yday();
     }
 
+    // Day of the week (1-based)
+    // week_start = [1 = Monday, 7 = Sunday]
+    constexpr r_int wday(int week_start = 7) const noexcept {
+        return as_date().wday();
+    }
+
     constexpr r_int hour() const noexcept {
         return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(chrono_hms().hours().count()));
     }

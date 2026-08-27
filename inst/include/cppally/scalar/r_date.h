@@ -116,6 +116,12 @@ struct r_date {
         return value.is_finite() ? r_int(static_cast<int>(unwrap(static_cast<r_dbl>(*this) - static_cast<r_dbl>(r_date(unwrap(year()), 1, 1)) + 1.0))) : r_int::na();
     }
 
+    // Day of the week (1-based)
+    // week_start = [1 = Monday, 7 = Sunday]
+    constexpr r_int wday(int week_start = 7) const noexcept {
+        return !value.is_finite() || r_int(week_start).is_na() ? r_int::na() :  r_int( ( static_cast<int>(std::chrono::weekday(chrono_ymd()).iso_encoding()) - week_start + 7 ) % 7 + 1 );
+    }
+
     constexpr r_date add_days(int n) const noexcept {
         return r_date(static_cast<r_dbl>(*this) + r_int(n));
     }
