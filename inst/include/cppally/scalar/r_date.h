@@ -131,6 +131,10 @@ struct r_date {
         return !value.is_finite() || r_int(week_start).is_na() ? r_int::na() :  r_int( ( static_cast<int>(std::chrono::weekday(chrono_ymd()).iso_encoding()) - week_start + 7 ) % 7 + 1 );
     }
 
+    constexpr r_lgl is_leap_year() const noexcept {
+        return !value.is_finite() ? r_na : r_lgl(chrono_ymd().year().is_leap());
+    }
+
     constexpr r_date add_days(int n) const noexcept {
         return r_date(static_cast<r_dbl>(*this) + r_int(n));
     }

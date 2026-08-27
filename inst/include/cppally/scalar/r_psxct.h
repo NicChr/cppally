@@ -154,6 +154,10 @@ struct r_psxct {
         return !value.is_finite() ? r_dbl::na() : r_dbl(static_cast<double>(chrono_hms().seconds().count()) + chrono_frac());
     }
 
+    constexpr r_lgl is_leap_year() const noexcept {
+        return as_date().is_leap_year();
+    }
+
     constexpr r_psxct add_seconds(double n) const noexcept {
         return r_psxct(static_cast<r_dbl>(*this) + r_dbl(n));
     }
