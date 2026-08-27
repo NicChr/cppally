@@ -217,6 +217,57 @@ struct r_date {
 
 };
 
+// Difference in days between two dates
+inline constexpr r_dbl diff_days(r_date x, r_date y) noexcept {
+    return static_cast<r_dbl>(y) - static_cast<r_dbl>(x);
+}
+
+// Number of n-month periods between two dates
+inline constexpr r_dbl diff_months(r_date x, r_date y, int n = 1, bool fractional = true, roll on_impossible_date = roll::none) noexcept {
+
+    if (n == 0 || r_int(n).is_na() || !static_cast<r_dbl>(x).is_finite() || !static_cast<r_dbl>(y).is_finite()){
+        return r_dbl::na();
+    }
+
+    r_int sy = x.year();
+    r_int ey = y.year();
+    r_int sm = x.month();
+    r_int em = y.month();
+    r_int smd = x.day();
+    r_int emd = y.day();
+
+    // Approximate number of months between x and y
+    r_int whole_months = r_int(12) * (ey - sy) + (em - sm);
+
+    // If x and y happen to land in the same month then we adjust based on day of the month
+    // e.g. we subtract 1 month from our above estimate if y.day() < x.day()
+    bool l2r = unwrap(y) >= unwrap(x);
+
+    whole_months = l2r
+        ? whole_months - r_int(static_cast<int>(unwrap(emd) < unwrap(smd)))
+        : whole_months + r_int(static_cast<int>(unwrap(emd) > unwrap(smd)));
+
+    r_dbl q = whole_months / r_int(n);
+    whole_months = q.is_na() ? r_int::na() : r_int(static_cast<int>(unwrap(q)));
+    r_dbl out = whole_months.is_na() ? r_dbl::na() : r_dbl(unwrap(whole_months));
+
+    if (!fractional){
+        return out;
+    }
+
+    r_int months_add = whole_months * r_int(n);
+    r_date small_int_start = x.add_months(unwrap(months_add), on_impossible_date);
+
+    if (static_cast<double>(y) == static_cast<double>(small_int_start)){
+        return out;
+    }
+
+    r_date big_int_end = x.add_months(unwrap(months_add) + (l2r ? n : -n), on_impossible_date);
+    r_dbl fraction = diff_days(small_int_start, y) / r_dbl(internal::abs2(unwrap(diff_days(small_int_start, big_int_end))));
+
+    return out + fraction;
+}
+
 }
 
 #endif

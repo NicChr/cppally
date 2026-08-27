@@ -271,6 +271,39 @@ inline constexpr r_psxct r_date::as_datetime() const noexcept {
     return r_psxct(static_cast<r_dbl>(*this) * r_dbl(86400.0));
 }
 
+inline constexpr r_dbl diff_seconds(r_psxct x, r_psxct y) noexcept {
+    return static_cast<r_dbl>(y) - static_cast<r_dbl>(x);
+}
+
+inline constexpr r_dbl diff_days(r_psxct x, r_psxct y) noexcept {
+    return diff_seconds(x, y) / r_dbl(86400.0);
+}
+
+// Number of n-month periods between two dates
+inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, int n = 1, bool fractional = true, roll on_impossible_date = roll::none) noexcept {
+
+    r_dbl out = diff_months(x.as_date(), y.as_date(), n, false, on_impossible_date);
+
+    if (out.is_na() || !fractional){
+        return out;
+    }
+
+    r_int whole = r_int(static_cast<int>(unwrap(out)));
+
+    r_int months_add = whole * r_int(n);
+    r_psxct small_int_start = x.add_months(unwrap(months_add), on_impossible_date);
+
+    if (static_cast<double>(y) == static_cast<double>(small_int_start)){
+        return out;
+    }
+
+    r_psxct big_int_end = x.add_months(unwrap(months_add) + (unwrap(y) > unwrap(x) ? n : -n), on_impossible_date);
+
+    r_dbl fraction = diff_seconds(small_int_start, y) / r_dbl(internal::abs2(unwrap(diff_seconds(small_int_start, big_int_end))));
+
+    return out + fraction;
+}
+
 }
 
 #endif
