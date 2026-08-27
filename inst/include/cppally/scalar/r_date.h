@@ -140,6 +140,16 @@ struct r_date {
         return !value.is_finite() ? r_na : r_lgl(chrono_ymd().year().is_leap());
     }
 
+    constexpr r_int days_in_month() const noexcept {
+
+        r_date first_day_of_month = r_date(year(), month(), 1);
+        r_date first_day_of_next_month = first_day_of_month.add_months(1);
+
+        r_dbl out = static_cast<r_dbl>(first_day_of_next_month) - static_cast<r_dbl>(first_day_of_month);
+
+        return out.is_finite() ? r_int(static_cast<int>(unwrap(out))) : r_int::na();
+    }
+
     constexpr r_date add_days(int n) const noexcept {
         return r_date(static_cast<r_dbl>(*this) + r_int(n));
     }

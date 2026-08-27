@@ -162,6 +162,10 @@ struct r_psxct {
         return as_date().is_leap_year();
     }
 
+    constexpr r_int days_in_month() const noexcept {
+        return as_date().days_in_month();
+    }
+
     constexpr r_psxct add_seconds(double n) const noexcept {
         return r_psxct(static_cast<r_dbl>(*this) + r_dbl(n));
     }
