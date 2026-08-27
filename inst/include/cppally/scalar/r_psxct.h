@@ -128,6 +128,10 @@ struct r_psxct {
         return as_date().iso_week();
     }
 
+    constexpr r_int iso_year() const noexcept {
+        return as_date().iso_year();
+    }
+
     constexpr r_int day() const noexcept {
         return as_date().day();
     }

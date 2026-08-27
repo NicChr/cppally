@@ -114,6 +114,11 @@ struct r_date {
         res /= r_int(7); // Floored integer division
         return res + r_int(1);
     }
+
+    constexpr r_int iso_year() const noexcept {
+        r_date thursday = add_days(r_int(4) - wday(/*week_start=*/ 1));
+        return thursday.year();
+    }
     
     // Day of the month
     constexpr r_int day() const noexcept {
