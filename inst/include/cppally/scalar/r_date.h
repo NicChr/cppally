@@ -189,6 +189,13 @@ struct r_date {
 
     constexpr r_psxct as_datetime() const noexcept;
 
+    // today's date based on unix time
+    static r_date today() noexcept {
+        return r_date(static_cast<double>(
+            std::chrono::floor<std::chrono::days>(std::chrono::system_clock::now()).time_since_epoch().count()
+        ));
+    }
+
 };
 
 }

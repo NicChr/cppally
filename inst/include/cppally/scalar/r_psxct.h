@@ -246,6 +246,13 @@ struct r_psxct {
         return is_na() ? r_date::na() : r_date(internal::floor2(unwrap(*this) / 86400.0));
     }
 
+    // today's time based on unix time in fractional seconds (to microsecond level)
+    static r_psxct now() noexcept {
+        return r_psxct(
+            std::chrono::floor<std::chrono::microseconds>(std::chrono::system_clock::now()).time_since_epoch().count() / (1000.0 * 1000.0)
+        );
+    }
+
 };
 
 inline constexpr r_psxct r_date::as_datetime() const noexcept {
