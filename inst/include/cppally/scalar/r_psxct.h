@@ -7,7 +7,7 @@
 #include <cppally/scalar/r_dbl.h>
 #include <cppally/scalar/r_str.h>
 #include <cppally/scalar/arithmetic_ops.h>
-#include <cppally/scalar/r_date.h> // For rolling impossible dates
+#include <cppally/scalar/r_date.h>
 #include <cstdint>
 #include <chrono> // For r_date/r_psxt
 
