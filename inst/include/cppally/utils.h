@@ -7,6 +7,7 @@
 #include <limits>
 #include <cmath>
 #include <version>
+#include <type_traits>
 
 namespace cppally {
 
@@ -88,16 +89,11 @@ constexpr bool numeric_cast_is_lossless(From x) noexcept {
 
 // constexpr abs() since std::abs isn't constexpr until C++23
 // Only defined for arithmetic types.
-// This may retain negative-signed NaN but 
-// that's okay since we never want to distinguish those in outputs the user cares about because cppally has 2 NaN types, R's NA_REAL and all other NaN. 
-template <CppIntegerNumber T>
+// This may retain negative zeroes and negative-signed NaN but 
+// that's okay since we never want to distinguish those in outputs the user cares about.
+template <CppNumber T>
 constexpr T abs2(T x) noexcept {
     return x < 0 ? -x : x;
-}
-
-template <CppFloatType T>
-constexpr T abs2(T x) noexcept {
-    return (x < 0 ? -x : x) + T(0.0);
 }
 
 // constexpr floor
@@ -107,6 +103,11 @@ constexpr T floor2(T x) noexcept {
   #if defined(__cpp_lib_constexpr_cmath) && __cpp_lib_constexpr_cmath >= 202202L
     return std::floor(x);
   #else
+
+    if (!std::is_constant_evaluated()){
+      return std::floor(x);
+    }
+    
     // If x is very large then it won't have a fractional part anyway
     if (!numeric_can_be_cast_without_complete_loss<int64_t>(x)){
       return x;
@@ -127,6 +128,11 @@ constexpr T ceiling2(T x) noexcept {
   #if defined(__cpp_lib_constexpr_cmath) && __cpp_lib_constexpr_cmath >= 202202L
     return std::ceil(x);
   #else
+
+    if (!std::is_constant_evaluated()){
+      return std::ceil(x);
+    }
+
     // If x is very large then it won't have a fractional part anyway
     if (!numeric_can_be_cast_without_complete_loss<int64_t>(x)){
       return x;
