@@ -143,7 +143,7 @@ struct r_psxct {
     // Day of the week (1-based)
     // week_start = [1 = Monday, 7 = Sunday]
     constexpr r_int wday(int week_start = 7) const noexcept {
-        return as_date().wday();
+        return as_date().wday(week_start);
     }
 
     constexpr r_int hour() const noexcept {
