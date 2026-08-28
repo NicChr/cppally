@@ -101,6 +101,40 @@
 - `draw_from_r` must be used if one wishes to call scalar RNG functions
   from the R C API header ‘Random.h’.
 
+### r_date & r_psxct
+
+A new complete set of fast and parallelisable member and free functions
+for `r_date` and `r_psxct`.
+
+- New field accessor functions like `year()`, `month()`, `week()`,
+  `day()`, `hour()`, `minute()`, `second()`, `iso_week()` and
+  `iso_year()`.
+
+- New date arithmetic functions such as `add_months()`, `add_days()`,
+  and `add_seconds()`. When performing month arithmetic, you sometimes
+  end up with impossible dates, e.g. 31 Jan + 1 month = ? `add_months()`
+  allows you to either leave the result as `NA`, roll to the first of
+  the next month, or roll to the last day of the month. This can be
+  controlled via the `on_impossible_date` argument of `add_months()`,
+  which accepts a value of type `roll`, whose definition is:
+
+``` cpp
+enum roll : uint8_t {
+    none = 0,       // does not roll and impossible dates are returned as NA
+    backward = 1,   // rolls backwards until the last day of the current month is reached
+    forward = 2,    // rolls to first day of next month
+    away = 3,       // rolls forward when adding and backward when subtracting
+    nearest = 4     // rolls backward when adding and forward when subtracting
+};
+```
+
+- New free functions to calculate time differences. These include
+  `diff_days()`, `diff_months()` and `diff_seconds()`.
+
+- New static member functions `r_date::today()` and `r_psxct::now()` to
+  get the current date or current time. `r_psxct::now()` returns the
+  current time in fractional seconds to microsecond precision.
+
 ### Improvements
 
 - `cpp_source` now generates OpenMP flags by default, so its compiled

@@ -200,8 +200,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression                           min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>                      <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_sample_int_with_replac… 250.31µs 409.66µs     2436.     391KB    18.9 
-#> 2 base_sample_int_with_replaceme…   2.28ms   2.31ms      431.     391KB     2.03
+#> 1 cppally_sample_int_with_replac… 251.48µs 410.59µs     2432.     391KB    16.7 
+#> 2 base_sample_int_with_replaceme…   2.29ms   2.33ms      429.     391KB     4.14
 ```
 
 In this simple benchmark we achieve a large speed improvement over base
@@ -407,8 +407,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally      25.2ms   25.3ms      39.4    15.4MB     31.5
-#> 2 base_r       62.9ms   64.2ms      15.6    23.1MB     46.7
+#> 1 cppally      25.3ms   25.5ms      38.0    15.4MB     30.4
+#> 2 base_r       64.3ms   65.2ms      15.3    23.1MB     46.0
 ```
 
 The hand-tuned bootstrap mean naturally is faster.
@@ -423,7 +423,7 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression                      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>                 <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 boot_mean_cppally(x, 2000)  25.18ms  25.41ms      39.3    15.4MB     28.6
+#> 1 boot_mean_cppally(x, 2000)  25.44ms   25.8ms      38.6    15.4MB     24.6
 #> 2 boot_mean(x, 2000)           4.91ms   4.93ms     203.     21.8KB      0
 ```
 
@@ -523,8 +523,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 boot_mean(x, 2000)    4.91ms   4.93ms      198.    15.7KB        0
-#> 2 boot_mean2(x, 2000)   5.62ms   5.64ms      177.    23.5KB        0
+#> 1 boot_mean(x, 2000)    4.91ms   4.93ms      203.    15.7KB        0
+#> 2 boot_mean2(x, 2000)   5.63ms   5.64ms      176.    23.5KB        0
 ```
 
 Almost as fast as the hand-tuned version, which is a nice result given
