@@ -366,16 +366,16 @@ namespace internal {
 
 // Generic safe coercion between RNumber types
 
-template <RNumber U, RNumber T>
-constexpr U coerce_number(T x) noexcept {
+template <RNumber T, RNumber U>
+constexpr T coerce_number(U x) noexcept {
 
-  using unwrapped_from_t = unwrap_t<T>;
-  using unwrapped_to_t = unwrap_t<U>;
+  using unwrapped_from_t = unwrap_t<U>;
+  using unwrapped_to_t = unwrap_t<T>;
 
   if constexpr (is<unwrapped_from_t, unwrapped_to_t>){
-    return U(unwrap(x));
+    return T(unwrap(x));
   } else {
-    return x.is_na() || !numeric_can_be_cast_without_complete_loss<unwrapped_to_t>(unwrap(x)) ? std::remove_cvref_t<U>::na() : U(static_cast<unwrapped_to_t>(unwrap(x)));
+    return x.is_na() || !numeric_can_be_cast_without_complete_loss<unwrapped_to_t>(unwrap(x)) ? std::remove_cvref_t<T>::na() : T(static_cast<unwrapped_to_t>(unwrap(x)));
   }
 }
 
