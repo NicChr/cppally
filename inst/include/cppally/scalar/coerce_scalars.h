@@ -247,22 +247,40 @@ inline T scalar_coerce_impl(const U& x) {
   }
 }
 
+}
+
 template <RScalar T, RScalar U>
 inline T scalar_coerce(const U& x) {
   if constexpr (is<U, T>){
     return x;
   } else {
-    T out = scalar_coerce_impl<T, U>(x);
+    T out = internal::scalar_coerce_impl<T, U>(x);
     if (is_na(out) && !is_na(x)) [[unlikely]] {
       abort(
         "Implicit NA coercion detected from %s to %s, please ensure data can be coerced without complete loss of information", 
-        type_str<U>(), type_str<T>()
+        internal::type_str<U>(), internal::type_str<T>()
       );
     }
     return out;
   }
 }
 
+template <RScalar T, RScalar U>
+inline T scalar_coerce(const U& x, bool allow_lossy) {
+  if constexpr (is<U, T>){
+    return x;
+  } else {
+    T out = internal::scalar_coerce_impl<T, U>(x);
+    if (!allow_lossy){
+      if (is_na(out) && !is_na(x)) [[unlikely]] {
+        abort(
+          "Implicit NA coercion detected from %s to %s, please ensure data can be coerced without complete loss of information", 
+          internal::type_str<U>(), internal::type_str<T>()
+        );
+      }
+    }
+    return out;
+  }
 }
 
 }

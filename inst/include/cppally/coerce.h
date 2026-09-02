@@ -80,7 +80,7 @@ inline T as_impl(const U& x) {
 
 template <RScalar T, RScalar U>
 inline T as_impl(const U& x) {
-  return internal::scalar_coerce<T>(x);
+  return scalar_coerce<T>(x);
 }
 
 // ----- Vectors -----
