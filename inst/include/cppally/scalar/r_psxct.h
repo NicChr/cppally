@@ -255,7 +255,7 @@ struct r_psxct {
     }
 
     constexpr r_date as_date() const noexcept {
-        return is_na() ? r_date::na() : r_date(internal::floor2(unwrap(*this) / 86400.0));
+        return is_na() ? r_date::na() : r_date(static_cast<double>(chrono_days().time_since_epoch().count()));
     }
 
     // today's time based on unix time in fractional seconds (to microsecond level)
