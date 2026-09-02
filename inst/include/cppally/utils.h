@@ -89,11 +89,11 @@ constexpr bool numeric_cast_is_lossless(From x) noexcept {
 
 // constexpr abs() since std::abs isn't constexpr until C++23
 // Only defined for arithmetic types.
-// This may retain negative zeroes and negative-signed NaN but 
+// This may retain negative zeroes and negative-signed NaN but
 // that's okay since we never want to distinguish those in outputs the user cares about.
 template <CppNumber T>
 constexpr T abs2(T x) noexcept {
-    return x < 0 ? -x : x;
+  return std::is_constant_evaluated() ? (x < 0 ? -x : x) + T{0} : std::abs(x);
 }
 
 // constexpr floor
