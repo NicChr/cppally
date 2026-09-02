@@ -255,7 +255,7 @@ struct r_psxct {
     }
 
     constexpr r_date as_date() const noexcept {
-        return is_na() ? r_date::na() : r_date(static_cast<double>(chrono_days().time_since_epoch().count()));
+        return value.is_finite() ? r_date(static_cast<double>(chrono_days().time_since_epoch().count())) : r_date::na();
     }
 
     // today's time based on unix time in fractional seconds (to microsecond level)
@@ -288,7 +288,7 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, int n = 1, bool fractio
         return out;
     }
 
-    r_int whole = r_int(static_cast<int>(unwrap(out)));
+    r_int whole = internal::coerce_number<r_int>(out);
 
     r_int months_add = whole * r_int(n);
     r_psxct small_int_start = x.add_months(unwrap(months_add), on_impossible_date);
