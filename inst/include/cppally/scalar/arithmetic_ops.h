@@ -362,6 +362,25 @@ inline constexpr T operator--(T& lhs, int) noexcept {
   return tmp;
 }
 
+namespace internal {
+
+// Generic safe coercion between RNumber types
+
+template <RNumber U, RNumber T>
+constexpr U coerce_number(T x) noexcept {
+
+  using unwrapped_from_t = unwrap_t<T>;
+  using unwrapped_to_t = unwrap_t<U>;
+
+  if constexpr (is<unwrapped_from_t, unwrapped_to_t>){
+    return U(unwrap(x));
+  } else {
+    return x.is_na() || !numeric_can_be_cast_without_complete_loss<unwrapped_to_t>(unwrap(x)) ? std::remove_cvref_t<U>::na() : U(static_cast<unwrapped_to_t>(unwrap(x)));
+  }
+}
+
+}
+
 }
 
 #endif
