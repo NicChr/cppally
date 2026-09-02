@@ -93,7 +93,11 @@ constexpr bool numeric_cast_is_lossless(From x) noexcept {
 // that's okay since we never want to distinguish those in outputs the user cares about.
 template <CppNumber T>
 constexpr T abs2(T x) noexcept {
-  return std::is_constant_evaluated() ? (x < 0 ? -x : x) + T{0} : std::abs(x);
+  #if defined(__cpp_lib_constexpr_cmath) && __cpp_lib_constexpr_cmath >= 202202L
+    return std::abs(x);
+  #else 
+    return std::is_constant_evaluated() ? (x < 0 ? -x : x) + T{0} : std::abs(x);
+  #endif
 }
 
 // constexpr floor
