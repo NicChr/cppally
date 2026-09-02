@@ -37,7 +37,7 @@ struct r_date {
 
     constexpr auto chrono_ymd() const noexcept {
         return std::chrono::year_month_day{
-            std::chrono::sys_days{std::chrono::days{static_cast<int32_t>(unwrap(value))}}
+            std::chrono::sys_days{std::chrono::days{static_cast<int32_t>(unwrap(*this))}}
         };
     }
 
@@ -127,7 +127,9 @@ struct r_date {
 
     // Day of the year
     constexpr r_int yday() const noexcept {
-        return value.is_finite() ? r_int(static_cast<int>(unwrap(static_cast<r_dbl>(*this) - static_cast<r_dbl>(r_date(unwrap(year()), 1, 1)) + 1.0))) : r_int::na();
+        r_date first_day_of_the_year = r_date(year(), 1, 1);
+        r_dbl this_day_of_the_year = static_cast<r_dbl>(*this) - static_cast<r_dbl>(first_day_of_the_year) + r_dbl(1.0);
+        return internal::coerce_number<r_int>(this_day_of_the_year);
     }
 
     // Day of the week (1-based)
@@ -144,10 +146,9 @@ struct r_date {
 
         r_date first_day_of_month = r_date(year(), month(), 1);
         r_date first_day_of_next_month = first_day_of_month.add_months(1);
-
         r_dbl out = static_cast<r_dbl>(first_day_of_next_month) - static_cast<r_dbl>(first_day_of_month);
 
-        return out.is_finite() ? r_int(static_cast<int>(unwrap(out))) : r_int::na();
+        return internal::coerce_number<r_int>(out);
     }
 
     constexpr r_date add_days(int n) const noexcept {
@@ -248,8 +249,8 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, int n = 1, bool fractiona
         : whole_months + r_int(static_cast<int>(unwrap(emd) > unwrap(smd)));
 
     r_dbl q = whole_months / r_int(n);
-    whole_months = q.is_na() ? r_int::na() : r_int(static_cast<int>(unwrap(q)));
-    r_dbl out = whole_months.is_na() ? r_dbl::na() : r_dbl(unwrap(whole_months));
+    whole_months = internal::coerce_number<r_int>(q);
+    r_dbl out = internal::coerce_number<r_dbl>(whole_months);
 
     if (!fractional){
         return out;
