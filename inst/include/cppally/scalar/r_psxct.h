@@ -291,14 +291,13 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, int n = 1, bool fractio
     r_int whole = internal::coerce_number<r_int>(out);
 
     r_int months_add = whole * r_int(n);
-    r_psxct small_int_start = x.add_months(unwrap(months_add), on_impossible_date);
+    r_psxct small_int_start = x.add_months(months_add, on_impossible_date);
 
     if (static_cast<double>(y) == static_cast<double>(small_int_start)){
         return out;
     }
 
-    r_psxct big_int_end = x.add_months(unwrap(months_add) + (unwrap(y) > unwrap(x) ? n : -n), on_impossible_date);
-
+    r_psxct big_int_end = x.add_months(months_add + r_int(unwrap(y) > unwrap(x) ? n : -n), on_impossible_date);
     r_dbl fraction = diff_seconds(small_int_start, y) / r_dbl(internal::abs2(unwrap(diff_seconds(small_int_start, big_int_end))));
 
     return out + fraction;

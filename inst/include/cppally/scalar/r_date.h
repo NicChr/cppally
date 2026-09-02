@@ -35,6 +35,23 @@ struct r_date {
     
     private: 
 
+    static constexpr double chrono_min_days() noexcept {
+        using namespace std::chrono;
+        return sys_days{year::min()/January/1}.time_since_epoch().count();
+    }
+
+    static constexpr double chrono_max_days() noexcept {
+        using namespace std::chrono;
+        return sys_days{year::max()/December/31}.time_since_epoch().count();
+    }
+
+    // Is the current date finite and representable for use with chrono?
+    constexpr bool is_chrono_safe() const noexcept {
+        double d = unwrap(*this);
+        return d >= chrono_min_days() && d <= chrono_max_days();
+    }
+
+    // Please ensure is_chrono_safe() is true before calling chrono_ymd()
     constexpr auto chrono_ymd() const noexcept {
         return std::chrono::year_month_day{
             std::chrono::sys_days{std::chrono::days{static_cast<int32_t>(unwrap(*this))}}
@@ -91,12 +108,12 @@ struct r_date {
 
     // Year number
     constexpr r_int year() const noexcept {
-        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(chrono_ymd().year()));
+        return is_chrono_safe() ? r_int(static_cast<int>(chrono_ymd().year())) : r_int::na();
     }
     
     // Month of the year
     constexpr r_int month() const noexcept {
-        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().month())));
+        return is_chrono_safe() ? r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().month()))) : r_int::na();
     }
     
     // Week of the year
@@ -122,7 +139,7 @@ struct r_date {
     
     // Day of the month
     constexpr r_int day() const noexcept {
-        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().day())));
+        return is_chrono_safe() ? r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().day()))) : r_int::na();
     }
 
     // Day of the year
@@ -135,11 +152,11 @@ struct r_date {
     // Day of the week (1-based)
     // week_start = [1 = Monday, 7 = Sunday]
     constexpr r_int wday(int week_start = 7) const noexcept {
-        return !value.is_finite() || r_int(week_start).is_na() ? r_int::na() :  r_int( ( static_cast<int>(std::chrono::weekday(chrono_ymd()).iso_encoding()) - week_start + 7 ) % 7 + 1 );
+        return !is_chrono_safe() || r_int(week_start).is_na() ? r_int::na() :  r_int( ( static_cast<int>(std::chrono::weekday(chrono_ymd()).iso_encoding()) - week_start + 7 ) % 7 + 1 );
     }
 
     constexpr r_lgl is_leap_year() const noexcept {
-        return !value.is_finite() ? r_na : r_lgl(chrono_ymd().year().is_leap());
+        return is_chrono_safe() ? r_lgl(chrono_ymd().year().is_leap()) : r_na;
     }
 
     constexpr r_int days_in_month() const noexcept {
@@ -162,12 +179,8 @@ struct r_date {
         
         using namespace std::chrono;
 
-        if (r_int(n).is_na()){
+        if (r_int(n).is_na() || !is_chrono_safe()){
             return na();
-        }
-
-        if (!value.is_finite()){
-            return *this;
         }
         
         year_month_day ymd = chrono_ymd();
@@ -193,12 +206,12 @@ struct r_date {
 
     r_str date_str() const {
         
-        if (is_na()){
-            return r_str::na();
-        }
-
         if (value.is_infinite()){
             return r_str(unwrap(value) > 0 ? "Inf" : "-Inf");
+        }
+
+        if (!is_chrono_safe()){
+            return r_str::na();
         }
 
         auto ymd = chrono_ymd();
@@ -257,13 +270,13 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, int n = 1, bool fractiona
     }
 
     r_int months_add = whole_months * r_int(n);
-    r_date small_int_start = x.add_months(unwrap(months_add), on_impossible_date);
+    r_date small_int_start = x.add_months(months_add, on_impossible_date);
 
     if (static_cast<double>(y) == static_cast<double>(small_int_start)){
         return out;
     }
 
-    r_date big_int_end = x.add_months(unwrap(months_add) + (l2r ? n : -n), on_impossible_date);
+    r_date big_int_end = x.add_months(months_add + r_int(l2r ? n : -n), on_impossible_date);
     r_dbl fraction = diff_days(small_int_start, y) / r_dbl(internal::abs2(unwrap(diff_days(small_int_start, big_int_end))));
 
     return out + fraction;
