@@ -28,10 +28,6 @@ struct r_date {
 
     r_dbl value;
     using value_type = r_dbl;
-
-    constexpr r_date() noexcept : value{0.0} {}
-    constexpr explicit operator r_dbl() const noexcept { return value; }
-    constexpr operator double() const noexcept { return static_cast<double>(value); }
     
     private: 
 
@@ -60,7 +56,11 @@ struct r_date {
 
     public:
 
-    explicit constexpr r_date(double days_since_epoch) noexcept : value{days_since_epoch} {}
+    constexpr r_date() noexcept : value{0.0} {}
+    constexpr explicit operator r_dbl() const noexcept { return value; }
+    constexpr operator double() const noexcept { return static_cast<double>(value); }
+
+    explicit constexpr r_date(double days_since_epoch) noexcept : value{ days_since_epoch } {}
 
     static constexpr r_date na() noexcept {
         return r_date(r_dbl::na());
