@@ -169,7 +169,7 @@ in particular, as SEXP type checking is now skipped for hashing specifically.
 
 - `use_cppally()` now includes the "$(CXX_VISIBILITY)" Makevars flag, making dll
 symbol visibility hidden by default. 
-This should have no affect on code written with cppally, though it may slightly 
+This should have no effect on code written with cppally, though it may slightly 
 improve compilation time. R/C++ registered functions are now registered with the 
 R C API tag `attribute_hidden`. 
 
