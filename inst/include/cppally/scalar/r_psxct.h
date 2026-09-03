@@ -171,8 +171,8 @@ struct r_psxct {
     }
 
     // We can do an exact calculation using seconds because we're UTC and hence no DST
-    constexpr r_psxct add_days(int n) const noexcept {
-        return r_psxct(static_cast<r_dbl>(*this) + r_dbl(86400.0) * r_int(n));
+    constexpr r_psxct add_days(double n) const noexcept {
+        return r_psxct(static_cast<r_dbl>(*this) + r_dbl(86400.0) * r_dbl(n));
     }
 
     // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls 

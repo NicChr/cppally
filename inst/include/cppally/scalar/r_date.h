@@ -126,14 +126,14 @@ struct r_date {
     // ISO-8601 weeks.
     // A year has either 52 or 53 full ISO weeks, which has the advantage that all ISO weeks have 7 days.
     constexpr r_int iso_week() const noexcept {
-        r_date thursday = add_days(r_int(4) - wday(/*week_start=*/ 1));
+        r_date thursday = add_days(r_dbl(4) - wday(/*week_start=*/ 1));
         r_int res = thursday.yday() - r_int(1);
         res /= r_int(7); // Floored integer division
         return res + r_int(1);
     }
 
     constexpr r_int iso_year() const noexcept {
-        r_date thursday = add_days(r_int(4) - wday(/*week_start=*/ 1));
+        r_date thursday = add_days(r_dbl(4) - wday(/*week_start=*/ 1));
         return thursday.year();
     }
     
@@ -168,8 +168,8 @@ struct r_date {
         return internal::coerce_number<r_int>(out);
     }
 
-    constexpr r_date add_days(int n) const noexcept {
-        return r_date(static_cast<r_dbl>(*this) + r_int(n));
+    constexpr r_date add_days(double n) const noexcept {
+        return r_date(static_cast<r_dbl>(*this) + r_dbl(n));
     }
 
     // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls
@@ -179,7 +179,15 @@ struct r_date {
         
         using namespace std::chrono;
 
-        if (r_int(n).is_na() || !is_chrono_safe()){
+        if (r_int(n).is_na()){
+            return na();
+        }
+
+        if (static_cast<r_dbl>(*this).is_infinite()){
+            return *this;
+        }
+
+        if (!is_chrono_safe()){
             return na();
         }
         
