@@ -242,6 +242,42 @@ struct r_psxct {
         return r_psxct(static_cast<double>(sys_days{ymd}.time_since_epoch().count()) * 86400.0 + rem);
     }
 
+    template <typename F>
+    requires (is<F, r_dbl> || CppFloatType<F>)
+    constexpr r_psxct add_months(F n, roll on_impossible_date = roll::none) const noexcept {
+        
+        using namespace std::chrono;
+
+        if (is_na() || r_dbl(n).is_na()){
+            return na();
+        }
+
+        if (static_cast<r_dbl>(*this).is_infinite() || r_dbl(n).is_infinite()){
+            return r_psxct(static_cast<r_dbl>(*this) + r_dbl(n));
+        }
+
+        r_int whole_months = internal::coerce_number<r_int>(r_dbl(internal::floor2(n)));
+
+        if (whole_months.is_na()){
+            return na();
+        }
+
+        r_psxct out = add_months(whole_months, on_impossible_date);
+
+        if (unwrap(n) == unwrap(whole_months)){
+            return out;
+        }
+
+        double fraction = n - whole_months;
+        r_psxct next_month = add_months(whole_months + 1, on_impossible_date);
+        
+        // Number of seconds between result and next month
+        double n_seconds = static_cast<r_dbl>(next_month) - static_cast<r_dbl>(out);
+
+        // add (fraction * n_seconds) seconds to result
+        return out.add_seconds(fraction * n_seconds);
+    }
+
     r_str datetime_str() const {
     
         if (static_cast<r_dbl>(*this).is_infinite()){
