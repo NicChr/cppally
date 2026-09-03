@@ -101,8 +101,7 @@ constexpr T abs2(T x) noexcept {
 }
 
 // constexpr floor
-template <CppFloatType T>
-constexpr T floor2(T x) noexcept {
+constexpr double floor2(double x) noexcept {
 
   #if defined(__cpp_lib_constexpr_cmath) && __cpp_lib_constexpr_cmath >= 202202L
     return std::floor(x);
@@ -122,12 +121,11 @@ constexpr T floor2(T x) noexcept {
       return x;
     }
     int64_t int_res = x < 0 ? static_cast<int64_t>(x) - 1 : static_cast<int64_t>(x);
-    return static_cast<T>(int_res);
+    return static_cast<double>(int_res);
   #endif
 }
 
-template <CppFloatType T>
-constexpr T ceiling2(T x) noexcept {
+constexpr double ceiling2(double x) noexcept {
 
   #if defined(__cpp_lib_constexpr_cmath) && __cpp_lib_constexpr_cmath >= 202202L
     return std::ceil(x);
@@ -147,7 +145,7 @@ constexpr T ceiling2(T x) noexcept {
       return x;
     }
     int64_t int_res = x > 0 ? static_cast<int64_t>(x) + 1 : static_cast<int64_t>(x);
-    return static_cast<T>(int_res);
+    return static_cast<double>(int_res);
   #endif
 }
 
