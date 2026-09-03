@@ -212,6 +212,42 @@ struct r_date {
         return r_date(static_cast<double>(sys_days{ymd}.time_since_epoch().count()));
     }
 
+    template <typename F>
+    requires (is<F, r_dbl> || CppFloatType<F>)
+    constexpr r_date add_months(F n, roll on_impossible_date = roll::none) const noexcept {
+        
+        using namespace std::chrono;
+
+        if (is_na() || r_dbl(n).is_na()){
+            return na();
+        }
+
+        if (static_cast<r_dbl>(*this).is_infinite() || r_dbl(n).is_infinite()){
+            return r_date(static_cast<r_dbl>(*this) + r_dbl(n));
+        }
+
+        r_int whole_months = internal::coerce_number<r_int>(r_dbl(internal::floor2(n)));
+
+        if (whole_months.is_na()){
+            return na();
+        }
+
+        r_date out = add_months(whole_months, on_impossible_date);
+
+        if (unwrap(n) == unwrap(whole_months)){
+            return out;
+        }
+
+        double fraction = n - whole_months;
+        r_date next_month = add_months(whole_months + 1, on_impossible_date);
+        
+        // Number of days between result and next month
+        double n_days = static_cast<r_dbl>(next_month) - static_cast<r_dbl>(out);
+
+        // add (fraction * n_days) days to result
+        return out.add_days(fraction * n_days);
+    }
+
     r_str date_str() const {
         
         if (value.is_infinite()){
