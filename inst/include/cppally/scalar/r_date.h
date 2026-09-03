@@ -333,6 +333,93 @@ struct r_date {
         ));
     }
 
+    // Rounding
+
+    template <string_literal Unit>
+    constexpr r_date floor(int week_start = 7) const noexcept {
+
+        constexpr std::string_view unit{Unit.data};
+
+        static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
+
+        if constexpr (unit == "years") {
+
+            return r_date(year(), 1, 1);
+
+        } else if constexpr (unit == "months") {
+
+            return r_date(year(), month(), 1);
+
+        } else if constexpr (unit == "weeks") {
+
+            return add<"days">(internal::coerce_number<r_dbl>(-(wday(week_start) - 1)));
+
+        } else if constexpr (unit == "days"){
+
+            return r_date(year(), month(), day());
+
+        } else if constexpr (unit == "hours"){
+
+            return r_date(r_dbl(internal::floor2(days_since_epoch() * 24.0)) / 24.0);
+
+        } else if constexpr (unit == "minutes"){
+
+            return r_date(r_dbl(internal::floor2(days_since_epoch() * 1440.0)) / 1440.0);
+
+        } else { // Seconds
+
+            return r_date(r_dbl(internal::floor2(days_since_epoch() * 86400.0)) / 86400.0);
+
+        }
+    }
+
+    template <string_literal Unit>
+    constexpr r_date ceiling(int week_start = 7, bool change_on_boundary = false) const noexcept {
+
+        constexpr std::string_view unit{Unit.data};
+
+        static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
+
+        r_date upper = add<Unit>(1);
+
+        if (!change_on_boundary){
+
+            r_date lower = floor<Unit>(week_start);
+
+            if (lower.is_na()){
+                return na();
+            }
+
+            if ( unwrap(lower.days_since_epoch() - days_since_epoch()) == 0 ){
+                return lower;
+            }
+        }
+
+        return upper.floor<Unit>();
+    }
+
+    template <string_literal Unit>
+    constexpr r_date round(int week_start = 7) const noexcept {
+
+        if (!days_since_epoch().is_finite()){
+            return *this;
+        }
+
+        r_date lower = floor<Unit>(week_start);
+        r_date upper = ceiling<Unit>(week_start, false);
+        r_dbl lower_diff = days_since_epoch() - lower.days_since_epoch();
+        r_dbl upper_diff = upper.days_since_epoch() - days_since_epoch();
+
+        // If we're at exactly the halfway point, floor the date to the nearest time unit
+        // So for example, if we're rounding to the nearest day and the date is at noon, we floor to midnight on the same day.
+        if (unwrap(lower_diff) < unwrap(upper_diff)){
+            return lower;
+        } else {
+            return ceiling<Unit>(week_start, false);
+        }
+
+    }
+
 };
 
 namespace internal {
