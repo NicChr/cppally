@@ -13,12 +13,6 @@
 
 namespace cppally {
 
-struct r_psxct;
-
-// Difference between two date-times, measured in `n`-unit periods
-template <string_literal Unit>
-inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, int n = 1, roll on_impossible_date = roll::none) noexcept;
-
 // R date-time that captures the number of seconds since epoch (1st Jan 1970) and hence implicitly UTC.
 // Fractional seconds are supported.
 struct r_psxct {
@@ -27,17 +21,6 @@ struct r_psxct {
     using value_type = r_dbl;
 
     private:
-
-    // Needs `is_valid_unit()`
-    template <string_literal Unit>
-    friend constexpr r_dbl time_diff(r_psxct, r_psxct, int, roll) noexcept;
-
-    // Is valid time unit?
-    template <string_literal U>
-    static consteval bool is_valid_unit() noexcept {
-        std::string_view unit{U.data};
-        return unit == "seconds" || unit == "minutes" || unit == "hours" || unit == "days" || unit == "weeks" || unit == "months" || unit == "years";
-    }
 
     static constexpr double chrono_min_seconds() noexcept {
         using namespace std::chrono;
@@ -247,7 +230,7 @@ struct r_psxct {
 
         constexpr std::string_view unit{Unit.data};
 
-        static_assert(is_valid_unit<Unit>(), "Invalid time unit, please supply 'seconds', 'minutes', 'hours', 'days', 'weeks', 'months' or 'years'");
+        static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
 
         if constexpr (unit == "seconds") {
             
@@ -424,9 +407,9 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, int n = 1, bool fractio
 }
 
 template <string_literal Unit>
-inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, int n, roll on_impossible_date) noexcept {
+inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, int n = 1, roll on_impossible_date = roll::none) noexcept {
 
-    static_assert(r_psxct::is_valid_unit<Unit>(), "Invalid time unit, please supply 'seconds', 'minutes', 'hours', 'days', 'weeks', 'months' or 'years'");
+    static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
 
     if (n == 0 || r_int(n).is_na()){
         return r_dbl::na();
@@ -436,7 +419,7 @@ inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, int n, roll on_impossible
 
     if constexpr (unit == "years") {
 
-        return internal::diff_months(x, y, r_int(n) * r_int(12), true, on_impossible_date);
+        return internal::diff_months(x, y, n * r_int(12), true, on_impossible_date);
 
     } else if constexpr (unit == "months") {
 
@@ -444,23 +427,23 @@ inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, int n, roll on_impossible
 
     } else if constexpr (unit == "weeks"){
 
-        return internal::diff_seconds(x, y) / (r_dbl(604800.0) * r_int(n));
+        return internal::diff_seconds(x, y) / (r_dbl(604800) * n);
 
     } else if constexpr (unit == "days"){
 
-        return internal::diff_seconds(x, y) / (r_dbl(86400) * r_int(n));
+        return internal::diff_seconds(x, y) / (r_dbl(86400) * n);
 
     } else if constexpr (unit == "hours"){
 
-        return internal::diff_seconds(x, y) / (r_dbl(3600) * r_int(n));
+        return internal::diff_seconds(x, y) / (r_dbl(3600) * n);
 
     } else if constexpr (unit == "minutes"){
 
-        return internal::diff_seconds(x, y) / (r_dbl(60) * r_int(n));
+        return internal::diff_seconds(x, y) / (r_dbl(60) * n);
 
     } else {
 
-        return internal::diff_seconds(x, y) / r_int(n);
+        return internal::diff_seconds(x, y) / n;
 
     }
 }

@@ -22,11 +22,13 @@ enum roll : uint8_t {
     nearest = 4     // rolls backward when adding and forward when subtracting
 };
 
-struct r_date;
-
-// Difference between two dates divided by n time-unit periods
+// Is the time unit valid?
+// Valid for 'years', 'months', 'weeks', 'days', 'hours', 'minutes' and 'seconds'
 template <string_literal Unit>
-inline constexpr r_dbl time_diff(r_date x, r_date y, int n = 1, roll on_impossible_date = roll::none) noexcept;
+consteval bool is_valid_time_unit() noexcept {
+    std::string_view unit{Unit.data};
+    return unit == "seconds" || unit == "minutes" || unit == "hours" || unit == "days" || unit == "weeks" || unit == "months" || unit == "years";
+}
 
 // R date that captures the number of days since epoch (1st Jan 1970)
 // Since r_date is stored as a double to match R storage, this means fractional dates are supported but highly discouraged - use `r_psxct` instead for date-times.
@@ -36,16 +38,6 @@ struct r_date {
     using value_type = r_dbl;
 
     private:
-
-    template <string_literal Unit>
-    friend constexpr r_dbl time_diff(r_date, r_date, int, roll) noexcept;
-
-    // Is valid time unit?
-    template <string_literal U>
-    static consteval bool is_valid_unit() noexcept {
-        std::string_view unit{U.data};
-        return unit == "days" || unit == "weeks" || unit == "months" || unit == "years";
-    }
 
     static constexpr double chrono_min_days() noexcept {
         using namespace std::chrono;
@@ -219,26 +211,40 @@ struct r_date {
 
         constexpr std::string_view unit{Unit.data};
 
-        static_assert(is_valid_unit<Unit>(), "Invalid time unit, please supply 'days', 'weeks', 'months' or 'years'");
+        static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
 
-        if constexpr (unit == "days") {
+        if constexpr (unit == "years") {
 
-            return add_days(n);
-
-        } else if constexpr (unit == "weeks") {
-
-            return add_days(n * r_dbl(7));
+            return add_months(n * r_int(12), on_impossible_date);
 
         } else if constexpr (unit == "months") {
 
             return add_months(n, on_impossible_date);
 
-        } else {
+        } else if constexpr (unit == "weeks") {
 
-            return add_months(n * r_int(12), on_impossible_date);
+            return add_days(n * r_dbl(7));
+
+        } else if constexpr (unit == "days"){
+
+            return add_days(n);
+
+        } else if constexpr (unit == "hours"){
+
+            return add_days(n / r_dbl(24));
+
+        } else if constexpr (unit == "minutes"){
+
+            return add_days(n / r_dbl(1440));
+
+        } else { // Seconds
+
+            return add_days(n / r_dbl(86400));
 
         }
+
     }
+    
 
     // Year number
     constexpr r_int year() const noexcept {
@@ -385,9 +391,9 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, int n = 1, bool fractiona
 }
 
 template <string_literal Unit>
-inline constexpr r_dbl time_diff(r_date x, r_date y, int n, roll on_impossible_date) noexcept {
+inline constexpr r_dbl time_diff(r_date x, r_date y, int n = 1, roll on_impossible_date = roll::none) noexcept {
 
-    static_assert(r_date::is_valid_unit<Unit>(), "Invalid time unit, please supply 'days', 'weeks', 'months' or 'years'");
+    static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
 
     if (n == 0 || r_int(n).is_na()){
         return r_dbl::na();
@@ -397,7 +403,7 @@ inline constexpr r_dbl time_diff(r_date x, r_date y, int n, roll on_impossible_d
 
     if constexpr (unit == "years") {
 
-        return internal::diff_months(x, y, r_int(n) * r_int(12), true, on_impossible_date);
+        return internal::diff_months(x, y, n * r_int(12), true, on_impossible_date);
 
     } else if constexpr (unit == "months") {
 
@@ -405,12 +411,24 @@ inline constexpr r_dbl time_diff(r_date x, r_date y, int n, roll on_impossible_d
 
     } else if constexpr (unit == "weeks"){
 
-        return internal::diff_days(x, y) / (r_dbl(7) * r_int(n));
+        return internal::diff_days(x, y) / (r_dbl(7) * n);
 
-    } else {
+    } else if constexpr (unit == "days"){
 
-        return internal::diff_days(x, y) / r_int(n);
+        return internal::diff_days(x, y) / n;
         
+    } else if constexpr (unit == "hours"){
+
+        return internal::diff_days(x, y) * r_dbl(24) / n;
+
+    } else if constexpr (unit == "minutes"){
+
+        return internal::diff_days(x, y) * r_dbl(1440) / n;
+
+    } else { // Seconds
+
+        return internal::diff_days(x, y) * r_dbl(86400) / n;
+
     }
 }
 
