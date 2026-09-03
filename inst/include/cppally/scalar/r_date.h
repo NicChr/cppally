@@ -23,7 +23,7 @@ enum roll : uint8_t {
 };
 
 // R date that captures the number of days since epoch (1st Jan 1970)
-// While r_date is stored as a double to match R storage, fractional dates are NOT supported and are discouraged - use `r_psxct` instead for date-times.
+// Since r_date is stored as a double to match R storage, this means fractional dates are supported but highly discouraged - use `r_psxct` instead for date-times.
 struct r_date {
 
     r_dbl value;
