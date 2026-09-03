@@ -38,19 +38,20 @@ struct r_date {
 
     static constexpr double chrono_max_days() noexcept {
         using namespace std::chrono;
-        return sys_days{year::max()/December/31}.time_since_epoch().count();
+        return (sys_days{year::max()/December/31} + days{1}).time_since_epoch().count();
     }
 
     // Is the current date finite and representable for use with chrono?
     constexpr bool is_chrono_safe() const noexcept {
         double d = unwrap(*this);
-        return d >= chrono_min_days() && d <= chrono_max_days();
+        return d >= chrono_min_days() && d < chrono_max_days();
     }
 
     // Please ensure is_chrono_safe() is true before calling chrono_ymd()
+    // Floored, not truncated, so that fractional dates before the epoch resolve to the earlier day
     constexpr auto chrono_ymd() const noexcept {
         return std::chrono::year_month_day{
-            std::chrono::sys_days{std::chrono::days{static_cast<int32_t>(unwrap(*this))}}
+            std::chrono::sys_days{std::chrono::days{static_cast<int32_t>(internal::floor2(unwrap(*this)))}}
         };
     }
 
