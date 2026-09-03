@@ -48,7 +48,6 @@ struct r_date {
     }
 
     // Please ensure is_chrono_safe() is true before calling chrono_ymd()
-    // Floored, not truncated, so that fractional dates before the epoch resolve to the earlier day
     constexpr auto chrono_ymd() const noexcept {
         return std::chrono::year_month_day{
             std::chrono::sys_days{std::chrono::days{static_cast<int32_t>(internal::floor2(unwrap(*this)))}}
