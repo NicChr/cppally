@@ -214,7 +214,11 @@ struct r_date {
                 ymd = ymd.year() / ymd.month() / last;
             }
         }
-        return r_date(static_cast<double>(sys_days{ymd}.time_since_epoch().count()));
+
+        // Re-add fractional part that gets dropped by chrono
+        double rem = unwrap(*this) - internal::floor2(unwrap(*this));
+
+        return r_date(static_cast<double>(sys_days{ymd}.time_since_epoch().count()) + rem);
     }
 
     template <typename F>
