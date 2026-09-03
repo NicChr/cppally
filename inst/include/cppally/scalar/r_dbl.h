@@ -2,6 +2,7 @@
 #define CPPALLY_R_DBL_H
 
 #include <cppally/r_concepts.h>
+#include <cppally/utils.h>
 #include <limits>
 #include <bit> // for std::bit_cast
 
@@ -55,21 +56,15 @@ struct r_dbl {
   }
 
   constexpr bool is_infinite() const noexcept {
-    return constexpr_fabs(value) == static_cast<double>(inf());
+    return internal::abs2(value) == static_cast<double>(inf());
   }
 
   constexpr bool is_finite() const noexcept {
-    return constexpr_fabs(value) < static_cast<double>(inf());
+    return internal::abs2(value) < static_cast<double>(inf());
   }
 
   constexpr bool is_nan() const noexcept {
     return is_na() && !internal::has_na_real_payload(value);
-  }
-
-  private: 
-
-  static constexpr double constexpr_fabs(double x) noexcept {
-    return x > 0 ? x : -x;
   }
 
 };
