@@ -13,6 +13,12 @@
 
 namespace cppally {
 
+struct r_psxct;
+
+// Difference between two date-times, measured in `n`-unit periods
+template <string_literal Unit>
+inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, int n = 1, roll on_impossible_date = roll::none) noexcept;
+
 // R date-time that captures the number of seconds since epoch (1st Jan 1970) and hence implicitly UTC.
 // Fractional seconds are supported.
 struct r_psxct {
@@ -20,7 +26,11 @@ struct r_psxct {
     r_dbl value;
     using value_type = r_dbl;
 
-    private: 
+    private:
+
+    // Needs `is_valid_unit()`
+    template <string_literal Unit>
+    friend constexpr r_dbl time_diff(r_psxct, r_psxct, int, roll) noexcept;
 
     // Is valid time unit?
     template <string_literal U>
@@ -381,12 +391,10 @@ inline constexpr r_psxct r_date::as_datetime() const noexcept {
     return r_psxct(days_since_epoch() * r_dbl(86400.0));
 }
 
+namespace internal {
+
 inline constexpr r_dbl diff_seconds(r_psxct x, r_psxct y) noexcept {
     return static_cast<r_dbl>(y) - static_cast<r_dbl>(x);
-}
-
-inline constexpr r_dbl diff_days(r_psxct x, r_psxct y) noexcept {
-    return diff_seconds(x, y) / r_dbl(86400.0);
 }
 
 // Number of n-month periods between two dates
@@ -411,6 +419,50 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, int n = 1, bool fractio
     r_dbl fraction = diff_seconds(small_int_start, y) / r_dbl(internal::abs2(unwrap(diff_seconds(small_int_start, big_int_end))));
 
     return out + fraction;
+}
+
+}
+
+template <string_literal Unit>
+inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, int n, roll on_impossible_date) noexcept {
+
+    static_assert(r_psxct::is_valid_unit<Unit>(), "Invalid time unit, please supply 'seconds', 'minutes', 'hours', 'days', 'weeks', 'months' or 'years'");
+
+    if (n == 0 || r_int(n).is_na()){
+        return r_dbl::na();
+    }
+
+    constexpr std::string_view unit{Unit.data};
+
+    if constexpr (unit == "years") {
+
+        return internal::diff_months(x, y, r_int(n) * r_int(12), true, on_impossible_date);
+
+    } else if constexpr (unit == "months") {
+
+        return internal::diff_months(x, y, n, true, on_impossible_date);
+
+    } else if constexpr (unit == "weeks"){
+
+        return internal::diff_seconds(x, y) / (r_dbl(604800.0) * r_int(n));
+
+    } else if constexpr (unit == "days"){
+
+        return internal::diff_seconds(x, y) / (r_dbl(86400) * r_int(n));
+
+    } else if constexpr (unit == "hours"){
+
+        return internal::diff_seconds(x, y) / (r_dbl(3600) * r_int(n));
+
+    } else if constexpr (unit == "minutes"){
+
+        return internal::diff_seconds(x, y) / (r_dbl(60) * r_int(n));
+
+    } else {
+
+        return internal::diff_seconds(x, y) / r_int(n);
+
+    }
 }
 
 }

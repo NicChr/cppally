@@ -22,14 +22,23 @@ enum roll : uint8_t {
     nearest = 4     // rolls backward when adding and forward when subtracting
 };
 
+struct r_date;
+
+// Difference between two dates divided by n time-unit periods
+template <string_literal Unit>
+inline constexpr r_dbl time_diff(r_date x, r_date y, int n = 1, roll on_impossible_date = roll::none) noexcept;
+
 // R date that captures the number of days since epoch (1st Jan 1970)
 // Since r_date is stored as a double to match R storage, this means fractional dates are supported but highly discouraged - use `r_psxct` instead for date-times.
 struct r_date {
 
     r_dbl value;
     using value_type = r_dbl;
-    
+
     private:
+
+    template <string_literal Unit>
+    friend constexpr r_dbl time_diff(r_date, r_date, int, roll) noexcept;
 
     // Is valid time unit?
     template <string_literal U>
@@ -320,6 +329,8 @@ struct r_date {
 
 };
 
+namespace internal {
+
 // Difference in days between two dates
 inline constexpr r_dbl diff_days(r_date x, r_date y) noexcept {
     return static_cast<r_dbl>(y) - static_cast<r_dbl>(x);
@@ -369,6 +380,38 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, int n = 1, bool fractiona
     r_dbl fraction = diff_days(small_int_start, y) / r_dbl(internal::abs2(unwrap(diff_days(small_int_start, big_int_end))));
 
     return out + fraction;
+}
+
+}
+
+template <string_literal Unit>
+inline constexpr r_dbl time_diff(r_date x, r_date y, int n, roll on_impossible_date) noexcept {
+
+    static_assert(r_date::is_valid_unit<Unit>(), "Invalid time unit, please supply 'days', 'weeks', 'months' or 'years'");
+
+    if (n == 0 || r_int(n).is_na()){
+        return r_dbl::na();
+    }
+
+    constexpr std::string_view unit{Unit.data};
+
+    if constexpr (unit == "years") {
+
+        return internal::diff_months(x, y, r_int(n) * r_int(12), true, on_impossible_date);
+
+    } else if constexpr (unit == "months") {
+
+        return internal::diff_months(x, y, n, true, on_impossible_date);
+
+    } else if constexpr (unit == "weeks"){
+
+        return internal::diff_days(x, y) / (r_dbl(7) * r_int(n));
+
+    } else {
+
+        return internal::diff_days(x, y) / r_int(n);
+        
+    }
 }
 
 }
