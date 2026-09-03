@@ -20,11 +20,29 @@ struct r_psxct {
     r_dbl value;
     using value_type = r_dbl;
 
-    constexpr r_psxct() noexcept : value{0.0} {}
-    constexpr explicit operator r_dbl() const noexcept { return value; }
-    constexpr operator double() const noexcept { return static_cast<double>(value); }
+    private: 
 
-    private:
+    static constexpr double chrono_min_seconds() noexcept {
+        using namespace std::chrono;
+        return static_cast<double>(
+            sys_seconds{sys_days{year::min()/January/1}}.time_since_epoch().count()
+        );
+    }
+
+    static constexpr double chrono_max_seconds() noexcept {
+        using namespace std::chrono;
+        return static_cast<double>(
+            sys_seconds{sys_days{year::max()/December/31} + days{1}}.time_since_epoch().count()
+        );
+    }
+
+    // Is the current date-time finite and representable for use with chrono?
+    constexpr bool is_chrono_safe() const noexcept {
+        double s = unwrap(*this);
+        return s >= chrono_min_seconds() && s < chrono_max_seconds();
+    }
+
+    // chrono_* members assume is_chrono_safe() is true, so make sure to call that before calling them
 
     constexpr std::chrono::sys_seconds chrono_tp() const noexcept {
         namespace chrono = std::chrono;
@@ -56,6 +74,10 @@ struct r_psxct {
     }
 
     public:
+    
+    constexpr r_psxct() noexcept : value{0.0} {}
+    constexpr explicit operator r_dbl() const noexcept { return value; }
+    constexpr operator double() const noexcept { return static_cast<double>(value); }
 
     explicit constexpr r_psxct(double seconds_since_epoch) noexcept : value{seconds_since_epoch} {}
 
@@ -147,15 +169,15 @@ struct r_psxct {
     }
 
     constexpr r_int hour() const noexcept {
-        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(chrono_hms().hours().count()));
+        return is_chrono_safe() ? r_int(static_cast<int>(chrono_hms().hours().count())) : r_int::na();
     }
 
     constexpr r_int minute() const noexcept {
-        return !value.is_finite() ? r_int::na() : r_int(static_cast<int>(chrono_hms().minutes().count()));
+        return is_chrono_safe() ? r_int(static_cast<int>(chrono_hms().minutes().count())) : r_int::na();
     }
 
     constexpr r_dbl second() const noexcept {
-        return !value.is_finite() ? r_dbl::na() : r_dbl(static_cast<double>(chrono_hms().seconds().count()) + chrono_frac());
+        return is_chrono_safe() ? r_dbl(static_cast<double>(chrono_hms().seconds().count()) + chrono_frac()) : r_dbl::na();
     }
 
     constexpr r_lgl is_leap_year() const noexcept {
@@ -186,8 +208,12 @@ struct r_psxct {
             return na();
         }
 
-        if (!value.is_finite()){
+        if (static_cast<r_dbl>(*this).is_infinite()){
             return *this;
+        }
+
+        if (!is_chrono_safe()){
+            return na();
         }
 
         sys_days dp = chrono_days();
@@ -217,14 +243,14 @@ struct r_psxct {
     }
 
     r_str datetime_str() const {
-        
-        if (is_na()){
-            return r_str::na();
-        }
-
-        if (value.is_infinite()){
+    
+        if (static_cast<r_dbl>(*this).is_infinite()){
             return r_str(unwrap(value) > 0 ? "Inf" : "-Inf");
         }
+
+        if (!is_chrono_safe()){
+            return r_str::na();
+        }    
 
         auto ymd = chrono_ymd();
         auto hms = chrono_hms();
@@ -255,7 +281,7 @@ struct r_psxct {
     }
 
     constexpr r_date as_date() const noexcept {
-        return value.is_finite() ? r_date(static_cast<double>(chrono_days().time_since_epoch().count())) : r_date::na();
+        return is_chrono_safe() ? r_date(static_cast<double>(chrono_days().time_since_epoch().count())) : r_date::na();
     }
 
     // today's time based on unix time in fractional seconds (to microsecond level)
