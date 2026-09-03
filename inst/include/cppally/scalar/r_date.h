@@ -62,12 +62,16 @@ struct r_date {
 
     explicit constexpr r_date(double days_since_epoch) noexcept : value{ days_since_epoch } {}
 
+    constexpr r_dbl days_since_epoch() const noexcept {
+        return static_cast<r_dbl>(*this);
+    }
+
     static constexpr r_date na() noexcept {
         return r_date(r_dbl::na());
     }
 
     constexpr bool is_na() const noexcept {
-        return value.is_na();
+        return days_since_epoch().is_na();
     }
 
     // Construct r_date year/month/day
@@ -145,7 +149,7 @@ struct r_date {
     // Day of the year
     constexpr r_int yday() const noexcept {
         r_date first_day_of_the_year = r_date(year(), 1, 1);
-        r_dbl this_day_of_the_year = static_cast<r_dbl>(*this) - static_cast<r_dbl>(first_day_of_the_year) + r_dbl(1.0);
+        r_dbl this_day_of_the_year = days_since_epoch() - static_cast<r_dbl>(first_day_of_the_year) + r_dbl(1.0);
         return internal::coerce_number<r_int>(this_day_of_the_year);
     }
 
@@ -169,7 +173,7 @@ struct r_date {
     }
 
     constexpr r_date add_days(double n) const noexcept {
-        return r_date(static_cast<r_dbl>(*this) + r_dbl(n));
+        return r_date(days_since_epoch() + r_dbl(n));
     }
 
     // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls
@@ -183,7 +187,7 @@ struct r_date {
             return na();
         }
 
-        if (static_cast<r_dbl>(*this).is_infinite()){
+        if (days_since_epoch().is_infinite()){
             return *this;
         }
 
@@ -222,8 +226,8 @@ struct r_date {
             return na();
         }
 
-        if (static_cast<r_dbl>(*this).is_infinite() || r_dbl(n).is_infinite()){
-            return r_date(static_cast<r_dbl>(*this) + r_dbl(n));
+        if (days_since_epoch().is_infinite() || r_dbl(n).is_infinite()){
+            return r_date(days_since_epoch() + r_dbl(n));
         }
 
         r_int whole_months = internal::coerce_number<r_int>(r_dbl(internal::floor2(n)));
@@ -250,8 +254,8 @@ struct r_date {
 
     r_str date_str() const {
         
-        if (value.is_infinite()){
-            return r_str(unwrap(value) > 0 ? "Inf" : "-Inf");
+        if (days_since_epoch().is_infinite()){
+            return r_str(unwrap(*this) > 0 ? "Inf" : "-Inf");
         }
 
         if (!is_chrono_safe()){

@@ -46,7 +46,7 @@ struct r_psxct {
 
     constexpr std::chrono::sys_seconds chrono_tp() const noexcept {
         namespace chrono = std::chrono;
-        double s = unwrap(value);
+        double s = unwrap(*this);
         int64_t w = static_cast<int64_t>(s);
         // Floor
         if (s < static_cast<double>(w)) {
@@ -70,7 +70,7 @@ struct r_psxct {
 
     // Sub-second fraction, always in [0, 1)
     constexpr double chrono_frac() const noexcept {
-        return unwrap(value) - static_cast<double>(chrono_tp().time_since_epoch().count());
+        return unwrap(*this) - static_cast<double>(chrono_tp().time_since_epoch().count());
     }
 
     public:
@@ -81,12 +81,16 @@ struct r_psxct {
 
     explicit constexpr r_psxct(double seconds_since_epoch) noexcept : value{seconds_since_epoch} {}
 
+    constexpr r_dbl seconds_since_epoch() const noexcept {
+        return static_cast<r_dbl>(*this);
+    }
+
     static constexpr r_psxct na() noexcept {
         return r_psxct(r_dbl::na());
     }
 
     constexpr bool is_na() const noexcept {
-        return value.is_na();
+        return seconds_since_epoch().is_na();
     }
 
     // Construct r_psxct from year/month/day hour:minute:second
@@ -189,12 +193,12 @@ struct r_psxct {
     }
 
     constexpr r_psxct add_seconds(double n) const noexcept {
-        return r_psxct(static_cast<r_dbl>(*this) + r_dbl(n));
+        return r_psxct(seconds_since_epoch() + r_dbl(n));
     }
 
     // We can do an exact calculation using seconds because we're UTC and hence no DST
     constexpr r_psxct add_days(double n) const noexcept {
-        return r_psxct(static_cast<r_dbl>(*this) + r_dbl(86400.0) * r_dbl(n));
+        return r_psxct(seconds_since_epoch() + r_dbl(86400.0) * r_dbl(n));
     }
 
     // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls 
@@ -208,7 +212,7 @@ struct r_psxct {
             return na();
         }
 
-        if (static_cast<r_dbl>(*this).is_infinite()){
+        if (seconds_since_epoch().is_infinite()){
             return *this;
         }
 
@@ -252,8 +256,8 @@ struct r_psxct {
             return na();
         }
 
-        if (static_cast<r_dbl>(*this).is_infinite() || r_dbl(n).is_infinite()){
-            return r_psxct(static_cast<r_dbl>(*this) + r_dbl(n));
+        if (seconds_since_epoch().is_infinite() || r_dbl(n).is_infinite()){
+            return r_psxct(seconds_since_epoch() + r_dbl(n));
         }
 
         r_int whole_months = internal::coerce_number<r_int>(r_dbl(internal::floor2(n)));
@@ -280,8 +284,8 @@ struct r_psxct {
 
     r_str datetime_str() const {
     
-        if (static_cast<r_dbl>(*this).is_infinite()){
-            return r_str(unwrap(value) > 0 ? "Inf" : "-Inf");
+        if (seconds_since_epoch().is_infinite()){
+            return r_str(unwrap(*this) > 0 ? "Inf" : "-Inf");
         }
 
         if (!is_chrono_safe()){
@@ -330,7 +334,7 @@ struct r_psxct {
 };
 
 inline constexpr r_psxct r_date::as_datetime() const noexcept {
-    return r_psxct(static_cast<r_dbl>(*this) * r_dbl(86400.0));
+    return r_psxct(days_since_epoch() * r_dbl(86400.0));
 }
 
 inline constexpr r_dbl diff_seconds(r_psxct x, r_psxct y) noexcept {
