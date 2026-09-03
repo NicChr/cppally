@@ -29,7 +29,14 @@ struct r_date {
     r_dbl value;
     using value_type = r_dbl;
     
-    private: 
+    private:
+
+    // Is valid time unit?
+    template <string_literal U>
+    static consteval bool is_valid_unit() noexcept {
+        std::string_view unit{U.data};
+        return unit == "days" || unit == "weeks" || unit == "months" || unit == "years";
+    }
 
     static constexpr double chrono_min_days() noexcept {
         using namespace std::chrono;
@@ -110,72 +117,12 @@ struct r_date {
         value = out;
     }
 
-    // Year number
-    constexpr r_int year() const noexcept {
-        return is_chrono_safe() ? r_int(static_cast<int>(chrono_ymd().year())) : r_int::na();
-    }
-    
-    // Month of the year
-    constexpr r_int month() const noexcept {
-        return is_chrono_safe() ? r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().month()))) : r_int::na();
-    }
-    
-    // Week of the year
-    constexpr r_int week() const noexcept {
-        r_int res = yday() - r_int(1);
-        res /= r_int(7); // Floor integer division
-        return res + r_int(1);
-    }
-
-    // ISO-8601 weeks.
-    // A year has either 52 or 53 full ISO weeks, which has the advantage that all ISO weeks have 7 days.
-    constexpr r_int iso_week() const noexcept {
-        r_date thursday = add_days(r_dbl(4) - wday(/*week_start=*/ 1));
-        r_int res = thursday.yday() - r_int(1);
-        res /= r_int(7); // Floored integer division
-        return res + r_int(1);
-    }
-
-    constexpr r_int iso_year() const noexcept {
-        r_date thursday = add_days(r_dbl(4) - wday(/*week_start=*/ 1));
-        return thursday.year();
-    }
-    
-    // Day of the month
-    constexpr r_int day() const noexcept {
-        return is_chrono_safe() ? r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().day()))) : r_int::na();
-    }
-
-    // Day of the year
-    constexpr r_int yday() const noexcept {
-        r_date first_day_of_the_year = r_date(year(), 1, 1);
-        r_dbl this_day_of_the_year = days_since_epoch() - static_cast<r_dbl>(first_day_of_the_year) + r_dbl(1.0);
-        return internal::coerce_number<r_int>(this_day_of_the_year);
-    }
-
-    // Day of the week (1-based)
-    // week_start = [1 = Monday, 7 = Sunday]
-    constexpr r_int wday(int week_start = 7) const noexcept {
-        return !is_chrono_safe() || r_int(week_start).is_na() ? r_int::na() :  r_int( ( static_cast<int>(std::chrono::weekday(chrono_ymd()).iso_encoding()) - week_start + 7 ) % 7 + 1 );
-    }
-
-    constexpr r_lgl is_leap_year() const noexcept {
-        return is_chrono_safe() ? r_lgl(chrono_ymd().year().is_leap()) : r_na;
-    }
-
-    constexpr r_int days_in_month() const noexcept {
-
-        r_date first_day_of_month = r_date(year(), month(), 1);
-        r_date first_day_of_next_month = first_day_of_month.add_months(1);
-        r_dbl out = static_cast<r_dbl>(first_day_of_next_month) - static_cast<r_dbl>(first_day_of_month);
-
-        return internal::coerce_number<r_int>(out);
-    }
+    private: 
 
     constexpr r_date add_days(double n) const noexcept {
         return r_date(days_since_epoch() + r_dbl(n));
     }
-
+    
     // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls
     // to the start of the next month when `n >= 0` and to the last day of the current month when 
     // `n < 0`
@@ -256,6 +203,96 @@ struct r_date {
         return out.add_days(fraction * n_days);
     }
 
+    public:
+
+    template <string_literal Unit, typename N> 
+    constexpr r_date add(N n, roll on_impossible_date = roll::none) const noexcept {
+
+        constexpr std::string_view unit{Unit.data};
+
+        static_assert(is_valid_unit<Unit>(), "Invalid time unit, please supply 'days', 'weeks', 'months' or 'years'");
+
+        if constexpr (unit == "days") {
+
+            return add_days(n);
+
+        } else if constexpr (unit == "weeks") {
+
+            return add_days(n * r_dbl(7));
+
+        } else if constexpr (unit == "months") {
+
+            return add_months(n, on_impossible_date);
+
+        } else {
+
+            return add_months(n * r_int(12), on_impossible_date);
+
+        }
+    }
+
+    // Year number
+    constexpr r_int year() const noexcept {
+        return is_chrono_safe() ? r_int(static_cast<int>(chrono_ymd().year())) : r_int::na();
+    }
+    
+    // Month of the year
+    constexpr r_int month() const noexcept {
+        return is_chrono_safe() ? r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().month()))) : r_int::na();
+    }
+    
+    // Week of the year
+    constexpr r_int week() const noexcept {
+        r_int res = yday() - r_int(1);
+        res /= r_int(7); // Floor integer division
+        return res + r_int(1);
+    }
+
+    // ISO-8601 weeks.
+    // A year has either 52 or 53 full ISO weeks, which has the advantage that all ISO weeks have 7 days.
+    constexpr r_int iso_week() const noexcept {
+        r_date thursday = add_days(r_dbl(4) - wday(/*week_start=*/ 1));
+        r_int res = thursday.yday() - r_int(1);
+        res /= r_int(7); // Floored integer division
+        return res + r_int(1);
+    }
+
+    constexpr r_int iso_year() const noexcept {
+        r_date thursday = add_days(r_dbl(4) - wday(/*week_start=*/ 1));
+        return thursday.year();
+    }
+    
+    // Day of the month
+    constexpr r_int day() const noexcept {
+        return is_chrono_safe() ? r_int(static_cast<int>(static_cast<unsigned int>(chrono_ymd().day()))) : r_int::na();
+    }
+
+    // Day of the year
+    constexpr r_int yday() const noexcept {
+        r_date first_day_of_the_year = r_date(year(), 1, 1);
+        r_dbl this_day_of_the_year = days_since_epoch() - static_cast<r_dbl>(first_day_of_the_year) + r_dbl(1.0);
+        return internal::coerce_number<r_int>(this_day_of_the_year);
+    }
+
+    // Day of the week (1-based)
+    // week_start = [1 = Monday, 7 = Sunday]
+    constexpr r_int wday(int week_start = 7) const noexcept {
+        return !is_chrono_safe() || r_int(week_start).is_na() ? r_int::na() :  r_int( ( static_cast<int>(std::chrono::weekday(chrono_ymd()).iso_encoding()) - week_start + 7 ) % 7 + 1 );
+    }
+
+    constexpr r_lgl is_leap_year() const noexcept {
+        return is_chrono_safe() ? r_lgl(chrono_ymd().year().is_leap()) : r_na;
+    }
+
+    constexpr r_int days_in_month() const noexcept {
+
+        r_date first_day_of_month = r_date(year(), month(), 1);
+        r_date first_day_of_next_month = first_day_of_month.add_months(1);
+        r_dbl out = static_cast<r_dbl>(first_day_of_next_month) - static_cast<r_dbl>(first_day_of_month);
+
+        return internal::coerce_number<r_int>(out);
+    }
+
     r_str date_str() const {
         
         if (days_since_epoch().is_infinite()){
@@ -322,13 +359,13 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, int n = 1, bool fractiona
     }
 
     r_int months_add = whole_months * r_int(n);
-    r_date small_int_start = x.add_months(months_add, on_impossible_date);
+    r_date small_int_start = x.add<"months">(months_add, on_impossible_date);
 
     if (static_cast<double>(y) == static_cast<double>(small_int_start)){
         return out;
     }
 
-    r_date big_int_end = x.add_months(months_add + r_int(l2r ? n : -n), on_impossible_date);
+    r_date big_int_end = x.add<"months">(months_add + r_int(l2r ? n : -n), on_impossible_date);
     r_dbl fraction = diff_days(small_int_start, y) / r_dbl(internal::abs2(unwrap(diff_days(small_int_start, big_int_end))));
 
     return out + fraction;
