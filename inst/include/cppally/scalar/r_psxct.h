@@ -363,7 +363,7 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, int n = 1, bool fractio
         return out;
     }
 
-    r_psxct big_int_end = x.add_months(months_add + r_int(unwrap(y) > unwrap(x) ? n : -n), on_impossible_date);
+    r_psxct big_int_end = x.add_months(months_add + r_int(unwrap(y) >= unwrap(x) ? n : -n), on_impossible_date);
     r_dbl fraction = diff_seconds(small_int_start, y) / r_dbl(internal::abs2(unwrap(diff_seconds(small_int_start, big_int_end))));
 
     return out + fraction;
