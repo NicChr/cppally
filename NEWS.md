@@ -137,7 +137,7 @@ produce a fractional date representing noon of the current day and
 `r_date::today().as_datetime().add<"hours">(12)` will produce a date-time `r_psxct` 
 also representing noon of the current day.
 
-I would generally recommend against using sub-day units with r_date and to use 
+I would generally recommend against using sub-day units with `r_date` and to use 
 `r_psxct` if you ever need sub-day granularity.
 
 To add sub-second units such as milliseconds and microseconds, simply supply 
