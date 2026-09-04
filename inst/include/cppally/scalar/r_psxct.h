@@ -217,7 +217,7 @@ struct r_psxct {
         r_psxct next_month = add_months(whole_months + 1, on_impossible_date);
         
         // Number of seconds between result and next month
-        double n_seconds = static_cast<r_dbl>(next_month) - static_cast<r_dbl>(out);
+        double n_seconds = next_month.seconds_since_epoch() - out.seconds_since_epoch();
 
         // add (fraction * n_seconds) seconds to result
         return out.add_seconds(fraction * n_seconds);
@@ -469,7 +469,7 @@ inline constexpr r_psxct r_date::as_datetime() const noexcept {
 namespace internal {
 
 inline constexpr r_dbl diff_seconds(r_psxct x, r_psxct y) noexcept {
-    return static_cast<r_dbl>(y) - static_cast<r_dbl>(x);
+    return y.seconds_since_epoch() - x.seconds_since_epoch();
 }
 
 // Number of n-month periods between two dates
