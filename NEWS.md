@@ -89,20 +89,36 @@ R C API header 'Random.h'.
 
 ## r_date & r_psxct
 
-A new complete set of fast and parallelisable member and free functions for 
-`r_date` and `r_psxct`. 
+A new complete set of fast and parallelisable thread-safe member and free functions for 
+`r_date` and `r_psxct`, which respectively represent R dates and date-times.
 
-- New field accessor functions like
+- New field accessors like
 `year()`, `month()`, `week()`, `day()`, `hour()`, `minute()`, `second()`, 
 `iso_week()` and `iso_year()`. 
 
-- New date arithmetic functions such as `add_months()`, `add_days()`, 
-and `add_seconds()`. When performing month arithmetic, you sometimes end up with 
-impossible dates, e.g. 31 Jan + 1 month = ?
-`add_months()` allows you to either leave the result as `NA`, roll to the first of
-the next month, or roll to the last day of the month. 
-This can be controlled via the `on_impossible_date` argument 
-of `add_months()`, which accepts a value of type `roll`, whose definition is:
+- New date arithmetic member template function `add<>`, allowing flexible addition with
+time units such as "years", "months", "weeks", "days", "hours", "minutes", and "seconds".
+
+- New date rounding member functions `floor`, `ceiling` and `round`. 
+
+- New static member functions `r_date::today()` and `r_psxct::now()` to 
+get the current date or current time. `r_psxct::now()` returns the current time 
+in fractional seconds to microsecond precision.
+
+- New template function `time_diff<>` to calculate time differences between 
+two dates or date-times.
+
+### Date and date-time arithmetic
+
+To perform time arithmetic with dates and date-times, use `add<>`, e.g. 
+`x.add<"days">(1)` adds 1 day to x, and `x.add<"months">(-3)` subtracts 3 months 
+from x.
+
+The `on_impossible_date` argument of `add<>` allows you to control how to handle 
+impossible dates that arise when performing month-based arithmetic, 
+e.g. 31 Jan + 1 month = ?
+
+All `roll` options:
 
 ```cpp
 enum roll : uint8_t {
@@ -114,12 +130,64 @@ enum roll : uint8_t {
 };
 ```
 
-- New free functions to calculate time differences. These include `diff_days()`, 
-`diff_months()` and `diff_seconds()`.
+Sub-day units are accepted in both `r_date` and `r_psxct` arithmetic. 
+For `r_date` specifically, fractional dates are produced when using sub-day units
+(such as "hours") for date arithmetic. `r_date::today().add<"hours">(12)` will 
+produce a fractional date representing noon of the current day and 
+`r_date::today().as_datetime().add<"hours">(12)` will produce a date-time `r_psxct` 
+also representing noon of the current day.
 
-- New static member functions `r_date::today()` and `r_psxct::now()` to 
-get the current date or current time. `r_psxct::now()` returns the current time 
-in fractional seconds to microsecond precision.
+I would generally recommend against using sub-day units with r_date and to use 
+`r_psxct` if you ever need sub-day granularity.
+
+To add sub-second units such as milliseconds and microseconds, simply supply 
+fractional seconds, e.g. `x.add<"seconds">(1.0/1000.0)` adds 1 millisecond to x.
+It's worth noting that loss in floating-point precision can occur when working 
+with small microseconds, though this is inherent in R's `POSIXct` class as well.
+
+### Date and date-time rounding
+
+To round dates and date-times, use member functions `floor`, `ceiling` and `round`. 
+
+For example, `x.floor<"months">()` floors x to the start of the current month. 
+`x.ceiling<"months">()` advances x to the start of the next month, 
+unless it is already at the start of the month.
+
+Rounding functions accept a `week_start` argument, which is only relevant for 
+rounding "weeks". It follows the same convention as `wday()`, 
+where 1 is Monday and 7 is Sunday (the default). 
+For example, `x.floor<"weeks">()` floors x to the most recent past Sunday,
+whereas `x.floor<"weeks">(1)` floors x to the most recent past Monday.
+
+When the date is exactly at the midpoint between boundaries, `round()` will 
+floor the date, so for example if we are rounding a date-time to the nearest day and 
+the time is at noon, the date-time gets floored to midnight on the same day.
+
+### Date and date-time differences
+
+To calculate the time difference between two dates or date-times, use
+`time_diff<>`.
+
+For example, `time_diff<"months">(x, y)` calculates the difference in 
+months between x and y. If x and y do not share the same day-of-the-month, then 
+a fractional difference is returned. Use `cppally::floor()` to floor the result 
+if you always need a whole difference.
+
+To return time differences using `n` time unit periods (the default is 1), just 
+pass it to the `n` argument, e.g. `time_diff<"months">(x, y, /*n=*/ 3)` returns 
+the difference in quarters between x and y, and similarly 
+`time_diff<"days">(x, y, /*n=*/ 7)` is the same as `time_diff<"weeks">(x, y)`.
+
+For monthly time differences, sometimes impossible dates can arise when either x or y 
+has a day-of-the-month that is larger than the other's number of days in the month. 
+While the default `time_diff<"months">()` would return `NA`, we can control the internal 
+impossible date rolling with the `on_impossible_date` arg. 
+
+For example, assuming x is 31 Jan 2024 and y is 29 Feb 2024, 
+`time_diff<"months">(x, y, 1, roll::nearest)` rolls the impossible 31 Feb date 
+back to 29th February, resulting in a difference of exactly 1 month.
+If we specified `roll::away` the date becomes 1st March instead, 
+giving a fractional answer that is slightly less than 1 month. 
 
 ## Improvements
 
@@ -175,7 +243,7 @@ R C API tag `attribute_hidden`.
 
 - `r_vec<>` gains an `initializer_list` constructor.
 
-## New features
+## Other new features
 
 - New `copy` member for `r_vec`, `r_factors` and `r_df`. `copy` shallow 
 copies the vector by creating a fresh copy of the atomic data, without deep 
@@ -204,12 +272,12 @@ compile expressions using the optional light header "cppally_light.hpp".
 - `r_factors` gains a new member function, `refactor`, which creates a new
 `r_factors` object given a new set of levels. 
 
-- New r function `use_openmp()` to set OpenMP-enabling Makevars flags.
+- New R function `use_openmp()` to set OpenMP-enabling Makevars flags.
 
 - A new **optional** feature where users can now restrict the set of candidates 
 that participate in template dispatch for template-registered R/C++ functions 
 via `use_template_dispatch_candidates()`. 
-For example, if a user wishes to write a C++ algebra library using only ntegers and doubles,
+For example, if a user wishes to write a C++ algebra library using only integers and doubles,
 they can call `use_template_dispatch_candidates(c("r_int", "r_dbl"))`, and 
 any template they register to R will only ever accept **at most** those types, regardless of 
 the concepts and constraints of the template.
