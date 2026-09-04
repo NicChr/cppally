@@ -198,7 +198,7 @@ struct r_date {
         r_date next_month = add_months(whole_months + 1, on_impossible_date);
         
         // Number of days between result and next month
-        double n_days = static_cast<r_dbl>(next_month) - static_cast<r_dbl>(out);
+        double n_days = next_month.days_since_epoch() - out.days_since_epoch();
 
         // add (fraction * n_days) days to result
         return out.add_days(fraction * n_days);
@@ -285,7 +285,7 @@ struct r_date {
     // Day of the year
     constexpr r_int yday() const noexcept {
         r_date first_day_of_the_year = r_date(year(), 1, 1);
-        r_dbl this_day_of_the_year = days_since_epoch() - static_cast<r_dbl>(first_day_of_the_year) + r_dbl(1.0);
+        r_dbl this_day_of_the_year = days_since_epoch() - first_day_of_the_year.days_since_epoch() + r_dbl(1.0);
         return internal::coerce_number<r_int>(this_day_of_the_year);
     }
 
@@ -303,7 +303,7 @@ struct r_date {
 
         r_date first_day_of_month = r_date(year(), month(), 1);
         r_date first_day_of_next_month = first_day_of_month.add_months(1);
-        r_dbl out = static_cast<r_dbl>(first_day_of_next_month) - static_cast<r_dbl>(first_day_of_month);
+        r_dbl out = first_day_of_next_month.days_since_epoch() - first_day_of_month.days_since_epoch();
 
         return internal::coerce_number<r_int>(out);
     }
@@ -431,13 +431,13 @@ namespace internal {
 
 // Difference in days between two dates
 inline constexpr r_dbl diff_days(r_date x, r_date y) noexcept {
-    return static_cast<r_dbl>(y) - static_cast<r_dbl>(x);
+    return y.days_since_epoch() - x.days_since_epoch();
 }
 
 // Number of n-month periods between two dates
 inline constexpr r_dbl diff_months(r_date x, r_date y, int n = 1, bool fractional = true, roll on_impossible_date = roll::none) noexcept {
 
-    if (n == 0 || r_int(n).is_na() || !static_cast<r_dbl>(x).is_finite() || !static_cast<r_dbl>(y).is_finite()){
+    if (n == 0 || r_int(n).is_na() || !x.days_since_epoch().is_finite() || !y.days_since_epoch().is_finite()){
         return r_dbl::na();
     }
 
