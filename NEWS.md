@@ -90,7 +90,9 @@ R C API header 'Random.h'.
 ## r_date & r_psxct
 
 A new complete set of fast and parallelisable thread-safe member and free functions for 
-`r_date` and `r_psxct`, which respectively represent R dates and date-times.
+`r_date` and `r_psxct`, which respectively represent R dates and date-times. 
+Currently, all `r_date` and `r_psxct` member functions are thread-safe except for 
+`r_date::date_str()` and `r_psxct::datetime_str()`.
 
 - New field accessors like
 `year()`, `month()`, `week()`, `day()`, `hour()`, `minute()`, `second()`, 
