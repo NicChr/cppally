@@ -342,6 +342,10 @@ struct r_date {
 
         static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
 
+        if (!days_since_epoch().is_finite()){
+            return *this;
+        }
+
         if constexpr (unit == "years") {
 
             return r_date(year(), 1, 1);
@@ -352,7 +356,8 @@ struct r_date {
 
         } else if constexpr (unit == "weeks") {
 
-            return add<"days">(internal::coerce_number<r_dbl>(-(wday(week_start) - 1)));
+            r_date start_of_week = add<"days">(internal::coerce_number<r_dbl>(-(wday(week_start) - 1)));
+            return r_date(start_of_week.year(), start_of_week.month(), start_of_week.day());
 
         } else if constexpr (unit == "days"){
 
@@ -374,28 +379,28 @@ struct r_date {
     }
 
     template <string_literal Unit>
-    constexpr r_date ceiling(int week_start = 7, bool change_on_boundary = false) const noexcept {
+    constexpr r_date ceiling(int week_start = 7) const noexcept {
 
         constexpr std::string_view unit{Unit.data};
 
         static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
 
-        r_date upper = add<Unit>(1);
-
-        if (!change_on_boundary){
-
-            r_date lower = floor<Unit>(week_start);
-
-            if (lower.is_na()){
-                return na();
-            }
-
-            if ( unwrap(lower.days_since_epoch() - days_since_epoch()) == 0 ){
-                return lower;
-            }
+        if (!days_since_epoch().is_finite()){
+            return *this;
         }
 
-        return upper.floor<Unit>();
+        r_date lower = floor<Unit>(week_start);
+        r_date upper = add<Unit>(1);
+
+        if (lower.is_na()){
+            return na();
+        }
+
+        if ( unwrap(lower.days_since_epoch() - days_since_epoch()) == 0 ){
+            return lower;
+        }
+
+        return upper.floor<Unit>(week_start);
     }
 
     template <string_literal Unit>
@@ -406,16 +411,16 @@ struct r_date {
         }
 
         r_date lower = floor<Unit>(week_start);
-        r_date upper = ceiling<Unit>(week_start, false);
+        r_date upper = ceiling<Unit>(week_start);
         r_dbl lower_diff = days_since_epoch() - lower.days_since_epoch();
         r_dbl upper_diff = upper.days_since_epoch() - days_since_epoch();
 
         // If we're at exactly the halfway point, floor the date to the nearest time unit
         // So for example, if we're rounding to the nearest day and the date is at noon, we floor to midnight on the same day.
-        if (unwrap(lower_diff) < unwrap(upper_diff)){
+        if (unwrap(lower_diff) <= unwrap(upper_diff)){
             return lower;
         } else {
-            return ceiling<Unit>(week_start, false);
+            return upper;
         }
 
     }
