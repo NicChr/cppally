@@ -37,6 +37,14 @@ struct r_date {
     r_dbl value;
     using value_type = r_dbl;
 
+    constexpr r_date() noexcept : value{0.0} {}
+    constexpr explicit operator r_dbl() const noexcept { return value; }
+    constexpr operator double() const noexcept { return static_cast<double>(value); }
+
+    constexpr r_dbl days_since_epoch() const noexcept {
+        return static_cast<r_dbl>(*this);
+    }
+
     private:
 
     static constexpr double chrono_min_days() noexcept {
@@ -50,9 +58,9 @@ struct r_date {
     }
 
     // Is the current date finite and representable for use with chrono?
+    // Assume days_since_epoch() has already been validated by r_date ctor
     constexpr bool is_chrono_safe() const noexcept {
-        double d = unwrap(*this);
-        return d >= chrono_min_days() && d < chrono_max_days();
+        return days_since_epoch().is_finite(); // Also false for NA
     }
 
     // Please ensure is_chrono_safe() is true before calling chrono_ymd()
@@ -64,15 +72,9 @@ struct r_date {
 
     public:
 
-    constexpr r_date() noexcept : value{0.0} {}
-    constexpr explicit operator r_dbl() const noexcept { return value; }
-    constexpr operator double() const noexcept { return static_cast<double>(value); }
-
-    explicit constexpr r_date(double days_since_epoch) noexcept : value{ days_since_epoch } {}
-
-    constexpr r_dbl days_since_epoch() const noexcept {
-        return static_cast<r_dbl>(*this);
-    }
+    explicit constexpr r_date(double days_since_epoch) noexcept : value {
+        (days_since_epoch >= chrono_min_days() && days_since_epoch < chrono_max_days()) || r_dbl(days_since_epoch).is_infinite() ? days_since_epoch : r_dbl::na()
+    } {}
 
     static constexpr r_date na() noexcept {
         return r_date(r_dbl::na());
@@ -135,12 +137,8 @@ struct r_date {
             return na();
         }
 
-        if (days_since_epoch().is_infinite()){
-            return *this;
-        }
-
         if (!is_chrono_safe()){
-            return na();
+            return *this;
         }
         
         year_month_day ymd = chrono_ymd();
@@ -174,11 +172,7 @@ struct r_date {
         
         using namespace std::chrono;
 
-        if (is_na() || r_dbl(n).is_na()){
-            return na();
-        }
-
-        if (days_since_epoch().is_infinite() || r_dbl(n).is_infinite()){
+        if (!is_chrono_safe() || !r_dbl(n).is_finite()){
             return r_date(days_since_epoch() + r_dbl(n));
         }
 
