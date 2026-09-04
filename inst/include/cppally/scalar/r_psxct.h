@@ -20,6 +20,14 @@ struct r_psxct {
     r_dbl value;
     using value_type = r_dbl;
 
+    constexpr r_psxct() noexcept : value{0.0} {}
+    constexpr explicit operator r_dbl() const noexcept { return value; }
+    constexpr operator double() const noexcept { return static_cast<double>(value); }
+
+    constexpr r_dbl seconds_since_epoch() const noexcept {
+        return static_cast<r_dbl>(*this);
+    }
+
     private:
 
     static constexpr double chrono_min_seconds() noexcept {
@@ -38,8 +46,7 @@ struct r_psxct {
 
     // Is the current date-time finite and representable for use with chrono?
     constexpr bool is_chrono_safe() const noexcept {
-        double s = unwrap(*this);
-        return s >= chrono_min_seconds() && s < chrono_max_seconds();
+        return seconds_since_epoch().is_finite();
     }
 
     // chrono_* members assume is_chrono_safe() is true, so make sure to call that before calling them
@@ -74,16 +81,10 @@ struct r_psxct {
     }
 
     public:
-    
-    constexpr r_psxct() noexcept : value{0.0} {}
-    constexpr explicit operator r_dbl() const noexcept { return value; }
-    constexpr operator double() const noexcept { return static_cast<double>(value); }
 
-    explicit constexpr r_psxct(double seconds_since_epoch) noexcept : value{seconds_since_epoch} {}
-
-    constexpr r_dbl seconds_since_epoch() const noexcept {
-        return static_cast<r_dbl>(*this);
-    }
+    explicit constexpr r_psxct(double seconds_since_epoch) noexcept : value {
+        (seconds_since_epoch >= chrono_min_seconds() && seconds_since_epoch < chrono_max_seconds()) || r_dbl(seconds_since_epoch).is_infinite() ? seconds_since_epoch : r_dbl::na()
+    } {}
 
     static constexpr r_psxct na() noexcept {
         return r_psxct(r_dbl::na());
@@ -152,13 +153,9 @@ struct r_psxct {
         if (r_int(n).is_na()){
             return na();
         }
-
-        if (seconds_since_epoch().is_infinite()){
-            return *this;
-        }
-
+        
         if (!is_chrono_safe()){
-            return na();
+            return *this;
         }
 
         sys_days dp = chrono_days();
@@ -193,11 +190,7 @@ struct r_psxct {
         
         using namespace std::chrono;
 
-        if (is_na() || r_dbl(n).is_na()){
-            return na();
-        }
-
-        if (seconds_since_epoch().is_infinite() || r_dbl(n).is_infinite()){
+        if (!is_chrono_safe() || !r_dbl(n).is_finite()){
             return r_psxct(seconds_since_epoch() + r_dbl(n));
         }
 
