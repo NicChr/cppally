@@ -368,6 +368,98 @@ struct r_psxct {
         );
     }
 
+    // Rounding
+
+    template <string_literal Unit>
+    constexpr r_psxct floor(int week_start = 7) const noexcept {
+
+        constexpr std::string_view unit{Unit.data};
+
+        static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
+
+        if (!seconds_since_epoch().is_finite()){
+            return *this;
+        }
+
+        if constexpr (unit == "years") {
+
+            return r_psxct(year(), 1, 1, 0, 0, 0.0);
+
+        } else if constexpr (unit == "months") {
+            
+            return r_psxct(year(), month(), 1, 0, 0, 0.0);
+
+        } else if constexpr (unit == "weeks") {
+
+            r_psxct start_of_week = add<"days">(internal::coerce_number<r_dbl>(-(wday(week_start) - 1)));
+            return r_psxct(start_of_week.year(), start_of_week.month(), start_of_week.day(), 0, 0, 0);
+
+        } else if constexpr (unit == "days"){
+
+            return r_psxct(year(), month(), day(), 0, 0, 0);
+
+        } else if constexpr (unit == "hours"){
+
+            return r_psxct(year(), month(), day(), hour(), 0, 0);
+
+        } else if constexpr (unit == "minutes"){
+
+            return r_psxct(year(), month(), day(), hour(), minute(), 0);
+
+        } else { // Seconds
+
+            return r_psxct(year(), month(), day(), hour(), minute(), r_dbl(internal::floor2(second())));
+
+        }
+    }
+
+    template <string_literal Unit>
+    constexpr r_psxct ceiling(int week_start = 7) const noexcept {
+
+        constexpr std::string_view unit{Unit.data};
+
+        static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
+
+        if (!seconds_since_epoch().is_finite()){
+            return *this;
+        }
+
+        r_psxct lower = floor<Unit>(week_start);
+        r_psxct upper = add<Unit>(1);
+
+        if (lower.is_na()){
+            return na();
+        }
+
+        if ( unwrap(lower.seconds_since_epoch() - seconds_since_epoch()) == 0 ){
+            return lower;
+        }
+
+        return upper.floor<Unit>(week_start);
+    }
+
+    template <string_literal Unit>
+    constexpr r_psxct round(int week_start = 7) const noexcept {
+
+        if (!seconds_since_epoch().is_finite()){
+            return *this;
+        }
+
+        r_psxct lower = floor<Unit>(week_start);
+        r_psxct upper = ceiling<Unit>(week_start);
+        r_dbl lower_diff = seconds_since_epoch() - lower.seconds_since_epoch();
+        r_dbl upper_diff = upper.seconds_since_epoch() - seconds_since_epoch();
+
+        // If we're at exactly the halfway point, floor the date to the nearest time unit
+        // So for example, if we're rounding to the nearest day and the date is at noon, we floor to midnight on the same day.
+        if (unwrap(lower_diff) <= unwrap(upper_diff)){
+            return lower;
+        } else {
+            return upper;
+        }
+
+    }
+
 };
 
 inline constexpr r_psxct r_date::as_datetime() const noexcept {
