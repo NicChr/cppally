@@ -231,20 +231,20 @@ behaviour, use `is_true()` and `is_false()` before using `&&` and `||`.
 All cppally scalar types are implemented as structs that contain the
 underlying C/C++ types as well as other member functions.
 
-| cppally type  | Description                 | Built on               |
-|:--------------|-----------------------------|:-----------------------|
-| `r_lgl`       | Scalar logical              | `int`                  |
-| `r_int`       | Scalar integer              | `int`                  |
-| `r_int64`     | Scalar 64-bit integer       | `int64_t`              |
-| `r_dbl`       | Scalar double               | `double`               |
-| `r_str`       | Scalar string               | `r_sexp`               |
-| `r_str_view`  | Scalar string (view)        | `SEXP`                 |
-| `r_cplx`      | Scalar double complex       | `std::complex<double>` |
-| `r_raw`       | Scalar raw                  | `unsigned char`        |
-| `r_sym`       | Symbol                      | `SEXP`                 |
-| `r_date` [^1] | Scalar date                 | `r_dbl`                |
-| `r_psxct`     | Scalar date-time            | `r_dbl`                |
-| `r_sexp`      | Generic R object (SEXP)[^2] | `SEXP`                 |
+| cppally type | Description                 | Built on               |
+|:-------------|-----------------------------|:-----------------------|
+| `r_lgl`      | Scalar logical              | `int`                  |
+| `r_int`      | Scalar integer              | `int`                  |
+| `r_int64`    | Scalar 64-bit integer       | `int64_t`              |
+| `r_dbl`      | Scalar double               | `double`               |
+| `r_str`      | Scalar string               | `r_sexp`               |
+| `r_str_view` | Scalar string (view)        | `SEXP`                 |
+| `r_cplx`     | Scalar double complex       | `std::complex<double>` |
+| `r_raw`      | Scalar raw                  | `unsigned char`        |
+| `r_sym`      | Symbol                      | `SEXP`                 |
+| `r_date`     | Scalar date                 | `r_dbl`                |
+| `r_psxct`    | Scalar date-time            | `r_dbl`                |
+| `r_sexp`     | Generic R object (SEXP)[^1] | `SEXP`                 |
 
 ### NA values
 
@@ -781,6 +781,250 @@ str_concatenate("hello", "how are you?", sep = ", ")
 #> [1] "hello, how are you?"
 ```
 
+## Dates and date-times
+
+cppally offers two classes: `r_date` for dates and `r_psxct` for
+date-times (based on POSIX time). These classes offer a rich set of
+member functions to perform date arithmetic and manipulation.
+
+To quickly re-familiarise ourselves - R Dates and Date-times are
+essentially double-valued offsets from Unix time. Unix time is defined
+as the number of seconds since 1 Jan 1970, and so `r_date` is
+effectively an offset representing the number of days since epoch, and
+similarly `r_psxct` is an offset representing the number of seconds
+since epoch.
+
+To create a new `r_date`, use the `r_date(year, month, day)`
+constructor.
+
+``` cpp
+
+[[cppally::register]]
+r_date create_date(int year, int month, int day){
+  return r_date(year, month, day);
+}
+[[cppally::register]]
+r_date date_from_epoch_offset(double n){
+  return r_date(n);
+}
+
+[[cppally::register]]
+r_psxct create_datetime(int year, int month, int day, int hour, int minute, double second){
+  return r_psxct(year, month, day, hour, minute, second);
+}
+[[cppally::register]]
+r_psxct datetime_from_epoch_offset(double n){
+  return r_psxct(n);
+}
+```
+
+``` r
+
+create_date(1970, 1, 1); # This builds the Unix epoch date
+#> [1] "1970-01-01"
+```
+
+You can also build an `r_date` from an epoch offset.
+
+``` r
+
+date_from_epoch_offset(0) # Also builds the Unix epoch
+#> [1] "1970-01-01"
+```
+
+Similarly, to create a new `r_psxct`, use the
+`r_psxct(year, month, day, hour, minute, second)` constructor.
+
+``` r
+
+create_datetime(1970, 1, 1, 0, 0, 0); # Unix epoch date-time
+#> [1] "1970-01-01 UTC"
+datetime_from_epoch_offset(0)         # Unix epoch from an offset
+#> [1] "1970-01-01 UTC"
+```
+
+To get the current date and date-time, use `r_date::today()` and
+`r_psxct::now()` respectively.
+
+``` cpp
+
+[[cppally::register]]
+r_date get_today(){
+  return r_date::today();
+}
+[[cppally::register]]
+r_psxct get_now(){
+  return r_psxct::now();
+}
+```
+
+``` r
+
+get_today()
+#> [1] "2026-09-05"
+get_now()
+#> [1] "2026-09-05 20:41:49 UTC"
+```
+
+**Note:** `r_psxct` currently only supports UTC and no other time-zones.
+
+#### Adding days, months, and years
+
+`r_date` and `r_psxct` both have the template function `add<>`, which
+allows us to add years, months, weeks, days, hours, minutes and seconds
+to our dates and date-times.
+
+``` cpp
+
+[[cppally::register]]
+r_date add_days(r_date x, double n){
+  return x.add<"days">(n);
+}
+[[cppally::register]]
+r_date add_months(r_date x, double n){
+  return x.add<"months">(n);
+}
+```
+
+``` r
+
+y2k <- create_date(2000, 1, 1)
+
+# Day after y2k
+y2k |>
+  add_days(1)
+#> [1] "2000-01-02"
+
+# Week after y2k
+y2k |>
+  add_days(7)
+#> [1] "2000-01-08"
+
+# Month after y2k
+y2k |>
+  add_months(1)
+#> [1] "2000-02-01"
+
+# Year after y2k
+y2k |>
+  add_months(12)
+#> [1] "2001-01-01"
+```
+
+### Accessing date components
+
+Those familiar with lubridate will instantly be familiar with the naming
+of these functions, something that was an intentional design choice to
+reduce confusion for those who are familiar with tidyverse.
+
+``` cpp
+
+[[cppally::register]]
+r_int get_year(r_date x){
+  return x.year();
+}
+[[cppally::register]]
+r_int get_month(r_date x){
+  return x.month();
+}
+[[cppally::register]]
+r_int get_week(r_date x){
+  return x.week();
+}
+[[cppally::register]]
+r_int get_day(r_date x){
+  return x.day();
+}
+[[cppally::register]]
+r_int get_wday(r_date x, int week_start){
+  return x.wday(week_start);
+}
+[[cppally::register]]
+r_int get_yday(r_date x){
+  return x.yday();
+}
+[[cppally::register]]
+r_int get_iso_week(r_date x){
+  return x.iso_week();
+}
+[[cppally::register]]
+r_int get_iso_year(r_date x){
+  return x.iso_year();
+}
+```
+
+``` r
+
+get_year(y2k)
+#> [1] 2000
+get_month(y2k)
+#> [1] 1
+get_week(y2k)
+#> [1] 1
+get_day(y2k) # Day of the month
+#> [1] 1
+get_wday(y2k, week_start = 1) # week_start = 1 = Mon
+#> [1] 6
+get_yday(y2k)
+#> [1] 1
+```
+
+We can even retrieve the ISO week and ISO year.
+
+``` r
+
+get_iso_week(y2k) # Last (52nd) ISO week of the ISO year
+#> [1] 52
+get_iso_year(y2k) # ISO year is still 1999
+#> [1] 1999
+```
+
+### Date rounding
+
+We can also round dates using the member functions
+[`floor()`](https://rdrr.io/r/base/Round.html),
+[`ceiling()`](https://rdrr.io/r/base/Round.html), and
+[`round()`](https://rdrr.io/r/base/Round.html).
+
+``` cpp
+
+[[cppally::register]]
+r_date floor_month(r_date x){
+  return x.floor<"months">();
+}
+[[cppally::register]]
+r_date ceiling_year(r_date x){
+  return x.ceiling<"years">();
+}
+[[cppally::register]]
+r_date round_week(r_date x, int week_start){
+  return x.round<"weeks">(week_start);
+}
+```
+
+``` r
+
+# Start of the month after advancing 100 days
+y2k |> 
+  add_days(100) |> 
+  floor_month()
+#> [1] "2000-04-01"
+
+# ceiling() does not switch on boundary
+y2k |> 
+  ceiling_year()
+#> [1] "2000-01-01"
+
+y2k |> 
+  add_days(1) |> 
+  ceiling_year()
+#> [1] "2001-01-01"
+
+y2k |> 
+  round_week(week_start = 1)
+#> [1] "2000-01-03"
+```
+
 ## Symbols
 
 Symbols have class `r_sym` and can be created directly from a string
@@ -927,7 +1171,7 @@ call any R function.
 ``` cpp
 
 [[cppally::register]]
-r_date get_today(){
+r_date r_get_today(){
   r_function sys_date("Sys.Date");
   return as<r_date>(sys_date());
 }
@@ -935,7 +1179,7 @@ r_date get_today(){
 
 ``` r
 
-get_today()
+r_get_today()
 #> [1] "2026-09-05"
 ```
 
@@ -1439,8 +1683,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique      1.21ms   1.25ms      794.    1.38MB     23.3
-#> 2 cppally_n_unique 170.29µs 171.66µs     5716.        0B      0
+#> 1 base_n_unique      1.12ms   1.27ms      781.    1.38MB     23.1
+#> 2 cppally_n_unique 170.38µs  171.5µs     5690.        0B      0
 ```
 
 More useful sugar functions
@@ -1603,10 +1847,6 @@ primitive_sum(x)
 #> [1] -467.8787
 ```
 
-[^1]: Unlike `r_str` which is composite and holds an `r_sexp` member,
-    `r_date` and `r_psxct` instead inherit directly from `r_dbl`. This
-    means that they can implicitly convert to `r_dbl`
-
-[^2]: `r_sexp` represents a generic R object which can include cppally
+[^1]: `r_sexp` represents a generic R object which can include cppally
     vectors. We will explain how to disambiguate `r_sexp` later which is
     most useful when working with lists and data frames
