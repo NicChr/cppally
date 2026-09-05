@@ -304,6 +304,38 @@ test_coerce_int64_min_to_int64 <- function() {
   invisible(.Call(`_cppallytest_test_coerce_int64_min_to_int64`))
 }
 
+test_date_accessors <- function() {
+  invisible(.Call(`_cppallytest_test_date_accessors`))
+}
+
+test_date_add <- function() {
+  invisible(.Call(`_cppallytest_test_date_add`))
+}
+
+test_date_rounding <- function() {
+  invisible(.Call(`_cppallytest_test_date_rounding`))
+}
+
+test_datetime_accessors <- function() {
+  invisible(.Call(`_cppallytest_test_datetime_accessors`))
+}
+
+test_date_conversions <- function() {
+  invisible(.Call(`_cppallytest_test_date_conversions`))
+}
+
+test_datetime_add <- function() {
+  invisible(.Call(`_cppallytest_test_datetime_add`))
+}
+
+test_datetime_rounding <- function() {
+  invisible(.Call(`_cppallytest_test_datetime_rounding`))
+}
+
+test_date_edge_cases <- function() {
+  invisible(.Call(`_cppallytest_test_date_edge_cases`))
+}
+
 test_factor1 <- function(x) {
   .Call(`_cppallytest_test_factor1`, x)
 }

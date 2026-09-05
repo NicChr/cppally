@@ -714,6 +714,70 @@ extern "C" attribute_visible SEXP _cppallytest_test_coerce_int64_min_to_int64() 
   return R_NilValue;
   END_CPPALLY
 }
+// test_dates.cpp
+void test_date_accessors();
+extern "C" attribute_visible SEXP _cppallytest_test_date_accessors() {
+  BEGIN_CPPALLY
+  ::test_date_accessors();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_dates.cpp
+void test_date_add();
+extern "C" attribute_visible SEXP _cppallytest_test_date_add() {
+  BEGIN_CPPALLY
+  ::test_date_add();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_dates.cpp
+void test_date_rounding();
+extern "C" attribute_visible SEXP _cppallytest_test_date_rounding() {
+  BEGIN_CPPALLY
+  ::test_date_rounding();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_dates.cpp
+void test_datetime_accessors();
+extern "C" attribute_visible SEXP _cppallytest_test_datetime_accessors() {
+  BEGIN_CPPALLY
+  ::test_datetime_accessors();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_dates.cpp
+void test_date_conversions();
+extern "C" attribute_visible SEXP _cppallytest_test_date_conversions() {
+  BEGIN_CPPALLY
+  ::test_date_conversions();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_dates.cpp
+void test_datetime_add();
+extern "C" attribute_visible SEXP _cppallytest_test_datetime_add() {
+  BEGIN_CPPALLY
+  ::test_datetime_add();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_dates.cpp
+void test_datetime_rounding();
+extern "C" attribute_visible SEXP _cppallytest_test_datetime_rounding() {
+  BEGIN_CPPALLY
+  ::test_datetime_rounding();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_dates.cpp
+void test_date_edge_cases();
+extern "C" attribute_visible SEXP _cppallytest_test_date_edge_cases() {
+  BEGIN_CPPALLY
+  ::test_date_edge_cases();
+  return R_NilValue;
+  END_CPPALLY
+}
 // test_factor.cpp
 r_vec<r_sexp> test_factor1(r_factors x);
 extern "C" attribute_visible SEXP _cppallytest_test_factor1(SEXP x) {
@@ -1224,7 +1288,15 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_coerce_pos_inf_to_int",        (DL_FUNC) &_cppallytest_test_coerce_pos_inf_to_int,        0},
     {"_cppallytest_test_combine2",                     (DL_FUNC) &_cppallytest_test_combine2,                     2},
     {"_cppallytest_test_copy",                         (DL_FUNC) &_cppallytest_test_copy,                         1},
+    {"_cppallytest_test_date_accessors",               (DL_FUNC) &_cppallytest_test_date_accessors,               0},
+    {"_cppallytest_test_date_add",                     (DL_FUNC) &_cppallytest_test_date_add,                     0},
+    {"_cppallytest_test_date_conversions",             (DL_FUNC) &_cppallytest_test_date_conversions,             0},
+    {"_cppallytest_test_date_edge_cases",              (DL_FUNC) &_cppallytest_test_date_edge_cases,              0},
+    {"_cppallytest_test_date_rounding",                (DL_FUNC) &_cppallytest_test_date_rounding,                0},
     {"_cppallytest_test_dates2",                       (DL_FUNC) &_cppallytest_test_dates2,                       1},
+    {"_cppallytest_test_datetime_accessors",           (DL_FUNC) &_cppallytest_test_datetime_accessors,           0},
+    {"_cppallytest_test_datetime_add",                 (DL_FUNC) &_cppallytest_test_datetime_add,                 0},
+    {"_cppallytest_test_datetime_rounding",            (DL_FUNC) &_cppallytest_test_datetime_rounding,            0},
     {"_cppallytest_test_deduced_scalar_type",          (DL_FUNC) &_cppallytest_test_deduced_scalar_type,          1},
     {"_cppallytest_test_deduced_scalar_type2",         (DL_FUNC) &_cppallytest_test_deduced_scalar_type2,         1},
     {"_cppallytest_test_deduced_type",                 (DL_FUNC) &_cppallytest_test_deduced_type,                 1},

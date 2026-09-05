@@ -10,3 +10,10 @@ void expect_identical(const T& x, const U& target){
         abort("expect_identical: `x` is not identical to `target`");
     }
 }
+
+template <CastableToRScalar T, CastableToRScalar U>
+void expect_identical(T x, U target, const char* what){
+    if (!identical(x, target)){
+        abort("test failure for: %s", what);
+    }
+}
