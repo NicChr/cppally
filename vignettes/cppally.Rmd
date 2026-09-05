@@ -618,31 +618,26 @@ also_good_lgl_print(FALSE)
 also_good_lgl_print(NA) # Falls into 'not true' branch here as expected
 ```
 
-**Important:** The `&&` and `||` operators for `r_lgl` do **NOT short-circuit** 
-like they do for `bool`. Both sides of the expression are always evaluated. 
-If you specifically require short-circuiting behaviour, 
-use `is_true()` and `is_false()` before using `&&` and `||`. 
+**Important:** The `&&` and `||` operators for `r_lgl` do **NOT short-circuit** like they do for `bool`. Both sides of the expression are always evaluated. If you specifically require short-circuiting behaviour, use `is_true()` and `is_false()` before using `&&` and `||`.
 
 All cppally scalar types are implemented as structs that contain the underlying C/C++ types as well as other member functions.
 
-| cppally type  | Description                 | Built on               |
-|:--------------|-----------------------------|:-----------------------|
-| `r_lgl`       | Scalar logical              | `int`                  |
-| `r_int`       | Scalar integer              | `int`                  |
-| `r_int64`     | Scalar 64-bit integer       | `int64_t`              |
-| `r_dbl`       | Scalar double               | `double`               |
-| `r_str`       | Scalar string               | `r_sexp`               |
-| `r_str_view`  | Scalar string (view)        | `SEXP`                 |
-| `r_cplx`      | Scalar double complex       | `std::complex<double>` |
-| `r_raw`       | Scalar raw                  | `unsigned char`        |
-| `r_sym`       | Symbol                      | `SEXP`                 |
-| `r_date` [^1] | Scalar date                 | `r_dbl`                |
-| `r_psxct`     | Scalar date-time            | `r_dbl`                |
-| `r_sexp`      | Generic R object (SEXP)[^2] | `SEXP`                 |
+| cppally type | Description                 | Built on               |
+|:-------------|-----------------------------|:-----------------------|
+| `r_lgl`      | Scalar logical              | `int`                  |
+| `r_int`      | Scalar integer              | `int`                  |
+| `r_int64`    | Scalar 64-bit integer       | `int64_t`              |
+| `r_dbl`      | Scalar double               | `double`               |
+| `r_str`      | Scalar string               | `r_sexp`               |
+| `r_str_view` | Scalar string (view)        | `SEXP`                 |
+| `r_cplx`     | Scalar double complex       | `std::complex<double>` |
+| `r_raw`      | Scalar raw                  | `unsigned char`        |
+| `r_sym`      | Symbol                      | `SEXP`                 |
+| `r_date`     | Scalar date                 | `r_dbl`                |
+| `r_psxct`    | Scalar date-time            | `r_dbl`                |
+| `r_sexp`     | Generic R object (SEXP)[^1] | `SEXP`                 |
 
-[^1]: Unlike `r_str` which is composite and holds an `r_sexp` member, `r_date` and `r_psxct` instead inherit directly from `r_dbl`. This means that they can implicitly convert to `r_dbl`
-
-[^2]: `r_sexp` represents a generic R object which can include cppally vectors. We will explain how to disambiguate `r_sexp` later which is most useful when working with lists and data frames
+[^1]: `r_sexp` represents a generic R object which can include cppally vectors. We will explain how to disambiguate `r_sexp` later which is most useful when working with lists and data frames
 
 ### NA values
 
@@ -667,9 +662,9 @@ r_na_check()
 | `r_str`                  | `na<r_str>()`           | `NA_STRING`    |
 | `r_cplx`                 | `na<r_cplx>()`          | Not applicable |
 | `r_sym`                  | Not applicable          | Not applicable |
-| `r_sexp`[^3]<br><br><br> | `na<r_sexp>()`/`r_null` | `R_NilValue`   |
+| `r_sexp`[^2]<br><br><br> | `na<r_sexp>()`/`r_null` | `R_NilValue`   |
 
-[^3]: Having an `NA` sentinel for `r_sexp` is very useful when writing templates involving vectors. For this reason the `NA` sentinel is `r_null`. This doesn't mean `is_na(r_null)` is true, and is intentionally not true because it is not a scalar and therefore cannot be `NA`. As `r_null` represents the absence of a tangible R object, it can be thought of as a zero-length object and since all `NA` values are represented as length-1 vectors (in R), `is_na(r_null)` should not return true.
+[^2]: Having an `NA` sentinel for `r_sexp` is very useful when writing templates involving vectors. For this reason the `NA` sentinel is `r_null`. This doesn't mean `is_na(r_null)` is true, and is intentionally not true because it is not a scalar and therefore cannot be `NA`. As `r_null` represents the absence of a tangible R object, it can be thought of as a zero-length object and since all `NA` values are represented as length-1 vectors (in R), `is_na(r_null)` should not return true.
 
 ## Checking equality
 
@@ -1118,8 +1113,7 @@ letter_fct |>
 
 ## Calling R functions
 
-cppally provides the `r_function` class, which can be used to easily 
-call any R function. 
+cppally provides the `r_function` class, which can be used to easily call any R function.
 
 ```{r, echo=FALSE, results = 'asis'}
 as_cpp_chunk(examples[["get_today"]])
@@ -1129,9 +1123,7 @@ as_cpp_chunk(examples[["get_today"]])
 get_today()
 ```
 
-To get a function from a specific package, use `pkg_env`, a helper that 
-returns the namespace of a package. The result of `pkg_env` can be passed 
-to the `env` (or second) arg of `r_function`'s symbol and string constructors.
+To get a function from a specific package, use `pkg_env`, a helper that returns the namespace of a package. The result of `pkg_env` can be passed to the `env` (or second) arg of `r_function`'s symbol and string constructors.
 
 ```{r, echo=FALSE, results = 'asis'}
 as_cpp_chunk(examples[["base_sum_fn"]])
@@ -1170,8 +1162,7 @@ x[c(1, 3)] <- ""
 find_empty_string(x)
 ```
 
-To find the locations of multiple values (first match), use `match()`. It works like R's
-`base::match()` but is 0-indexed.
+To find the locations of multiple values (first match), use `match()`. It works like R's `base::match()` but is 0-indexed.
 
 ```{r, echo=FALSE, results = 'asis'}
 as_cpp_chunk(examples[["match_strs"]])
@@ -1202,8 +1193,7 @@ To mimic R's new `%notin%` operator, simply use the logical negation operator.
 as_cpp_chunk(examples[["cpp_not_in"]])
 ```
 
-**Technical note:** cppally internally negates the intermediate result of `x IS_IN table` in-place in this particular case because it satisfies specific properties of exclusivity which while not covered here, may be covered in a later vignette. 
-This in-place negation is naturally efficient as it avoids allocating a new vector.
+**Technical note:** cppally internally negates the intermediate result of `x IS_IN table` in-place in this particular case because it satisfies specific properties of exclusivity which while not covered here, may be covered in a later vignette. This in-place negation is naturally efficient as it avoids allocating a new vector.
 
 ```{r}
 cpp_not_in(c("a", "A", NA), letters)
@@ -1238,10 +1228,7 @@ cpp_subset(x, rep(NA, 10)) # cppally only returns values associated with TRUE
 x[rep(NA, 10)] # base R returns NA values when subsetting with NA logicals
 ```
 
-base R performs negative subsetting by using negative numbers. 
-This is not possible with our 0-indexed subset as we would have to also represent
-negative zero to subset everything except the first element at index 0. Instead 
-cppally has an `invert` argument.
+base R performs negative subsetting by using negative numbers. This is not possible with our 0-indexed subset as we would have to also represent negative zero to subset everything except the first element at index 0. Instead cppally has an `invert` argument.
 
 ```{r, echo=FALSE, results = 'asis'}
 as_cpp_chunk(examples[["cpp_negative_subset"]])
@@ -1253,9 +1240,7 @@ cpp_negative_subset(x, x > 5) # Everything except where x > 5
 cpp_negative_subset(x, integer()) # Everything
 ```
 
-Named subsetting is also supported. cppally internally hashes the vector names 
-and performs hash lookups. For more info, see the 'Vector Names Hashing' 
-vignette.
+Named subsetting is also supported. cppally internally hashes the vector names and performs hash lookups. For more info, see the 'Vector Names Hashing' vignette.
 
 ```{r}
 names(x) <- LETTERS[seq_along(x)]
