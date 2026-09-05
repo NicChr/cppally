@@ -247,6 +247,13 @@ R C API tag `attribute_hidden`.
 
 ## Other new features
 
+- New function `scalar_coerce`. Use this with 
+`allow_lossy = true` if you want to return `NA` instead of an error on 
+a completely lossy scalar coercion. For example, 
+converting a letter string to a double (e.g. `as<r_dbl>(r_str("a"))`) 
+always results in an error by default whereas 
+`scalar_coerce<r_dbl>(r_str("a"), /*allow_lossy=*/ true)` returns `na<r_dbl>()`.
+
 - New `copy` member for `r_vec`, `r_factors` and `r_df`. `copy` shallow 
 copies the vector by creating a fresh copy of the atomic data, without deep 
 copying lists or attributes, just like `Rf_shallow_duplicate`.
