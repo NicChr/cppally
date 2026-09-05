@@ -30,6 +30,15 @@ consteval bool is_valid_time_unit() noexcept {
     return unit == "seconds" || unit == "minutes" || unit == "hours" || unit == "days" || unit == "weeks" || unit == "months" || unit == "years";
 }
 
+namespace internal {
+
+template <string_literal Unit>
+consteval void assert_valid_time_unit() noexcept {
+    static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
+}
+
+}
+
 // R date that captures the number of days since epoch (1st Jan 1970)
 // Since r_date is stored as a double to match R storage, this means fractional dates are supported but highly discouraged - use `r_psxct` instead for date-times.
 struct r_date {
@@ -205,7 +214,7 @@ struct r_date {
 
         constexpr std::string_view unit{Unit.data};
 
-        static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
+        internal::assert_valid_time_unit<Unit>();
 
         if constexpr (unit == "years") {
 
@@ -334,7 +343,7 @@ struct r_date {
 
         constexpr std::string_view unit{Unit.data};
 
-        static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
+        internal::assert_valid_time_unit<Unit>();
 
         if (!days_since_epoch().is_finite()){
             return *this;
@@ -377,7 +386,7 @@ struct r_date {
 
         constexpr std::string_view unit{Unit.data};
 
-        static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
+        internal::assert_valid_time_unit<Unit>();
 
         if (!days_since_epoch().is_finite()){
             return *this;
@@ -479,7 +488,7 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, int n = 1, bool fractiona
 template <string_literal Unit>
 inline constexpr r_dbl time_diff(r_date x, r_date y, int n = 1, roll on_impossible_date = roll::none) noexcept {
 
-    static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
+    internal::assert_valid_time_unit<Unit>();
 
     if (n == 0 || r_int(n).is_na()){
         return r_dbl::na();

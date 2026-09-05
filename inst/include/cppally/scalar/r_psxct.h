@@ -223,7 +223,7 @@ struct r_psxct {
 
         constexpr std::string_view unit{Unit.data};
 
-        static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
+        internal::assert_valid_time_unit<Unit>();
 
         if constexpr (unit == "seconds") {
             
@@ -369,7 +369,7 @@ struct r_psxct {
 
         constexpr std::string_view unit{Unit.data};
 
-        static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
+        internal::assert_valid_time_unit<Unit>();
 
         if (!seconds_since_epoch().is_finite()){
             return *this;
@@ -412,7 +412,7 @@ struct r_psxct {
 
         constexpr std::string_view unit{Unit.data};
 
-        static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
+        internal::assert_valid_time_unit<Unit>();
 
         if (!seconds_since_epoch().is_finite()){
             return *this;
@@ -495,7 +495,7 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, int n = 1, bool fractio
 template <string_literal Unit>
 inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, int n = 1, roll on_impossible_date = roll::none) noexcept {
 
-    static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
+    internal::assert_valid_time_unit<Unit>();
 
     if (n == 0 || r_int(n).is_na()){
         return r_dbl::na();
