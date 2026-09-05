@@ -228,11 +228,6 @@ r_dbl signif(T x, U digits){
   }
 }
 
-inline r_lgl is_whole_number(r_dbl x, r_dbl tolerance = sqrt(r_limits<r_dbl>::epsilon())){
-  return abs(x - round(x)) <= tolerance;
-}
-
-
 // Greatest common divisor
 template <RNumber T>
 T gcd(T x, T y, T tol = r_limits<T>::tolerance()) noexcept {
