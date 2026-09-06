@@ -8,17 +8,40 @@ namespace cppally {
 
 namespace internal {
 
+// A heuristic to scan the first n elements to check for NAs early in the vector.
+// If a vector is saturated with NAs, this will usually find it quickly. 
+// The rationale for this is that many SIMD vectorised functions in this file do NOT return early when NA is present.
+template <RVector T>
+bool any_na_early_on(const T& x, r_size_t k = 20){
+
+    k = std::min(k, x.length());
+
+    for (r_size_t i = 0; i < k; ++i){
+        if (is_na(x.get(i))){
+            return true;
+        }
+    }
+
+    return false;
+}
+
 template <RVectorisable T, typename Acc>
-void simd_reduce_add(const r_vec<T>& x, Acc& init, std::invocable<T> auto f) {
+void simd_reduce_add(const r_vec<T>& x, Acc& total_init, int_fast64_t& na_count_init, std::invocable<T> auto f) {
     r_size_t n = x.length();
     const unwrap_t<T>* RESTRICT p_x = x.data();
     int n_threads = internal::calc_threads(n);
     if (n_threads > 1){
-        OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:init)
-        for (r_size_t i = 0; i < n; ++i) init += f(T(p_x[i]));
+        OMP_PARALLEL_FOR_SIMD_REDUCTION2(n_threads, +:total_init, +:na_count_init)
+        for (r_size_t i = 0; i < n; ++i){
+            total_init += f(T(p_x[i]));
+            na_count_init += T(p_x[i]).is_na();
+        }
     } else {
-        OMP_SIMD_REDUCTION1(+:init)
-        for (r_size_t i = 0; i < n; ++i) init += f(T(p_x[i]));
+        OMP_SIMD_REDUCTION2(+:total_init, +:na_count_init)
+        for (r_size_t i = 0; i < n; ++i){
+            total_init += f(T(p_x[i]));
+            na_count_init += T(p_x[i]).is_na();
+        }
     }
 }
 
@@ -27,40 +50,38 @@ void simd_reduce_add(const r_vec<T>& x, Acc& init, std::invocable<T> auto f) {
 // Very fast integer sum
 template <RIntegerType T> 
 r_int64 sum(const r_vec<T>& x, bool na_rm = false){
-    r_size_t n = x.length();
 
     // Use int64_t since (2^31-1)^2 < INT64_MAX
     int_fast64_t res = 0;
+    int_fast64_t na_count = 0;
 
-    if (na_rm){
-        internal::simd_reduce_add(x, res, [](auto v){ return is_na(v) ? 0 : static_cast<int_fast64_t>(unwrap(v)); });
-    } else {
-        for (r_size_t i = 0; i < n; ++i){
-            if (is_na(x.get(i))){
-                return na<r_int64>();
-            }
-            res += static_cast<int_fast64_t>(x.data()[i]);
-        }
+    if (!na_rm && internal::any_na_early_on(x)){
+        return na<r_int64>();
     }
+
+    internal::simd_reduce_add(x, res, na_count, [](auto v){ return is_na(v) ? 0 : static_cast<int_fast64_t>(unwrap(v)); });
+
+    if (!na_rm && na_count > 0){
+        return na<r_int64>();
+    }
+
     return r_int64(static_cast<int64_t>(res));
 }
 
 template <RMathType T> 
 r_dbl sum(const r_vec<T>& x, bool na_rm = false){
-    r_size_t n = x.length();
-    double out_ = 0;
 
-    if (na_rm){
-        internal::simd_reduce_add(x, out_, [](auto v){ return is_na(v) ? 0 : unwrap(v); });
-    } else if constexpr (is<T, r_dbl>){
-        internal::simd_reduce_add(x, out_, [](auto v){ return unwrap(v); });
-    } else {
-        for (r_size_t i = 0; i < n; ++i){
-            if (is_na(x.get(i))){
-                return na<r_dbl>();
-            }
-            out_ += unwrap(x.get(i));
-        }
+    double out_ = 0;
+    int_fast64_t na_count = 0;
+
+    if (!na_rm && internal::any_na_early_on(x)){
+        return na<r_dbl>();
+    }
+    
+    internal::simd_reduce_add(x, out_, na_count, [](auto v){ return is_na(v) ? 0 : unwrap(v); });
+
+    if (!na_rm && na_count > 0){
+        return na<r_dbl>();
     }
     return r_dbl(out_);
 }
