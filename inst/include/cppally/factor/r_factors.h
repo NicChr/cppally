@@ -245,8 +245,7 @@ struct r_factors {
 
   // Find factor code associated with factor string
   // Since levels are assumed to be unique, we find the first match
-  template <RStringType U>
-  r_int get_code(const U& val, r_int no_match = na<r_int>()) const {
+  r_int get_code(r_str_view val, r_int no_match = na<r_int>()) const {
     
     // Hash path: cache already built by us or by a sibling wrapper.
     if (cached_levels && cached_levels->names.has_value()) {
@@ -311,9 +310,9 @@ struct r_factors {
     return levels().view(unwrap(code) - 1);
   }
 
-  template <typename I, RStringType U>
+  template <typename I>
   requires requires(const I& idx){ value.set(idx, r_int{}); }
-  void set(const I& index, const U& val) {
+  void set(const I& index, r_str_view val) {
     value.set(index, get_code(val));
   }
 
@@ -350,8 +349,7 @@ struct r_factors {
     *this = refactor(new_levels);
   }
 
-  template <RStringType U>
-  r_size_t count(const U& val) const {
+  r_size_t count(r_str_view val) const {
     if (is_na(val)){
       return value.na_count();
     } else {
@@ -364,17 +362,15 @@ struct r_factors {
     }
   }
 
-  template <RStringType U>
-  void fill(r_size_t start, r_size_t n, const U& val){
+  void fill(r_size_t start, r_size_t n, r_str_view val){
     return is_na(val) ? value.fill(start, n, na<r_int>()) : value.fill(start, n, get_code(val));
   }
-  template <RStringType U>
-  void fill(const U& val){
+
+  void fill(r_str_view val){
     fill(0, value.length(), val);
   }
 
-  template <RStringType U>
-  r_vec<r_int> find(const U& val, bool invert = false) const {
+  r_vec<r_int> find(r_str_view val, bool invert = false) const {
     if (is_na(val)){
       return value.find(na<r_int>(), invert);
     }
@@ -391,8 +387,8 @@ struct r_factors {
     return value.find(code, invert);
   }
 
-  template <RStringType U>
-  void replace(r_size_t start, r_size_t n, const U& old_val, const U& new_val){
+  void replace(r_size_t start, r_size_t n, r_str_view old_val, r_str_view new_val){
+
     r_int old_code = get_code(old_val);
     r_int new_code = get_code(new_val);
 
@@ -411,13 +407,11 @@ struct r_factors {
     }
   }
   
-  template <RStringType U>
-  void replace(const U& old_val, const U& new_val){
+  void replace(r_str_view old_val, r_str_view new_val){
     replace(0, value.length(), old_val, new_val);
   }
 
-  template <RStringType U>
-  r_factors remove(const U& val) const {
+  r_factors remove(r_str_view val) const {
     if (is_na(val)){
       r_vec<r_int> fct_codes = value.remove(na<r_int>());
       r_factors result(std::move(fct_codes), this->levels(), false);

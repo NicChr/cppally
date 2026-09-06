@@ -206,8 +206,7 @@ struct names_map {
 
     // Returns the 0-based index of `name` in the captured STRSXP, plus `offset`.
     // Factor levels pass offset=1 to convert to R's 1-based factor codes.
-    template <RStringType T>
-    r_int find(const T& name, int offset = 0) const {
+    r_int find(r_str_view name, int offset = 0) const {
         lazy_build();
         int idx = map->find(unwrap(name));
         if (idx < 0) {

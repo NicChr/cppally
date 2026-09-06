@@ -232,8 +232,7 @@ struct r_df {
         return value.get(index);
     }
 
-    template <RStringType U>
-    r_sexp view_col(const U& name) const {
+    r_sexp view_col(r_str_view name) const {
         return value.view(name);
     }
 
@@ -241,8 +240,7 @@ struct r_df {
         return view_col(r_str(name));
     }
 
-    template <RStringType U>
-    r_sexp get_col(const U& name) const {
+    r_sexp get_col(r_str_view name) const {
         return value.get(name);
     }
 
@@ -263,8 +261,8 @@ struct r_df {
     void set_col(int index, const col_t& col) {
         value.set(index, r_sexp(col, internal::view_tag{}));
     }
-    template <RStringType U, RObject col_t>
-    void set_col(const U& colname, const col_t& col) {
+    template <RObject col_t>
+    void set_col(r_str_view colname, const col_t& col) {
         set_col(value.name_index(colname), col);
     }
     template <RObject col_t>

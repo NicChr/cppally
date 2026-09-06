@@ -431,8 +431,7 @@ struct r_vec {
 
   // For named vectors: find first index of name
   // `abort_on_missing` - When supplied name doesn't exist, abort, otherwise return `NA`
-  template <RStringType U>
-  r_int name_index(const U& name, bool abort_on_missing = true) const {
+  r_int name_index(r_str_view name, bool abort_on_missing = true) const {
     auto report_no_match = [&]() {
       abort("%s: There is no element named '%s'", __func__, name.c_str());
     };
@@ -492,8 +491,7 @@ struct r_vec {
   }
   #endif
   
-  template <RStringType U>
-  T get(const U& name) const {
+  T get(r_str_view name) const {
     return get(static_cast<r_size_t>(unwrap(name_index(name))));
   }
 
@@ -520,8 +518,7 @@ struct r_vec {
   }
   #endif
 
-  template <RStringType U>
-  T view(const U& name) const {
+  T view(r_str_view name) const {
     return view(static_cast<r_size_t>(unwrap(name_index(name))));
   }
 
@@ -561,8 +558,7 @@ struct r_vec {
     }
   }
 
-  template <RStringType U>
-  void set(const U& name, const T& val) {
+  void set(r_str_view name, const T& val) {
       set(static_cast<r_size_t>(unwrap(name_index(name))), val);
   }
   
