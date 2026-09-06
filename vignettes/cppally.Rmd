@@ -472,6 +472,30 @@ r_date add_months(r_date x, double n){
   return x.add<"months">(n);
 }
 ',
+datetime_months = '
+[[cppally::register]]
+r_psxct as_dt(r_date x){
+  return x.as_datetime();
+}
+[[cppally::register]]
+r_psxct dt_add_months(r_psxct x, double n){
+  return x.add<"months">(n);
+}
+[[cppally::register]]
+r_dbl dt_diff_months(r_psxct x, r_psxct y){
+  return time_diff<"months">(x, y);
+}
+',
+time_diff = '
+[[cppally::register]]
+r_dbl diff_days(r_date x, r_date y){
+  return time_diff<"days">(x, y);
+}
+[[cppally::register]]
+r_dbl diff_months(r_date x, r_date y){
+  return time_diff<"months">(x, y);
+}
+',
 r_get_today = '
 [[cppally::register]]
 r_date r_get_today(){
@@ -1225,6 +1249,50 @@ y2k |>
 y2k |> 
   round_week(week_start = 1)
 ```
+
+### Difference between two dates
+
+To calculate the time difference between two dates or date-times, use `time_diff<>`.
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["time_diff"]])
+```
+
+```{r}
+x <- y2k
+y <- x |> add_months(3)
+
+diff_days(x, y)
+diff_months(x, y)
+```
+
+### Fractional months
+
+Both `add<"months">` and `time_diff<"months">` can deal with fractional months. 
+
+The previous sections dealt with dates, so we need to define functions that work with `r_psxct` (date-times).
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(examples[["datetime_months"]])
+```
+
+```{r}
+y2k_datetime <- as_dt(y2k)
+
+mid_month <- y2k_datetime |> 
+  dt_add_months(0.5)
+
+# Half-way through the month 
+mid_month
+```
+
+The difference between the start of the month and halfway through the month 
+should return 0.5, confirming that fractional month arithmetic is working.
+
+```{r}
+dt_diff_months(y2k_datetime, mid_month)
+```
+
 
 ## Symbols
 
