@@ -861,9 +861,9 @@ r_psxct get_now(){
 ``` r
 
 get_today()
-#> [1] "2026-09-05"
+#> [1] "2026-09-06"
 get_now()
-#> [1] "2026-09-05 20:41:49 UTC"
+#> [1] "2026-09-06 07:32:05 UTC"
 ```
 
 **Note:** `r_psxct` currently only supports UTC and no other time-zones.
@@ -1025,6 +1025,80 @@ y2k |>
 #> [1] "2000-01-03"
 ```
 
+### Difference between two dates
+
+To calculate the time difference between two dates or date-times, use
+`time_diff<>`.
+
+``` cpp
+
+[[cppally::register]]
+r_dbl diff_days(r_date x, r_date y){
+  return time_diff<"days">(x, y);
+}
+[[cppally::register]]
+r_dbl diff_months(r_date x, r_date y){
+  return time_diff<"months">(x, y);
+}
+```
+
+``` r
+
+x <- y2k
+y <- x |> add_months(3)
+
+diff_days(x, y)
+#> [1] 91
+diff_months(x, y)
+#> [1] 3
+```
+
+### Fractional months
+
+Both `add<"months">` and `time_diff<"months">` can deal with fractional
+months.
+
+The previous sections dealt with dates, so we need to define functions
+that work with `r_psxct` (date-times).
+
+``` cpp
+
+[[cppally::register]]
+r_psxct as_dt(r_date x){
+  return x.as_datetime();
+}
+[[cppally::register]]
+r_psxct dt_add_months(r_psxct x, double n){
+  return x.add<"months">(n);
+}
+[[cppally::register]]
+r_dbl dt_diff_months(r_psxct x, r_psxct y){
+  return time_diff<"months">(x, y);
+}
+```
+
+``` r
+
+y2k_datetime <- as_dt(y2k)
+
+mid_month <- y2k_datetime |> 
+  dt_add_months(0.5)
+
+# Half-way through the month 
+mid_month
+#> [1] "2000-01-16 12:00:00 UTC"
+```
+
+The difference between the start of the month and halfway through the
+month should return 0.5, confirming that fractional month arithmetic is
+working.
+
+``` r
+
+dt_diff_months(y2k_datetime, mid_month)
+#> [1] 0.5
+```
+
 ## Symbols
 
 Symbols have class `r_sym` and can be created directly from a string
@@ -1180,7 +1254,7 @@ r_date r_get_today(){
 ``` r
 
 r_get_today()
-#> [1] "2026-09-05"
+#> [1] "2026-09-06"
 ```
 
 To get a function from a specific package, use `pkg_env`, a helper that
@@ -1683,8 +1757,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique      1.12ms   1.27ms      781.    1.38MB     23.1
-#> 2 cppally_n_unique 170.38µs  171.5µs     5690.        0B      0
+#> 1 base_n_unique      1.34ms   1.38ms      724.    1.38MB     20.8
+#> 2 cppally_n_unique 180.84µs 181.98µs     5407.        0B      0
 ```
 
 More useful sugar functions
