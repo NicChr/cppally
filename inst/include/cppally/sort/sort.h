@@ -469,7 +469,7 @@ std::remove_cvref_t<T> sort(T&& x){
             return std::move(x);
         }
     }
-    return pmap_parallel_simd([&](r_int a){ return x.get(unwrap(a));}, std::move(o));
+    return pmap_parallel_simd([&](r_int a){ return x.view(unwrap(a));}, std::move(o));
 }
 
 }
