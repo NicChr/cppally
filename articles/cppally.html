@@ -167,7 +167,7 @@ can represent true, false or NA.</p>
 <p>Logical operators work just like in R</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a></span>
 <span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_lgl<span class="op">&gt;</span> lgl_ops<span class="op">(){</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_lgl<span class="op">&gt;</span> lgl_ops<span class="op">(){</span></span>
 <span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="cf">return</span> make_vec<span class="op">&lt;</span>r_lgl<span class="op">&gt;(</span></span>
 <span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>    r_true <span class="op">||</span> r_false<span class="op">,</span> <span class="co">// true</span></span>
 <span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>    r_true <span class="op">&amp;&amp;</span> r_false<span class="op">,</span> <span class="co">// false</span></span>
@@ -543,8 +543,8 @@ scalar elements like <code>r_int</code>, <code>r_dbl</code>, etc.</p>
 <div class="sourceCode" id="cb55"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb55-1"><a href="#cb55-1" tabindex="-1"></a></span>
 <span id="cb55-2"><a href="#cb55-2" tabindex="-1"></a><span class="co">// Integer vector of size n</span></span>
 <span id="cb55-3"><a href="#cb55-3" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb55-4"><a href="#cb55-4" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_int<span class="op">&gt;</span> new_integer_vector<span class="op">(</span><span class="dt">int</span> n<span class="op">){</span></span>
-<span id="cb55-5"><a href="#cb55-5" tabindex="-1"></a>  r_vec<span class="op">&lt;</span>r_int<span class="op">&gt;</span> int_vctr<span class="op">(</span>n<span class="op">,</span> <span class="co">/*fill = */</span> r_int<span class="op">(</span><span class="dv">0</span><span class="op">));</span></span>
+<span id="cb55-4"><a href="#cb55-4" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;</span> new_integer_vector<span class="op">(</span><span class="dt">int</span> n<span class="op">){</span></span>
+<span id="cb55-5"><a href="#cb55-5" tabindex="-1"></a>  r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;</span> int_vctr<span class="op">(</span>n<span class="op">,</span> <span class="co">/*fill = */</span> r_int<span class="op">(</span><span class="dv">0</span><span class="op">));</span></span>
 <span id="cb55-6"><a href="#cb55-6" tabindex="-1"></a>  <span class="cf">return</span> int_vctr<span class="op">;</span></span>
 <span id="cb55-7"><a href="#cb55-7" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
@@ -567,7 +567,7 @@ scalar elements like <code>r_int</code>, <code>r_dbl</code>, etc.</p>
 <pre><code><span><span class="co">#&gt;  first second  third   last </span></span>
 <span><span class="co">#&gt;    1.0    1.5    2.0     NA</span></span></code></pre>
 <p>In R a list is a generic vector, so cppally defines lists as
-<code>r_vec&lt;r_sexp&gt;</code>, a vector of the generic type
+<code>r_vector&lt;r_sexp&gt;</code>, a vector of the generic type
 <code>r_sexp</code>.</p>
 <div class="sourceCode" id="cb61"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb61-1"><a href="#cb61-1" tabindex="-1"></a>make_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;(</span><span class="dv">1</span><span class="op">,</span> <span class="dv">2</span><span class="op">,</span> <span class="dv">3</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [[1]]</span></span>
@@ -581,18 +581,18 @@ scalar elements like <code>r_int</code>, <code>r_dbl</code>, etc.</p>
 <p>A list of all cppally vectors of length 0</p>
 <div class="sourceCode" id="cb63"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb63-1"><a href="#cb63-1" tabindex="-1"></a></span>
 <span id="cb63-2"><a href="#cb63-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb63-3"><a href="#cb63-3" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> all_vectors<span class="op">(){</span></span>
+<span id="cb63-3"><a href="#cb63-3" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> all_vectors<span class="op">(){</span></span>
 <span id="cb63-4"><a href="#cb63-4" tabindex="-1"></a>  <span class="cf">return</span> make_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;(</span></span>
-<span id="cb63-5"><a href="#cb63-5" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"logical"</span><span class="op">)</span> <span class="op">=</span> r_vec<span class="op">&lt;</span>r_lgl<span class="op">&gt;(),</span></span>
-<span id="cb63-6"><a href="#cb63-6" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"integer"</span><span class="op">)</span> <span class="op">=</span> r_vec<span class="op">&lt;</span>r_int<span class="op">&gt;(),</span></span>
-<span id="cb63-7"><a href="#cb63-7" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"integer64"</span><span class="op">)</span> <span class="op">=</span> r_vec<span class="op">&lt;</span>r_int64<span class="op">&gt;(),</span> <span class="co">// Requires bit64</span></span>
-<span id="cb63-8"><a href="#cb63-8" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"double"</span><span class="op">)</span> <span class="op">=</span> r_vec<span class="op">&lt;</span>r_dbl<span class="op">&gt;(),</span></span>
-<span id="cb63-9"><a href="#cb63-9" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"character"</span><span class="op">)</span> <span class="op">=</span> r_vec<span class="op">&lt;</span>r_str<span class="op">&gt;(),</span></span>
-<span id="cb63-10"><a href="#cb63-10" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"character"</span><span class="op">)</span> <span class="op">=</span> r_vec<span class="op">&lt;</span>r_str_view<span class="op">&gt;(),</span></span>
-<span id="cb63-11"><a href="#cb63-11" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"raw"</span><span class="op">)</span> <span class="op">=</span> r_vec<span class="op">&lt;</span>r_raw<span class="op">&gt;(),</span></span>
-<span id="cb63-12"><a href="#cb63-12" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"date"</span><span class="op">)</span> <span class="op">=</span> r_vec<span class="op">&lt;</span>r_date<span class="op">&gt;(),</span></span>
-<span id="cb63-13"><a href="#cb63-13" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"date-time"</span><span class="op">)</span> <span class="op">=</span> r_vec<span class="op">&lt;</span>r_psxct<span class="op">&gt;(),</span></span>
-<span id="cb63-14"><a href="#cb63-14" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"list"</span><span class="op">)</span> <span class="op">=</span> r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;()</span></span>
+<span id="cb63-5"><a href="#cb63-5" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"logical"</span><span class="op">)</span> <span class="op">=</span> r_vector<span class="op">&lt;</span>r_lgl<span class="op">&gt;(),</span></span>
+<span id="cb63-6"><a href="#cb63-6" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"integer"</span><span class="op">)</span> <span class="op">=</span> r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;(),</span></span>
+<span id="cb63-7"><a href="#cb63-7" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"integer64"</span><span class="op">)</span> <span class="op">=</span> r_vector<span class="op">&lt;</span>r_int64<span class="op">&gt;(),</span> <span class="co">// Requires bit64</span></span>
+<span id="cb63-8"><a href="#cb63-8" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"double"</span><span class="op">)</span> <span class="op">=</span> r_vector<span class="op">&lt;</span>r_dbl<span class="op">&gt;(),</span></span>
+<span id="cb63-9"><a href="#cb63-9" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"character"</span><span class="op">)</span> <span class="op">=</span> r_vector<span class="op">&lt;</span>r_str<span class="op">&gt;(),</span></span>
+<span id="cb63-10"><a href="#cb63-10" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"character"</span><span class="op">)</span> <span class="op">=</span> r_vector<span class="op">&lt;</span>r_str_view<span class="op">&gt;(),</span></span>
+<span id="cb63-11"><a href="#cb63-11" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"raw"</span><span class="op">)</span> <span class="op">=</span> r_vector<span class="op">&lt;</span>r_raw<span class="op">&gt;(),</span></span>
+<span id="cb63-12"><a href="#cb63-12" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"date"</span><span class="op">)</span> <span class="op">=</span> r_vector<span class="op">&lt;</span>r_date<span class="op">&gt;(),</span></span>
+<span id="cb63-13"><a href="#cb63-13" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"date-time"</span><span class="op">)</span> <span class="op">=</span> r_vector<span class="op">&lt;</span>r_psxct<span class="op">&gt;(),</span></span>
+<span id="cb63-14"><a href="#cb63-14" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"list"</span><span class="op">)</span> <span class="op">=</span> r_vector<span class="op">&lt;</span>r_sexp<span class="op">&gt;()</span></span>
 <span id="cb63-15"><a href="#cb63-15" tabindex="-1"></a>  <span class="op">);</span></span>
 <span id="cb63-16"><a href="#cb63-16" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
@@ -686,8 +686,8 @@ types.</p>
 <p>We can also coerce from one vector type to another</p>
 <div class="sourceCode" id="cb69"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb69-1"><a href="#cb69-1" tabindex="-1"></a></span>
 <span id="cb69-2"><a href="#cb69-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb69-3"><a href="#cb69-3" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_int<span class="op">&gt;</span> to_int_vec<span class="op">(</span>r_vec<span class="op">&lt;</span>r_dbl<span class="op">&gt;</span> x<span class="op">){</span></span>
-<span id="cb69-4"><a href="#cb69-4" tabindex="-1"></a>  <span class="cf">return</span> as<span class="op">&lt;</span>r_vec<span class="op">&lt;</span>r_int<span class="op">&gt;&gt;(</span>x<span class="op">);</span></span>
+<span id="cb69-3"><a href="#cb69-3" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;</span> to_int_vec<span class="op">(</span>r_vector<span class="op">&lt;</span>r_dbl<span class="op">&gt;</span> x<span class="op">){</span></span>
+<span id="cb69-4"><a href="#cb69-4" tabindex="-1"></a>  <span class="cf">return</span> as<span class="op">&lt;</span>r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;&gt;(</span>x<span class="op">);</span></span>
 <span id="cb69-5"><a href="#cb69-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">to_int_vec</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1.5</span>, <span class="cn">NA</span><span class="op">)</span><span class="op">)</span></span>
@@ -696,11 +696,11 @@ types.</p>
 coerce from a scalar to a vector or vice versa</p>
 <div class="sourceCode" id="cb71"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb71-1"><a href="#cb71-1" tabindex="-1"></a></span>
 <span id="cb71-2"><a href="#cb71-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb71-3"><a href="#cb71-3" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> coercions<span class="op">(){</span></span>
+<span id="cb71-3"><a href="#cb71-3" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> coercions<span class="op">(){</span></span>
 <span id="cb71-4"><a href="#cb71-4" tabindex="-1"></a>    r_dbl a<span class="op">(</span><span class="fl">4.2</span><span class="op">);</span></span>
-<span id="cb71-5"><a href="#cb71-5" tabindex="-1"></a>    r_vec<span class="op">&lt;</span>r_dbl<span class="op">&gt;</span> b <span class="op">=</span> make_vec<span class="op">&lt;</span>r_dbl<span class="op">&gt;(</span><span class="fl">2.5</span><span class="op">);</span></span>
+<span id="cb71-5"><a href="#cb71-5" tabindex="-1"></a>    r_vector<span class="op">&lt;</span>r_dbl<span class="op">&gt;</span> b <span class="op">=</span> make_vec<span class="op">&lt;</span>r_dbl<span class="op">&gt;(</span><span class="fl">2.5</span><span class="op">);</span></span>
 <span id="cb71-6"><a href="#cb71-6" tabindex="-1"></a>    <span class="cf">return</span> make_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;(</span></span>
-<span id="cb71-7"><a href="#cb71-7" tabindex="-1"></a>        as<span class="op">&lt;</span>r_vec<span class="op">&lt;</span>r_int<span class="op">&gt;&gt;(</span>a<span class="op">),</span></span>
+<span id="cb71-7"><a href="#cb71-7" tabindex="-1"></a>        as<span class="op">&lt;</span>r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;&gt;(</span>a<span class="op">),</span></span>
 <span id="cb71-8"><a href="#cb71-8" tabindex="-1"></a>        as<span class="op">&lt;</span>r_int<span class="op">&gt;(</span>a<span class="op">),</span></span>
 <span id="cb71-9"><a href="#cb71-9" tabindex="-1"></a>        as<span class="op">&lt;</span>r_int<span class="op">&gt;(</span>b<span class="op">),</span></span>
 <span id="cb71-10"><a href="#cb71-10" tabindex="-1"></a>        as<span class="op">&lt;</span>r_dbl<span class="op">&gt;(</span>b<span class="op">)</span></span>
@@ -824,9 +824,9 @@ respectively.</p>
 <span id="cb85-9"><a href="#cb85-9" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb86"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">get_today</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "2026-09-06"</span></span>
+<span><span class="co">#&gt; [1] "2026-09-07"</span></span>
 <span><span class="fu">get_now</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "2026-09-06 07:32:05 UTC"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-09-07 18:33:50 UTC"</span></span></code></pre></div>
 <p><strong>Note:</strong> <code>r_psxct</code> currently only supports
 UTC and no other time-zones.</p>
 <div class="section level4">
@@ -1057,10 +1057,10 @@ and efficiently re-uses the cached string for each subsequent call.</p>
 <h2 id="lists">Lists<a class="anchor" aria-label="anchor" href="#lists"></a>
 </h2>
 <p><code>r_sexp</code> is generally interpreted as an “element of a
-list” since lists are defined as <code>r_vec&lt;r_sexp&gt;</code>, a
+list” since lists are defined as <code>r_vector&lt;r_sexp&gt;</code>, a
 vector that holds generic <code>r_sexp</code> elements.</p>
 <div class="sourceCode" id="cb107"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb107-1"><a href="#cb107-1" tabindex="-1"></a></span>
-<span id="cb107-2"><a href="#cb107-2" tabindex="-1"></a><span class="kw">using</span> list <span class="op">=</span> r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;;</span></span>
+<span id="cb107-2"><a href="#cb107-2" tabindex="-1"></a><span class="kw">using</span> list <span class="op">=</span> r_vector<span class="op">&lt;</span>r_sexp<span class="op">&gt;;</span></span>
 <span id="cb107-3"><a href="#cb107-3" tabindex="-1"></a></span>
 <span id="cb107-4"><a href="#cb107-4" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
 <span id="cb107-5"><a href="#cb107-5" tabindex="-1"></a>list new_list<span class="op">(</span><span class="dt">int</span> n<span class="op">){</span></span>
@@ -1086,7 +1086,7 @@ a C++ lambda.</p>
 every vector to length n in-place</p>
 <div class="sourceCode" id="cb109"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb109-1"><a href="#cb109-1" tabindex="-1"></a></span>
 <span id="cb109-2"><a href="#cb109-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb109-3"><a href="#cb109-3" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> resize_all<span class="op">(</span>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> x<span class="op">,</span> <span class="dt">r_size_t</span> n<span class="op">){</span></span>
+<span id="cb109-3"><a href="#cb109-3" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> resize_all<span class="op">(</span>r_vector<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> x<span class="op">,</span> <span class="dt">r_size_t</span> n<span class="op">){</span></span>
 <span id="cb109-4"><a href="#cb109-4" tabindex="-1"></a>    <span class="dt">r_size_t</span> list_length <span class="op">=</span> x<span class="op">.</span>length<span class="op">();</span></span>
 <span id="cb109-5"><a href="#cb109-5" tabindex="-1"></a>    <span class="cf">for</span> <span class="op">(</span><span class="dt">r_size_t</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> list_length<span class="op">;</span> <span class="op">++</span>i<span class="op">){</span></span>
 <span id="cb109-6"><a href="#cb109-6" tabindex="-1"></a>        r_sexp_visit<span class="op">(</span>x<span class="op">.</span>view<span class="op">(</span>i<span class="op">),</span> <span class="op">[&amp;]&lt;</span>RVector T<span class="op">&gt;(</span>T vec<span class="op">)</span> <span class="op">{</span></span>
@@ -1102,7 +1102,7 @@ every vector to length n in-place</p>
 <p>We can create a factor via <code>r_factors()</code></p>
 <div class="sourceCode" id="cb110"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb110-1"><a href="#cb110-1" tabindex="-1"></a></span>
 <span id="cb110-2"><a href="#cb110-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb110-3"><a href="#cb110-3" tabindex="-1"></a>r_factors new_factor<span class="op">(</span>r_vec<span class="op">&lt;</span>r_str<span class="op">&gt;</span> x<span class="op">){</span></span>
+<span id="cb110-3"><a href="#cb110-3" tabindex="-1"></a>r_factors new_factor<span class="op">(</span>r_vector<span class="op">&lt;</span>r_str<span class="op">&gt;</span> x<span class="op">){</span></span>
 <span id="cb110-4"><a href="#cb110-4" tabindex="-1"></a>    <span class="cf">return</span> r_factors<span class="op">(</span>x<span class="op">);</span></span>
 <span id="cb110-5"><a href="#cb110-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb111"><pre class="downlit sourceCode r">
@@ -1116,7 +1116,7 @@ vector, use the public <code>codes()</code> member function</p>
 <span id="cb112-2"><a href="#cb112-2" tabindex="-1"></a><span class="kw">static_assert</span><span class="op">(!</span>RVector<span class="op">&lt;</span>r_factors<span class="op">&gt;);</span></span>
 <span id="cb112-3"><a href="#cb112-3" tabindex="-1"></a></span>
 <span id="cb112-4"><a href="#cb112-4" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb112-5"><a href="#cb112-5" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_int<span class="op">&gt;</span> factor_codes<span class="op">(</span>r_factors x<span class="op">){</span></span>
+<span id="cb112-5"><a href="#cb112-5" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;</span> factor_codes<span class="op">(</span>r_factors x<span class="op">){</span></span>
 <span id="cb112-6"><a href="#cb112-6" tabindex="-1"></a>    <span class="cf">return</span> x<span class="op">.</span>codes<span class="op">();</span></span>
 <span id="cb112-7"><a href="#cb112-7" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb113"><pre class="downlit sourceCode r">
@@ -1140,7 +1140,7 @@ to easily call any R function.</p>
 <span id="cb114-6"><a href="#cb114-6" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb115"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">r_get_today</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "2026-09-06"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-09-07"</span></span></code></pre></div>
 <p>To get a function from a specific package, use <code>pkg_env</code>,
 a helper that returns the namespace of a package. The result of
 <code>pkg_env</code> can be passed to the <code>env</code> (or second)
@@ -1156,7 +1156,7 @@ arg of <code>r_function</code>’s symbol and string constructors.</p>
 <p><code>r_function</code> also allows named arguments to be passed.</p>
 <div class="sourceCode" id="cb118"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb118-1"><a href="#cb118-1" tabindex="-1"></a></span>
 <span id="cb118-2"><a href="#cb118-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb118-3"><a href="#cb118-3" tabindex="-1"></a>r_dbl base_sum<span class="op">(</span>r_vec<span class="op">&lt;</span>r_dbl<span class="op">&gt;</span> x<span class="op">,</span> <span class="dt">bool</span> na_rm<span class="op">){</span></span>
+<span id="cb118-3"><a href="#cb118-3" tabindex="-1"></a>r_dbl base_sum<span class="op">(</span>r_vector<span class="op">&lt;</span>r_dbl<span class="op">&gt;</span> x<span class="op">,</span> <span class="dt">bool</span> na_rm<span class="op">){</span></span>
 <span id="cb118-4"><a href="#cb118-4" tabindex="-1"></a>  <span class="cf">return</span> as<span class="op">&lt;</span>r_dbl<span class="op">&gt;(</span>base_sum_fn<span class="op">()(</span>x<span class="op">,</span> arg<span class="op">(</span><span class="st">"na.rm"</span><span class="op">)</span> <span class="op">=</span> na_rm<span class="op">));</span></span>
 <span id="cb118-5"><a href="#cb118-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb119"><pre class="downlit sourceCode r">
@@ -1166,7 +1166,7 @@ arg of <code>r_function</code>’s symbol and string constructors.</p>
 <div class="section level2">
 <h2 id="value-matching">Value matching<a class="anchor" aria-label="anchor" href="#value-matching"></a>
 </h2>
-<p>Use <code>r_vec</code> member <code><a href="https://rdrr.io/r/utils/apropos.html" class="external-link">find()</a></code> to find the
+<p>Use <code>r_vector</code> member <code><a href="https://rdrr.io/r/utils/apropos.html" class="external-link">find()</a></code> to find the
 <strong>0-indexed</strong> locations of a scalar value.</p>
 <div class="sourceCode" id="cb120"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb120-1"><a href="#cb120-1" tabindex="-1"></a></span>
 <span id="cb120-2"><a href="#cb120-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
@@ -1391,7 +1391,7 @@ argument that allows the template parameter to be deduced from.</p>
 <span><span class="fu">scalar_default</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="co"># Default is ""</span></span>
 <span><span class="co">#&gt; [1] ""</span></span></code></pre></div>
 <p>Exporting variadic templates are also not supported. The best
-alternative is to use lists (<code>r_vec&lt;r_sexp&gt;</code>).</p>
+alternative is to use lists (<code>r_vector&lt;r_sexp&gt;</code>).</p>
 <p>In the above example we used the <code>RScalar</code> concept which
 includes all cppally scalar types (excluding <code>r_sexp</code>). For a
 list of all cppally concepts, please see the <strong>Annex</strong></p>
@@ -1405,7 +1405,7 @@ namespace.</p>
 <p><strong>Example:</strong> Adding names to a list</p>
 <div class="sourceCode" id="cb142"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb142-1"><a href="#cb142-1" tabindex="-1"></a></span>
 <span id="cb142-2"><a href="#cb142-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb142-3"><a href="#cb142-3" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> set_list_names<span class="op">(</span>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> x<span class="op">,</span> r_vec<span class="op">&lt;</span>r_str<span class="op">&gt;</span> names<span class="op">){</span></span>
+<span id="cb142-3"><a href="#cb142-3" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> set_list_names<span class="op">(</span>r_vector<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> x<span class="op">,</span> r_vector<span class="op">&lt;</span>r_str<span class="op">&gt;</span> names<span class="op">){</span></span>
 <span id="cb142-4"><a href="#cb142-4" tabindex="-1"></a>  x<span class="op">.</span>set_names<span class="op">(</span>names<span class="op">);</span></span>
 <span id="cb142-5"><a href="#cb142-5" tabindex="-1"></a>  <span class="cf">return</span> x<span class="op">;</span></span>
 <span id="cb142-6"><a href="#cb142-6" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
@@ -1436,7 +1436,7 @@ namespace.</p>
 <ul>
 <li>
 <code>get_attrs()</code> - Returns a list of attributes (possibly
-<code>r_vec&lt;r_sexp&gt;(r_null)</code>)</li>
+<code>r_vector&lt;r_sexp&gt;(r_null)</code>)</li>
 <li>
 <code>set_attrs()</code> - Sets attributes to ones specified. Note:
 replaces any current attributes</li>
@@ -1467,7 +1467,8 @@ doesn’t remove any existing ones</li>
 behaves exactly like the R equivalent <code><a href="https://rdrr.io/r/base/seq.html" class="external-link">base::seq()</a></code>, and
 <code><a href="https://rdrr.io/r/base/sequence.html" class="external-link">sequence()</a></code> behaves like the R equivalent
 <code><a href="https://rdrr.io/r/base/sequence.html" class="external-link">base::sequence()</a></code>, with the exception that it accepts scalar
-arguments instead of vector ones.</p>
+arguments instead of vector ones, and also works with decimal
+increments.</p>
 <div class="sourceCode" id="cb144"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb144-1"><a href="#cb144-1" tabindex="-1"></a>seq<span class="op">(</span>r_dbl<span class="op">(</span><span class="dv">1</span><span class="op">),</span> r_dbl<span class="op">(</span><span class="dv">5</span><span class="op">),</span> r_dbl<span class="op">(</span><span class="fl">0.5</span><span class="op">))</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0</span></span></code></pre>
 <div class="sourceCode" id="cb146"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb146-1"><a href="#cb146-1" tabindex="-1"></a>sequence<span class="op">(</span><span class="dv">5</span><span class="op">,</span> <span class="co">/*from = */</span> r_int<span class="op">(</span><span class="dv">0</span><span class="op">),</span> <span class="co">/*by = */</span> r_int<span class="op">(-</span><span class="dv">1</span><span class="op">))</span></span></code></pre></div>
@@ -1476,7 +1477,7 @@ arguments instead of vector ones.</p>
 <code><a href="https://rdrr.io/r/base/seq.html" class="external-link">base::seq_len()</a></code></p>
 <div class="sourceCode" id="cb148"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb148-1"><a href="#cb148-1" tabindex="-1"></a></span>
 <span id="cb148-2"><a href="#cb148-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb148-3"><a href="#cb148-3" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_int<span class="op">&gt;</span> cpp_seq_len<span class="op">(</span><span class="dt">r_size_t</span> n<span class="op">){</span></span>
+<span id="cb148-3"><a href="#cb148-3" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;</span> cpp_seq_len<span class="op">(</span><span class="dt">r_size_t</span> n<span class="op">){</span></span>
 <span id="cb148-4"><a href="#cb148-4" tabindex="-1"></a>  <span class="cf">return</span> sequence<span class="op">(</span>n<span class="op">,</span> <span class="co">/* from = */</span> r_int<span class="op">(</span><span class="dv">1</span><span class="op">),</span> <span class="co">/* by = */</span> r_int<span class="op">(</span><span class="dv">1</span><span class="op">));</span></span>
 <span id="cb148-5"><a href="#cb148-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb149"><pre class="downlit sourceCode r">
@@ -1488,7 +1489,7 @@ with <code>pmap()</code></p>
 <span id="cb150-2"><a href="#cb150-2" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> T<span class="op">&gt;</span></span>
 <span id="cb150-3"><a href="#cb150-3" tabindex="-1"></a><span class="kw">requires</span> <span class="op">(</span>any<span class="op">&lt;</span>T<span class="op">,</span> r_int<span class="op">,</span> r_int64<span class="op">,</span> r_dbl<span class="op">&gt;)</span></span>
 <span id="cb150-4"><a href="#cb150-4" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb150-5"><a href="#cb150-5" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> cpp_sequences<span class="op">(</span>r_vec<span class="op">&lt;</span>r_int<span class="op">&gt;</span> size<span class="op">,</span> r_vec<span class="op">&lt;</span>T<span class="op">&gt;</span> from<span class="op">,</span> r_vec<span class="op">&lt;</span>T<span class="op">&gt;</span> by<span class="op">){</span></span>
+<span id="cb150-5"><a href="#cb150-5" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> cpp_sequences<span class="op">(</span>r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;</span> size<span class="op">,</span> r_vector<span class="op">&lt;</span>T<span class="op">&gt;</span> from<span class="op">,</span> r_vector<span class="op">&lt;</span>T<span class="op">&gt;</span> by<span class="op">){</span></span>
 <span id="cb150-6"><a href="#cb150-6" tabindex="-1"></a>    <span class="cf">return</span> pmap<span class="op">([](</span><span class="kw">auto</span> a<span class="op">,</span> <span class="kw">auto</span> b<span class="op">,</span> <span class="kw">auto</span> c<span class="op">){</span></span>
 <span id="cb150-7"><a href="#cb150-7" tabindex="-1"></a>        <span class="cf">return</span> as<span class="op">&lt;</span>r_sexp<span class="op">&gt;(</span>sequence<span class="op">(</span>a<span class="op">,</span> b<span class="op">,</span> c<span class="op">));</span></span>
 <span id="cb150-8"><a href="#cb150-8" tabindex="-1"></a>    <span class="op">},</span> size<span class="op">,</span> from<span class="op">,</span> by<span class="op">);</span></span>
@@ -1503,78 +1504,21 @@ with <code>pmap()</code></p>
 <span><span class="co">#&gt; [1] 0 0 1 0 1 2</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="sugar-functions">Sugar functions<a class="anchor" aria-label="anchor" href="#sugar-functions"></a>
+<h2 id="using-multiple-openmp-threads">Using multiple OpenMP threads<a class="anchor" aria-label="anchor" href="#using-multiple-openmp-threads"></a>
 </h2>
-<p>cppally also offers many useful and high-performance common functions
-in cppally/sugar</p>
-<p><strong>Example:</strong> <code>n_unique()</code> - fast calculation
-of number of unique values.</p>
-<div class="sourceCode" id="cb152"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb152-1"><a href="#cb152-1" tabindex="-1"></a></span>
-<span id="cb152-2"><a href="#cb152-2" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RVector T<span class="op">&gt;</span></span>
-<span id="cb152-3"><a href="#cb152-3" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb152-4"><a href="#cb152-4" tabindex="-1"></a>r_int cpp_n_unique<span class="op">(</span>T x<span class="op">){</span></span>
-<span id="cb152-5"><a href="#cb152-5" tabindex="-1"></a>  <span class="cf">return</span> as<span class="op">&lt;</span>r_int<span class="op">&gt;(</span>n_unique<span class="op">(</span>x<span class="op">));</span></span>
-<span id="cb152-6"><a href="#cb152-6" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb153"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bench.r-lib.org/" class="external-link">bench</a></span><span class="op">)</span></span>
-<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">100</span>, <span class="fl">10</span><span class="op">^</span><span class="fl">5</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
-<span>  base_n_unique <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  cppally_n_unique <span class="op">=</span> <span class="fu">cpp_n_unique</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
-<span><span class="co">#&gt;   expression            min   median `itr/sec` mem_alloc `gc/sec`</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_n_unique      1.34ms   1.38ms      724.    1.38MB     20.8</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_n_unique 180.84µs 181.98µs     <span style="text-decoration: underline;">5</span>407.        0B      0</span></span></code></pre></div>
-<p>More useful sugar functions</p>
-<ul>
-<li><p><code><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique()</a></code> - Like R’s <code><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique()</a></code> but with a
-<code>sort</code> argument to return sorted unique values</p></li>
-<li><p><code><a href="https://bit64.r-lib.org/reference/bit64S3.html" class="external-link">order()</a></code> - Like base R’s order but it internally uses
-a hybrid approach of ska sort, count sorting, quick sort, etc.</p></li>
-<li>
-<p><code>make_groups()</code> - An advanced function that returns a
-struct containing group IDs and number of groups (i.e number of unique
-group IDs). The <code>groups</code> struct contains the following
-members:</p>
-<ul>
-<li>
-<code>r_vec&lt;r_int&gt; ids</code> - The cached group IDs</li>
-<li>
-<code>int n_groups</code> - Number of unique groups</li>
-<li>
-<code>bool ordered</code> - Do the group IDs specify a sorting
-order, or are they by order-of-first-appearance?</li>
-<li>
-<code>bool sorted</code> - Are the group IDs sorted? (This can also
-be true for order-of-first-appearance IDs)</li>
-<li>
-<code>r_vec&lt;r_int&gt; start()</code> - Returns an
-r_vec<r_int>(n_groups) vector of start locations of each unique group,
-signifying the location in the data at which each group initially
-appeared</r_int>
-</li>
-<li>
-<code>r_vec&lt;r_int&gt; counts()</code> - Returns an
-r_vec<r_int>(n_groups) vector of frequency counts of each unique
-group</r_int>
-</li>
-<li>
-<code>r_vec&lt;r_int&gt; order()</code> - Returns an
-r_vec<r_int>(ids.length()) order vector. This is a 0-indexed permutation
-vector that can be used to return sorted group IDs</r_int>
-</li>
-</ul>
-</li>
-<li><p><code>recycle()</code> - Recycles supplied vectors to common
-length</p></li>
-<li><p><code>r_vec::subset()</code> - Fast subsetting of
-vectors</p></li>
-</ul>
-<p><strong>Stats sugar functions</strong></p>
-<p>Some statistical summary functions that are all very highly optimised
-for speed</p>
+<p>To set the number of global OpenMP threads, use
+<code>cppally::set_threads()</code>.</p>
+<div class="sourceCode" id="cb152"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb152-1"><a href="#cb152-1" tabindex="-1"></a>cppally<span class="op">::</span>set_threads<span class="op">(</span><span class="dv">4</span><span class="op">);</span> <span class="co">// Sets the number of threads to 4</span></span></code></pre></div>
+<p>Because this is unique to each dll file, setting threads in one R
+package doesn’t affect another. Once threads have been set, all cppally
+code that can make use of them, will use them. This means you should
+speed improvements across many cppally functions.</p>
+</div>
+<div class="section level2">
+<h2 id="stats-functions">Stats functions<a class="anchor" aria-label="anchor" href="#stats-functions"></a>
+</h2>
+<p>cppally provides some stats functions which are both common and
+difficult to implement efficiently and safely.</p>
 <ul>
 <li>
 <code><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum()</a></code> - Sum of values</li>
@@ -1585,25 +1529,484 @@ for speed</p>
 <li>
 <code><a href="https://rdrr.io/r/stats/cor.html" class="external-link">var()</a></code> - Variance</li>
 </ul>
+<div class="sourceCode" id="cb153"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb153-1"><a href="#cb153-1" tabindex="-1"></a></span>
+<span id="cb153-2"><a href="#cb153-2" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RNumber T<span class="op">&gt;</span></span>
+<span id="cb153-3"><a href="#cb153-3" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb153-4"><a href="#cb153-4" tabindex="-1"></a>r_dbl cpp_sum<span class="op">(</span>r_vector<span class="op">&lt;</span>T<span class="op">&gt;</span> x<span class="op">,</span> <span class="dt">bool</span> na_rm<span class="op">){</span></span>
+<span id="cb153-5"><a href="#cb153-5" tabindex="-1"></a>  <span class="cf">return</span> as<span class="op">&lt;</span>r_dbl<span class="op">&gt;(</span>sum<span class="op">(</span>x<span class="op">,</span> na_rm<span class="op">));</span></span>
+<span id="cb153-6"><a href="#cb153-6" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb153-7"><a href="#cb153-7" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RNumber T<span class="op">&gt;</span></span>
+<span id="cb153-8"><a href="#cb153-8" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb153-9"><a href="#cb153-9" tabindex="-1"></a>r_vector<span class="op">&lt;</span>T<span class="op">&gt;</span> cpp_range<span class="op">(</span>r_vector<span class="op">&lt;</span>T<span class="op">&gt;</span> x<span class="op">,</span> <span class="dt">bool</span> na_rm<span class="op">){</span></span>
+<span id="cb153-10"><a href="#cb153-10" tabindex="-1"></a>  <span class="cf">return</span> range<span class="op">(</span>x<span class="op">,</span> na_rm<span class="op">);</span></span>
+<span id="cb153-11"><a href="#cb153-11" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb153-12"><a href="#cb153-12" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RNumber T<span class="op">&gt;</span></span>
+<span id="cb153-13"><a href="#cb153-13" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb153-14"><a href="#cb153-14" tabindex="-1"></a>r_dbl cpp_var<span class="op">(</span>r_vector<span class="op">&lt;</span>T<span class="op">&gt;</span> x<span class="op">,</span> <span class="dt">bool</span> na_rm<span class="op">){</span></span>
+<span id="cb153-15"><a href="#cb153-15" tabindex="-1"></a>  <span class="cf">return</span> var<span class="op">(</span>x<span class="op">,</span> na_rm<span class="op">);</span></span>
+<span id="cb153-16"><a href="#cb153-16" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb154"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bench.r-lib.org/" class="external-link">bench</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">5e05</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">x</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="fl">10</span><span class="op">^</span><span class="fl">5</span>, <span class="fl">10</span><span class="op">^</span><span class="fl">4</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span> <span class="co"># Add many NAs</span></span>
+<span></span>
+<span><span class="co"># Sum (ignoring NAs)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  cppally_sum <span class="op">=</span> <span class="fu">cpp_sum</span><span class="op">(</span><span class="va">x</span>, na_rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  base_sum <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sum    153µs    154µs     <span style="text-decoration: underline;">6</span>400.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sum       349µs    353µs     <span style="text-decoration: underline;">2</span>818.        0B        0</span></span>
+<span></span>
+<span><span class="co"># Sum (not ignoring NAs)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  cppally_sum <span class="op">=</span> <span class="fu">cpp_sum</span><span class="op">(</span><span class="va">x</span>, na_rm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  base_sum <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sum   1.08µs   1.17µs   <span style="text-decoration: underline;">787</span>637.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sum    188.94ns 204.08ns  4<span style="text-decoration: underline;">144</span>412.        0B        0</span></span>
+<span></span>
+<span><span class="co"># Range (ignoring NAs)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  cppally_range <span class="op">=</span> <span class="fu">cpp_range</span><span class="op">(</span><span class="va">x</span>, na_rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  base_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression         min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_range 168.47µs 178.49µs     <span style="text-decoration: underline;">5</span>544.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_range      3.44ms   6.71ms      151.    11.4MB     48.2</span></span>
+<span></span>
+<span><span class="co"># Range (not ignoring NAs)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  cppally_range <span class="op">=</span> <span class="fu">cpp_range</span><span class="op">(</span><span class="va">x</span>, na_rm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  base_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression         min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_range   1.07µs   1.18µs   <span style="text-decoration: underline;">769</span>519.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_range      1.35ms   1.41ms      709.    1.91MB     30.1</span></span>
+<span></span>
+<span><span class="co"># Variance (ignoring NAs)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  cppally_var <span class="op">=</span> <span class="fu">cpp_var</span><span class="op">(</span><span class="va">x</span>, na_rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  base_var <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">var</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_var  842.1µs 851.89µs     <span style="text-decoration: underline;">1</span>167.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_var      2.88ms   2.95ms      328.    5.74MB     52.9</span></span>
+<span></span>
+<span><span class="co"># Variance (not ignoring NAs)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  cppally_var <span class="op">=</span> <span class="fu">cpp_var</span><span class="op">(</span><span class="va">x</span>, na_rm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  base_var <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">var</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_var   1.08µs   1.18µs   <span style="text-decoration: underline;">763</span>400.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_var      1.07ms    1.2ms      816.    3.81MB     80.6</span></span>
+<span></span>
+<span><span class="co"># Using multiple threads</span></span>
+<span></span>
+<span><span class="fu">cpp_set_threads</span><span class="op">(</span><span class="fl">4</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Sum (ignoring NAs)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  cppally_sum <span class="op">=</span> <span class="fu">cpp_sum</span><span class="op">(</span><span class="va">x</span>, na_rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  base_sum <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sum     93µs   93.6µs    <span style="text-decoration: underline;">10</span>486.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sum       349µs  354.2µs     <span style="text-decoration: underline;">2</span>800.        0B        0</span></span>
+<span></span>
+<span><span class="co"># Sum (not ignoring NAs)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  cppally_sum <span class="op">=</span> <span class="fu">cpp_sum</span><span class="op">(</span><span class="va">x</span>, na_rm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  base_sum <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sum   1.07µs   1.11µs   <span style="text-decoration: underline;">815</span>122.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sum    189.06ns  202.1ns  3<span style="text-decoration: underline;">612</span>823.        0B        0</span></span>
+<span></span>
+<span><span class="co"># Range (ignoring NAs)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  cppally_range <span class="op">=</span> <span class="fu">cpp_range</span><span class="op">(</span><span class="va">x</span>, na_rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  base_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression         min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_range 237.55µs  240.2µs     <span style="text-decoration: underline;">4</span>060.        0B       0 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_range      3.08ms    3.4ms      262.    11.4MB     170.</span></span>
+<span></span>
+<span><span class="co"># Range (not ignoring NAs)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  cppally_range <span class="op">=</span> <span class="fu">cpp_range</span><span class="op">(</span><span class="va">x</span>, na_rm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  base_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression         min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_range   1.07µs   1.11µs   <span style="text-decoration: underline;">853</span>066.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_range     693.7µs   1.36ms      857.    1.91MB     36.8</span></span>
+<span></span>
+<span><span class="co"># Variance (ignoring NAs)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  cppally_var <span class="op">=</span> <span class="fu">cpp_var</span><span class="op">(</span><span class="va">x</span>, na_rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  base_var <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">var</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_var 443.77µs 450.02µs     <span style="text-decoration: underline;">2</span>043.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_var      2.87ms   4.01ms      276.    5.72MB     39.8</span></span>
+<span></span>
+<span><span class="co"># Variance (not ignoring NAs)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  cppally_var <span class="op">=</span> <span class="fu">cpp_var</span><span class="op">(</span><span class="va">x</span>, na_rm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  base_var <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">var</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_var   1.08µs   1.11µs   <span style="text-decoration: underline;">853</span>667.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_var    493.66µs   1.14ms     <span style="text-decoration: underline;">1</span>059.    3.81MB     98.4</span></span>
+<span></span>
+<span><span class="co"># Reset to single-threaded</span></span>
+<span><span class="fu">cpp_set_threads</span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="a-note-on-cppallysum">A note on cppally::sum<a class="anchor" aria-label="anchor" href="#a-note-on-cppallysum"></a>
+</h3>
+<p><code><a href="https://rdrr.io/r/base/sum.html" class="external-link">cppally::sum()</a></code> is written to use SIMD instructions for
+performance where possible. It also uses higher width integers for
+accuracy when dealing with integer vectors. For example, if summing a
+32-bit integer vector, it uses intermediate 64-bit integers, and
+likewise if summing a 64-bit integer vector, it uses intermediate
+128-bit integers (if your compiler supports it). Doing it this way
+avoids integer overflow entirely for vectors whose length is less than
+2^32. It also avoids intermediate integer overflow that would have
+arisen if same-width integers were used. For example, for
+<code>x &lt;- .Machine$integer.max * c(-1L, -1L, 1L, 1L)</code>, the sum
+of x is trivially 0, but the intermediate addition of <code>x[1]</code>
+and <code>x[2]</code> would result in overflow if one were to use 32-bit
+integers.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="unique-values">Unique values<a class="anchor" aria-label="anchor" href="#unique-values"></a>
+</h2>
+<p><code>n_unique()</code> is a convenient helper to calculate the
+number of unique values. <code><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique()</a></code> is also highly
+performant.</p>
+<div class="sourceCode" id="cb155"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb155-1"><a href="#cb155-1" tabindex="-1"></a></span>
+<span id="cb155-2"><a href="#cb155-2" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RVector T<span class="op">&gt;</span></span>
+<span id="cb155-3"><a href="#cb155-3" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb155-4"><a href="#cb155-4" tabindex="-1"></a>r_int cpp_n_unique<span class="op">(</span>T x<span class="op">){</span></span>
+<span id="cb155-5"><a href="#cb155-5" tabindex="-1"></a>  <span class="cf">return</span> as<span class="op">&lt;</span>r_int<span class="op">&gt;(</span>n_unique<span class="op">(</span>x<span class="op">));</span></span>
+<span id="cb155-6"><a href="#cb155-6" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb155-7"><a href="#cb155-7" tabindex="-1"></a></span>
+<span id="cb155-8"><a href="#cb155-8" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RVector T<span class="op">&gt;</span></span>
+<span id="cb155-9"><a href="#cb155-9" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb155-10"><a href="#cb155-10" tabindex="-1"></a>T cpp_unique<span class="op">(</span>T x<span class="op">,</span> <span class="dt">bool</span> sort<span class="op">){</span></span>
+<span id="cb155-11"><a href="#cb155-11" tabindex="-1"></a>  <span class="cf">return</span> unique<span class="op">(</span>x<span class="op">,</span> sort<span class="op">);</span></span>
+<span id="cb155-12"><a href="#cb155-12" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb156"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">100</span>, <span class="fl">10</span><span class="op">^</span><span class="fl">5</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  base_n_unique <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  cppally_n_unique <span class="op">=</span> <span class="fu">cpp_n_unique</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression            min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_n_unique       684µs    777µs     <span style="text-decoration: underline;">1</span>099.    1.38MB     34.1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_n_unique    235µs    242µs     <span style="text-decoration: underline;">4</span>107.        0B      0</span></span>
+<span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  base_unique <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>,</span>
+<span>  cppally_unique <span class="op">=</span> <span class="fu">cpp_unique</span><span class="op">(</span><span class="va">x</span>, sort <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression          min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_unique       675µs    791µs     <span style="text-decoration: underline;">1</span>098.    1.38MB     34.2</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_unique    151µs    154µs     <span style="text-decoration: underline;">6</span>429.      448B      0</span></span>
+<span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  base_sorted_unique <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  cppally_sorted_unique <span class="op">=</span> <span class="fu">cpp_unique</span><span class="op">(</span><span class="va">x</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression                 min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_sorted_unique       723µs    784µs     <span style="text-decoration: underline;">1</span>119.    1.38MB     34.3</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_sorted_unique    153µs    156µs     <span style="text-decoration: underline;">6</span>388.      896B      0</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="sorting">Sorting<a class="anchor" aria-label="anchor" href="#sorting"></a>
+</h2>
+<p>cppally also offers <code><a href="https://bit64.r-lib.org/reference/bit64S3.html" class="external-link">order()</a></code> and <code><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort()</a></code> for
+sorting purposes. A hybrid approach is used, incorporating various
+sorting algorithms, including ska sort (a variant on radix sort),
+counting sort, quick sort, etc. These have been implemented with speed
+being a key focus.</p>
+<div class="sourceCode" id="cb157"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb157-1"><a href="#cb157-1" tabindex="-1"></a></span>
+<span id="cb157-2"><a href="#cb157-2" tabindex="-1"></a></span>
+<span id="cb157-3"><a href="#cb157-3" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RSortableVector T<span class="op">&gt;</span></span>
+<span id="cb157-4"><a href="#cb157-4" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb157-5"><a href="#cb157-5" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;</span> cpp_order<span class="op">(</span>T x<span class="op">){</span></span>
+<span id="cb157-6"><a href="#cb157-6" tabindex="-1"></a>  </span>
+<span id="cb157-7"><a href="#cb157-7" tabindex="-1"></a>  <span class="co">// Add 1 to return 1-indexed permutation to match base::order()</span></span>
+<span id="cb157-8"><a href="#cb157-8" tabindex="-1"></a>  <span class="co">// In general C++ code, always use 0-indexed as cppally indexing is </span></span>
+<span id="cb157-9"><a href="#cb157-9" tabindex="-1"></a>  <span class="co">// always 0-indexed.</span></span>
+<span id="cb157-10"><a href="#cb157-10" tabindex="-1"></a>  </span>
+<span id="cb157-11"><a href="#cb157-11" tabindex="-1"></a>  <span class="cf">return</span> order<span class="op">(</span>x<span class="op">)</span> <span class="op">+</span> <span class="dv">1</span><span class="op">;</span> </span>
+<span id="cb157-12"><a href="#cb157-12" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb157-13"><a href="#cb157-13" tabindex="-1"></a></span>
+<span id="cb157-14"><a href="#cb157-14" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RSortableVector T<span class="op">&gt;</span></span>
+<span id="cb157-15"><a href="#cb157-15" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb157-16"><a href="#cb157-16" tabindex="-1"></a>T cpp_sort<span class="op">(</span>T x<span class="op">){</span></span>
+<span id="cb157-17"><a href="#cb157-17" tabindex="-1"></a>  <span class="cf">return</span> sort<span class="op">(</span>x<span class="op">);</span></span>
+<span id="cb157-18"><a href="#cb157-18" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><code><a href="https://rdrr.io/r/base/sort.html" class="external-link">cppally::sort</a></code> always sorts <code>NA</code> values last
+and so is equivalent to
+<code>base::sort(..., method = "radix", na.last = TRUE)</code>.</p>
+<div class="sourceCode" id="cb158"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">r_radix_sort</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="va">x</span>, method <span class="op">=</span> <span class="st">"radix"</span>, na.last <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">r_radix_order</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://bit64.r-lib.org/reference/bit64S3.html" class="external-link">order</a></span><span class="op">(</span><span class="va">x</span>, method <span class="op">=</span> <span class="st">"radix"</span>, na.last <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Small data</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp_sort</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>, <span class="fu">r_radix_sort</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression                    min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_sort(c(3, 2, 1))       1.24µs    1.3µs   <span style="text-decoration: underline;">669</span>912.        0B     67.0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_sort(c(3, 2, 1))  24.22µs   26.7µs    <span style="text-decoration: underline;">36</span>561.        0B     14.6</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp_order</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>, <span class="fu">r_radix_order</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression                     min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_order(c(3, 2, 1))       1.23µs    1.3µs   <span style="text-decoration: underline;">679</span>266.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_order(c(3, 2, 1))  10.81µs     12µs    <span style="text-decoration: underline;">79</span>898.        0B     16.0</span></span>
+<span></span>
+<span><span class="co"># Integer data</span></span>
+<span><span class="va">ints</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">2e05</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp_sort</span><span class="op">(</span><span class="va">ints</span><span class="op">)</span>, <span class="fu">r_radix_sort</span><span class="op">(</span><span class="va">ints</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression              min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_sort(ints)     554.02µs  599.5µs     <span style="text-decoration: underline;">1</span>571.    1.53MB     63.5</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_sort(ints)   1.06ms   1.12ms      892.    1.53MB     32.4</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp_order</span><span class="op">(</span><span class="va">ints</span><span class="op">)</span>, <span class="fu">r_radix_order</span><span class="op">(</span><span class="va">ints</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression               min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_order(ints)        499µs    528µs     <span style="text-decoration: underline;">1</span>809.     781KB     35.9</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_order(ints)    637µs    893µs     <span style="text-decoration: underline;">1</span>197.     781KB     19.5</span></span>
+<span></span>
+<span><span class="co"># Double-floating point precision data</span></span>
+<span><span class="va">dbls</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html" class="external-link">as.double</a></span><span class="op">(</span><span class="va">ints</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp_sort</span><span class="op">(</span><span class="va">dbls</span><span class="op">)</span>, <span class="fu">r_radix_sort</span><span class="op">(</span><span class="va">dbls</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression              min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_sort(dbls)       1.52ms   1.56ms      635.    2.29MB     42.3</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_sort(dbls)   6.14ms   6.37ms      157.    2.29MB     11.0</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp_order</span><span class="op">(</span><span class="va">dbls</span><span class="op">)</span>, <span class="fu">r_radix_order</span><span class="op">(</span><span class="va">dbls</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression               min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_order(dbls)       1.21ms   1.24ms      802.     781KB    19.4 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_order(dbls)   5.14ms   5.63ms      178.     781KB     4.14</span></span>
+<span></span>
+<span><span class="co"># Floating point data with decimals</span></span>
+<span><span class="va">dcmls</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">dbls</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp_sort</span><span class="op">(</span><span class="va">dcmls</span><span class="op">)</span>, <span class="fu">r_radix_sort</span><span class="op">(</span><span class="va">dcmls</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression               min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_sort(dcmls)       5.55ms   5.73ms      175.    2.29MB    15.9 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_sort(dcmls)   8.51ms   9.38ms      108.    2.29MB     8.81</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp_order</span><span class="op">(</span><span class="va">dcmls</span><span class="op">)</span>, <span class="fu">r_radix_order</span><span class="op">(</span><span class="va">dcmls</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression                min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_order(dcmls)       5.58ms   5.62ms      178.     781KB     6.27</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_order(dcmls)   7.74ms   8.28ms      122.     781KB     4.13</span></span>
+<span></span>
+<span><span class="co"># String data</span></span>
+<span><span class="va">strs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">dcmls</span>, <span class="fl">2</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp_sort</span><span class="op">(</span><span class="va">strs</span><span class="op">)</span>, <span class="fu">r_radix_sort</span><span class="op">(</span><span class="va">strs</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression              min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_sort(strs)        2.5ms   2.95ms      346.    2.29MB     30.8</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_sort(strs)    2.5ms   2.73ms      357.    2.29MB     35.9</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp_order</span><span class="op">(</span><span class="va">strs</span><span class="op">)</span>, <span class="fu">r_radix_order</span><span class="op">(</span><span class="va">strs</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression               min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_order(strs)       1.31ms   1.37ms      718.     781KB     19.7</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_order(strs)   1.06ms   1.17ms      857.     781KB     22.7</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="grouping">Grouping<a class="anchor" aria-label="anchor" href="#grouping"></a>
+</h2>
+<p>Some areas of analysis require working with groups, with sometimes
+very large numbers of them. cppally provides a powerful class
+<code>groups</code>, along with <code>make_groups()</code>, a function
+that creates <code>groups</code> from vectors.</p>
+<p>The structure of <code>groups</code> is:</p>
+<ul>
+<li>
+<code>r_vector&lt;r_int&gt; ids</code> - The group IDs</li>
+<li>
+<code>int n_groups</code> - Number of unique groups</li>
+<li>
+<code>bool ordered</code> - Do the group IDs specify a sorting
+order, or are they by order-of-first-appearance?</li>
+<li>
+<code>bool sorted</code> - Are the group IDs sorted? (This can also
+be true for order-of-first-appearance IDs)</li>
+<li>
+<code>r_vector&lt;r_int&gt; starts()</code> - Returns a vector of
+start locations of each unique group, signifying the location in the
+data at which each group initially appeared</li>
+<li>
+<code>r_vector&lt;r_int&gt; counts()</code> - Returns a vector of
+frequency counts of each unique group</li>
+<li>
+<code>r_vector&lt;r_int&gt; order()</code> - Returns a 0-indexed
+permutation vector that can be used to sort group IDs</li>
+</ul>
+<p><strong>Note:</strong> When the groups are in sorted-order (where
+<code>sorted</code> is true), member functions like
+<code>starts()</code> and <code>counts()</code> use a hybrid search
+strategy combining linear, gallop, and binary searching. This strategy
+ensures that search time complexity scales with the number of groups and
+not the size of the data.</p>
+<div class="sourceCode" id="cb159"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb159-1"><a href="#cb159-1" tabindex="-1"></a></span>
+<span id="cb159-2"><a href="#cb159-2" tabindex="-1"></a></span>
+<span id="cb159-3"><a href="#cb159-3" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RVector T<span class="op">&gt;</span></span>
+<span id="cb159-4"><a href="#cb159-4" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb159-5"><a href="#cb159-5" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> group_info<span class="op">(</span>T x<span class="op">){</span></span>
+<span id="cb159-6"><a href="#cb159-6" tabindex="-1"></a>  groups g <span class="op">=</span> make_groups<span class="op">(</span>x<span class="op">,</span> <span class="co">/*ordered=*/</span> <span class="kw">false</span><span class="op">);</span></span>
+<span id="cb159-7"><a href="#cb159-7" tabindex="-1"></a>  <span class="cf">return</span> make_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;(</span></span>
+<span id="cb159-8"><a href="#cb159-8" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"group_id"</span><span class="op">)</span> <span class="op">=</span> g<span class="op">.</span>ids<span class="op">,</span></span>
+<span id="cb159-9"><a href="#cb159-9" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"n_groups"</span><span class="op">)</span> <span class="op">=</span> g<span class="op">.</span>n_groups<span class="op">,</span></span>
+<span id="cb159-10"><a href="#cb159-10" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"ordered"</span><span class="op">)</span> <span class="op">=</span> g<span class="op">.</span>ordered<span class="op">,</span></span>
+<span id="cb159-11"><a href="#cb159-11" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"sorted"</span><span class="op">)</span> <span class="op">=</span> g<span class="op">.</span>sorted<span class="op">,</span></span>
+<span id="cb159-12"><a href="#cb159-12" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"starts"</span><span class="op">)</span> <span class="op">=</span> g<span class="op">.</span>starts<span class="op">(),</span></span>
+<span id="cb159-13"><a href="#cb159-13" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"counts"</span><span class="op">)</span> <span class="op">=</span> g<span class="op">.</span>counts<span class="op">(),</span></span>
+<span id="cb159-14"><a href="#cb159-14" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"order"</span><span class="op">)</span> <span class="op">=</span> g<span class="op">.</span>order<span class="op">(),</span></span>
+<span id="cb159-15"><a href="#cb159-15" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"group_names"</span><span class="op">)</span> <span class="op">=</span> group_names<span class="op">(</span>x<span class="op">,</span> g<span class="op">)</span></span>
+<span id="cb159-16"><a href="#cb159-16" tabindex="-1"></a>  <span class="op">);</span></span>
+<span id="cb159-17"><a href="#cb159-17" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb160"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"C"</span><span class="op">)</span>, <span class="fl">20</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Convert into group info</span></span>
+<span></span>
+<span><span class="va">letter_groups</span> <span class="op">&lt;-</span> <span class="fu">group_info</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">letter_groups</span><span class="op">$</span><span class="va">group_id</span> <span class="co"># Group IDs</span></span>
+<span><span class="co">#&gt;  [1] 0 1 0 2 0 1 1 2 2 1 1 0 0 0 2 2 2 2 1 0</span></span>
+<span><span class="va">letter_groups</span><span class="op">$</span><span class="va">n_groups</span> <span class="co"># Number of groups</span></span>
+<span><span class="co">#&gt; [1] 3</span></span>
+<span><span class="va">letter_groups</span><span class="op">$</span><span class="va">ordered</span>  <span class="co"># Groups were collected using order-of-first-appearance</span></span>
+<span><span class="co">#&gt; [1] FALSE</span></span>
+<span><span class="va">letter_groups</span><span class="op">$</span><span class="va">sorted</span>   <span class="co"># Are group IDs in sorted order?</span></span>
+<span><span class="co">#&gt; [1] FALSE</span></span>
+<span><span class="va">letter_groups</span><span class="op">$</span><span class="va">starts</span>   <span class="co"># Data start locations (0-indexed)</span></span>
+<span><span class="co">#&gt; [1] 0 1 3</span></span>
+<span><span class="va">letter_groups</span><span class="op">$</span><span class="va">counts</span>   <span class="co"># Group counts</span></span>
+<span><span class="co">#&gt; [1] 7 6 7</span></span>
+<span><span class="va">letter_groups</span><span class="op">$</span><span class="va">order</span>    <span class="co"># Order permutation (0-indexed)</span></span>
+<span><span class="co">#&gt;  [1]  0  2  4 11 12 13 19  1  5  6  9 10 18  3  7  8 14 15 16 17</span></span>
+<span><span class="va">letter_groups</span><span class="op">$</span><span class="va">group_names</span> <span class="co"># Names of unique groups</span></span>
+<span><span class="co">#&gt; [1] "A" "C" "B"</span></span></code></pre></div>
+<p>In real analysis, you normally wouldn’t need all of this metadata.
+For example, to return a data frame of unique groups (keys) and their
+associated counts, we only need <code>starts()</code> and
+<code>counts()</code>.</p>
+<div class="sourceCode" id="cb161"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb161-1"><a href="#cb161-1" tabindex="-1"></a></span>
+<span id="cb161-2"><a href="#cb161-2" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RVector T<span class="op">&gt;</span></span>
+<span id="cb161-3"><a href="#cb161-3" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb161-4"><a href="#cb161-4" tabindex="-1"></a>r_df group_counts<span class="op">(</span>T x<span class="op">){</span></span>
+<span id="cb161-5"><a href="#cb161-5" tabindex="-1"></a>  groups g <span class="op">=</span> make_groups<span class="op">(</span>x<span class="op">,</span> <span class="co">/*ordered=*/</span> <span class="kw">false</span><span class="op">);</span></span>
+<span id="cb161-6"><a href="#cb161-6" tabindex="-1"></a>  </span>
+<span id="cb161-7"><a href="#cb161-7" tabindex="-1"></a>  <span class="cf">return</span> make_df<span class="op">(</span></span>
+<span id="cb161-8"><a href="#cb161-8" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"key"</span><span class="op">)</span> <span class="op">=</span> subset<span class="op">(</span>x<span class="op">,</span> g<span class="op">.</span>starts<span class="op">()),</span></span>
+<span id="cb161-9"><a href="#cb161-9" tabindex="-1"></a>    arg<span class="op">(</span><span class="st">"count"</span><span class="op">)</span> <span class="op">=</span> g<span class="op">.</span>counts<span class="op">()</span></span>
+<span id="cb161-10"><a href="#cb161-10" tabindex="-1"></a>  <span class="op">);</span></span>
+<span id="cb161-11"><a href="#cb161-11" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb162"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">group_counts</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   key count</span></span>
+<span><span class="co">#&gt; 1   A     7</span></span>
+<span><span class="co">#&gt; 2   C     6</span></span>
+<span><span class="co">#&gt; 3   B     7</span></span></code></pre></div>
+<p>To illustrate how fast <code>make_groups()</code> is, let’s compare
+cppally-derived group counts of a relatively large sample to base-R
+derived group counts.</p>
+<div class="sourceCode" id="cb163"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># 10k groups, 100k data points</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="fl">10</span><span class="op">^</span><span class="fl">4</span>, <span class="fl">10</span><span class="op">^</span><span class="fl">5</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
+<span>  cppally_group_counts <span class="op">=</span> <span class="fu">group_counts</span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">$</span><span class="va">count</span>,</span>
+<span>  base_table <span class="op">=</span> <span class="fu"><a href="https://bit64.r-lib.org/reference/table.html" class="external-link">table</a></span><span class="op">(</span><span class="fu"><a href="https://bit64.r-lib.org/reference/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">x</span>, levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   expression                min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_group_counts    303µs 327.92µs     <span style="text-decoration: underline;">3</span>060.   514.1KB     40.2</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_table              7.4ms   7.54ms      132.     6.2MB     39.4</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="annex">Annex<a class="anchor" aria-label="anchor" href="#annex"></a>
 </h2>
 <div class="section level3">
-<h3 id="symbols-in-r-registered-templates">Symbols in R-registered templates<a class="anchor" aria-label="anchor" href="#symbols-in-r-registered-templates"></a>
+<h3 id="unsupported-classes-in-r-registered-templates">Unsupported classes in R-registered templates<a class="anchor" aria-label="anchor" href="#unsupported-classes-in-r-registered-templates"></a>
 </h3>
-<p><code>r_sym</code> is unsupported in templates when it’s part of a
-template argument but is supported when the argument is explicitly an
-<code>r_sym</code>.</p>
-<div class="sourceCode" id="cb154"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb154-1"><a href="#cb154-1" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb154-2"><a href="#cb154-2" tabindex="-1"></a>r_str symbol_to_string<span class="op">(</span>r_sym x<span class="op">){</span></span>
-<span id="cb154-3"><a href="#cb154-3" tabindex="-1"></a>    <span class="cf">return</span> as<span class="op">&lt;</span>r_str<span class="op">&gt;(</span>x<span class="op">);</span></span>
-<span id="cb154-4"><a href="#cb154-4" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb155"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb155-1"><a href="#cb155-1" tabindex="-1"></a>hello_world_symbol <span class="ot">&lt;-</span> <span class="fu">as.symbol</span>(<span class="st">"hello world!"</span>)</span>
-<span id="cb155-2"><a href="#cb155-2" tabindex="-1"></a>hello_world_symbol</span>
-<span id="cb155-3"><a href="#cb155-3" tabindex="-1"></a><span class="st">`</span><span class="at">hello world!</span><span class="st">`</span></span>
-<span id="cb155-4"><a href="#cb155-4" tabindex="-1"></a><span class="fu">symbol_to_string</span>(hello_world_symbol)</span>
-<span id="cb155-5"><a href="#cb155-5" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"hello world!"</span></span></code></pre></div>
+<p><code>r_sym</code> and <code>r_function</code> are both unsupported
+in R-registered template functions. This only applies when used as
+template arguments. They will work as normal where function arguments
+are non-templated.</p>
+<p>Good:</p>
+<div class="sourceCode" id="cb164"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb164-1"><a href="#cb164-1" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RStringType T<span class="op">&gt;</span></span>
+<span id="cb164-2"><a href="#cb164-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb164-3"><a href="#cb164-3" tabindex="-1"></a>r_lgl foo<span class="op">(</span>r_sym x<span class="op">,</span> T y<span class="op">){</span></span>
+<span id="cb164-4"><a href="#cb164-4" tabindex="-1"></a>    <span class="cf">return</span> as<span class="op">&lt;</span>r_str<span class="op">&gt;(</span>x<span class="op">)</span> <span class="op">==</span> y<span class="op">;</span></span>
+<span id="cb164-5"><a href="#cb164-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Bad:</p>
+<div class="sourceCode" id="cb165"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb165-1"><a href="#cb165-1" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RStringType T<span class="op">,</span> <span class="kw">typename</span> Symbol<span class="op">&gt;</span></span>
+<span id="cb165-2"><a href="#cb165-2" tabindex="-1"></a><span class="kw">requires</span> <span class="op">(</span>is<span class="op">&lt;</span>Symbol<span class="op">,</span> r_sym<span class="op">&gt;)</span></span>
+<span id="cb165-3"><a href="#cb165-3" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb165-4"><a href="#cb165-4" tabindex="-1"></a>r_lgl foo<span class="op">(</span>Symbol x<span class="op">,</span> T y<span class="op">){</span></span>
+<span id="cb165-5"><a href="#cb165-5" tabindex="-1"></a>    <span class="cf">return</span> as<span class="op">&lt;</span>r_str<span class="op">&gt;(</span>x<span class="op">)</span> <span class="op">==</span> y<span class="op">;</span></span>
+<span id="cb165-6"><a href="#cb165-6" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="all-core-cppally-concepts">All core cppally concepts<a class="anchor" aria-label="anchor" href="#all-core-cppally-concepts"></a>
@@ -1624,9 +2027,9 @@ template argument but is supported when the argument is explicitly an
 <code>r_str_view</code>, <code>r_cplx</code>, <code>r_raw</code>,
 <code>r_date</code> and <code>r_psxct</code></p></li>
 <li><p>RVal - Includes anything a cppally vector
-(<code>r_vec&lt;&gt;</code>) can contain: RScalar
+(<code>r_vector&lt;&gt;</code>) can contain: RScalar
 +<code>r_sexp</code></p></li>
-<li><p>RVector - Includes <code>r_vec&lt;T&gt;</code> where
+<li><p>RVector - Includes <code>r_vector&lt;T&gt;</code> where
 <code>T</code> is an RVal</p></li>
 <li><p>RFactor - Factors</p></li>
 <li><p>RDataFrame - Data frames</p></li>
@@ -1662,40 +2065,22 @@ types</li>
 <div class="section level3">
 <h3 id="accessing-the-underlying-types-and-values">Accessing the underlying types and values<a class="anchor" aria-label="anchor" href="#accessing-the-underlying-types-and-values"></a>
 </h3>
-<p>While it is generally recommended not to access the underlying
-objects, you can do so with <code>unwrap()</code> which returns the
+<p>While it is generally not recommended to access the underlying
+values, you can do so with <code>unwrap()</code> which returns the
 underlying C/C++ value. For example, <code>unwrap(r_int(5))</code> will
 return an <code>int</code> of value <code>5</code>.</p>
 <p>To access the underlying type, use <code>unwrap_t&lt;&gt;</code>
 which always aligns with <code>unwrap()</code></p>
-<p>The main reason for wanting to access underlying values would likely
-be optimisation and so <code>unwrap()</code> and <code>unwrap_t</code>
-allow this to be done consistently.</p>
-<p><strong>Example:</strong> Summing a double vector using
-<code>r_vec&lt;T&gt;::data()</code> member</p>
-<div class="sourceCode" id="cb156"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb156-1"><a href="#cb156-1" tabindex="-1"></a></span>
-<span id="cb156-2"><a href="#cb156-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb156-3"><a href="#cb156-3" tabindex="-1"></a><span class="dt">double</span> primitive_sum<span class="op">(</span><span class="at">const</span> r_vec<span class="op">&lt;</span>r_dbl<span class="op">&gt;&amp;</span> x<span class="op">){</span></span>
-<span id="cb156-4"><a href="#cb156-4" tabindex="-1"></a></span>
-<span id="cb156-5"><a href="#cb156-5" tabindex="-1"></a>  <span class="co">// r_vec&lt;T&gt;::data_type always returns typename T</span></span>
-<span id="cb156-6"><a href="#cb156-6" tabindex="-1"></a>  <span class="kw">using</span> <span class="dt">data_t</span> <span class="op">=</span> <span class="kw">typename</span> <span class="bu">std::</span>remove_cvref_t<span class="op">&lt;</span><span class="kw">decltype</span><span class="op">(</span>x<span class="op">)&gt;::</span><span class="dt">data_type</span><span class="op">;</span></span>
-<span id="cb156-7"><a href="#cb156-7" tabindex="-1"></a></span>
-<span id="cb156-8"><a href="#cb156-8" tabindex="-1"></a>  <span class="kw">using</span> <span class="dt">primitive_t</span> <span class="op">=</span> <span class="dt">unwrap_t</span><span class="op">&lt;</span><span class="dt">data_t</span><span class="op">&gt;;</span></span>
-<span id="cb156-9"><a href="#cb156-9" tabindex="-1"></a>  <span class="dt">primitive_t</span> <span class="op">*</span>p_x <span class="op">=</span> x<span class="op">.</span>data<span class="op">();</span></span>
-<span id="cb156-10"><a href="#cb156-10" tabindex="-1"></a></span>
-<span id="cb156-11"><a href="#cb156-11" tabindex="-1"></a>  <span class="dt">r_size_t</span> n <span class="op">=</span> x<span class="op">.</span>length<span class="op">();</span></span>
-<span id="cb156-12"><a href="#cb156-12" tabindex="-1"></a>  <span class="dt">double</span> sum <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb156-13"><a href="#cb156-13" tabindex="-1"></a></span>
-<span id="cb156-14"><a href="#cb156-14" tabindex="-1"></a>  OMP_SIMD_REDUCTION1<span class="op">(+:</span>sum<span class="op">)</span></span>
-<span id="cb156-15"><a href="#cb156-15" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="dt">r_size_t</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> n<span class="op">;</span> <span class="op">++</span>i<span class="op">){</span></span>
-<span id="cb156-16"><a href="#cb156-16" tabindex="-1"></a>    sum <span class="op">+=</span> p_x<span class="op">[</span>i<span class="op">];</span></span>
-<span id="cb156-17"><a href="#cb156-17" tabindex="-1"></a>  <span class="op">}</span></span>
-<span id="cb156-18"><a href="#cb156-18" tabindex="-1"></a>  <span class="cf">return</span> sum<span class="op">;</span></span>
-<span id="cb156-19"><a href="#cb156-19" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb157"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">10</span><span class="op">^</span><span class="fl">5</span><span class="op">)</span></span>
-<span><span class="fu">primitive_sum</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] -467.8787</span></span></code></pre></div>
+<div class="sourceCode" id="cb166"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb166-1"><a href="#cb166-1" tabindex="-1"></a><span class="dt">int</span> one <span class="op">=</span> unwrap<span class="op">(</span>r_int<span class="op">(</span><span class="dv">1</span><span class="op">));</span></span>
+<span id="cb166-2"><a href="#cb166-2" tabindex="-1"></a><span class="dt">double</span> two <span class="op">=</span> unwrap<span class="op">(</span>r_dbl<span class="op">(</span><span class="dv">2</span><span class="op">));</span></span>
+<span id="cb166-3"><a href="#cb166-3" tabindex="-1"></a></span>
+<span id="cb166-4"><a href="#cb166-4" tabindex="-1"></a><span class="co">// Confirming that unwrap_t produces the required types as well</span></span>
+<span id="cb166-5"><a href="#cb166-5" tabindex="-1"></a><span class="kw">static_assert</span><span class="op">(</span><span class="bu">std::</span>is_same_v<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="dt">unwrap_t</span><span class="op">&lt;</span>r_int<span class="op">&gt;&gt;);</span></span>
+<span id="cb166-6"><a href="#cb166-6" tabindex="-1"></a><span class="kw">static_assert</span><span class="op">(</span><span class="bu">std::</span>is_same_v<span class="op">&lt;</span><span class="dt">double</span><span class="op">,</span> <span class="dt">unwrap_t</span><span class="op">&lt;</span>r_dbl<span class="op">&gt;&gt;);</span></span>
+<span id="cb166-7"><a href="#cb166-7" tabindex="-1"></a></span>
+<span id="cb166-8"><a href="#cb166-8" tabindex="-1"></a><span class="co">// unwrap_t&lt;r_str&gt; = SEXP</span></span>
+<span id="cb166-9"><a href="#cb166-9" tabindex="-1"></a><span class="co">// cppally recommends against using BOTH the cppally API and the R C API together.</span></span>
+<span id="cb166-10"><a href="#cb166-10" tabindex="-1"></a><span class="dt">unwrap_t</span><span class="op">&lt;</span>r_str<span class="op">&gt;</span> r_c_api_blank_str <span class="op">=</span> unwrap<span class="op">(</span>r_str<span class="op">(</span><span class="st">""</span><span class="op">));</span></span></code></pre></div>
 </div>
 </div>
 

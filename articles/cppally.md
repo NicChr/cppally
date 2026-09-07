@@ -121,7 +121,7 @@ Logical operators work just like in R
 ``` cpp
 
 [[cppally::register]]
-r_vec<r_lgl> lgl_ops(){
+r_vector<r_lgl> lgl_ops(){
   return make_vec<r_lgl>(
     r_true || r_false, // true
     r_true && r_false, // false
@@ -492,8 +492,8 @@ We can create vectors like so
 
 // Integer vector of size n
 [[cppally::register]]
-r_vec<r_int> new_integer_vector(int n){
-  r_vec<r_int> int_vctr(n, /*fill = */ r_int(0));
+r_vector<r_int> new_integer_vector(int n){
+  r_vector<r_int> int_vctr(n, /*fill = */ r_int(0));
   return int_vctr;
 }
 ```
@@ -530,7 +530,7 @@ make_vec<r_dbl>(
     #>    1.0    1.5    2.0     NA
 
 In R a list is a generic vector, so cppally defines lists as
-`r_vec<r_sexp>`, a vector of the generic type `r_sexp`.
+`r_vector<r_sexp>`, a vector of the generic type `r_sexp`.
 
 ``` cpp
 make_vec<r_sexp>(1, 2, 3)
@@ -550,18 +550,18 @@ A list of all cppally vectors of length 0
 ``` cpp
 
 [[cppally::register]]
-r_vec<r_sexp> all_vectors(){
+r_vector<r_sexp> all_vectors(){
   return make_vec<r_sexp>(
-    arg("logical") = r_vec<r_lgl>(),
-    arg("integer") = r_vec<r_int>(),
-    arg("integer64") = r_vec<r_int64>(), // Requires bit64
-    arg("double") = r_vec<r_dbl>(),
-    arg("character") = r_vec<r_str>(),
-    arg("character") = r_vec<r_str_view>(),
-    arg("raw") = r_vec<r_raw>(),
-    arg("date") = r_vec<r_date>(),
-    arg("date-time") = r_vec<r_psxct>(),
-    arg("list") = r_vec<r_sexp>()
+    arg("logical") = r_vector<r_lgl>(),
+    arg("integer") = r_vector<r_int>(),
+    arg("integer64") = r_vector<r_int64>(), // Requires bit64
+    arg("double") = r_vector<r_dbl>(),
+    arg("character") = r_vector<r_str>(),
+    arg("character") = r_vector<r_str_view>(),
+    arg("raw") = r_vector<r_raw>(),
+    arg("date") = r_vector<r_date>(),
+    arg("date-time") = r_vector<r_psxct>(),
+    arg("list") = r_vector<r_sexp>()
   );
 }
 ```
@@ -669,8 +669,8 @@ We can also coerce from one vector type to another
 ``` cpp
 
 [[cppally::register]]
-r_vec<r_int> to_int_vec(r_vec<r_dbl> x){
-  return as<r_vec<r_int>>(x);
+r_vector<r_int> to_int_vec(r_vector<r_dbl> x){
+  return as<r_vector<r_int>>(x);
 }
 ```
 
@@ -686,11 +686,11 @@ a vector or vice versa
 ``` cpp
 
 [[cppally::register]]
-r_vec<r_sexp> coercions(){
+r_vector<r_sexp> coercions(){
     r_dbl a(4.2);
-    r_vec<r_dbl> b = make_vec<r_dbl>(2.5);
+    r_vector<r_dbl> b = make_vec<r_dbl>(2.5);
     return make_vec<r_sexp>(
-        as<r_vec<r_int>>(a),
+        as<r_vector<r_int>>(a),
         as<r_int>(a),
         as<r_int>(b),
         as<r_dbl>(b)
@@ -861,9 +861,9 @@ r_psxct get_now(){
 ``` r
 
 get_today()
-#> [1] "2026-09-06"
+#> [1] "2026-09-07"
 get_now()
-#> [1] "2026-09-06 07:32:05 UTC"
+#> [1] "2026-09-07 18:33:50 UTC"
 ```
 
 **Note:** `r_psxct` currently only supports UTC and no other time-zones.
@@ -1145,12 +1145,12 @@ cached_sym<"cached_symbol">()
 ## Lists
 
 `r_sexp` is generally interpreted as an “element of a list” since lists
-are defined as `r_vec<r_sexp>`, a vector that holds generic `r_sexp`
+are defined as `r_vector<r_sexp>`, a vector that holds generic `r_sexp`
 elements.
 
 ``` cpp
 
-using list = r_vec<r_sexp>;
+using list = r_vector<r_sexp>;
 
 [[cppally::register]]
 list new_list(int n){
@@ -1183,7 +1183,7 @@ in-place
 ``` cpp
 
 [[cppally::register]]
-r_vec<r_sexp> resize_all(r_vec<r_sexp> x, r_size_t n){
+r_vector<r_sexp> resize_all(r_vector<r_sexp> x, r_size_t n){
     r_size_t list_length = x.length();
     for (r_size_t i = 0; i < list_length; ++i){
         r_sexp_visit(x.view(i), [&]<RVector T>(T vec) {
@@ -1201,7 +1201,7 @@ We can create a factor via `r_factors()`
 ``` cpp
 
 [[cppally::register]]
-r_factors new_factor(r_vec<r_str> x){
+r_factors new_factor(r_vector<r_str> x){
     return r_factors(x);
 }
 ```
@@ -1222,7 +1222,7 @@ the public `codes()` member function
 static_assert(!RVector<r_factors>);
 
 [[cppally::register]]
-r_vec<r_int> factor_codes(r_factors x){
+r_vector<r_int> factor_codes(r_factors x){
     return x.codes();
 }
 ```
@@ -1254,7 +1254,7 @@ r_date r_get_today(){
 ``` r
 
 r_get_today()
-#> [1] "2026-09-06"
+#> [1] "2026-09-07"
 ```
 
 To get a function from a specific package, use `pkg_env`, a helper that
@@ -1281,7 +1281,7 @@ base_sum_fn()
 ``` cpp
 
 [[cppally::register]]
-r_dbl base_sum(r_vec<r_dbl> x, bool na_rm){
+r_dbl base_sum(r_vector<r_dbl> x, bool na_rm){
   return as<r_dbl>(base_sum_fn()(x, arg("na.rm") = na_rm));
 }
 ```
@@ -1294,8 +1294,8 @@ base_sum(c(NA, 1:3, NA), na_rm = TRUE)
 
 ## Value matching
 
-Use `r_vec` member [`find()`](https://rdrr.io/r/utils/apropos.html) to
-find the **0-indexed** locations of a scalar value.
+Use `r_vector` member [`find()`](https://rdrr.io/r/utils/apropos.html)
+to find the **0-indexed** locations of a scalar value.
 
 ``` cpp
 
@@ -1599,7 +1599,7 @@ scalar_default(character(1)) # Default is ""
 ```
 
 Exporting variadic templates are also not supported. The best
-alternative is to use lists (`r_vec<r_sexp>`).
+alternative is to use lists (`r_vector<r_sexp>`).
 
 In the above example we used the `RScalar` concept which includes all
 cppally scalar types (excluding `r_sexp`). For a list of all cppally
@@ -1615,7 +1615,7 @@ namespace.
 ``` cpp
 
 [[cppally::register]]
-r_vec<r_sexp> set_list_names(r_vec<r_sexp> x, r_vec<r_str> names){
+r_vector<r_sexp> set_list_names(r_vector<r_sexp> x, r_vector<r_str> names){
   x.set_names(names);
   return x;
 }
@@ -1650,7 +1650,7 @@ set_list_names(norm_samples, paste0("sample_", 1:5))
 More useful attribute helpers
 
 - `get_attrs()` - Returns a list of attributes (possibly
-  `r_vec<r_sexp>(r_null)`)
+  `r_vector<r_sexp>(r_null)`)
 - `set_attrs()` - Sets attributes to ones specified. Note: replaces any
   current attributes
 - `clear_attrs()` - Removes all attributes
@@ -1673,7 +1673,7 @@ equivalent [`base::seq()`](https://rdrr.io/r/base/seq.html), and
 [`sequence()`](https://rdrr.io/r/base/sequence.html) behaves like the R
 equivalent [`base::sequence()`](https://rdrr.io/r/base/sequence.html),
 with the exception that it accepts scalar arguments instead of vector
-ones.
+ones, and also works with decimal increments.
 
 ``` cpp
 seq(r_dbl(1), r_dbl(5), r_dbl(0.5))
@@ -1693,7 +1693,7 @@ easily replicate [`base::seq_len()`](https://rdrr.io/r/base/seq.html)
 ``` cpp
 
 [[cppally::register]]
-r_vec<r_int> cpp_seq_len(r_size_t n){
+r_vector<r_int> cpp_seq_len(r_size_t n){
   return sequence(n, /* from = */ r_int(1), /* by = */ r_int(1));
 }
 ```
@@ -1712,7 +1712,7 @@ It is also straightforward to replicate
 template <typename T>
 requires (any<T, r_int, r_int64, r_dbl>)
 [[cppally::register]]
-r_vec<r_sexp> cpp_sequences(r_vec<r_int> size, r_vec<T> from, r_vec<T> by){
+r_vector<r_sexp> cpp_sequences(r_vector<r_int> size, r_vector<T> from, r_vector<T> by){
     return pmap([](auto a, auto b, auto c){
         return as<r_sexp>(sequence(a, b, c));
     }, size, from, by);
@@ -1730,12 +1730,218 @@ sequence(1:3, from = 0L, by = 1L)
 #> [1] 0 0 1 0 1 2
 ```
 
-## Sugar functions
+## Using multiple OpenMP threads
 
-cppally also offers many useful and high-performance common functions in
-cppally/sugar
+To set the number of global OpenMP threads, use
+`cppally::set_threads()`.
 
-**Example:** `n_unique()` - fast calculation of number of unique values.
+``` cpp
+cppally::set_threads(4); // Sets the number of threads to 4
+```
+
+Because this is unique to each dll file, setting threads in one R
+package doesn’t affect another. Once threads have been set, all cppally
+code that can make use of them, will use them. This means you should
+speed improvements across many cppally functions.
+
+## Stats functions
+
+cppally provides some stats functions which are both common and
+difficult to implement efficiently and safely.
+
+- [`sum()`](https://rdrr.io/r/base/sum.html) - Sum of values
+- [`mean()`](https://rdrr.io/r/base/mean.html) - Average of values
+- [`range()`](https://rdrr.io/r/base/range.html) - Min and max range of
+  values
+- [`var()`](https://rdrr.io/r/stats/cor.html) - Variance
+
+``` cpp
+
+template <RNumber T>
+[[cppally::register]]
+r_dbl cpp_sum(r_vector<T> x, bool na_rm){
+  return as<r_dbl>(sum(x, na_rm));
+}
+template <RNumber T>
+[[cppally::register]]
+r_vector<T> cpp_range(r_vector<T> x, bool na_rm){
+  return range(x, na_rm);
+}
+template <RNumber T>
+[[cppally::register]]
+r_dbl cpp_var(r_vector<T> x, bool na_rm){
+  return var(x, na_rm);
+}
+```
+
+``` r
+
+library(bench)
+
+set.seed(1)
+x <- sample.int(10, 5e05, replace = TRUE)
+x[sample.int(10^5, 10^4)] <- NA # Add many NAs
+
+# Sum (ignoring NAs)
+mark(
+  cppally_sum = cpp_sum(x, na_rm = TRUE),
+  base_sum = sum(x, na.rm = TRUE)
+)
+#> # A tibble: 2 × 6
+#>   expression       min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_sum    153µs    154µs     6400.        0B        0
+#> 2 base_sum       349µs    353µs     2818.        0B        0
+
+# Sum (not ignoring NAs)
+mark(
+  cppally_sum = cpp_sum(x, na_rm = FALSE),
+  base_sum = sum(x, na.rm = FALSE)
+)
+#> # A tibble: 2 × 6
+#>   expression       min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_sum   1.08µs   1.17µs   787637.        0B        0
+#> 2 base_sum    188.94ns 204.08ns  4144412.        0B        0
+
+# Range (ignoring NAs)
+mark(
+  cppally_range = cpp_range(x, na_rm = TRUE),
+  base_range = range(x, na.rm = TRUE)
+)
+#> # A tibble: 2 × 6
+#>   expression         min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>    <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_range 168.47µs 178.49µs     5544.        0B      0  
+#> 2 base_range      3.44ms   6.71ms      151.    11.4MB     48.2
+
+# Range (not ignoring NAs)
+mark(
+  cppally_range = cpp_range(x, na_rm = FALSE),
+  base_range = range(x, na.rm = FALSE)
+)
+#> # A tibble: 2 × 6
+#>   expression         min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>    <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_range   1.07µs   1.18µs   769519.        0B      0  
+#> 2 base_range      1.35ms   1.41ms      709.    1.91MB     30.1
+
+# Variance (ignoring NAs)
+mark(
+  cppally_var = cpp_var(x, na_rm = TRUE),
+  base_var = var(x, na.rm = TRUE)
+)
+#> # A tibble: 2 × 6
+#>   expression       min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_var  842.1µs 851.89µs     1167.        0B      0  
+#> 2 base_var      2.88ms   2.95ms      328.    5.74MB     52.9
+
+# Variance (not ignoring NAs)
+mark(
+  cppally_var = cpp_var(x, na_rm = FALSE),
+  base_var = var(x, na.rm = FALSE)
+)
+#> # A tibble: 2 × 6
+#>   expression       min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_var   1.08µs   1.18µs   763400.        0B      0  
+#> 2 base_var      1.07ms    1.2ms      816.    3.81MB     80.6
+
+# Using multiple threads
+
+cpp_set_threads(4)
+
+# Sum (ignoring NAs)
+mark(
+  cppally_sum = cpp_sum(x, na_rm = TRUE),
+  base_sum = sum(x, na.rm = TRUE)
+)
+#> # A tibble: 2 × 6
+#>   expression       min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_sum     93µs   93.6µs    10486.        0B        0
+#> 2 base_sum       349µs  354.2µs     2800.        0B        0
+
+# Sum (not ignoring NAs)
+mark(
+  cppally_sum = cpp_sum(x, na_rm = FALSE),
+  base_sum = sum(x, na.rm = FALSE)
+)
+#> # A tibble: 2 × 6
+#>   expression       min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_sum   1.07µs   1.11µs   815122.        0B        0
+#> 2 base_sum    189.06ns  202.1ns  3612823.        0B        0
+
+# Range (ignoring NAs)
+mark(
+  cppally_range = cpp_range(x, na_rm = TRUE),
+  base_range = range(x, na.rm = TRUE)
+)
+#> # A tibble: 2 × 6
+#>   expression         min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>    <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_range 237.55µs  240.2µs     4060.        0B       0 
+#> 2 base_range      3.08ms    3.4ms      262.    11.4MB     170.
+
+# Range (not ignoring NAs)
+mark(
+  cppally_range = cpp_range(x, na_rm = FALSE),
+  base_range = range(x, na.rm = FALSE)
+)
+#> # A tibble: 2 × 6
+#>   expression         min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>    <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_range   1.07µs   1.11µs   853066.        0B      0  
+#> 2 base_range     693.7µs   1.36ms      857.    1.91MB     36.8
+
+# Variance (ignoring NAs)
+mark(
+  cppally_var = cpp_var(x, na_rm = TRUE),
+  base_var = var(x, na.rm = TRUE)
+)
+#> # A tibble: 2 × 6
+#>   expression       min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_var 443.77µs 450.02µs     2043.        0B      0  
+#> 2 base_var      2.87ms   4.01ms      276.    5.72MB     39.8
+
+# Variance (not ignoring NAs)
+mark(
+  cppally_var = cpp_var(x, na_rm = FALSE),
+  base_var = var(x, na.rm = FALSE)
+)
+#> # A tibble: 2 × 6
+#>   expression       min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_var   1.08µs   1.11µs   853667.        0B      0  
+#> 2 base_var    493.66µs   1.14ms     1059.    3.81MB     98.4
+
+# Reset to single-threaded
+cpp_set_threads(1)
+```
+
+### A note on cppally::sum
+
+[`cppally::sum()`](https://rdrr.io/r/base/sum.html) is written to use
+SIMD instructions for performance where possible. It also uses higher
+width integers for accuracy when dealing with integer vectors. For
+example, if summing a 32-bit integer vector, it uses intermediate 64-bit
+integers, and likewise if summing a 64-bit integer vector, it uses
+intermediate 128-bit integers (if your compiler supports it). Doing it
+this way avoids integer overflow entirely for vectors whose length is
+less than 2^32. It also avoids intermediate integer overflow that would
+have arisen if same-width integers were used. For example, for
+`x <- .Machine$integer.max * c(-1L, -1L, 1L, 1L)`, the sum of x is
+trivially 0, but the intermediate addition of `x[1]` and `x[2]` would
+result in overflow if one were to use 32-bit integers.
+
+## Unique values
+
+`n_unique()` is a convenient helper to calculate the number of unique
+values. [`unique()`](https://rdrr.io/r/base/unique.html) is also highly
+performant.
 
 ``` cpp
 
@@ -1744,12 +1950,18 @@ template <RVector T>
 r_int cpp_n_unique(T x){
   return as<r_int>(n_unique(x));
 }
+
+template <RVector T>
+[[cppally::register]]
+T cpp_unique(T x, bool sort){
+  return unique(x, sort);
+}
 ```
 
 ``` r
 
-library(bench)
 x <- sample(1:100, 10^5, replace = TRUE)
+
 mark(
   base_n_unique = length(unique(x)),
   cppally_n_unique = cpp_n_unique(x)
@@ -1757,74 +1969,296 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique      1.34ms   1.38ms      724.    1.38MB     20.8
-#> 2 cppally_n_unique 180.84µs 181.98µs     5407.        0B      0
+#> 1 base_n_unique       684µs    777µs     1099.    1.38MB     34.1
+#> 2 cppally_n_unique    235µs    242µs     4107.        0B      0
+
+mark(
+  base_unique = unique(x),
+  cppally_unique = cpp_unique(x, sort = FALSE)
+)
+#> # A tibble: 2 × 6
+#>   expression          min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>     <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 base_unique       675µs    791µs     1098.    1.38MB     34.2
+#> 2 cppally_unique    151µs    154µs     6429.      448B      0
+
+mark(
+  base_sorted_unique = sort(unique(x)),
+  cppally_sorted_unique = cpp_unique(x, sort = TRUE)
+)
+#> # A tibble: 2 × 6
+#>   expression                 min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>            <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 base_sorted_unique       723µs    784µs     1119.    1.38MB     34.3
+#> 2 cppally_sorted_unique    153µs    156µs     6388.      896B      0
 ```
 
-More useful sugar functions
+## Sorting
 
-- [`unique()`](https://rdrr.io/r/base/unique.html) - Like R’s
-  [`unique()`](https://rdrr.io/r/base/unique.html) but with a `sort`
-  argument to return sorted unique values
-
-- [`order()`](https://bit64.r-lib.org/reference/bit64S3.html) - Like
-  base R’s order but it internally uses a hybrid approach of ska sort,
-  count sorting, quick sort, etc.
-
-- `make_groups()` - An advanced function that returns a struct
-  containing group IDs and number of groups (i.e number of unique group
-  IDs). The `groups` struct contains the following members:
-
-  - `r_vec<r_int> ids` - The cached group IDs
-  - `int n_groups` - Number of unique groups
-  - `bool ordered` - Do the group IDs specify a sorting order, or are
-    they by order-of-first-appearance?
-  - `bool sorted` - Are the group IDs sorted? (This can also be true for
-    order-of-first-appearance IDs)
-  - `r_vec<r_int> start()` - Returns an r_vec(n_groups) vector of start
-    locations of each unique group, signifying the location in the data
-    at which each group initially appeared
-  - `r_vec<r_int> counts()` - Returns an r_vec(n_groups) vector of
-    frequency counts of each unique group
-  - `r_vec<r_int> order()` - Returns an r_vec(ids.length()) order
-    vector. This is a 0-indexed permutation vector that can be used to
-    return sorted group IDs
-
-- `recycle()` - Recycles supplied vectors to common length
-
-- `r_vec::subset()` - Fast subsetting of vectors
-
-**Stats sugar functions**
-
-Some statistical summary functions that are all very highly optimised
-for speed
-
-- [`sum()`](https://rdrr.io/r/base/sum.html) - Sum of values
-- [`mean()`](https://rdrr.io/r/base/mean.html) - Average of values
-- [`range()`](https://rdrr.io/r/base/range.html) - Min and max range of
-  values
-- [`var()`](https://rdrr.io/r/stats/cor.html) - Variance
-
-## Annex
-
-### Symbols in R-registered templates
-
-`r_sym` is unsupported in templates when it’s part of a template
-argument but is supported when the argument is explicitly an `r_sym`.
+cppally also offers
+[`order()`](https://bit64.r-lib.org/reference/bit64S3.html) and
+[`sort()`](https://rdrr.io/r/base/sort.html) for sorting purposes. A
+hybrid approach is used, incorporating various sorting algorithms,
+including ska sort (a variant on radix sort), counting sort, quick sort,
+etc. These have been implemented with speed being a key focus.
 
 ``` cpp
+
+
+template <RSortableVector T>
 [[cppally::register]]
-r_str symbol_to_string(r_sym x){
-    return as<r_str>(x);
+r_vector<r_int> cpp_order(T x){
+  
+  // Add 1 to return 1-indexed permutation to match base::order()
+  // In general C++ code, always use 0-indexed as cppally indexing is 
+  // always 0-indexed.
+  
+  return order(x) + 1; 
+}
+
+template <RSortableVector T>
+[[cppally::register]]
+T cpp_sort(T x){
+  return sort(x);
+}
+```
+
+[`cppally::sort`](https://rdrr.io/r/base/sort.html) always sorts `NA`
+values last and so is equivalent to
+`base::sort(..., method = "radix", na.last = TRUE)`.
+
+``` r
+
+r_radix_sort <- function(x){
+  sort(x, method = "radix", na.last = TRUE)
+}
+r_radix_order <- function(x){
+  order(x, method = "radix", na.last = TRUE)
+}
+
+# Small data
+mark(cpp_sort(c(3, 2, 1)), r_radix_sort(c(3, 2, 1)))
+#> # A tibble: 2 × 6
+#>   expression                    min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>               <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cpp_sort(c(3, 2, 1))       1.24µs    1.3µs   669912.        0B     67.0
+#> 2 r_radix_sort(c(3, 2, 1))  24.22µs   26.7µs    36561.        0B     14.6
+mark(cpp_order(c(3, 2, 1)), r_radix_order(c(3, 2, 1)))
+#> # A tibble: 2 × 6
+#>   expression                     min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>                <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cpp_order(c(3, 2, 1))       1.23µs    1.3µs   679266.        0B      0  
+#> 2 r_radix_order(c(3, 2, 1))  10.81µs     12µs    79898.        0B     16.0
+
+# Integer data
+ints <- sample.int(20, 2e05, replace = TRUE)
+mark(cpp_sort(ints), r_radix_sort(ints))
+#> # A tibble: 2 × 6
+#>   expression              min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cpp_sort(ints)     554.02µs  599.5µs     1571.    1.53MB     63.5
+#> 2 r_radix_sort(ints)   1.06ms   1.12ms      892.    1.53MB     32.4
+mark(cpp_order(ints), r_radix_order(ints))
+#> # A tibble: 2 × 6
+#>   expression               min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cpp_order(ints)        499µs    528µs     1809.     781KB     35.9
+#> 2 r_radix_order(ints)    637µs    893µs     1197.     781KB     19.5
+
+# Double-floating point precision data
+dbls <- as.double(ints)
+mark(cpp_sort(dbls), r_radix_sort(dbls))
+#> # A tibble: 2 × 6
+#>   expression              min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cpp_sort(dbls)       1.52ms   1.56ms      635.    2.29MB     42.3
+#> 2 r_radix_sort(dbls)   6.14ms   6.37ms      157.    2.29MB     11.0
+mark(cpp_order(dbls), r_radix_order(dbls))
+#> # A tibble: 2 × 6
+#>   expression               min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cpp_order(dbls)       1.21ms   1.24ms      802.     781KB    19.4 
+#> 2 r_radix_order(dbls)   5.14ms   5.63ms      178.     781KB     4.14
+
+# Floating point data with decimals
+dcmls <- rnorm(length(dbls))
+mark(cpp_sort(dcmls), r_radix_sort(dcmls))
+#> # A tibble: 2 × 6
+#>   expression               min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cpp_sort(dcmls)       5.55ms   5.73ms      175.    2.29MB    15.9 
+#> 2 r_radix_sort(dcmls)   8.51ms   9.38ms      108.    2.29MB     8.81
+mark(cpp_order(dcmls), r_radix_order(dcmls))
+#> # A tibble: 2 × 6
+#>   expression                min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>           <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cpp_order(dcmls)       5.58ms   5.62ms      178.     781KB     6.27
+#> 2 r_radix_order(dcmls)   7.74ms   8.28ms      122.     781KB     4.13
+
+# String data
+strs <- round(dcmls, 2) |> paste0()
+mark(cpp_sort(strs), r_radix_sort(strs))
+#> # A tibble: 2 × 6
+#>   expression              min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cpp_sort(strs)        2.5ms   2.95ms      346.    2.29MB     30.8
+#> 2 r_radix_sort(strs)    2.5ms   2.73ms      357.    2.29MB     35.9
+mark(cpp_order(strs), r_radix_order(strs))
+#> # A tibble: 2 × 6
+#>   expression               min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cpp_order(strs)       1.31ms   1.37ms      718.     781KB     19.7
+#> 2 r_radix_order(strs)   1.06ms   1.17ms      857.     781KB     22.7
+```
+
+## Grouping
+
+Some areas of analysis require working with groups, with sometimes very
+large numbers of them. cppally provides a powerful class `groups`, along
+with `make_groups()`, a function that creates `groups` from vectors.
+
+The structure of `groups` is:
+
+- `r_vector<r_int> ids` - The group IDs
+- `int n_groups` - Number of unique groups
+- `bool ordered` - Do the group IDs specify a sorting order, or are they
+  by order-of-first-appearance?
+- `bool sorted` - Are the group IDs sorted? (This can also be true for
+  order-of-first-appearance IDs)
+- `r_vector<r_int> starts()` - Returns a vector of start locations of
+  each unique group, signifying the location in the data at which each
+  group initially appeared
+- `r_vector<r_int> counts()` - Returns a vector of frequency counts of
+  each unique group
+- `r_vector<r_int> order()` - Returns a 0-indexed permutation vector
+  that can be used to sort group IDs
+
+**Note:** When the groups are in sorted-order (where `sorted` is true),
+member functions like `starts()` and `counts()` use a hybrid search
+strategy combining linear, gallop, and binary searching. This strategy
+ensures that search time complexity scales with the number of groups and
+not the size of the data.
+
+``` cpp
+
+
+template <RVector T>
+[[cppally::register]]
+r_vector<r_sexp> group_info(T x){
+  groups g = make_groups(x, /*ordered=*/ false);
+  return make_vec<r_sexp>(
+    arg("group_id") = g.ids,
+    arg("n_groups") = g.n_groups,
+    arg("ordered") = g.ordered,
+    arg("sorted") = g.sorted,
+    arg("starts") = g.starts(),
+    arg("counts") = g.counts(),
+    arg("order") = g.order(),
+    arg("group_names") = group_names(x, g)
+  );
 }
 ```
 
 ``` r
-hello_world_symbol <- as.symbol("hello world!")
-hello_world_symbol
-`hello world!`
-symbol_to_string(hello_world_symbol)
-[1] "hello world!"
+
+set.seed(1)
+x <- sample(c("A", "B", "C"), 20, replace = TRUE)
+
+# Convert into group info
+
+letter_groups <- group_info(x)
+
+letter_groups$group_id # Group IDs
+#>  [1] 0 1 0 2 0 1 1 2 2 1 1 0 0 0 2 2 2 2 1 0
+letter_groups$n_groups # Number of groups
+#> [1] 3
+letter_groups$ordered  # Groups were collected using order-of-first-appearance
+#> [1] FALSE
+letter_groups$sorted   # Are group IDs in sorted order?
+#> [1] FALSE
+letter_groups$starts   # Data start locations (0-indexed)
+#> [1] 0 1 3
+letter_groups$counts   # Group counts
+#> [1] 7 6 7
+letter_groups$order    # Order permutation (0-indexed)
+#>  [1]  0  2  4 11 12 13 19  1  5  6  9 10 18  3  7  8 14 15 16 17
+letter_groups$group_names # Names of unique groups
+#> [1] "A" "C" "B"
+```
+
+In real analysis, you normally wouldn’t need all of this metadata. For
+example, to return a data frame of unique groups (keys) and their
+associated counts, we only need `starts()` and `counts()`.
+
+``` cpp
+
+template <RVector T>
+[[cppally::register]]
+r_df group_counts(T x){
+  groups g = make_groups(x, /*ordered=*/ false);
+  
+  return make_df(
+    arg("key") = subset(x, g.starts()),
+    arg("count") = g.counts()
+  );
+}
+```
+
+``` r
+
+group_counts(x)
+#>   key count
+#> 1   A     7
+#> 2   C     6
+#> 3   B     7
+```
+
+To illustrate how fast `make_groups()` is, let’s compare cppally-derived
+group counts of a relatively large sample to base-R derived group
+counts.
+
+``` r
+
+# 10k groups, 100k data points
+x <- sample.int(10^4, 10^5, replace = TRUE)
+mark(
+  cppally_group_counts = group_counts(x)$count,
+  base_table = table(factor(x, levels = unique(x))) |> as.integer()
+)
+#> # A tibble: 2 × 6
+#>   expression                min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>           <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_group_counts    303µs 327.92µs     3060.   514.1KB     40.2
+#> 2 base_table              7.4ms   7.54ms      132.     6.2MB     39.4
+```
+
+## Annex
+
+### Unsupported classes in R-registered templates
+
+`r_sym` and `r_function` are both unsupported in R-registered template
+functions. This only applies when used as template arguments. They will
+work as normal where function arguments are non-templated.
+
+Good:
+
+``` cpp
+template <RStringType T>
+[[cppally::register]]
+r_lgl foo(r_sym x, T y){
+    return as<r_str>(x) == y;
+}
+```
+
+Bad:
+
+``` cpp
+template <RStringType T, typename Symbol>
+requires (is<Symbol, r_sym>)
+[[cppally::register]]
+r_lgl foo(Symbol x, T y){
+    return as<r_str>(x) == y;
+}
 ```
 
 ### All core cppally concepts
@@ -1842,10 +2276,10 @@ symbol_to_string(hello_world_symbol)
 - RScalar - Includes `r_lgl`, `r_int`, `r_int64`, `r_dbl`, `r_str`,
   `r_str_view`, `r_cplx`, `r_raw`, `r_date` and `r_psxct`
 
-- RVal - Includes anything a cppally vector (`r_vec<>`) can contain:
+- RVal - Includes anything a cppally vector (`r_vector<>`) can contain:
   RScalar +`r_sexp`
 
-- RVector - Includes `r_vec<T>` where `T` is an RVal
+- RVector - Includes `r_vector<T>` where `T` is an RVal
 
 - RFactor - Factors
 
@@ -1879,46 +2313,24 @@ Other useful type traits
 
 ### Accessing the underlying types and values
 
-While it is generally recommended not to access the underlying objects,
+While it is generally not recommended to access the underlying values,
 you can do so with `unwrap()` which returns the underlying C/C++ value.
 For example, `unwrap(r_int(5))` will return an `int` of value `5`.
 
 To access the underlying type, use `unwrap_t<>` which always aligns with
 `unwrap()`
 
-The main reason for wanting to access underlying values would likely be
-optimisation and so `unwrap()` and `unwrap_t` allow this to be done
-consistently.
-
-**Example:** Summing a double vector using `r_vec<T>::data()` member
-
 ``` cpp
+int one = unwrap(r_int(1));
+double two = unwrap(r_dbl(2));
 
-[[cppally::register]]
-double primitive_sum(const r_vec<r_dbl>& x){
+// Confirming that unwrap_t produces the required types as well
+static_assert(std::is_same_v<int, unwrap_t<r_int>>);
+static_assert(std::is_same_v<double, unwrap_t<r_dbl>>);
 
-  // r_vec<T>::data_type always returns typename T
-  using data_t = typename std::remove_cvref_t<decltype(x)>::data_type;
-
-  using primitive_t = unwrap_t<data_t>;
-  primitive_t *p_x = x.data();
-
-  r_size_t n = x.length();
-  double sum = 0;
-
-  OMP_SIMD_REDUCTION1(+:sum)
-  for (r_size_t i = 0; i < n; ++i){
-    sum += p_x[i];
-  }
-  return sum;
-}
-```
-
-``` r
-
-x <- rnorm(10^5)
-primitive_sum(x)
-#> [1] -467.8787
+// unwrap_t<r_str> = SEXP
+// cppally recommends against using BOTH the cppally API and the R C API together.
+unwrap_t<r_str> r_c_api_blank_str = unwrap(r_str(""));
 ```
 
 [^1]: `r_sexp` represents a generic R object which can include cppally
