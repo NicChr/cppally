@@ -26,21 +26,41 @@ bool any_na_early_on(const T& x, r_size_t k = 20){
 }
 
 template <RVectorisable T, typename Acc>
-void simd_reduce_add(const r_vec<T>& x, Acc& total_init, int_fast64_t& na_count_init, std::invocable<T> auto f) {
+void simd_reduce_add(const r_vec<T>& x, std::invocable<T> auto f, Acc& total_init) {
+    r_size_t n = x.length();
+    const unwrap_t<T>* RESTRICT p_x = x.data();
+    int n_threads = internal::calc_threads(n);
+    if (n_threads > 1){
+        OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:total_init)
+        for (r_size_t i = 0; i < n; ++i){
+            total_init += f(T(p_x[i]));
+        }
+    } else {
+        OMP_SIMD_REDUCTION1(+:total_init)
+        for (r_size_t i = 0; i < n; ++i){
+            total_init += f(T(p_x[i]));
+        }
+    }
+}
+
+template <RVectorisable T, typename Acc>
+void simd_reduce_add(const r_vec<T>& x, std::invocable<T> auto f, Acc& total_init, int_fast64_t& na_count_init) {
     r_size_t n = x.length();
     const unwrap_t<T>* RESTRICT p_x = x.data();
     int n_threads = internal::calc_threads(n);
     if (n_threads > 1){
         OMP_PARALLEL_FOR_SIMD_REDUCTION2(n_threads, +:total_init, +:na_count_init)
         for (r_size_t i = 0; i < n; ++i){
-            total_init += f(T(p_x[i]));
-            na_count_init += T(p_x[i]).is_na();
+            const T v = T(p_x[i]);
+            total_init += f(v);
+            na_count_init += v.is_na();
         }
     } else {
         OMP_SIMD_REDUCTION2(+:total_init, +:na_count_init)
         for (r_size_t i = 0; i < n; ++i){
-            total_init += f(T(p_x[i]));
-            na_count_init += T(p_x[i]).is_na();
+            const T v = T(p_x[i]);
+            total_init += f(v);
+            na_count_init += v.is_na();
         }
     }
 }
@@ -53,16 +73,20 @@ r_int64 sum(const r_vec<T>& x, bool na_rm = false){
 
     // Use int64_t since (2^31-1)^2 < INT64_MAX
     int_fast64_t res = 0;
-    int_fast64_t na_count = 0;
 
-    if (!na_rm && internal::any_na_early_on(x)){
-        return na<r_int64>();
-    }
+    if (na_rm){
+        internal::simd_reduce_add(x, [](auto v){ return is_na(v) ? 0 : static_cast<int_fast64_t>(unwrap(v)); }, res);
+    } else {
 
-    internal::simd_reduce_add(x, res, na_count, [](auto v){ return is_na(v) ? 0 : static_cast<int_fast64_t>(unwrap(v)); });
-
-    if (!na_rm && na_count > 0){
-        return na<r_int64>();
+        if (internal::any_na_early_on(x)){
+            return na<r_int64>();
+        }
+        
+        int_fast64_t na_count = 0;
+        internal::simd_reduce_add(x, [](auto v){ return is_na(v) ? 0 : static_cast<int_fast64_t>(unwrap(v)); }, res, na_count);
+        if (na_count > 0){
+            return na<r_int64>();
+        }
     }
 
     return r_int64(static_cast<int64_t>(res));
@@ -72,17 +96,48 @@ template <RMathType T>
 r_dbl sum(const r_vec<T>& x, bool na_rm = false){
 
     double out_ = 0;
-    int_fast64_t na_count = 0;
 
-    if (!na_rm && internal::any_na_early_on(x)){
-        return na<r_dbl>();
+    if constexpr (RFloatType<T>){
+
+        // Method for floating-point vectors
+
+        if (na_rm){
+            internal::simd_reduce_add(x, [](auto v){ return is_na(v) ? 0 : unwrap(v); }, out_);
+        } else {
+            
+            // Find NA OR NaN early on and return early if there is
+            r_size_t n = x.length();
+            r_size_t n_to_scan = std::min(n, r_size_t(20));
+            for (r_size_t i = 0; i < n_to_scan; ++i){
+                if (is_na(x.get(i))){
+                    return x.get(i);
+                }
+            }
+    
+            internal::simd_reduce_add(x, [](auto v){ return unwrap(v); }, out_);
+        }
+
+    } else {
+
+        // Fallback method
+
+        if (na_rm){
+            internal::simd_reduce_add(x, [](auto v){ return is_na(v) ? 0 : unwrap(v); }, out_);
+        } else {
+    
+            if (internal::any_na_early_on(x)){
+                return na<r_dbl>();
+            }
+    
+            int_fast64_t na_count = 0;
+            internal::simd_reduce_add(x, [](auto v){ return is_na(v) ? 0 : unwrap(v); }, out_, na_count);
+            if (na_count > 0){
+                return na<r_dbl>();
+            }
+        }
+
     }
     
-    internal::simd_reduce_add(x, out_, na_count, [](auto v){ return is_na(v) ? 0 : unwrap(v); });
-
-    if (!na_rm && na_count > 0){
-        return na<r_dbl>();
-    }
     return r_dbl(out_);
 }
 
