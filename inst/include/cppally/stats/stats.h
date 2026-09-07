@@ -299,16 +299,17 @@ r_dbl var(const r_vec<T>& x, bool na_rm = false){
     if (is_na(mu)){
         return mu;
     }
+
     // Sum of squared differences
+    double sum_sq_diff = 0;
+    internal::simd_reduce_add(x, [mu, na_rm](auto v) noexcept {
 
-    r_dbl sum_sq_diff = x.reduce([mu](auto acc, auto curr) {
-        r_dbl diff = curr - mu;
-        return acc + (diff * diff);
-    }, 
-    /*init = */ r_dbl(0), 
-    /*na_skip = */ na_rm);
+        double diff = v - mu;
+        return na_rm && v.is_na() ? 0 : diff * diff;
+        
+    }, sum_sq_diff);
 
-     return sum_sq_diff / (N - 1);
+     return r_dbl(sum_sq_diff) / (N - 1);
 }
 
 } 
