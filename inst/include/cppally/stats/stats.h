@@ -3,6 +3,7 @@
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/math/math.h>
+#include <cppally/coerce.h>
 
 namespace cppally {
 
@@ -97,40 +98,26 @@ r_dbl sum(const r_vec<T>& x, bool na_rm = false){
 
     double out_ = 0;
 
-    if constexpr (RFloatType<T>){
-
-        // Method for floating-point vectors
-
-        if (na_rm){
-            internal::simd_reduce_add(x, [](auto v){ return is_na(v) ? 0 : unwrap(v); }, out_);
-        } else {
-            
-            // Find NA OR NaN early on and return early if there is
-            r_size_t n = x.length();
-            r_size_t n_to_scan = std::min(n, r_size_t(20));
-            for (r_size_t i = 0; i < n_to_scan; ++i){
-                if (is_na(x.get(i))){
-                    return x.get(i);
-                }
-            }
-    
-            internal::simd_reduce_add(x, [](auto v){ return unwrap(v); }, out_);
-        }
-
+    if (na_rm){
+        internal::simd_reduce_add(x, [](auto v){ return is_na(v) ? 0 : unwrap(v); }, out_);
     } else {
 
-        // Fallback method
-
-        if (na_rm){
-            internal::simd_reduce_add(x, [](auto v){ return is_na(v) ? 0 : unwrap(v); }, out_);
-        } else {
-    
-            if (internal::any_na_early_on(x)){
-                return na<r_dbl>();
+        // Find NA OR NaN early on and return early if there is
+        r_size_t n = x.length();
+        r_size_t n_to_scan = std::min(n, r_size_t(20));
+        for (r_size_t i = 0; i < n_to_scan; ++i){
+            if (is_na(x.get(i))){
+                return as<r_dbl>(x.get(i));
             }
-    
+        }
+
+        if constexpr (RFloatType<T>){
+            // Let IEEE 754 rules propagate NA/NaN
+            internal::simd_reduce_add(x, [](auto v){ return unwrap(v); }, out_);
+        } else {
             int_fast64_t na_count = 0;
             internal::simd_reduce_add(x, [](auto v){ return is_na(v) ? 0 : unwrap(v); }, out_, na_count);
+
             if (na_count > 0){
                 return na<r_dbl>();
             }
