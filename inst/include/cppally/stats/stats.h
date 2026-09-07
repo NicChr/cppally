@@ -66,6 +66,52 @@ void simd_reduce_add(const r_vec<T>& x, std::invocable<T> auto f, Acc& total_ini
     }
 }
 
+template <RVectorisable T, typename Acc>
+void simd_reduce_minmax(const r_vec<T>& x, std::invocable<T> auto f_min, std::invocable<T> auto f_max, Acc& min_init, Acc& max_init) {
+    r_size_t n = x.length();
+    const unwrap_t<T>* RESTRICT p_x = x.data();
+    int n_threads = internal::calc_threads(n);
+    if (n_threads > 1){
+        OMP_PARALLEL_FOR_SIMD_REDUCTION2(n_threads, min:min_init, max:max_init)
+        for (r_size_t i = 0; i < n; ++i){
+            const T v = T(p_x[i]);
+            min_init = std::min(min_init, f_min(v));
+            max_init = std::max(max_init, f_max(v));
+        }
+    } else {
+        OMP_SIMD_REDUCTION2(min:min_init, max:max_init)
+        for (r_size_t i = 0; i < n; ++i){
+            const T v = T(p_x[i]);
+            min_init = std::min(min_init, f_min(v));
+            max_init = std::max(max_init, f_max(v));
+        }
+    }
+}
+
+template <RVectorisable T, typename Acc>
+void simd_reduce_minmax(const r_vec<T>& x, std::invocable<T> auto f_min, std::invocable<T> auto f_max, Acc& min_init, Acc& max_init, int_fast64_t& na_count) {
+    r_size_t n = x.length();
+    const unwrap_t<T>* RESTRICT p_x = x.data();
+    int n_threads = internal::calc_threads(n);
+    if (n_threads > 1){
+        OMP_PARALLEL_FOR_SIMD_REDUCTION3(n_threads, min:min_init, max:max_init, +:na_count)
+        for (r_size_t i = 0; i < n; ++i){
+            const T v = T(p_x[i]);
+            min_init = std::min(min_init, f_min(v));
+            max_init = std::max(max_init, f_max(v));
+            na_count += v.is_na();
+        }
+    } else {
+        OMP_SIMD_REDUCTION3(min:min_init, max:max_init, +:na_count)
+        for (r_size_t i = 0; i < n; ++i){
+            const T v = T(p_x[i]);
+            min_init = std::min(min_init, f_min(v));
+            max_init = std::max(max_init, f_max(v));
+            na_count += v.is_na();
+        }
+    }
+}
+
 }
     
 // Very fast integer sum
@@ -76,7 +122,7 @@ r_int64 sum(const r_vec<T>& x, bool na_rm = false){
     int_fast64_t res = 0;
 
     if (na_rm){
-        internal::simd_reduce_add(x, [](auto v){ return is_na(v) ? 0 : static_cast<int_fast64_t>(unwrap(v)); }, res);
+        internal::simd_reduce_add(x, [](auto v) noexcept { return is_na(v) ? 0 : static_cast<int_fast64_t>(unwrap(v)); }, res);
     } else {
 
         if (internal::any_na_early_on(x)){
@@ -84,7 +130,7 @@ r_int64 sum(const r_vec<T>& x, bool na_rm = false){
         }
         
         int_fast64_t na_count = 0;
-        internal::simd_reduce_add(x, [](auto v){ return is_na(v) ? 0 : static_cast<int_fast64_t>(unwrap(v)); }, res, na_count);
+        internal::simd_reduce_add(x, [](auto v) noexcept { return is_na(v) ? 0 : static_cast<int_fast64_t>(unwrap(v)); }, res, na_count);
         if (na_count > 0){
             return na<r_int64>();
         }
@@ -99,7 +145,7 @@ r_dbl sum(const r_vec<T>& x, bool na_rm = false){
     double out_ = 0;
 
     if (na_rm){
-        internal::simd_reduce_add(x, [](auto v){ return is_na(v) ? 0 : unwrap(v); }, out_);
+        internal::simd_reduce_add(x, [](auto v) noexcept { return is_na(v) ? 0 : unwrap(v); }, out_);
     } else {
 
         // Find NA OR NaN early on and return early if there is
@@ -113,10 +159,10 @@ r_dbl sum(const r_vec<T>& x, bool na_rm = false){
 
         if constexpr (RFloatType<T>){
             // Let IEEE 754 rules propagate NA/NaN
-            internal::simd_reduce_add(x, [](auto v){ return unwrap(v); }, out_);
+            internal::simd_reduce_add(x, [](auto v) noexcept { return unwrap(v); }, out_);
         } else {
             int_fast64_t na_count = 0;
-            internal::simd_reduce_add(x, [](auto v){ return is_na(v) ? 0 : unwrap(v); }, out_, na_count);
+            internal::simd_reduce_add(x, [](auto v) noexcept { return is_na(v) ? 0 : unwrap(v); }, out_, na_count);
 
             if (na_count > 0){
                 return na<r_dbl>();
@@ -155,7 +201,7 @@ inline r_int64 sum(const r_vec<r_int64>& x, bool na_rm){
     return r_int64(static_cast<int64_t>(out_));
 }
 
-template <RSortableType T>
+template <RNumericType T>
 r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
     
     r_size_t n = x.length();
@@ -163,26 +209,31 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
     T lo = r_limits<T>::max();
     T hi = r_limits<T>::min();
 
-    // Can't use SIMD, `cppally::min/max` checks for NAs automatically
+    auto lo_ = unwrap(lo);
+    auto hi_ = unwrap(hi);
+
+    int_fast64_t na_count = 0;
+
+    internal::simd_reduce_minmax(
+        x,
+        [lo](const T& v) noexcept { return is_na(v) ? unwrap(lo) : unwrap(v); },
+        [hi](const T& v) noexcept { return is_na(v) ? unwrap(hi) : unwrap(v); },
+        lo_, hi_, na_count
+    );
+
     if (na_rm){
-        for (r_size_t i = 0; i < n; ++i){
-            const auto v = x.get(i);
-            if (is_na(v)){
-                continue;
-            } else {
-                lo = min(lo, v);
-                hi = max(hi, v);
-            }
+        if (na_count == n && n > 0){
+            lo_ = unwrap(na<T>());
+            hi_ = lo_;
         }
     } else {
-        for (r_size_t i = 0; i < n; ++i){
-            const auto v = x.get(i);
-            lo = min(lo, v); 
-            hi = max(hi, v);
+        if (na_count > 0){
+            lo_ = unwrap(na<T>());
+            hi_ = lo_;
         }
     }
     
-    return r_vec<T>( {lo, hi} );
+    return r_vec<T>( { T(lo_), T(hi_) } );
 }
 
 template <RStringType T>
@@ -213,58 +264,49 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
 // SIMD optimisation for integer types
 template <RIntegerType T>
 r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
-    
-    r_size_t n = x.length();
 
     T max_val = r_limits<T>::max();
     T min_val = r_limits<T>::min();
 
-    T lo = max_val;
-    T hi = min_val;
+    auto lo_ = unwrap(max_val);
+    auto hi_ = unwrap(min_val);
 
-    auto lo_ = unwrap(lo);
-    auto hi_ = unwrap(hi);
+    if (na_rm){
 
-    const auto* RESTRICT p_x = x.data();
+        internal::simd_reduce_minmax(
+            x,
+            [max_val, na_rm](auto v) noexcept { return is_na(v) ? unwrap(max_val) : unwrap(v); },
+            [](auto v) noexcept { return unwrap(v); },
+            lo_, hi_
+        );
 
-    if (na_rm){ 
-        OMP_SIMD_REDUCTION2(min:lo_, max:hi_)
-        for (r_size_t i = 0; i < n; ++i){
-            // Ignore NA for min()
-            lo_ = is_na(T(p_x[i])) ? lo_ : std::min(lo_, p_x[i]);
-            // No need to ignore NA for max() because NA is defined as lowest representable value
-            hi_ = std::max(hi_, p_x[i]);
-        }
-        lo = T(lo_);
-        hi = T(hi_);
-
-        // If lo/hi are still the same values as when initialised, this either means the vector was full of NAs, or the range really is max/min int
+        // If lo/hi are still the values they were initialised to, this either means the vector was full of NAs, or the range really is max/min int
         // Either way, we check in this rare case
-        if (lo == max_val && hi == min_val && (x.na_count() == n)){
-            lo = na<T>();
-            hi = na<T>();
+        if (lo_ == unwrap(max_val) && hi_ == unwrap(min_val) && (x.na_count() == x.length())){
+            lo_ = unwrap(na<T>());
+            hi_ = unwrap(na<T>());
+        }
+    } else {
+
+        if (internal::any_na_early_on(x)){
+            return r_vec<T>( {na<T>(), na<T>()} );
         }
 
-    } else {
-        OMP_SIMD_REDUCTION2(min:lo_, max:hi_)
-        for (r_size_t i = 0; i < n; ++i){
-            lo_ = std::min(lo_, p_x[i]); 
-            hi_ = std::max(hi_, p_x[i]);
-        }
-        lo = T(lo_);
-        hi = T(hi_);
+        internal::simd_reduce_minmax(
+            x,
+            [](auto v) noexcept { return unwrap(v); },
+            [](auto v) noexcept { return unwrap(v); },
+            lo_, hi_
+        );
 
         // We use the fact that if there were NAs then min(x) would be NA
         // Only works for R's integer types
-        bool has_nas = is_na(lo);
-
-        if (has_nas){
-            lo = na<T>();
-            hi = na<T>();
+        if (lo_ == unwrap(na<T>())){
+            hi_ = unwrap(na<T>());
         }
     }
 
-    return r_vec<T>( {lo, hi} );
+    return r_vec<T>( {T(lo_), T(hi_)} );
 }
 
 template <RMathType T>
