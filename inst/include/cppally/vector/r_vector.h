@@ -242,9 +242,7 @@ struct r_vec {
 
   // By default do nothing (e.g. for vectors with no attrs)
   template <typename U>
-  void validate_class(SEXP x) const {
-    return;
-  }
+  constexpr void validate_class(SEXP x) const noexcept {}
 
   template <RDateType U>
   void validate_class(SEXP x) const {
