@@ -15,8 +15,8 @@ T unique(const T& x, bool sort = false) {
 
   using data_t = typename T::data_type;
 
-  uint8_t zero(0);
-  uint8_t one(1);
+  const uint8_t zero(0);
+  const uint8_t one(1);
 
   r_size_t n = x.length();
 
@@ -121,8 +121,8 @@ inline r_size_t n_unique(const T& x) {
   using data_t = typename T::data_type;
 
   // Writing these in-line apparently prevents compiler-inlining, strange..
-  uint8_t zero(0);
-  uint8_t one(1);
+  const uint8_t zero(0);
+  const uint8_t one(1);
 
   r_size_t n = x.length();
 
