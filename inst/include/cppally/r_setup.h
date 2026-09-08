@@ -50,6 +50,18 @@
 #define RESTRICT __restrict__
 #endif
 
+#ifdef _MSC_VER
+#define CPPALLY_NOINLINE __declspec(noinline)
+#else
+#define CPPALLY_NOINLINE __attribute__((noinline))
+#endif
+
+#ifdef _MSC_VER
+#define CPPALLY_UNREACHABLE() __assume(0)
+#else
+#define CPPALLY_UNREACHABLE() __builtin_unreachable()
+#endif
+
 #if !defined(OBJSXP) && defined(S4SXP) 
 #define OBJSXP S4SXP
 #endif

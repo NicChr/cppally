@@ -117,7 +117,7 @@ inline constexpr uint32_t accepted_mask = mask_of<F, CPPALLY_ALL_CASES(CPPALLY_C
 // [[noreturn]] is load-bearing: in the guarded switches below the reject arms
 // carry no return statement, so they drop out of return-type deduction and the
 // dispatcher deduces its type from the accepted arms alone
-[[noreturn]] inline void reject(const char* got, uint32_t accepted) {
+[[noreturn]] inline CPPALLY_NOINLINE void reject(const char* got, uint32_t accepted) {
     std::string out;
     for (int i = 0; (accepted >> i) != 0u; ++i) {
         if ((accepted & (1u << i)) == 0u) {
@@ -249,7 +249,7 @@ T view_as(const r_sexp& x){
 
 
 // Returns a length-0 prototype r_sexp whose type is the common type
-inline r_sexp common_ptype(const r_vec<r_sexp>& vecs) {
+inline CPPALLY_NOINLINE r_sexp common_ptype(const r_vec<r_sexp>& vecs) {
     r_size_t k = vecs.length();
     if (k == 0){
         return r_null;

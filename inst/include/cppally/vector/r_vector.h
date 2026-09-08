@@ -180,10 +180,18 @@ struct r_vec {
     return new_vec;
   }
 
+  private:
+
+  void CPPALLY_NOINLINE copy_to_make_exclusive() {
+    r_vec<T> new_vec = copy();
+    *this = std::move(new_vec);
+  }
+
+  public: 
+
   void ensure_exclusive() {
     if (!is_exclusive()) [[unlikely]] {
-      r_vec<T> new_vec = copy();
-      *this = std::move(new_vec);
+      copy_to_make_exclusive();
     }
   }
 
@@ -430,9 +438,6 @@ struct r_vec {
   // For named vectors: find first index of name
   // `abort_on_missing` - When supplied name doesn't exist, abort, otherwise return `NA`
   r_int name_index(r_str_view name, bool abort_on_missing = true) const {
-    auto report_no_match = [&]() {
-      abort("%s: There is no element named '%s'", __func__, name.c_str());
-    };
 
     // Second-or-later lookup - cache hash map
     if (first_access) {
@@ -440,7 +445,7 @@ struct r_vec {
       r_int index = cached_names->find(name);
       if (is_na(index)){ 
         if (abort_on_missing) {
-          report_no_match();
+          abort("%s: There is no element named '%s'", __func__, name.c_str());
         } else {
           return na<r_int>();
         }
@@ -453,7 +458,7 @@ struct r_vec {
     // First lookup: linear scan, no hash-table allocation
     r_vec<r_str_view> names_attr = names();
     if (names_attr.is_null()) [[unlikely]] {
-      abort("%s: vector has no names", __func__);
+      abort("internal error: vector has no names");
     }
     SEXP key = unwrap(name);
     int n = names_attr.length();
@@ -461,8 +466,8 @@ struct r_vec {
     for (int i = 0; i < n; ++i) {
       if (p[i] == key) return r_int(i);
     }
-    if (abort_on_missing){
-      report_no_match();
+    if (abort_on_missing) {
+      abort("%s: There is no element named '%s'", __func__, name.c_str());
     }
     return na<r_int>();
   }

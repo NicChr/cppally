@@ -54,7 +54,7 @@ namespace cppally {
 
 namespace internal {
 
-inline void copy_error(char (&buf)[CPPALLY_ERROR_BUFSIZE], const char* msg) noexcept {
+inline CPPALLY_NOINLINE void copy_error(char (&buf)[CPPALLY_ERROR_BUFSIZE], const char* msg) noexcept {
     strncpy(buf, msg, CPPALLY_ERROR_BUFSIZE - 1);
     buf[CPPALLY_ERROR_BUFSIZE - 1] = '\0';
 }
@@ -452,6 +452,31 @@ struct shared_type_table {
 // order, so a constraint admitting both classed and plain types hands an all-NULL param
 // to the classed type first (r_factors before r_vec<r_lgl>)
 
+[[noreturn]] inline CPPALLY_NOINLINE void abort_arg_type_mismatch(
+    size_t arg_index, uint16_t arg_type, uint16_t param_type
+) {
+    abort(
+        "R type: %s for arg %zu does not match the first instance: %s for this template arg",
+        r_type_to_str(static_cast<SEXPTYPE>(arg_type)), arg_index + 1,
+        r_type_to_str(static_cast<SEXPTYPE>(param_type))
+    );
+}
+
+[[noreturn]] inline CPPALLY_NOINLINE void abort_excluded_type(size_t arg_index, uint16_t param_type) {
+    abort(
+        "Argument %zu is of R type %s, which this package excludes from its "
+        "dispatch candidates. Restore it with `use_template_dispatch_candidates()`",
+        arg_index + 1, r_type_to_str(static_cast<SEXPTYPE>(param_type))
+    );
+}
+
+[[noreturn]] inline CPPALLY_NOINLINE void abort_unsatisfied_constraint(size_t arg_index, uint32_t type) {
+    abort(
+        "Argument %zu of type %s does not satisfy the template constraints",
+        arg_index + 1, r_type_to_str(static_cast<SEXPTYPE>(type))
+    );
+}
+
 template <size_t NumTemplateParams, size_t NumArgs, std::array<int, NumArgs> ArgToTemplateMap,
           typename Functor, typename... SexpArgs>
 SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
@@ -484,11 +509,7 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
                 param_type = arg_type;
                 param_arg = i;
             } else if (arg_type != param_type) {
-                abort(
-                    "R type: %s for arg %zu does not match the first instance: %s for this template arg",
-                    r_type_to_str(static_cast<SEXPTYPE>(arg_type)), i + 1,
-                    r_type_to_str(static_cast<SEXPTYPE>(param_type))
-                );
+                abort_arg_type_mismatch(i, arg_type, param_type);
             }
         }
         runtime_types[k] = static_cast<uint32_t>(param_type);
@@ -499,11 +520,7 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
         // the r_sexp wildcard would otherwise silently claim it
         if constexpr (has_exclusions) {
             if (param_type != NILSXP && is_excluded_code(static_cast<uint32_t>(param_type))) {
-                abort(
-                    "Argument %zu is of R type %s, which this package excludes from its "
-                    "dispatch candidates. Restore it with `use_template_dispatch_candidates()`",
-                    param_arg + 1, r_type_to_str(param_type)
-                );
+                abort_excluded_type(param_arg, param_type);
             }
         }
     }
@@ -565,10 +582,7 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
                     break;
                 }
             }
-            abort(
-                "Argument %zu of type %s does not satisfy the template constraints",
-                arg + 1, r_type_to_str(static_cast<SEXPTYPE>(runtime_types[K]))
-            );
+            abort_unsatisfied_constraint(arg, runtime_types[K]);
         }
     }
     abort("Supplied types do not satisfy the template constraints in combination");

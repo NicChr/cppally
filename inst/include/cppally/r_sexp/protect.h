@@ -104,26 +104,27 @@ struct protect {
 constexpr internal::protect safe = {};
 
 inline void check_user_interrupt() { safe[R_CheckUserInterrupt](); }
+
 template <typename... Args>
-[[noreturn]] inline void abort (const char* msg, Args&&... args) {
+[[noreturn]] inline void abort(const char* msg, Args... args) {
     static_assert(internal::all_vararg_safe_v<Args...>,
         "abort() forwards args into a C vararg function; all args must be "
         "trivially copyable (use .c_str() for std::string)");
-    internal::unwind_protect([&] { Rf_errorcall(R_NilValue, msg, std::forward<Args>(args)...); });
-    throw std::exception(); // satisfy compiler [[noreturn]]
+    internal::unwind_protect([&] { Rf_errorcall(R_NilValue, msg, args...); });
+    CPPALLY_UNREACHABLE();
 }
 
-[[noreturn]] inline void abort(const char* msg) {
+[[noreturn]] inline CPPALLY_NOINLINE void abort(const char* msg) {
     internal::unwind_protect([&] { Rf_errorcall(R_NilValue, "%s", msg); });
-    throw std::exception();
+    CPPALLY_UNREACHABLE();
 }
 
 template <typename... Args>
-inline void warn(const char* msg, Args&&... args) {
+inline void warn(const char* msg, Args... args) {
     static_assert(internal::all_vararg_safe_v<Args...>,
         "warn() forwards args into a C vararg function; all args must be "
         "trivially copyable (use .c_str() for std::string)");
-    safe[Rf_warningcall](R_NilValue, msg, std::forward<Args>(args)...);
+    safe[Rf_warningcall](R_NilValue, msg, args...);
 }
 
 inline void warn(const char* msg) {
@@ -131,11 +132,11 @@ inline void warn(const char* msg) {
 }
 
 template <typename... Args>
-inline void print(const char* msg, Args&&... args) {
+inline void print(const char* msg, Args... args) {
     static_assert(internal::all_vararg_safe_v<Args...>,
         "print() forwards args into a C vararg function; all args must be "
         "trivially copyable (use .c_str() for std::string)");
-    Rprintf(msg, std::forward<Args>(args)...);
+    Rprintf(msg, args...);
 }
 
 inline void print(const char* msg) {
