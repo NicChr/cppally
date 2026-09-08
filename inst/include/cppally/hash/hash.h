@@ -192,7 +192,7 @@ inline uint64_t unique_count_estimate(const key *px, uint64_t data_size){
 
     for (uint64_t i = 0; i < sample_size; ++i) {
 
-        r_size_t sample_pick = rs.index<r_size_t>(0, static_cast<r_size_t>(data_size) - 1);
+        r_size_t sample_pick = rs.index(0, static_cast<r_size_t>(data_size) - 1);
         storage& count = counts[px[sample_pick]];
         ++count;
 
