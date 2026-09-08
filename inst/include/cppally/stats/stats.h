@@ -265,27 +265,20 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
 template <RIntegerType T>
 r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
 
-    T max_val = r_limits<T>::max();
-    T min_val = r_limits<T>::min();
+    T lo = r_limits<T>::max();
+    T hi = r_limits<T>::min();
 
-    auto lo_ = unwrap(max_val);
-    auto hi_ = unwrap(min_val);
+    unwrap_t<T> lo_ = unwrap(lo);
+    unwrap_t<T> hi_ = unwrap(hi);
 
     if (na_rm){
 
         internal::simd_reduce_minmax(
             x,
-            [max_val](auto v) noexcept { return is_na(v) ? unwrap(max_val) : unwrap(v); },
+            [lo](auto v) noexcept { return is_na(v) ? unwrap(lo) : unwrap(v); },
             [](auto v) noexcept { return unwrap(v); },
             lo_, hi_
         );
-
-        // If lo/hi are still the values they were initialised to, this either means the vector was full of NAs, or the range really is max/min int
-        // Either way, we check in this rare case
-        if (lo_ == unwrap(max_val) && hi_ == unwrap(min_val) && (x.na_count() == x.length())){
-            lo_ = unwrap(na<T>());
-            hi_ = unwrap(na<T>());
-        }
     } else {
 
         if (internal::any_na_early_on(x)){
@@ -304,6 +297,13 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
         if (lo_ == unwrap(na<T>())){
             hi_ = unwrap(na<T>());
         }
+    }
+
+    // If lo/hi are still the values they were initialised to, this either means the vector was full of NAs, or the range really is max/min int
+    // Either way, we check in this rare case
+    if (lo_ == unwrap(lo) && hi_ == unwrap(hi) && (x.na_count() == x.length())){
+        lo_ = unwrap(na<T>());
+        hi_ = unwrap(na<T>());
     }
 
     return r_vec<T>( {T(lo_), T(hi_)} );
