@@ -206,11 +206,15 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
     
     r_size_t n = x.length();
 
+    if (n == 0){
+        return r_vec<T>( { na<T>(), na<T>() } );
+    }
+
     T lo = r_limits<T>::max();
     T hi = r_limits<T>::min();
 
-    auto lo_ = unwrap(lo);
-    auto hi_ = unwrap(hi);
+    unwrap_t<T> lo_ = unwrap(lo);
+    unwrap_t<T> hi_ = unwrap(hi);
 
     int_fast64_t na_count = 0;
 
@@ -222,7 +226,7 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
     );
 
     if (na_rm){
-        if (na_count == n && n > 0){
+        if (na_count == n){
             lo_ = unwrap(na<T>());
             hi_ = lo_;
         }
