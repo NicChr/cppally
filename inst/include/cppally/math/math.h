@@ -129,7 +129,7 @@ inline constexpr r_int trunc(r_lgl x) noexcept {
 }
 
 template <RMathType T>
-constexpr r_int sign(T x) {
+constexpr r_int sign(T x) noexcept {
   return is_na(x) ? na<r_int>() : r_int( (unwrap(x) > 0) - (unwrap(x) < 0) );
 }
 
