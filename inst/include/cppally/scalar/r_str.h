@@ -8,6 +8,7 @@
 #include <cppally/string/string_literal.h>
 #include <string>
 #include <string_view>
+#include <cstdio> // For snprintf
 
 namespace cppally {
 

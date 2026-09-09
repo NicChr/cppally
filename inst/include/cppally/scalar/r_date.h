@@ -9,6 +9,7 @@
 #include <cppally/scalar/arithmetic_ops.h>
 #include <cstdint>
 #include <chrono> // For r_date/r_psxt
+#include <cstdio> // For snprintf
 
 namespace cppally {
 

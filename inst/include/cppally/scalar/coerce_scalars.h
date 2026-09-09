@@ -13,6 +13,7 @@
 #include <cstdlib> // For strtod
 #include <cerrno>  // For errno
 #include <clocale> // For setlocale
+#include <cstdio>  // For snprintf
 
 namespace cppally {
 
