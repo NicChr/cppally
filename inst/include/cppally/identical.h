@@ -16,23 +16,19 @@ namespace internal {
 // needed for hash equality
 
 template <RScalar T>
-inline bool identical_impl(const T& a, const T& b) noexcept {
-    if constexpr (RScalar<typename T::value_type>){
-        return identical_impl(a.value, b.value);
+inline constexpr bool identical_impl(const T& a, const T& b) noexcept {
+    
+    using value_type = typename std::remove_cvref_t<T>::value_type;
+
+    if constexpr (RScalar<value_type>){
+        return identical_impl(static_cast<value_type>(a), static_cast<value_type>(b));
       } else {
         return unwrap(a) == unwrap(b);
       }
 }
 
-template <CastableToRScalar T>
-requires (CppType<T>)
-inline bool identical_impl(const T& a, const T& b) noexcept {
-    using r_t = as_r_scalar_t<T>;
-    return identical_impl(r_t(a), r_t(b));
-}
-
 template<>
-inline bool identical_impl<r_dbl>(const r_dbl& a, const r_dbl& b) noexcept {
+inline constexpr bool identical_impl<r_dbl>(const r_dbl& a, const r_dbl& b) noexcept {
     const double x = unwrap(a);
     const double y = unwrap(b);
 
@@ -49,8 +45,15 @@ inline bool identical_impl<r_dbl>(const r_dbl& a, const r_dbl& b) noexcept {
 }
 
 template<>
-inline bool identical_impl<r_cplx>(const r_cplx& a, const r_cplx& b) noexcept {
+inline constexpr bool identical_impl<r_cplx>(const r_cplx& a, const r_cplx& b) noexcept {
     return identical_impl(a.re(), b.re()) && identical_impl(a.im(), b.im());
+}
+
+template <CastableToRScalar T>
+requires (CppType<T>)
+inline constexpr bool identical_impl(const T& a, const T& b) noexcept {
+    using r_t = as_r_scalar_t<T>;
+    return identical_impl(r_t(a), r_t(b));
 }
 
 inline bool identical_impl(const r_sym& a, const r_sym& b) noexcept {
@@ -86,6 +89,18 @@ inline constexpr bool identical(const T& a, const U& b) noexcept(RScalar<T>) {
         return false;
     }
 }
+
+// Static tests
+
+static_assert(identical(na<r_lgl>(), na<r_lgl>()));
+static_assert(identical(na<r_int>(), na<r_int>()));
+static_assert(identical(na<r_int64>(), na<r_int64>()));
+static_assert(identical(na<r_dbl>(), na<r_dbl>()));
+static_assert(identical(na<r_cplx>(), na<r_cplx>()));
+static_assert(identical(na<r_date>(), na<r_date>()));
+static_assert(identical(na<r_psxct>(), na<r_psxct>()));
+static_assert(!identical(r_dbl::nan(), na<r_dbl>()));
+static_assert(!identical(r_dbl(1), r_int(1)));
 
 }
 
