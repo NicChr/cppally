@@ -48,7 +48,7 @@ inline bool can_have_attributes(const T& x) noexcept {
 template <RObject T>
 inline void check_can_have_attributes(const T& x){
   if (!can_have_attributes(x)) [[unlikely]] {
-    abort("%s: `x` cannot have attributes added to it", __func__);
+    abort("`check_can_have_attributes()`: `x` cannot have attributes added to it");
   }
 }
 

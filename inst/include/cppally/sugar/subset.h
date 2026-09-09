@@ -37,7 +37,7 @@ r_vec<V> exclude_locs(const r_vec<U>& exclude, r_size_t xn) {
   for (r_size_t j = 0; j < m; ++j) {
     if (is_na(exclude.get(j))) continue;
     if (exclude.get(j) < 0) [[unlikely]] {
-      abort("Please supply positive indices to %s", __func__);
+      abort("`exclude_locs()`: Please supply positive indices");
     }
     idx = unwrap(exclude.get(j));
     // Check keep array for already assigned FALSE to avoid double counting
@@ -125,7 +125,7 @@ inline T subset(const T& x, const r_vec<U>& indices, bool invert = false, bool c
   
   if constexpr (RStringType<U>){
     if (x.is_long()){
-        abort("%s: Named subsetting on long-vectors is unsupported", __func__);
+        abort("`subset()`: Named subsetting on long-vectors is unsupported");
     }
 
     r_size_t n = indices.length();

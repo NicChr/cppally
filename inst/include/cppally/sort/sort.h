@@ -396,7 +396,7 @@ void sort_in_place(T& x, r_vec<r_int>&& order){
     int n = static_cast<int>(x.length());
 
     if (n != order.length()) [[unlikely]] {
-        abort("%s: `x` and `order` must have the same length", __func__);
+        abort("`sort_in_place()`: `x` and `order` must have the same length");
     }
 
     // Since we are overwriting order, ensure it is not overwriting user data

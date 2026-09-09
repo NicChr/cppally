@@ -74,7 +74,7 @@ T rep(const T& x, const r_vec<r_int>& times){
     } else if (n_times == n){
         auto s = sum(times, false);
         if (is_na(s)){
-            abort("%s: `times` contains `NA` values", __func__);
+            abort("`rep()`: `times` contains `NA` values");
         }
         T out(static_cast<r_size_t>(unwrap(s)));
         r_size_t k = 0;
@@ -84,7 +84,7 @@ T rep(const T& x, const r_vec<r_int>& times){
         }
         return out;
     } else {
-        abort("%s: `length(times)` must be 1 or match `length(x)`", __func__);
+        abort("`rep()`: `length(times)` must be 1 or match `length(x)`");
     }
 }
 

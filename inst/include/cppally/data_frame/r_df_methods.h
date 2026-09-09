@@ -22,12 +22,12 @@ namespace internal {
 
 inline r_vec<r_sexp> new_df_impl(const r_vec<r_sexp>& cols, bool recycle, int nrows){
 
-    r_size_t n = cols.length();
-    r_vec<r_sexp> out(n);
-
     if (nrows < 0) [[unlikely]] {
         abort("Supply a valid `nrows`");
     }
+
+    r_size_t n = cols.length();
+    r_vec<r_sexp> out(n);
 
     if (recycle){
         for (r_size_t i = 0; i < n; ++i){
@@ -36,7 +36,7 @@ inline r_vec<r_sexp> new_df_impl(const r_vec<r_sexp>& cols, bool recycle, int nr
     } else {
         for (r_size_t i = 0; i < n; ++i){
             if (static_cast<int>(length(cols.view(i))) != nrows) [[unlikely]] {
-                abort("new_df_impl: lengths of cols must match `nrows`");
+                abort("`new_df_impl()`: lengths of cols must match `nrows`");
             }
             out.set(i, cols.view(i));
         }
@@ -121,11 +121,11 @@ inline void r_df::set_row(r_size_t index, const r_df& row){
     int ncols = ncol();
 
     if (ncols != row.ncol()) [[unlikely]] {
-        abort("%s: `ncol()` must match `row.ncol()`", __func__);
+        abort("`r_df::set_row()`: `ncol()` must match `row.ncol()`");
     }
     
     if (!identical(colnames(), row.colnames())) [[unlikely]] {
-        abort("%s: `colnames()` must match `row.colnames()`", __func__);
+        abort("`r_df::set_row()`: `colnames()` must match `row.colnames()`");
     }
     
     for (r_size_t i = 0; i < ncols; ++i){
