@@ -57,6 +57,11 @@ struct key_index {
     uint32_t index;
 };
 
+struct key_of {
+    template <typename key_t>
+    key_t operator()(const key_index<key_t>& k) const noexcept { return k.key; }
+};
+
 // Radix sort of pre-materialised (key, index) pairs. Keys are co-located with
 // the index so every pass is a sequential scan - no per-pass gather through
 // the permutation index. NAs must already be mapped to the max key value.
@@ -76,14 +81,12 @@ inline r_vec<r_int> order_radix(std::vector<key_index<key_t>>& pairs, bool stabl
         // (key, index) pair. Unstable sorts in place - no scratch buffer.
         if (stable) {
             buffer.resize(n);
-            bool in_buffer = ska_sort::ska_sort_copy(pairs.begin(), pairs.end(), buffer.begin(),
-                [](const key_index<key_t>& k) { return k.key; });
+            bool in_buffer = ska_sort::ska_sort_copy(pairs.begin(), pairs.end(), buffer.begin(), key_of{});
             if (in_buffer) {
                 src = buffer.data();
             }
         } else {
-            ska_sort::ska_sort(pairs.begin(), pairs.end(),
-                [](const key_index<key_t>& k) { return k.key; });
+            ska_sort::ska_sort(pairs.begin(), pairs.end(), key_of{});
         }
     } else {
         // 64-bit key: ska_sort_copy degrades to unstable in-place at this width,
@@ -92,8 +95,7 @@ inline r_vec<r_int> order_radix(std::vector<key_index<key_t>>& pairs, bool stabl
             ska_sort::ska_sort(pairs.begin(), pairs.end(),
                 [](const key_index<key_t>& k) { return std::make_pair(k.key, k.index); });
         } else {
-            ska_sort::ska_sort(pairs.begin(), pairs.end(),
-                [](const key_index<key_t>& k) { return k.key; });
+            ska_sort::ska_sort(pairs.begin(), pairs.end(), key_of{});
         }
     }
 
