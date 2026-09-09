@@ -116,6 +116,20 @@ constexpr bool any_arithmetic_na(T x, U y) noexcept {
   return any_arithmetic_na(as_r_scalar_t<T>(x), y);
 }
 
+// Generic safe coercion to RNumber
+template <RNumber T, RMathType U>
+constexpr T coerce_number(U x) noexcept {
+
+  using unwrapped_from_t = unwrap_t<U>;
+  using unwrapped_to_t = unwrap_t<T>;
+
+  if constexpr (is<unwrapped_from_t, unwrapped_to_t>){
+    return T(unwrap(x));
+  } else {
+    return x.is_na() || !numeric_can_be_cast_without_complete_loss<unwrapped_to_t>(unwrap(x)) ? std::remove_cvref_t<T>::na() : T(static_cast<unwrapped_to_t>(unwrap(x)));
+  }
+}
+
 #undef CPPALLY_HAS_BUILTIN_MUL_OVERFLOW
 
 }
@@ -238,48 +252,28 @@ inline constexpr auto operator%(T lhs, U rhs) noexcept {
 template <RNumber T, MathType U>
 inline constexpr T& operator+=(T& lhs, U rhs) noexcept {
   auto res = lhs + rhs;
-  if constexpr (is<T, decltype(res)>){
-    lhs = res;
-  } else {
-    using unwrapped_t = unwrap_t<T>;
-    lhs = res.is_na() || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? std::remove_cvref_t<T>::na() : T(static_cast<unwrapped_t>(unwrap(res)));
-  }
+  lhs = internal::coerce_number<T>(res);
   return lhs;
 }
 
 template <RNumber T, MathType U>
 inline constexpr T& operator-=(T& lhs, U rhs) noexcept {
   auto res = lhs - rhs;
-  if constexpr (is<T, decltype(res)>){
-    lhs = res;
-  } else {
-    using unwrapped_t = unwrap_t<T>;
-    lhs = res.is_na() || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? std::remove_cvref_t<T>::na() : T(static_cast<unwrapped_t>(unwrap(res)));
-  }
+  lhs = internal::coerce_number<T>(res);
   return lhs;
 }
 
 template <RNumber T, MathType U>
 inline constexpr T& operator*=(T& lhs, U rhs) noexcept {
   auto res = lhs * rhs;
-  if constexpr (is<T, decltype(res)>){
-    lhs = res;
-  } else {
-    using unwrapped_t = unwrap_t<T>;
-    lhs = res.is_na() || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? std::remove_cvref_t<T>::na() : T(static_cast<unwrapped_t>(unwrap(res)));
-  }
+  lhs = internal::coerce_number<T>(res);
   return lhs;
 }
 
 template <RNumber T, MathType U>
 inline constexpr T& operator%=(T& lhs, U rhs) noexcept {
   auto res = lhs % rhs;
-  if constexpr (is<T, decltype(res)>){
-    lhs = res;
-  } else {
-    using unwrapped_t = unwrap_t<T>;
-    lhs = res.is_na() || !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(res)) ? std::remove_cvref_t<T>::na() : T(static_cast<unwrapped_t>(unwrap(res)));
-  }
+  lhs = internal::coerce_number<T>(res);
   return lhs;
 }
 
@@ -288,7 +282,6 @@ template <RNumber T, MathType U>
 inline constexpr T& operator/=(T& lhs, U rhs) noexcept {
   using common_t = common_math_t<T, U>;
   using unwrapped_common_t = unwrap_t<common_t>;
-  using unwrapped_t = unwrap_t<T>;
 
   if (internal::any_arithmetic_na(lhs, rhs)){
     lhs = std::remove_cvref_t<T>::na();
@@ -302,14 +295,14 @@ inline constexpr T& operator/=(T& lhs, U rhs) noexcept {
       unwrapped_common_t a = static_cast<unwrapped_common_t>(unwrap(lhs));
       unwrapped_common_t b = static_cast<unwrapped_common_t>(unwrap(rhs));
       unwrapped_common_t q = internal::floor_div(a, b);
-      lhs.value = !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(q) ? unwrap(std::remove_cvref_t<T>::na()) : static_cast<unwrapped_t>(q);
+      lhs = internal::coerce_number<T>(common_t(q));
     }
   } else {
     double res = unwrap(lhs / rhs);
     if constexpr (RIntegerType<T>){
       res = internal::floor2(res); // integer target matches R's %/%
     }
-    lhs.value = !internal::numeric_can_be_cast_without_complete_loss<unwrapped_t>(res) ? unwrap(std::remove_cvref_t<T>::na()) : static_cast<unwrapped_t>(res);
+    lhs = internal::coerce_number<T>(r_dbl(res));
   }
   return lhs;
 }
@@ -360,25 +353,6 @@ inline constexpr T operator--(T& lhs, int) noexcept {
   T tmp = lhs;
   --lhs; 
   return tmp;
-}
-
-namespace internal {
-
-// Generic safe coercion between RNumber types
-
-template <RNumber T, RNumber U>
-constexpr T coerce_number(U x) noexcept {
-
-  using unwrapped_from_t = unwrap_t<U>;
-  using unwrapped_to_t = unwrap_t<T>;
-
-  if constexpr (is<unwrapped_from_t, unwrapped_to_t>){
-    return T(unwrap(x));
-  } else {
-    return x.is_na() || !numeric_can_be_cast_without_complete_loss<unwrapped_to_t>(unwrap(x)) ? std::remove_cvref_t<T>::na() : T(static_cast<unwrapped_to_t>(unwrap(x)));
-  }
-}
-
 }
 
 }
