@@ -28,88 +28,115 @@ bool any_na_early_on(const T& x, r_size_t k = 20){
 
 template <RVectorisable T, typename Acc>
 void simd_reduce_add(const r_vec<T>& x, std::invocable<T> auto f, Acc& total_init) {
+
+    Acc local_acc = total_init;
+
     r_size_t n = x.length();
     const unwrap_t<T>* RESTRICT p_x = x.data();
     int n_threads = internal::calc_threads(n);
     if (n_threads > 1){
-        OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:total_init)
+        OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:local_acc)
         for (r_size_t i = 0; i < n; ++i){
-            total_init += f(T(p_x[i]));
+            local_acc += f(T(p_x[i]));
         }
     } else {
-        OMP_SIMD_REDUCTION1(+:total_init)
+        OMP_SIMD_REDUCTION1(+:local_acc)
         for (r_size_t i = 0; i < n; ++i){
-            total_init += f(T(p_x[i]));
+            local_acc += f(T(p_x[i]));
         }
     }
+    total_init = local_acc;
 }
 
 template <RVectorisable T, typename Acc>
 void simd_reduce_add(const r_vec<T>& x, std::invocable<T> auto f, Acc& total_init, int_fast64_t& na_count_init) {
+
+    Acc local_acc = total_init;
+    int_fast64_t local_na_count = na_count_init;
+
     r_size_t n = x.length();
     const unwrap_t<T>* RESTRICT p_x = x.data();
     int n_threads = internal::calc_threads(n);
     if (n_threads > 1){
-        OMP_PARALLEL_FOR_SIMD_REDUCTION2(n_threads, +:total_init, +:na_count_init)
+        OMP_PARALLEL_FOR_SIMD_REDUCTION2(n_threads, +:local_acc, +:local_na_count)
         for (r_size_t i = 0; i < n; ++i){
             const T v = T(p_x[i]);
-            total_init += f(v);
-            na_count_init += v.is_na();
+            local_acc += f(v);
+            local_na_count += v.is_na();
         }
     } else {
-        OMP_SIMD_REDUCTION2(+:total_init, +:na_count_init)
+        OMP_SIMD_REDUCTION2(+:local_acc, +:local_na_count)
         for (r_size_t i = 0; i < n; ++i){
             const T v = T(p_x[i]);
-            total_init += f(v);
-            na_count_init += v.is_na();
+            local_acc += f(v);
+            local_na_count += v.is_na();
         }
     }
+    total_init = local_acc;
+    na_count_init = local_na_count;
 }
 
 template <RVectorisable T, typename Acc>
 void simd_reduce_minmax(const r_vec<T>& x, std::invocable<T> auto f_min, std::invocable<T> auto f_max, Acc& min_init, Acc& max_init) {
+
+    Acc local_min = min_init;
+    Acc local_max = max_init;
+
     r_size_t n = x.length();
     const unwrap_t<T>* RESTRICT p_x = x.data();
     int n_threads = internal::calc_threads(n);
     if (n_threads > 1){
-        OMP_PARALLEL_FOR_SIMD_REDUCTION2(n_threads, min:min_init, max:max_init)
+        OMP_PARALLEL_FOR_SIMD_REDUCTION2(n_threads, min:local_min, max:local_max)
         for (r_size_t i = 0; i < n; ++i){
             const T v = T(p_x[i]);
-            min_init = std::min(min_init, f_min(v));
-            max_init = std::max(max_init, f_max(v));
+            local_min = std::min(local_min, f_min(v));
+            local_max = std::max(local_max, f_max(v));
         }
     } else {
-        OMP_SIMD_REDUCTION2(min:min_init, max:max_init)
+        OMP_SIMD_REDUCTION2(min:local_min, max:local_max)
         for (r_size_t i = 0; i < n; ++i){
             const T v = T(p_x[i]);
-            min_init = std::min(min_init, f_min(v));
-            max_init = std::max(max_init, f_max(v));
+            local_min = std::min(local_min, f_min(v));
+            local_max = std::max(local_max, f_max(v));
         }
     }
+
+    min_init = local_min;
+    max_init = local_max;
+
 }
 
 template <RVectorisable T, typename Acc>
-void simd_reduce_minmax(const r_vec<T>& x, std::invocable<T> auto f_min, std::invocable<T> auto f_max, Acc& min_init, Acc& max_init, int_fast64_t& na_count) {
+void simd_reduce_minmax(const r_vec<T>& x, std::invocable<T> auto f_min, std::invocable<T> auto f_max, Acc& min_init, Acc& max_init, int_fast64_t& na_count_init) {
+
+    Acc local_min = min_init;
+    Acc local_max = max_init;
+    int_fast64_t local_na_count = na_count_init;
+
     r_size_t n = x.length();
     const unwrap_t<T>* RESTRICT p_x = x.data();
     int n_threads = internal::calc_threads(n);
     if (n_threads > 1){
-        OMP_PARALLEL_FOR_SIMD_REDUCTION3(n_threads, min:min_init, max:max_init, +:na_count)
+        OMP_PARALLEL_FOR_SIMD_REDUCTION3(n_threads, min:local_min, max:local_max, +:local_na_count)
         for (r_size_t i = 0; i < n; ++i){
             const T v = T(p_x[i]);
-            min_init = std::min(min_init, f_min(v));
-            max_init = std::max(max_init, f_max(v));
-            na_count += v.is_na();
+            local_min = std::min(local_min, f_min(v));
+            local_max = std::max(local_max, f_max(v));
+            local_na_count += v.is_na();
         }
     } else {
-        OMP_SIMD_REDUCTION3(min:min_init, max:max_init, +:na_count)
+        OMP_SIMD_REDUCTION3(min:local_min, max:local_max, +:local_na_count)
         for (r_size_t i = 0; i < n; ++i){
             const T v = T(p_x[i]);
-            min_init = std::min(min_init, f_min(v));
-            max_init = std::max(max_init, f_max(v));
-            na_count += v.is_na();
+            local_min = std::min(local_min, f_min(v));
+            local_max = std::max(local_max, f_max(v));
+            local_na_count += v.is_na();
         }
     }
+
+    min_init = local_min;
+    max_init = local_max;
+    na_count_init = local_na_count;
 }
 
 }
@@ -182,14 +209,17 @@ inline r_int64 sum(const r_vec<r_int64>& x, bool na_rm){
     if constexpr (int128_available){
         int128_otherwise_64_t out_ = 0;
         for (r_size_t i = 0; i < n; ++i){
-            if (is_na(x.get(i))){
+            
+            const r_int64 v = x.get(i);
+
+            if (is_na(v)){
                 if (na_rm){
                     continue;
                 } else {
                     return na<r_int64>();
                 }
             }
-            out_ += unwrap(x.get(i));
+            out_ += unwrap(v);
         }
 
         // [INT64_MIN+1, INT64_MAX] because NA is reserved for INT64_MIN
