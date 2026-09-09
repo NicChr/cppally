@@ -406,8 +406,6 @@ struct r_psxct {
     template <string_literal Unit>
     constexpr r_psxct ceiling(int week_start = 7) const noexcept {
 
-        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
-
         if (!seconds_since_epoch().is_finite()){
             return *this;
         }

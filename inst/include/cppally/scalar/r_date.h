@@ -44,8 +44,12 @@ consteval auto normalise_time_unit() noexcept {
         return Unit;
     } else {
         constexpr auto plural = Unit.concat("s");
-        assert_valid_time_unit<plural>();
-        return plural;
+        if constexpr (is_valid_time_unit<plural>()){
+            return plural;
+        } else {
+            assert_valid_time_unit<Unit>();
+            return Unit;
+        }
     }
 }
 
@@ -394,8 +398,6 @@ struct r_date {
 
     template <string_literal Unit>
     constexpr r_date ceiling(int week_start = 7) const noexcept {
-
-        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
         if (!days_since_epoch().is_finite()){
             return *this;
