@@ -221,7 +221,7 @@ struct r_psxct {
     template <string_literal Unit, typename N> 
     constexpr r_psxct add(N n, roll on_impossible_date = roll::none) const noexcept {
 
-        constexpr std::string_view unit{internal::normalised_unit<Unit>.data};
+        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
         if constexpr (unit == "seconds") {
             
@@ -365,7 +365,7 @@ struct r_psxct {
     template <string_literal Unit>
     constexpr r_psxct floor(int week_start = 7) const noexcept {
 
-        constexpr std::string_view unit{internal::normalised_unit<Unit>.data};
+        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
         if (!seconds_since_epoch().is_finite()){
             return *this;
@@ -406,7 +406,7 @@ struct r_psxct {
     template <string_literal Unit>
     constexpr r_psxct ceiling(int week_start = 7) const noexcept {
 
-        constexpr std::string_view unit{internal::normalised_unit<Unit>.data};
+        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
         if (!seconds_since_epoch().is_finite()){
             return *this;
@@ -489,7 +489,7 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, int n = 1, bool fractio
 template <string_literal Unit>
 inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, int n = 1, roll on_impossible_date = roll::none) noexcept {
 
-    constexpr std::string_view unit{internal::normalised_unit<Unit>.data};
+    constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
     if (n == 0 || r_int(n).is_na()){
         return r_dbl::na();

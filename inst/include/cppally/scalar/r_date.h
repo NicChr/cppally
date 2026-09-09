@@ -26,7 +26,7 @@ enum roll : uint8_t {
 // Valid for 'years', 'months', 'weeks', 'days', 'hours', 'minutes' and 'seconds'
 template <string_literal Unit>
 consteval bool is_valid_time_unit() noexcept {
-    std::string_view unit{Unit.data};
+    std::string_view unit = Unit.view();
     return unit == "seconds" || unit == "minutes" || unit == "hours" || unit == "days" || unit == "weeks" || unit == "months" || unit == "years";
 }
 
@@ -37,25 +37,13 @@ consteval void assert_valid_time_unit() noexcept {
     static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
 }
 
-// e.g. "month" -> "months"
-template <string_literal Unit>
-consteval auto make_time_unit_plural() noexcept {
-    constexpr int n = sizeof(Unit.data);
-    char buf[n + 1]{};
-    for (int i = 0; i < n - 1; ++i){
-        buf[i] = Unit.data[i];
-    }
-    buf[n - 1] = 's';
-    return string_literal<n + 1>(buf);
-}
-
-// Normalise time units into plural form
+// Normalise time units into plural form, e.g. "month"
 template <string_literal Unit>
 consteval auto normalise_time_unit() noexcept {
     if constexpr (is_valid_time_unit<Unit>()){
         return Unit;
     } else {
-        constexpr auto plural = make_time_unit_plural<Unit>();
+        constexpr auto plural = Unit.concat("s");
         assert_valid_time_unit<plural>();
         return plural;
     }
@@ -239,7 +227,7 @@ struct r_date {
     template <string_literal Unit, typename N> 
     constexpr r_date add(N n, roll on_impossible_date = roll::none) const noexcept {
 
-        constexpr std::string_view unit{internal::normalised_unit<Unit>.data};
+        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
         if constexpr (unit == "years") {
 
@@ -366,7 +354,7 @@ struct r_date {
     template <string_literal Unit>
     constexpr r_date floor(int week_start = 7) const noexcept {
 
-        constexpr std::string_view unit{internal::normalised_unit<Unit>.data};
+        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
         if (!days_since_epoch().is_finite()){
             return *this;
@@ -407,7 +395,7 @@ struct r_date {
     template <string_literal Unit>
     constexpr r_date ceiling(int week_start = 7) const noexcept {
 
-        constexpr std::string_view unit{internal::normalised_unit<Unit>.data};
+        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
         if (!days_since_epoch().is_finite()){
             return *this;
@@ -509,7 +497,7 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, int n = 1, bool fractiona
 template <string_literal Unit>
 inline constexpr r_dbl time_diff(r_date x, r_date y, int n = 1, roll on_impossible_date = roll::none) noexcept {
 
-    constexpr std::string_view unit{internal::normalised_unit<Unit>.data};
+    constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
     if (n == 0 || r_int(n).is_na()){
         return r_dbl::na();
