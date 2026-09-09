@@ -51,12 +51,11 @@ r_vec<r_str> test_rng_raw_hex(uint64_t seed, r_size_t n) {
 [[cppally::register]]
 r_vec<r_int> test_rng_lemire_huge(uint64_t seed, r_size_t n) {
     random_stream rs(seed);
-
-    // 2^63, written as one past the largest signed 64-bit value so there are no
-    // magic digits to mistype. The range is one more than that: a power of two
-    // would never reject, and this is the width that rejects most often
+    
     constexpr uint64_t two_pow_63 = static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) + 1;
     constexpr uint64_t range = two_pow_63 + 1;
+    constexpr int64_t lo = std::numeric_limits<int64_t>::min();
+    constexpr int64_t hi = 0;
 
     constexpr int n_buckets = 16;
     constexpr uint64_t bucket_width = two_pow_63 / n_buckets;
@@ -65,7 +64,7 @@ r_vec<r_int> test_rng_lemire_huge(uint64_t seed, r_size_t n) {
     int* p_out = out.data();
 
     for (r_size_t i = 0; i < n; ++i) {
-        uint64_t v = rs.index(uint64_t(0), range - 1);
+        uint64_t v = static_cast<uint64_t>(rs.index(lo, hi)) - static_cast<uint64_t>(lo);
         if (v >= range) {
             abort("index() returned a value outside [0, range)");
         }
