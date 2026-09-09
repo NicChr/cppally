@@ -87,11 +87,8 @@ void mutate_sexp(r_sexp& x, F&& f) {
 // emits no code) and handed to one shared, type-erased reject().
 
 // Candidate names, indexed to match the bit order of accepted_mask below.
-#define CPPALLY_CASE_NAME(LABELS, W) type_str<W>(),
-inline const char* candidate_name(int i) {
-    static const char* const names[] = { CPPALLY_ALL_CASES(CPPALLY_CASE_NAME) type_str<r_sexp>() };
-    return names[i];
-}
+#define CPPALLY_CASE_NAME(LABELS, W) type_name<W>.data,
+inline constexpr const char* candidate_names[] = { CPPALLY_ALL_CASES(CPPALLY_CASE_NAME) type_name<r_sexp>.data };
 #undef CPPALLY_CASE_NAME
 
 template <class F, class... Cs>
@@ -126,7 +123,7 @@ inline constexpr uint32_t accepted_mask = mask_of<F, CPPALLY_ALL_CASES(CPPALLY_C
         if (!out.empty()) {
             out += ", ";
         }
-        out += candidate_name(i);
+        out += candidate_names[i];
     }
 
     abort("r_sexp visitor cannot accept the value's type: %s\n"
