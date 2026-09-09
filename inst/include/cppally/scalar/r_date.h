@@ -332,7 +332,7 @@ struct r_date {
     r_str date_str() const {
         
         if (days_since_epoch().is_infinite()){
-            return r_str(unwrap(*this) > 0 ? "Inf" : "-Inf");
+            return unwrap(*this) > 0 ? cached_str<"Inf">() : cached_str<"-Inf">();
         }
 
         if (!is_chrono_safe()){

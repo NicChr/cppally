@@ -314,7 +314,7 @@ struct r_psxct {
     r_str datetime_str() const {
     
         if (seconds_since_epoch().is_infinite()){
-            return r_str(unwrap(*this) > 0 ? "Inf" : "-Inf");
+            return unwrap(*this) > 0 ? cached_str<"Inf">() : cached_str<"-Inf">();
         }
 
         if (!is_chrono_safe()){
