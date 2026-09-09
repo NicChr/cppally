@@ -79,14 +79,14 @@ struct random_stream {
   // Returns a random index in [a, b] : b > a
   // Lemire's divisionless method along with ankerl's portable 128bit multiply
   // makes this fast, portable, and hence reproducible.
-  uint64_t index(uint64_t a, uint64_t b) {
+  int64_t index(int64_t a, int64_t b) {
+
     if (b < a) [[unlikely]] {
       abort("`index()`: upper bound must be >= lower bound");
     }
 
-    // Width in unsigned arithmetic so a negative `a` wraps correctly
-    uint64_t span = b - a;
-    return a + bounded(span + 1u);
+    uint64_t span = static_cast<uint64_t>(b) - static_cast<uint64_t>(a);
+    return static_cast<int64_t>(static_cast<uint64_t>(a) + bounded(span + 1u));
   }
 
   // The seed this stream started from. Log it to replay a run via random_stream(seed)
