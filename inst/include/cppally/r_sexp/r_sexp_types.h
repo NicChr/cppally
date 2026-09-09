@@ -7,7 +7,7 @@
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
 #include <cppally/r_sexp/protect.h>
-#include <cstdio>
+#include <cppally/string/string_literal.h>
 
 namespace cppally {
 
@@ -75,58 +75,37 @@ inline const char* r_type_to_str(SEXPTYPE x){
     }
 }
 
-template <typename T>
-inline const char* type_str() {
-    return "Unknown";
-}
+template <typename T> inline constexpr auto type_name = string_literal("Unknown");
 
-template <> inline const char* type_str<void>(){return "void";}
-template <> inline const char* type_str<r_lgl>(){return "r_lgl";}
-template <> inline const char* type_str<r_int>(){return "r_int";}
-template <> inline const char* type_str<r_int64>(){return "r_int64";}
-template <> inline const char* type_str<r_dbl>(){return "r_dbl";}
-template <> inline const char* type_str<r_str>(){return "r_str";}
-template <> inline const char* type_str<r_str_view>(){return "r_str_view";}
-template <> inline const char* type_str<r_cplx>(){return "r_cplx";}
-template <> inline const char* type_str<r_raw>(){return "r_raw";}
-template <> inline const char* type_str<r_sym>(){return "r_sym";}
-template <> inline const char* type_str<r_sexp>(){return "r_sexp";}
-template <> inline const char* type_str<r_date>(){return "r_date";}
-template <> inline const char* type_str<r_psxct>(){return "r_psxct";}
-template <> inline const char* type_str<r_factors>(){return "r_factors";}
-template <> inline const char* type_str<r_df>(){return "r_df";}
-template <> inline const char* type_str<r_function>(){return "r_function";}
-
+template <> inline constexpr auto type_name<void> = string_literal("void");
+template <> inline constexpr auto type_name<r_lgl> = string_literal("r_lgl");
+template <> inline constexpr auto type_name<r_int> = string_literal("r_int");
+template <> inline constexpr auto type_name<r_int64> = string_literal("r_int64");
+template <> inline constexpr auto type_name<r_dbl> = string_literal("r_dbl");
+template <> inline constexpr auto type_name<r_str> = string_literal("r_str");
+template <> inline constexpr auto type_name<r_str_view> = string_literal("r_str_view");
+template <> inline constexpr auto type_name<r_cplx> = string_literal("r_cplx");
+template <> inline constexpr auto type_name<r_raw> = string_literal("r_raw");
+template <> inline constexpr auto type_name<r_sym> = string_literal("r_sym");
+template <> inline constexpr auto type_name<r_sexp> = string_literal("r_sexp");
+template <> inline constexpr auto type_name<r_date> = string_literal("r_date");
+template <> inline constexpr auto type_name<r_psxct> = string_literal("r_psxct");
+template <> inline constexpr auto type_name<r_factors> = string_literal("r_factors");
+template <> inline constexpr auto type_name<r_df> = string_literal("r_df");
+template <> inline constexpr auto type_name<r_function> = string_literal("r_function");
 
 template <RVector T>
-inline const char* type_str(){
-    using data_t = typename T::data_type;
-    // static needed so data stays alive for program duration
-    static char out[64];
-    static const int len = std::snprintf(out, sizeof(out), "r_vec<%s>", type_str<data_t>());
-    (void)len;
-    return out;
-}
+inline constexpr auto type_name<T> = string_literal("r_vec<").concat(type_name<typename T::data_type>).concat(">");
 
-template <CppFloatType T> 
+template <CppFloatType T> inline constexpr auto type_name<T> = string_literal("C++ float");
+template <CppIntegerType T> inline constexpr auto type_name<T> = string_literal("C/C++ integer");
+template <CStringType T> inline constexpr auto type_name<T> = string_literal("C string");
+template <CppStringType T> inline constexpr auto type_name<T> = string_literal("C++ string");
+template <CppComplexType T> inline constexpr auto type_name<T> = string_literal("C++ complex");
+
+template <typename T>
 inline const char* type_str(){
-    return "C++ float";
-}
-template <CppIntegerType T>
-inline const char* type_str(){
-    return "C/C++ integer";
-}
-template <CppStringType T>
-inline const char* type_str(){
-    if constexpr (CStringType<T>){
-        return "C string";
-    } else {
-        return "C++ string";
-    }
-}
-template <CppComplexType T> 
-inline const char* type_str(){
-    return "C++ complex";
+    return type_name<T>.data;
 }
 
 // Mapping from C++ type to R TYPEOF
