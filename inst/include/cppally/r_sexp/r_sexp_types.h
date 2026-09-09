@@ -104,7 +104,7 @@ template <CppStringType T> inline constexpr auto type_name<T> = string_literal("
 template <CppComplexType T> inline constexpr auto type_name<T> = string_literal("C++ complex");
 
 template <typename T>
-inline const char* type_str(){
+constexpr const char* type_str(){
     return type_name<T>.data;
 }
 
