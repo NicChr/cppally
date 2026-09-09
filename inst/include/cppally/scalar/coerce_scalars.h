@@ -63,15 +63,15 @@ inline char* write_r_double(char* first, char* last, double x){
   return std::to_chars(first, last, x).ptr;
 }
 
-// Coerce functions that account for NA
+// Coercion functions that account for NA
+// Important: all internal::as_* helpers assume that T != U since this identity is already checked by scalar_coerce()
+
 template <RScalar T>
 inline r_lgl as_bool(const T& x) {
   
   using unwrapped_t = unwrap_t<T>;
 
-  if constexpr (is<unwrapped_t, int>){
-    return r_lgl(unwrap(x));
-  } else if constexpr (MathType<unwrapped_t>){
+  if constexpr (MathType<unwrapped_t>){
     return is_na(x) ? r_na : r_lgl(static_cast<bool>(unwrap(x)));
   } else if constexpr (RStringType<T>){
     if (x.is_na()){
@@ -92,9 +92,7 @@ inline r_int as_int(const T& x){
 
   using unwrapped_t = unwrap_t<T>;
 
-  if constexpr (is<unwrapped_t, int>){
-    return r_int(unwrap(x));
-  } else if constexpr (MathType<unwrapped_t>){
+  if constexpr (MathType<unwrapped_t>){
     return is_na(x) || !numeric_can_be_cast_without_complete_loss<int>(unwrap(x)) ? na<r_int>() : r_int(static_cast<int>(unwrap(x)));
   } else if constexpr (RStringType<T>){
     return as_int(parse_double(x.c_str()));
@@ -107,9 +105,7 @@ inline r_int64 as_int64(const T& x){
 
   using unwrapped_t = unwrap_t<T>;
 
-  if constexpr (is<unwrapped_t, int64_t>){
-    return r_int64(unwrap(x));
-  } else if constexpr (MathType<unwrapped_t>){
+  if constexpr (MathType<unwrapped_t>){
     return is_na(x) || !numeric_can_be_cast_without_complete_loss<int64_t>(unwrap(x)) ? na<r_int64>() : r_int64(static_cast<int64_t>(unwrap(x)));
   } else if constexpr (RStringType<T>){
     return as_int64(parse_double(x.c_str()));
@@ -122,9 +118,7 @@ inline r_dbl as_double(const T& x){
 
   using unwrapped_t = unwrap_t<T>;
 
-  if constexpr (is<unwrapped_t, double>){
-    return r_dbl(unwrap(x));
-  } else if constexpr (MathType<unwrapped_t>){
+  if constexpr (MathType<unwrapped_t>){
     return is_na(x) ? na<r_dbl>() : r_dbl(static_cast<double>(unwrap(x)));
   } else if constexpr (RStringType<T>){
     return parse_double(x.c_str());
@@ -137,9 +131,7 @@ inline r_cplx as_complex(const T& x){
 
   using unwrapped_t = unwrap_t<T>;
 
-  if constexpr (is<unwrapped_t, std::complex<double>>){
-    return r_cplx(unwrap(x));
-  } else if constexpr (MathType<unwrapped_t>){
+  if constexpr (MathType<unwrapped_t>){
     return r_cplx{as_double(x), r_dbl(0.0)};
   } else {
     return na<r_cplx>();
@@ -150,9 +142,7 @@ inline r_raw as_raw(const T& x){
   
   using unwrapped_t = unwrap_t<T>;
 
-  if constexpr (is<unwrapped_t, unsigned char>){
-    return r_raw(unwrap(x));
-  } else if constexpr (MathType<unwrapped_t>){
+  if constexpr (MathType<unwrapped_t>){
     return is_na(x) || !numeric_can_be_cast_without_complete_loss<unsigned char>(unwrap(x)) ? na<r_raw>() : r_raw(static_cast<unsigned char>(unwrap(x)));
   } else {
     return na<r_raw>();
@@ -193,7 +183,7 @@ inline r_str_view as_r_string(const T& x){
     if (result.ec != std::errc{}) [[unlikely]] {
       abort("Internal error, increase buffer size for string conversion");
     }
-    
+
     *result.ptr = '\0';
     return c_str_to_r_str_view(static_cast<const char*>(buffer));
   } else if constexpr (RComplexType<T>){
@@ -248,19 +238,14 @@ inline T scalar_coerce_impl(const U& x) {
   } else if constexpr (is<T, r_raw>){
     return as_raw(x);
   } else if constexpr (RTimeType<T>){
-    using value_t = typename T::value_type;
     if constexpr (RDateType<T> && RPsxctType<U>){
-      double days = unwrap(x.as_date());
-      return T(scalar_coerce_impl<value_t, r_dbl>(r_dbl(days)));
+      return x.as_date();
     } else if constexpr (RPsxctType<T> && RDateType<U>){
-      auto seconds = unwrap(x.as_datetime());
-      using scalar_t = as_r_scalar_t<decltype(seconds)>;
-      return T(scalar_coerce_impl<value_t, scalar_t>(scalar_t(seconds)));
-    } else if constexpr (RTimeType<U>){
-      using scalar_t = as_r_scalar_t<unwrap_t<U>>;
-      return T(scalar_coerce_impl<value_t, scalar_t>(scalar_t(unwrap(x))));
+      return x.as_datetime();
+    } else if constexpr (RDateType<T>) {
+      return r_date(as_double(x));
     } else {
-      return T(scalar_coerce_impl<value_t, U>(x));
+      return r_psxct(as_double(x));
     }
   } else {
     static_assert(always_false<T>);
