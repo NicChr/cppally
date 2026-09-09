@@ -52,6 +52,17 @@ inline r_dbl parse_double(const char* x){
   return r_dbl(out);
 }
 
+inline char* write_r_double(char* first, char* last, double x){
+  if (r_dbl(x).is_infinite()){
+    const char* word = x > 0 ? "Inf" : "-Inf";
+    while (*word != '\0'){
+      *first++ = *word++;
+    }
+    return first;
+  }
+  return std::to_chars(first, last, x).ptr;
+}
+
 // Coerce functions that account for NA
 template <RScalar T>
 inline r_lgl as_bool(const T& x) {
@@ -162,30 +173,51 @@ inline r_str_view as_r_string(const T& x){
       return cached_str<"FALSE">();
     }
   } else if constexpr (RNumber<T>){
+    
+    // If NA or NaN
+    // Diverging from R here to satisfy the identity: `is_na(r_dbl::nan()) == is_na(as<r_str>(r_dbl::nan()))` 
+    // with the rationale being that we are favouring general NA propagation over NaN preservation.
     if (is_na(x)){
       return na<r_str_view>();
     }
+
+    if constexpr (is<T, r_dbl>){
+      if (x.is_infinite()){
+        return unwrap(x) > 0 ? cached_str<"Inf">() : cached_str<"-Inf">();
+      }
+    }
+    
     char buffer[48];
     auto result = std::to_chars(buffer, buffer + sizeof(buffer) - 1, unwrap(x) + unwrap_t<T>(0));
+    
     if (result.ec != std::errc{}) [[unlikely]] {
       abort("Internal error, increase buffer size for string conversion");
     }
+    
     *result.ptr = '\0';
     return c_str_to_r_str_view(static_cast<const char*>(buffer));
   } else if constexpr (RComplexType<T>){
+    
     if (is_na(x)){
       return na<r_str_view>();
     }
+
     double re = static_cast<double>(unwrap(x).real()) + 0.0;
     double im = static_cast<double>(unwrap(x).imag()) + 0.0;
 
-    char buffer[96];
+    constexpr int max_dbl_chars = 24;
+    char buffer[2 * max_dbl_chars + 3]; // re + '+' + im + 'i' + '\0'
+
+    char* pos = write_r_double(buffer, buffer + max_dbl_chars, re);
+
     if (im >= 0){
-      snprintf(buffer, sizeof(buffer), "%g+%gi", re, im);
-    } else {
-      snprintf(buffer, sizeof(buffer), "%g%gi", re, im);
+      *pos++ = '+';
     }
-    return c_str_to_r_str_view(static_cast<const char *>(buffer));
+
+    pos = write_r_double(pos, pos + max_dbl_chars, im);
+    *pos++ = 'i';
+    *pos = '\0';
+    return c_str_to_r_str_view(static_cast<const char*>(buffer));
   } else if constexpr (is<T, r_raw>){
     char buffer[8];
     snprintf(buffer, sizeof(buffer), "%02x", x.value);
