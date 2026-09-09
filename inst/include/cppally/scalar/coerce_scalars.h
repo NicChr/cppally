@@ -54,25 +54,26 @@ inline r_dbl parse_double(const char* x){
 
 // Coerce functions that account for NA
 template <RScalar T>
-inline r_lgl as_bool(const T& x){
+inline r_lgl as_bool(const T& x) {
   
   using unwrapped_t = unwrap_t<T>;
 
   if constexpr (is<unwrapped_t, int>){
     return r_lgl(unwrap(x));
   } else if constexpr (MathType<unwrapped_t>){
-    return is_na(x) ? na<r_lgl>() : r_lgl(static_cast<bool>(unwrap(x)));
+    return is_na(x) ? r_na : r_lgl(static_cast<bool>(unwrap(x)));
   } else if constexpr (RStringType<T>){
-    const char* str = x.c_str();
-    if (std::strcmp(str, "TRUE") == 0){
+    if (x.is_na()){
+      return r_na;
+    } else if ( (x == cached_str<"TRUE">()).is_true()){
       return r_true;
-    } else if ( std::strcmp(str, "FALSE") == 0){
+    } else if ( (x == cached_str<"FALSE">()).is_true()){
       return r_false;
     } else {
       return as_bool(parse_double(x.c_str()));
     }
   } else {
-    return na<r_lgl>();
+    return r_na;
   }
 }
 template <RScalar T>
@@ -160,29 +161,17 @@ inline r_str_view as_r_string(const T& x){
     } else {
       return cached_str<"FALSE">();
     }
-  } else if constexpr (RIntegerType<T>){
-    if (is_na(x)){
-      return na<r_str_view>();
-    }
-    // return as_r_string(std::to_string(unwrap(x)).c_str()); // C++ one-liner
-    char buffer[32];
-    auto result = std::to_chars(buffer, buffer + sizeof(buffer), unwrap(x));
-    if (result.ec != std::errc{}) {
-      abort("Internal error, increase buffer size for string conversion");
-    }
-    *result.ptr = '\0';  // Null-terminate
-    return c_str_to_r_str_view(static_cast<const char *>(buffer));
-  } else if constexpr (RFloatType<T>){
+  } else if constexpr (RNumber<T>){
     if (is_na(x)){
       return na<r_str_view>();
     }
     char buffer[48];
-    auto result = std::to_chars(buffer, buffer + sizeof(buffer), unwrap(x) + unwrap_t<T>(0));
-    if (result.ec != std::errc{}) {
+    auto result = std::to_chars(buffer, buffer + sizeof(buffer) - 1, unwrap(x) + unwrap_t<T>(0));
+    if (result.ec != std::errc{}) [[unlikely]] {
       abort("Internal error, increase buffer size for string conversion");
     }
-    *result.ptr = '\0';  // Null-terminate
-    return c_str_to_r_str_view(static_cast<const char *>(buffer));
+    *result.ptr = '\0';
+    return c_str_to_r_str_view(static_cast<const char*>(buffer));
   } else if constexpr (RComplexType<T>){
     if (is_na(x)){
       return na<r_str_view>();
@@ -200,7 +189,7 @@ inline r_str_view as_r_string(const T& x){
   } else if constexpr (is<T, r_raw>){
     char buffer[8];
     snprintf(buffer, sizeof(buffer), "%02x", x.value);
-    return c_str_to_r_str_view(static_cast<const char *>(buffer));
+    return c_str_to_r_str_view(static_cast<const char*>(buffer));
   } else if constexpr (RDateType<T>){
     return x.date_str();
   } else if constexpr (RPsxctType<T>){
