@@ -21,6 +21,15 @@ inline r_sexp na<r_sexp>() noexcept {
   return r_null;
 }
 
+template <typename T>
+inline constexpr bool is_na(const T& x) noexcept {
+  if constexpr (CastableToRScalar<T>){
+    return as_r_scalar_t<T>(x).is_na();
+  } else {
+    return false;
+  }
+}
+
 template <RVal T>
 inline constexpr bool is_na(const T& x) noexcept {
   return x.is_na();
@@ -29,15 +38,6 @@ inline constexpr bool is_na(const T& x) noexcept {
 template <>
 inline constexpr bool is_na<r_sexp>(const r_sexp& x) noexcept {
   return false;
-}
-
-template <CppMathType T>
-inline constexpr bool is_na(const T& x) noexcept {
-  if constexpr (CastableToRScalar<T>){
-    return as_r_scalar_t<T>(x).is_na();
-  } else {
-    return false;
-  }
 }
 
 template <typename T>
@@ -56,7 +56,7 @@ inline constexpr bool is_nan(const double& x) noexcept {
 
 // Inspired by SQL COALESCE: returns x, or y if x is NA.
 // NOT intended for R's NULL (r_null in cppally).
-template<typename T>
+template <typename T>
 requires requires (const T& v) { is_na(v); }
 inline constexpr T coalesce(const T& x, const T& y) noexcept {
   return is_na(x) ? y : x;
