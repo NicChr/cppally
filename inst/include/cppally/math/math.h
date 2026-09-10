@@ -3,9 +3,8 @@
 
 #include <cppally/scalar/arithmetic_ops.h>
 #include <cppally/scalar/relational_ops.h>
-#include <cppally/na.h>
 #include <cppally/scalar/r_limits.h>
-#include <cppally/coerce.h>
+#include <cppally/na.h>
 #include <algorithm>
 
 // R math functions that propagate NA values in the way R expects
@@ -16,6 +15,14 @@ namespace internal {
 
 inline constexpr r_dbl round_to_even(r_dbl x){
   return x - r_dbl{std::remainder(unwrap(x), 1.0)};
+}
+
+inline constexpr bool is_pos_inf(r_dbl x) noexcept {
+  return x.is_infinite() && unwrap(x) > 0;
+}
+
+inline constexpr bool is_neg_inf(r_dbl x) noexcept {
+  return x.is_infinite() && unwrap(x) < 0;
 }
 
 }
@@ -135,59 +142,69 @@ constexpr r_int sign(T x) noexcept {
 
 template <RMathType T>
 r_dbl sqrt(T x){
-  return r_dbl(std::sqrt(unwrap(as<r_dbl>(x))));
+  return r_dbl(std::sqrt(unwrap(internal::coerce_number<r_dbl>(x))));
 }
 
 template <MathType T, MathType U>
   requires (RMathType<T> || RMathType<U>)
 r_dbl pow(T x, U y){
-  if ((y == r_dbl(0.0)).is_true()){
+
+  r_dbl x_ = internal::coerce_number<r_dbl>(as_r_scalar_t<T>(x));
+  r_dbl y_ = internal::coerce_number<r_dbl>(as_r_scalar_t<U>(y));
+
+  if (unwrap(y_) == 0.0){
      return r_dbl(1.0);
   }
-  if ((x == r_dbl(1.0)).is_true()){
+  if (unwrap(x_) == 1.0){
     return r_dbl(1.0);
   }
-  if ((y == r_dbl(2.0)).is_true()){
-    r_dbl left = as<r_dbl>(x);
-    return left * left;
+  if (unwrap(y_) == 2.0){
+    return x_ * x_;
   }
-  return r_dbl(std::pow(unwrap(as<r_dbl>(x)), unwrap(as<r_dbl>(y))));
+
+  return r_dbl(std::pow(x_, y_));
 }
 
 template <RMathType T>
 r_dbl log10(T x){
-  return r_dbl(std::log10(unwrap(as<r_dbl>(x))));
+  return r_dbl(std::log10(unwrap(internal::coerce_number<r_dbl>(x))));
 }
 
 template <RMathType T>
 r_dbl exp(T x){
-  return r_dbl(std::exp(as<r_dbl>(x).value));
+  return r_dbl(std::exp(internal::coerce_number<r_dbl>(x).value));
 }
 
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>)
 r_dbl log(T x, U base){
-  return r_dbl(std::log(as<r_dbl>(x)) / std::log(as<r_dbl>(base)));
+  using x_r_type = as_r_scalar_t<T>;
+  using base_r_type = as_r_scalar_t<U>;
+  return r_dbl(std::log(internal::coerce_number<r_dbl>(x_r_type(x))) / std::log(internal::coerce_number<r_dbl>(base_r_type(base))));
 }
 template <RMathType T>
 r_dbl log(T x){
-  return r_dbl(std::log(as<r_dbl>(x).value));
+  return r_dbl(std::log(internal::coerce_number<r_dbl>(x).value));
 }
 
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>)
 r_dbl round(T x, U digits){
-  if (is_na(x)){
-    return as<r_dbl>(x);
-  } else if (is_na(digits)){
+
+  r_dbl x_ = internal::coerce_number<r_dbl>(as_r_scalar_t<T>(x));
+  r_dbl digits_ = internal::coerce_number<r_dbl>(as_r_scalar_t<U>(digits));
+
+  if (is_na(x_)){
+    return x_;
+  } else if (is_na(digits_)){
     return na<r_dbl>();
-  } else if (identical(x, pos_inf) || identical(digits, pos_inf)){
-    return as<r_dbl>(x);
-  } else if (identical(digits, neg_inf)){
+  } else if (x_.is_infinite() || internal::is_pos_inf(digits_)){
+    return x_;
+  } else if (internal::is_neg_inf(digits_)){
     return r_dbl(0.0);
   } else {
-    r_dbl scale = r_dbl(std::pow(10.0, as<r_dbl>(digits)));
-    return internal::round_to_even(as<r_dbl>(x) * scale) / scale;
+    double scale = std::pow(10.0, digits_);
+    return internal::round_to_even(x_ * scale) / scale;
   }
 }
 
@@ -198,10 +215,10 @@ T round(T x){
   } else {
     if (is_na(x)){
       return x;
-    } else if (identical(abs(x), pos_inf)){ 
+    } else if (internal::coerce_number<r_dbl>(x).is_infinite()){
       return x;
     } else {
-      return as<T>(internal::round_to_even(as<r_dbl>(x)));
+      return internal::coerce_number<T>(internal::round_to_even(x));
     }
   }
 
@@ -214,17 +231,21 @@ inline constexpr r_int round(r_lgl x){
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>)
 r_dbl signif(T x, U digits){
-  as_r_scalar_t<U> new_digits = max(as_r_scalar_t<U>(1), as<as_r_scalar_t<U>>(digits));
-  if (is_na(x)){
-    return as<r_dbl>(x);
+
+  r_dbl x_ = internal::coerce_number<r_dbl>(as_r_scalar_t<T>(x));
+  r_dbl digits_ = internal::coerce_number<r_dbl>(as_r_scalar_t<U>(digits));
+  r_dbl new_digits = max(1, digits_);
+
+  if (is_na(x_)){
+    return x_;
   } else if (is_na(new_digits)){
     return na<r_dbl>();
-  } else if (identical(new_digits, pos_inf)){
-    return as<r_dbl>(x);
+  } else if (new_digits.is_infinite()){
+    return x_;
   } else {
-    new_digits -= ceiling(log10(abs(x)));
+    new_digits -= ceiling(log10(abs(x_)));
     r_dbl scale = pow(10, new_digits);
-    return internal::round_to_even(scale * x) / scale;
+    return internal::round_to_even(scale * x_) / scale;
   }
 }
 
@@ -243,7 +264,7 @@ T gcd(T x, T y, T tol = r_limits<T>::tolerance()) noexcept {
 
   if constexpr (RIntegerNumber<T>){
 
-    if (identical(ax, T(1)) || identical(ay, T(1))){
+    if (unwrap(ax) == 1 || unwrap(ay) == 1){
       return T(1);
     }
 
