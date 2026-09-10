@@ -623,9 +623,9 @@ struct r_vec {
 
   // Single re-usable routine for apply_* members
   template <bool simd, bool parallel>
-  void do_apply(std::invocable<T> auto fn) {
+  void do_apply(std::invocable<T> auto& fn) {
     maybe_ensure_exclusive();
-    map_impl<simd, parallel>(*this, [fn = std::move(fn)](r_size_t, auto v){ return fn(v); });
+    map_impl<simd, parallel>(*this, [&fn](r_size_t, auto v){ return fn(v); });
   }
   template <bool simd, bool parallel>
   void do_apply_with_index(std::invocable<r_size_t, T> auto fn) {
@@ -668,13 +668,13 @@ struct r_vec {
 
   void apply(std::invocable<T> auto fn, bool simd, bool parallel) {
     if (simd && parallel){
-      do_apply<true, true>(std::move(fn));
+      do_apply<true, true>(fn);
     } else if (simd){
-      do_apply<true, false>(std::move(fn));
+      do_apply<true, false>(fn);
     } else if (parallel){
-      do_apply<false, true>(std::move(fn));
+      do_apply<false, true>(fn);
     } else {
-      do_apply<false, false>(std::move(fn));
+      do_apply<false, false>(fn);
     }
   }
 
@@ -683,19 +683,19 @@ struct r_vec {
   // apply_parallel - Applies function using multiple threads. Also only applicable for RVectorisable types.
   // apply_parallel_simd - Applies function using multiple threads and under OpenMP simd.
   void apply(std::invocable<T> auto fn) {
-    do_apply<false, false>(std::move(fn));
+    do_apply<false, false>(fn);
   }
 
   void apply_simd(std::invocable<T> auto fn) {
-    do_apply<true, false>(std::move(fn));
+    do_apply<true, false>(fn);
   }
 
   void apply_parallel(std::invocable<T> auto fn) {
-    do_apply<false, true>(std::move(fn));
+    do_apply<false, true>(fn);
   }
 
   void apply_parallel_simd(std::invocable<T> auto fn) {
-    do_apply<true, true>(std::move(fn));
+    do_apply<true, true>(fn);
   }
 
   // From left-to-right: recursively apply a binary function to pairs of elements across *this
