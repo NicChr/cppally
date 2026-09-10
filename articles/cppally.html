@@ -826,7 +826,7 @@ respectively.</p>
 <code class="sourceCode R"><span><span class="fu">get_today</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "2026-09-10"</span></span>
 <span><span class="fu">get_now</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "2026-09-10 06:10:22 UTC"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "2026-09-10 07:50:16 UTC"</span></span></code></pre></div>
 <p><strong>Note:</strong> <code>r_psxct</code> currently only supports
 UTC and no other time-zones.</p>
 <div class="section level4">
@@ -1582,8 +1582,8 @@ difficult to implement efficiently and safely.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sum    138µs    138µs     <span style="text-decoration: underline;">7</span>102.        0B        0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sum       375µs    375µs     <span style="text-decoration: underline;">2</span>625.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sum    152µs    153µs     <span style="text-decoration: underline;">6</span>434.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sum       348µs    353µs     <span style="text-decoration: underline;">2</span>812.        0B        0</span></span>
 <span></span>
 <span><span class="co"># Sum (not ignoring NAs)</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
@@ -1593,8 +1593,8 @@ difficult to implement efficiently and safely.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sum   1.15µs   1.24µs   <span style="text-decoration: underline;">762</span>379.        0B       0 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sum    230.04ns    261ns  3<span style="text-decoration: underline;">071</span>862.        0B     307.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sum   1.05µs   1.15µs   <span style="text-decoration: underline;">778</span>005.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sum    190.92ns 205.01ns  4<span style="text-decoration: underline;">062</span>205.        0B        0</span></span>
 <span></span>
 <span><span class="co"># Range (ignoring NAs)</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
@@ -1604,8 +1604,8 @@ difficult to implement efficiently and safely.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression         min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_range 144.01µs    145µs     <span style="text-decoration: underline;">6</span>768.        0B       0 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_range      2.96ms      3ms      283.    11.4MB     168.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_range 158.98µs 185.88µs     <span style="text-decoration: underline;">5</span>336.        0B       0 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_range      3.18ms   3.43ms      283.    11.4MB     175.</span></span>
 <span></span>
 <span><span class="co"># Range (not ignoring NAs)</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
@@ -1615,8 +1615,8 @@ difficult to implement efficiently and safely.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression         min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_range   1.16µs   1.21µs   <span style="text-decoration: underline;">782</span>458.        0B      0  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_range    543.82µs 560.42µs     <span style="text-decoration: underline;">1</span>266.    1.91MB     69.3</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_range    1.1µs   1.16µs   <span style="text-decoration: underline;">808</span>616.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_range     686.4µs 965.87µs      864.    1.91MB     59.6</span></span>
 <span></span>
 <span><span class="co"># Variance (ignoring NAs)</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
@@ -1626,8 +1626,8 @@ difficult to implement efficiently and safely.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_var 745.73µs 763.11µs     <span style="text-decoration: underline;">1</span>305.        0B      0  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_var      4.99ms   5.86ms      174.    5.74MB     24.5</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_var 839.87µs  852.2µs     <span style="text-decoration: underline;">1</span>148.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_var      3.88ms   4.21ms      238.    5.74MB     35.1</span></span>
 <span></span>
 <span><span class="co"># Variance (not ignoring NAs)</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
@@ -1637,8 +1637,8 @@ difficult to implement efficiently and safely.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_var   1.16µs   1.21µs   <span style="text-decoration: underline;">784</span>126.        0B      0  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_var    482.93µs   1.28ms      817.    3.81MB     73.8</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_var   1.08µs   1.13µs   <span style="text-decoration: underline;">836</span>034.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_var      1.08ms   1.25ms      806.    3.81MB     72.8</span></span>
 <span></span>
 <span><span class="co"># Using multiple threads</span></span>
 <span></span>
@@ -1652,8 +1652,8 @@ difficult to implement efficiently and safely.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sum   82.2µs     83µs    <span style="text-decoration: underline;">11</span>685.        0B        0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sum     374.5µs    375µs     <span style="text-decoration: underline;">2</span>617.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sum   92.9µs   93.5µs    <span style="text-decoration: underline;">10</span>524.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sum     348.7µs  353.2µs     <span style="text-decoration: underline;">2</span>803.        0B        0</span></span>
 <span></span>
 <span><span class="co"># Sum (not ignoring NAs)</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
@@ -1663,8 +1663,8 @@ difficult to implement efficiently and safely.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sum   1.14µs   1.19µs   <span style="text-decoration: underline;">771</span>712.        0B        0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sum    230.04ns 260.07ns  3<span style="text-decoration: underline;">232</span>594.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sum   1.07µs   1.12µs   <span style="text-decoration: underline;">815</span>000.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sum    189.06ns 203.96ns  3<span style="text-decoration: underline;">368</span>275.        0B        0</span></span>
 <span></span>
 <span><span class="co"># Range (ignoring NAs)</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
@@ -1674,8 +1674,8 @@ difficult to implement efficiently and safely.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression         min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_range 316.32µs 319.21µs     <span style="text-decoration: underline;">3</span>042.        0B       0 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_range      2.91ms   2.98ms      321.    11.4MB     209.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_range 237.58µs 240.23µs     <span style="text-decoration: underline;">4</span>077.        0B       0 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_range      3.17ms   3.43ms      283.    11.4MB     196.</span></span>
 <span></span>
 <span><span class="co"># Range (not ignoring NAs)</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
@@ -1685,8 +1685,8 @@ difficult to implement efficiently and safely.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression         min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_range   1.15µs    1.2µs   <span style="text-decoration: underline;">785</span>154.        0B      0  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_range    542.01µs  557.6µs     <span style="text-decoration: underline;">1</span>768.    1.91MB     79.3</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_range   1.11µs   1.14µs   <span style="text-decoration: underline;">827</span>174.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_range    669.81µs 956.47µs      908.    1.91MB     39.8</span></span>
 <span></span>
 <span><span class="co"># Variance (ignoring NAs)</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
@@ -1696,8 +1696,8 @@ difficult to implement efficiently and safely.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_var 391.96µs 398.42µs     <span style="text-decoration: underline;">2</span>456.        0B      0  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_var      4.21ms   4.27ms      232.    5.72MB     34.6</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_var 442.84µs    447µs     <span style="text-decoration: underline;">2</span>210.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_var      2.89ms      3ms      294.    5.72MB     42.8</span></span>
 <span></span>
 <span><span class="co"># Variance (not ignoring NAs)</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
@@ -1707,8 +1707,8 @@ difficult to implement efficiently and safely.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression       min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_var   1.14µs    1.2µs   <span style="text-decoration: underline;">734</span>162.        0B       0 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_var    438.94µs  466.6µs     <span style="text-decoration: underline;">2</span>132.    3.81MB     193.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_var   1.09µs   1.13µs   <span style="text-decoration: underline;">839</span>178.        0B       0 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_var    489.56µs 531.36µs     <span style="text-decoration: underline;">1</span>210.    3.81MB     111.</span></span>
 <span></span>
 <span><span class="co"># Reset to single-threaded</span></span>
 <span><span class="fu">cpp_set_threads</span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></code></pre></div>
@@ -1758,8 +1758,8 @@ performant.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression            min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_n_unique       704µs    747µs     <span style="text-decoration: underline;">1</span>310.    1.38MB     41.7</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_n_unique    139µs    139µs     <span style="text-decoration: underline;">7</span>057.        0B      0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_n_unique       683µs    727µs     <span style="text-decoration: underline;">1</span>378.    1.38MB     45.3</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_n_unique    235µs    245µs     <span style="text-decoration: underline;">4</span>066.        0B      0</span></span>
 <span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
 <span>  base_unique <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>,</span>
@@ -1768,8 +1768,8 @@ performant.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression          min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_unique       715µs    796µs     <span style="text-decoration: underline;">1</span>244.    1.38MB     39.1</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_unique    135µs    137µs     <span style="text-decoration: underline;">7</span>146.      448B      0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_unique       684µs    728µs     <span style="text-decoration: underline;">1</span>378.    1.38MB     41.3</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_unique    137µs    150µs     <span style="text-decoration: underline;">6</span>701.      448B      0</span></span>
 <span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
 <span>  base_sorted_unique <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -1778,8 +1778,8 @@ performant.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression                 min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_sorted_unique       736µs    771µs     <span style="text-decoration: underline;">1</span>295.    1.38MB     44.1</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_sorted_unique    137µs    139µs     <span style="text-decoration: underline;">7</span>026.      896B      0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> base_sorted_unique       717µs    765µs     <span style="text-decoration: underline;">1</span>308.    1.38MB     38.6</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cppally_sorted_unique    139µs    152µs     <span style="text-decoration: underline;">6</span>623.      896B      0</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="sorting">Sorting<a class="anchor" aria-label="anchor" href="#sorting"></a>
@@ -1823,14 +1823,14 @@ and so is equivalent to
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression                    min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_sort(c(3, 2, 1))       1.33µs    1.4µs   <span style="text-decoration: underline;">616</span>734.        0B      0  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_sort(c(3, 2, 1))  28.28µs   30.6µs    <span style="text-decoration: underline;">31</span>458.        0B     12.6</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_sort(c(3, 2, 1))       1.24µs   1.32µs   <span style="text-decoration: underline;">659</span>492.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_sort(c(3, 2, 1))  24.23µs  26.85µs    <span style="text-decoration: underline;">36</span>265.        0B     14.5</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp_order</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>, <span class="fu">r_radix_order</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression                     min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_order(c(3, 2, 1))       1.31µs   1.44µs   <span style="text-decoration: underline;">615</span>792.        0B      0  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_order(c(3, 2, 1))  12.56µs  13.69µs    <span style="text-decoration: underline;">69</span>808.        0B     14.0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_order(c(3, 2, 1))       1.25µs   1.32µs   <span style="text-decoration: underline;">674</span>360.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_order(c(3, 2, 1))   10.9µs  11.99µs    <span style="text-decoration: underline;">80</span>184.        0B     16.0</span></span>
 <span></span>
 <span><span class="co"># Integer data</span></span>
 <span><span class="va">ints</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">2e05</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -1838,14 +1838,14 @@ and so is equivalent to
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression              min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_sort(ints)       1.05ms   1.07ms      879.    1.53MB     34.7</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_sort(ints)    1.5ms   1.53ms      649.    1.53MB     24.5</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_sort(ints)     566.23µs 606.69µs     <span style="text-decoration: underline;">1</span>474.    1.53MB     53.1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_sort(ints)   1.05ms   1.14ms      768.    1.53MB     27.0</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp_order</span><span class="op">(</span><span class="va">ints</span><span class="op">)</span>, <span class="fu">r_radix_order</span><span class="op">(</span><span class="va">ints</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression               min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_order(ints)        846µs 863.84µs     <span style="text-decoration: underline;">1</span>154.     781KB     23.2</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_order(ints)    999µs   1.01ms      986.     781KB     17.1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_order(ints)        504µs    576µs     <span style="text-decoration: underline;">1</span>564.     781KB     26.8</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_order(ints)    632µs    717µs     <span style="text-decoration: underline;">1</span>284.     781KB     24.4</span></span>
 <span></span>
 <span><span class="co"># Double-floating point precision data</span></span>
 <span><span class="va">dbls</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html" class="external-link">as.double</a></span><span class="op">(</span><span class="va">ints</span><span class="op">)</span></span>
@@ -1853,14 +1853,14 @@ and so is equivalent to
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression              min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_sort(dbls)       2.36ms    2.4ms      413.    2.29MB     27.5</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_sort(dbls)   4.85ms   4.99ms      199.    2.29MB     13.3</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_sort(dbls)       1.64ms    1.7ms      544.    2.29MB     37.8</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_sort(dbls)   6.54ms   6.89ms      145.    2.29MB     12.8</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp_order</span><span class="op">(</span><span class="va">dbls</span><span class="op">)</span>, <span class="fu">r_radix_order</span><span class="op">(</span><span class="va">dbls</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression               min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_order(dbls)       2.09ms   2.15ms      466.     781KB    10.5 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_order(dbls)   4.05ms    4.2ms      239.     781KB     6.23</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_order(dbls)       1.35ms   1.37ms      726.     781KB    12.6 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_order(dbls)   5.99ms   6.26ms      160.     781KB     4.15</span></span>
 <span></span>
 <span><span class="co"># Floating point data with decimals</span></span>
 <span><span class="va">dcmls</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">dbls</span><span class="op">)</span><span class="op">)</span></span>
@@ -1868,14 +1868,14 @@ and so is equivalent to
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression               min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_sort(dcmls)       6.02ms   6.14ms      163.    2.29MB    16.1 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_sort(dcmls)   7.72ms   7.92ms      126.    2.29MB     8.71</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_sort(dcmls)        5.6ms   5.84ms      171.    2.29MB    10.9 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_sort(dcmls)   9.39ms  10.02ms      100.    2.29MB     8.74</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp_order</span><span class="op">(</span><span class="va">dcmls</span><span class="op">)</span>, <span class="fu">r_radix_order</span><span class="op">(</span><span class="va">dcmls</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression                min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_order(dcmls)       5.88ms   5.93ms      168.     781KB     4.10</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_order(dcmls)   6.91ms    7.1ms      140.     781KB     4.13</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_order(dcmls)       5.66ms   5.73ms      174.     781KB     4.10</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_order(dcmls)   8.51ms   9.12ms      109.     781KB     4.18</span></span>
 <span></span>
 <span><span class="co"># String data</span></span>
 <span><span class="va">strs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">dcmls</span>, <span class="fl">2</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -1883,14 +1883,14 @@ and so is equivalent to
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression              min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_sort(strs)       3.36ms   4.39ms      234.    2.29MB     28.6</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_sort(strs)   2.27ms   2.73ms      376.    2.29MB     36.6</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_sort(strs)       2.32ms   2.51ms      388.    2.29MB     33.1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_sort(strs)   2.48ms   2.68ms      369.    2.29MB     36.2</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="fu">cpp_order</span><span class="op">(</span><span class="va">strs</span><span class="op">)</span>, <span class="fu">r_radix_order</span><span class="op">(</span><span class="va">strs</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression               min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_order(strs)       1.55ms   1.95ms      511.     781KB     17.3</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_order(strs) 933.49µs 977.44µs      969.     781KB     26.7</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cpp_order(strs)       1.13ms   1.26ms      790.     781KB     24.5</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> r_radix_order(strs)   1.11ms    1.2ms      826.     781KB     22.0</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="grouping">Grouping<a class="anchor" aria-label="anchor" href="#grouping"></a>
@@ -2003,8 +2003,8 @@ derived group counts.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression                min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_group_counts 259.91µs 270.49µs     <span style="text-decoration: underline;">3</span>649.   514.1KB     66.4</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_table             7.34ms   7.49ms      132.     6.2MB     24.0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_group_counts  304.2µs 322.11µs     <span style="text-decoration: underline;">3</span>078.   514.1KB     51.9</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_table             7.56ms   7.68ms      129.     6.2MB     44.1</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="annex">Annex<a class="anchor" aria-label="anchor" href="#annex"></a>
