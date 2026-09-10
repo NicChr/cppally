@@ -124,7 +124,7 @@ inline T subset(const T& x, const r_vec<U>& indices, bool invert = false, bool c
   }
   
   if constexpr (RStringType<U>){
-    if (x.is_long()){
+    if (x.is_long()) [[unlikely]] {
         abort("`subset()`: Named subsetting on long-vectors is unsupported");
     }
 
