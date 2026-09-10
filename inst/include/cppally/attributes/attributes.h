@@ -12,44 +12,47 @@ namespace cppally {
 
 namespace attr {
 
-template <RObject T>
-inline bool can_have_attributes(const T& x) noexcept {
-  if constexpr (RComposite<T>){
-    return true; 
-  } else if constexpr (is_sexp<T>){
-    switch (TYPEOF(x)){
-      case LGLSXP:
-      case INTSXP: 
-      case REALSXP: 
-      case STRSXP: 
-      case CPLXSXP: 
-      case RAWSXP: 
-      case VECSXP: 
-      case LISTSXP:
-      case ENVSXP:
-      case CLOSXP:
-      case BUILTINSXP: 
-      case SPECIALSXP: 
-      case LANGSXP:
-      case EXPRSXP: 
-      case EXTPTRSXP: 
-      case OBJSXP: {
-        return true;
-      }
-      default: {
-        return false;
-      }
+// Forward declared
+inline r_vec<r_sexp> get_attrs(SEXP x);
+
+namespace impl {
+
+inline void set_attr_impl(SEXP x, r_sym sym, SEXP value){
+
+  safe[Rf_setAttrib](x, sym, value);
+
+  if (internal::ptrs_identical(sym, symbol::names_sym)) [[unlikely]] {
+    if (auto sp = internal::name_cache().try_lookup(static_cast<SEXP>(x))){
+      sp->invalidate();
     }
-  } else {
-    return false;
+  } else if (internal::ptrs_identical(sym, symbol::levels_sym)) [[unlikely]] {
+    if (auto sp = internal::levels_cache().try_lookup(static_cast<SEXP>(x))){
+      sp->invalidate();
+    }
+  }
+
+}
+
+inline void clear_attrs_impl(SEXP x){
+  #if R_VERSION >= R_Version(4, 5, 0)
+  CLEAR_ATTRIB(x);
+  #else
+  r_vec<r_str_view> nms = get_attrs(x).names();
+  r_size_t n_attrs = nms.length();
+  for (r_size_t i = 0; i < n_attrs; ++i) {
+    set_attr_impl(x, r_sym(nms.view(i)), r_null);
+  }
+  #endif
+  // Cached attributes (names, levels) have just been removed from x —
+  // invalidate any wrapper caches that point at them.
+  if (auto sp = internal::name_cache().try_lookup(x)){
+    sp->invalidate();
+  }
+  if (auto sp = internal::levels_cache().try_lookup(x)){
+    sp->invalidate();
   }
 }
 
-template <RObject T>
-inline void check_can_have_attributes(const T& x){
-  if (!can_have_attributes(x)) [[unlikely]] {
-    abort("`check_can_have_attributes()`: `x` cannot have attributes added to it");
-  }
 }
 
 inline bool inherits1(SEXP x, const char *r_cls){
@@ -75,39 +78,22 @@ inline bool has_attrs(SEXP x){
   #endif
 }
 
-inline r_sexp get_attr(SEXP x, const r_sym& sym){
+inline r_sexp get_attr(SEXP x, r_sym sym){
   return r_sexp(Rf_getAttrib(x, sym));
 }
-template <RObject T, RObject U>
+
+template <RObject T>
 requires requires(T& x) { x.maybe_ensure_exclusive(); }
-inline void set_attr(T& x, const r_sym& sym, const U& value){
-  check_can_have_attributes(x);
-  // Cached attributes: prefer the typed setter when available (it knows the
-  // wrapper's exact invalidation needs); otherwise invalidate via the registry
-  // and fall through to a raw Rf_setAttrib. Either path keeps the cache coherent.
-  if (internal::ptrs_identical(sym, symbol::names_sym)) [[unlikely]] {
-    if constexpr (requires { x.set_names(value); }) {
-      x.set_names(value);
-      return;
-    }
-    if (auto sp = internal::name_cache().try_lookup(static_cast<SEXP>(x))) sp->invalidate();
-  } else if (internal::ptrs_identical(sym, symbol::levels_sym)) [[unlikely]] {
-    if constexpr (requires { x.set_levels(value); }) {
-      x.set_levels(value);
-      return;
-    }
-    if (auto sp = internal::levels_cache().try_lookup(static_cast<SEXP>(x))) sp->invalidate();
-  }
+inline void set_attr(T& x, r_sym sym, SEXP value){
   x.maybe_ensure_exclusive();
-  safe[Rf_setAttrib](x, sym, value);
+  impl::set_attr_impl(x, sym, value);
 }
-// Thin alias over set_attr — kept for readability and to match the get_old_names
-// shape. set_attr does the right thing: typed setter when available, registry
-// invalidation + raw Rf_setAttrib otherwise.
+// Do not use, use equivalent `set_names()` member.
 template <RObject T, RStringType U>
 inline void set_old_names(T& x, const r_vec<U>& names){
   set_attr(x, symbol::names_sym, names);
 }
+// Do not use, use equivalent `names()` member.
 inline r_vec<r_str_view> get_old_names(SEXP x){
   return r_vec<r_str_view>(get_attr(x, symbol::names_sym));
 }
@@ -116,7 +102,6 @@ inline r_vec<r_str_view> get_old_class(SEXP x){
 }
 template <RObject T, RStringType U>
 inline void set_old_class(T& x, const r_vec<U>& cls){
-  check_can_have_attributes(x);
   set_attr(x, symbol::class_sym, cls);
 }
 template <RStringType U>
@@ -143,19 +128,7 @@ template <RObject T>
 requires requires(T& x) { x.maybe_ensure_exclusive(); }
 inline void clear_attrs(T& x){
   x.maybe_ensure_exclusive();
-  #if R_VERSION >= R_Version(4, 5, 0)
-  CLEAR_ATTRIB(x);
-  #else
-  r_vec<r_str_view> nms = get_attrs(x).names();
-  r_size_t n_attrs = nms.length();
-  for (r_size_t i = 0; i < n_attrs; ++i) {
-    safe[Rf_setAttrib](x, r_sym(nms.view(i)), r_null);
-  }
-  #endif
-  // Cached attributes (names, levels) have just been removed from x —
-  // invalidate any wrapper caches that point at them.
-  if (auto sp = internal::name_cache().try_lookup(x)) sp->invalidate();
-  if (auto sp = internal::levels_cache().try_lookup(x)) sp->invalidate();
+  impl::clear_attrs_impl(x);
 }
 
 }
