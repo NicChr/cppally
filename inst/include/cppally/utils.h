@@ -96,7 +96,7 @@ constexpr T abs2(T x) noexcept {
   #if defined(__cpp_lib_constexpr_cmath) && __cpp_lib_constexpr_cmath >= 202202L
     return std::abs(x);
   #else 
-    return std::is_constant_evaluated() ? (x < 0 ? -x : x) + T{0} : std::abs(x);
+    return std::is_constant_evaluated() ? (x < 0 ? -x : x) : std::abs(x);
   #endif
 }
 
