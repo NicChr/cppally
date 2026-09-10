@@ -370,7 +370,7 @@ inline slot_ref insert(SEXP x) {
         // the pool needs a new chunk — effectively never after warmup.
 
         // This can technically longjump (due to protection stack overflow) but should be almost impossible unless 
-        // the user is writing calling Rf_protect() many times themselves.
+        // the user is calling Rf_protect() many times themselves.
         // As always, R C API usage is discouraged when using cppally, especially manual protection.
         Rf_protect(x);
         c = add_chunk();
