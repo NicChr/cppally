@@ -104,6 +104,9 @@ inline uint64_t r_hash_impl(const r_sym& x) noexcept {
 
 inline uint64_t r_hash_impl(const r_sexp& x);
 
+// Defined below
+inline uint64_t hash_attrs(const r_sexp& x, uint64_t seed);
+
 template <RVector T>
 inline uint64_t r_hash_impl(const T& x) {
         
@@ -113,11 +116,7 @@ inline uint64_t r_hash_impl(const T& x) {
     uint64_t seed = r_hash_impl(r_int(static_cast<int>(r_typeof<T>)));
     // Hash the attributes list if it exists
     if (attr::has_attrs(x)){
-        r_vec<r_sexp> attrs = attr::get_attrs(x);
-        seed = hash_combine(seed, r_hash_impl(attrs.names()));
-        for (r_size_t i = 0; i < attrs.length(); ++i){
-            seed = hash_combine(seed, r_hash_impl(attrs.view(i)));
-        }
+        seed = hash_attrs(static_cast<r_sexp>(x), seed);
     }
     // Recursively combine hashes of elements (even if elements are vectors)
     for (r_size_t i = 0; i < n; ++i) {
@@ -125,6 +124,18 @@ inline uint64_t r_hash_impl(const T& x) {
     }
     return seed;
 };
+
+inline uint64_t hash_attrs(const r_sexp& x, uint64_t seed) {
+    
+    r_vec<r_sexp> attrs = attr::get_attrs(x);
+
+    seed = hash_combine(seed, r_hash_impl(attrs.names()));
+    r_size_t n = attrs.length();
+    for (r_size_t i = 0; i < n; ++i){
+        seed = hash_combine(seed, r_hash_impl(attrs.view(i)));
+    }
+    return seed;
+}
 
 inline uint64_t r_hash_impl(const r_factors& x) {
     return r_hash_impl(x.value);
@@ -238,21 +249,24 @@ inline uint64_t unique_count_estimate(const key *px, uint64_t data_size){
 template <RVector T, typename U>
 inline uint64_t get_hash_map_reserve_size(const U *px, uint64_t data_size) {
 
-    using data_t = typename T::data_type;
-
     // Logical vectors can only have at most 3 unique elements
+    // The else is load-bearing: without it the tail is still instantiated for
+    // logicals, dragging in an unreachable hash map
     if constexpr (is<T, r_vec<r_lgl>>){
         return 8;
-    }
+    } else {
 
-    // Just a guess (nothing informing this)
-    if (data_size < static_cast<uint64_t>(internal::exp2<double>(16))){
-        return data_size / 4;
-    }
+        using data_t = typename T::data_type;
 
-    // Some adhoc benchmarks indicate that over-reserving for low cardinality data is faster when using ankerl::unordered_dense::map
-    // For high cardinality, we cap it to the data size
-    return std::min(data_size, 10 * unique_count_estimate<U, uint32_t, r_hash_fn<data_t>, r_hash_eq<data_t>>(px, data_size));
+        // Just a guess (nothing informing this)
+        if (data_size < static_cast<uint64_t>(internal::exp2<double>(16))){
+            return data_size / 4;
+        }
+
+        // Some adhoc benchmarks indicate that over-reserving for low cardinality data is faster when using ankerl::unordered_dense::map
+        // For high cardinality, we cap it to the data size
+        return std::min(data_size, 10 * unique_count_estimate<U, uint32_t, r_hash_fn<data_t>, r_hash_eq<data_t>>(px, data_size));
+    }
 }
 
 }
