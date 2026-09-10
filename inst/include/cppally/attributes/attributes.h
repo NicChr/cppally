@@ -85,18 +85,14 @@ inline bool inherits1(SEXP x, const char *r_cls){
 }
 
 // Attributes of x as a list
-template <RObject T>
-inline r_vec<r_sexp> get_attrs(const T& x) {
-  if (can_have_attributes(x)){
-    #if R_VERSION >= R_Version(4, 6, 0)
-    return r_vec<r_sexp>(safe[R_getAttributes](x));
-    #else
-    static r_function& r_attrs_fn = *new r_function("attributes", env::base_env);
-    return r_vec<r_sexp>(r_attrs_fn({static_cast<r_sexp>(x)}));
-    #endif
-  } else {
-    return r_vec<r_sexp>(r_null);
-  }
+// x is assumed to be protected
+inline r_vec<r_sexp> get_attrs(SEXP x) {
+  #if R_VERSION >= R_Version(4, 6, 0)
+  return r_vec<r_sexp>(safe[R_getAttributes](x));
+  #else
+  static r_function& r_attrs_fn = *new r_function("attributes", env::base_env);
+  return r_vec<r_sexp>(r_attrs_fn( {r_sexp(x, internal::view_tag{})} ));
+  #endif
 }
 
 inline bool has_attrs(SEXP x){
