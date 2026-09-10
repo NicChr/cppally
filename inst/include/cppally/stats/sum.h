@@ -8,23 +8,6 @@ namespace cppally {
 
 namespace internal {
 
-// A heuristic to scan the first n elements to check for NAs early in the vector.
-// If a vector is saturated with NAs, this will usually find it quickly. 
-// The rationale for this is that many SIMD vectorised functions in this file do NOT return early when NA is present.
-template <RVector T>
-bool any_na_early_on(const T& x, r_size_t k = 20){
-
-    k = std::min(k, x.length());
-
-    for (r_size_t i = 0; i < k; ++i){
-        if (is_na(x.get(i))){
-            return true;
-        }
-    }
-
-    return false;
-}
-
 template <RVectorisable T, typename Acc>
 void simd_reduce_add(const r_vec<T>& x, std::invocable<T> auto f, Acc& total_init) {
 
