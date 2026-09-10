@@ -439,6 +439,29 @@ inline constexpr unwrap_t<T> unwrap(const T& x) noexcept {
   return static_cast<unwrap_t<T>>(x);
 }
 
+// An RScalar that holds an RScalar (e.g. r_date)
+template <typename T>
+concept RNestedScalar = RScalar<T> && RScalar<typename std::remove_cvref_t<T>::value_type>;
+
+namespace internal {
+
+template <typename T>
+struct base_scalar_type {
+    using type = T;
+};
+
+template <RNestedScalar T>
+struct base_scalar_type<T> {
+    using type = typename base_scalar_type<typename T::value_type>::type;
+    static_assert(is<unwrap_t<type>, unwrap_t<T>>, "base scalar changed the storage type");
+};
+
+}
+
+// Get the base RScalar
+template <typename T>
+using r_base_scalar_t = typename internal::base_scalar_type<std::remove_cvref_t<T>>::type;
+
 // Rules for determining math type promotion in binary operators
 
 namespace internal {
