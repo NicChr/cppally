@@ -4,7 +4,6 @@
 #include <cppally/vector/r_vector.h>
 #include <cppally/data_frame/r_df.h>
 #include <cppally/r_sexp/visit.h>
-#include <cppally/stats/stats.h>
 #include <cppally/coerce.h>
 #include <cppally/hash/hash.h>
 #include <cppally/group/dense_int_map.h>

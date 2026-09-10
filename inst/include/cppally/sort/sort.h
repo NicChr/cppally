@@ -14,9 +14,7 @@
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/hash/hash.h>
-#include <cppally/stats/stats.h>
-#include <cppally/unique/unique.h>
-#include <cppally/group/groups.h>
+#include <cppally/stats/range.h> // For range
 #include <cstdint> // For uint32_t and similar
 #include <cstring> // For strcmp
 #include <vector> // For C++ vectors
@@ -473,42 +471,6 @@ std::remove_cvref_t<T> sort(T&& x){
         }
     }
     return pmap_parallel_simd([&](r_int a){ return x.view(unwrap(a));}, std::move(o));
-}
-
-
-template <RVector T>
-T unique(const T& x, bool sort) {
-
-    T out = unique(x);
-
-    if constexpr (RSortableVector<T>) {
-        if (sort) {
-            // std::move out so sort() can sort it in-place
-            return cppally::sort(std::move(out));
-        }
-    }
-    return out;
-}
-
-inline r_factors unique(const r_factors& x, bool sort) {
-    return r_factors(unique(x.value, sort), x.levels(), false);
-}
-
-template <RVector T>
-inline groups make_groups(const T& x, bool ordered) {
-    if constexpr (RSortableType<typename T::data_type>){
-        if (ordered){
-            if (x.is_long()) [[unlikely]] {
-                abort("Cannot group a long-vector");
-            }
-            return internal::make_groups_from_order(x, order(x, /*preserve_ties = */ false));
-        }
-    }
-    return make_groups(x);
-}
-
-inline groups make_groups(const r_factors& x, bool ordered) {
-    return make_groups(x.value, ordered);
 }
 
 }

@@ -37,6 +37,7 @@
 #include <cppally/stats/stats.h>
 #include <cppally/hash/hash.h>
 #include <cppally/sort/sort.h>
+#include <cppally/sort/sort_methods.h>
 #include <cppally/match/match.h>
 #include <cppally/unique/unique.h>
 #include <cppally/sugar/subset.h>
