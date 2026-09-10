@@ -251,8 +251,6 @@ template <RVector T, typename U>
 inline uint64_t get_hash_map_reserve_size(const U *px, uint64_t data_size) {
 
     // Logical vectors can only have at most 3 unique elements
-    // The else is load-bearing: without it the tail is still instantiated for
-    // logicals, dragging in an unreachable hash map
     if constexpr (is<T, r_vec<r_lgl>>){
         return 8;
     } else {
