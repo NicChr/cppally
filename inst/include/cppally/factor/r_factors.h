@@ -18,6 +18,8 @@ struct r_factors {
   using value_type = r_vec<r_int>;
   using data_type = r_str; // data_type is tied to return type of `get()`
 
+  explicit operator r_vec<r_int>() const noexcept { return value; }
+
   private: 
 
   #ifdef CPPALLY_CHECK_FACTORS

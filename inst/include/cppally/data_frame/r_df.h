@@ -49,6 +49,8 @@ struct r_df {
     using value_type = r_vec<r_sexp>;
     using data_type = r_df;
 
+    explicit operator r_vec<r_sexp>() const noexcept { return value; }
+
     private:
 
     int get_nrow() const noexcept {
