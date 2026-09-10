@@ -347,9 +347,9 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
             }
         }
 
-        const bool use_prefix = !prefix.empty();
-        std::sort(sorted_ids.begin(), sorted_ids.end(), [&](uint32_t a, uint32_t b) {
-            if (use_prefix && prefix[a] != prefix[b]) { return prefix[a] < prefix[b]; }
+        const uint64_t* pref = prefix.empty() ? nullptr : prefix.data();
+        std::sort(sorted_ids.begin(), sorted_ids.end(), [&, pref](uint32_t a, uint32_t b) {
+            if (pref && pref[a] != pref[b]) { return pref[a] < pref[b]; }
             return std::strcmp(CHAR(uniques[a]), CHAR(uniques[b])) < 0;
         });
         
