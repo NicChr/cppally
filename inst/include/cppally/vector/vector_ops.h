@@ -53,11 +53,11 @@ if constexpr (RAtomicVector<rhs_t>){                                            
   r_size_t rhs_size = rhs.length();                                                                                                                     \
   if (rhs_size == 1){                                                                                                                                   \
     auto val = rhs.view(0);                                                                                                                             \
-    lhs.apply([val](auto a) noexcept { return a OP val; }, true, true);                                                                                 \
+    lhs.apply_parallel_simd([val](auto a) noexcept { return a OP val; });                                                                               \
   } else if (lhs_size == rhs_size){                                                                                                                     \
     const auto *p_rhs = rhs.data();                                                                                                                     \
     using rhs_data_t = typename std::remove_cvref_t<rhs_t>::data_type;                                                                                  \
-    lhs.apply_with_index([p_rhs](r_size_t i, auto a) noexcept { return a OP rhs_data_t(p_rhs[i]); }, true, true);                                       \
+    lhs.apply_parallel_simd_with_index([p_rhs](r_size_t i, auto a) noexcept { return a OP rhs_data_t(p_rhs[i]); });                                     \
   } else {                                                                                                                                              \
     r_size_t rhsi = 0;                                                                                                                                  \
     lhs.apply_with_index([&rhs, &rhsi, rhs_size](r_size_t i, auto a) noexcept {                                                                         \
@@ -67,7 +67,7 @@ if constexpr (RAtomicVector<rhs_t>){                                            
     });                                                                                                                                                 \
   }                                                                                                                                                     \
 } else {                                                                                                                                                \
-  lhs.apply([rhs](auto a) noexcept { return a OP rhs; }, true, true);                                                                                   \
+  lhs.apply_parallel_simd([rhs](auto a) noexcept { return a OP rhs; });                                                                                 \
 }
 
 template <RAtomicVector T, typename U>
@@ -319,10 +319,8 @@ requires (is<T, r_vec<r_lgl>>)
 inline r_vec<r_lgl> operator!(T&& x){
   if constexpr (std::is_same_v<T, r_vec<r_lgl>>){
     if (x.is_exclusive()){
-        x.apply(
-          [](r_lgl v) noexcept { return !v; },
-          /*simd = */ true,
-          /*parallel = */ true
+        x.apply_parallel_simd(
+          [](r_lgl v) noexcept { return !v; }
         );
         return std::move(x);
     }
@@ -343,10 +341,8 @@ inline std::remove_cvref_t<T> operator-(T&& x){
 
   if constexpr (std::is_same_v<T, std::remove_cvref_t<T>>){
     if (x.is_exclusive()){
-      x.apply(
-      /*fn = */ [](auto v) noexcept { return -v; },
-      /*simd = */ true,
-      /*parallel = */ true
+      x.apply_parallel_simd(
+      /*fn = */ [](auto v) noexcept { return -v; }
       );
       return std::move(x);
     }

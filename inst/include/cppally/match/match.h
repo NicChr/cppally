@@ -117,7 +117,7 @@ requires (!RStringType<typename T::data_type>)
 r_factors::r_factors(const T& x, const T& levels) : value(match(x, levels)){
 
   // Need to turn 0-indexed matches into 1-indexed
-  value.apply([](r_int a) { return a + r_int(1); });
+  value.apply_parallel_simd([](r_int a) { return a + r_int(1); });
 
   r_size_t n = levels.length();
   r_vec<r_str_view> str_levels(n);

@@ -572,67 +572,130 @@ struct r_vec {
   private: 
 
   // Core engine: fn(index, value) -> set onto target[i]. All map/apply variants use this
-  template <RVal U>
-  void map_impl(r_vec<U>& target, std::invocable<r_size_t, T> auto fn, bool simd, bool parallel) const {
+  template <bool simd = false, bool parallel = false, RVal U>
+  void map_impl(r_vec<U>& target, std::invocable<r_size_t, T> auto fn) const {
+
+    #define CPPALLY_DO_APPLY for (r_size_t i = 0; i < n; ++i) p_target[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x[i])));
+
     r_size_t n = length();
+
     if (target.length() != n) [[unlikely]] {
       abort("map: target length must match source length");
     }
 
-    if constexpr (RVectorisable<T> && RVectorisable<U>){
+    if constexpr (RVectorisable<T> && RVectorisable<U> && (simd || parallel)){
 
-    int n_threads = parallel ? internal::calc_threads(n) : 1;
-    
-    const auto* p_x = data();
-    auto* p_target = target.data();
-     
-    if (simd){
+      // No RESTRICT: callers pass *this as target, so these two alias by design
+      const auto* p_x = data();
+      auto* p_target = target.data();
 
-      if (n_threads > 1){
-        OMP_PARALLEL_FOR_SIMD(n_threads)
-        for (r_size_t i = 0; i < n; ++i){
-          p_target[i] = unwrap(fn(i, T(p_x[i])));
+      if constexpr (parallel){
+        const int n_threads = internal::calc_threads(n);
+        if constexpr (simd){
+          if (n_threads > 1){
+            OMP_PARALLEL_FOR_SIMD(n_threads)
+            CPPALLY_DO_APPLY
+          } else {
+            OMP_SIMD
+            CPPALLY_DO_APPLY
+          }
+        } else {
+          if (n_threads > 1){
+            OMP_PARALLEL_FOR(n_threads)
+            CPPALLY_DO_APPLY
+          } else {
+            CPPALLY_DO_APPLY
+          }
         }
-      } else {
+      } else if constexpr (simd){
         OMP_SIMD
-        for (r_size_t i = 0; i < n; ++i){
-          p_target[i] = unwrap(fn(i, T(p_x[i])));
-        }
+        CPPALLY_DO_APPLY
+      } else {
+        CPPALLY_DO_APPLY
       }
     } else {
-      if (n_threads > 1){
-        OMP_PARALLEL_FOR(n_threads)
-        for (r_size_t i = 0; i < n; ++i){
-          p_target[i] = unwrap(fn(i, T(p_x[i])));
-        }
-      } else {
-        for (r_size_t i = 0; i < n; ++i){
-          p_target[i] = unwrap(fn(i, T(p_x[i])));
-        }
+      for (r_size_t i = 0; i < n; ++i){
+        target.set(i, fn(i, view(i)));
       }
     }
-  } else {
-    for (r_size_t i = 0; i < n; ++i){
-      target.set(i, fn(i, view(i)));
-    }
+    #undef CPPALLY_DO_APPLY
   }
-}
+
+  // Single re-usable routine for apply_* members
+  template <bool simd, bool parallel>
+  void do_apply(std::invocable<T> auto fn) {
+    maybe_ensure_exclusive();
+    map_impl<simd, parallel>(*this, [fn = std::move(fn)](r_size_t, auto v){ return fn(v); });
+  }
+  template <bool simd, bool parallel>
+  void do_apply_with_index(std::invocable<r_size_t, T> auto fn) {
+    maybe_ensure_exclusive();
+    map_impl<simd, parallel>(*this, std::move(fn));
+  }
 
   public:
 
   // Apply a function to each element with access to the index, modifying *this in-place: fn(index, value) -> T
   // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
   // parallel - Should loop be exected using multiple threads? Only applicable for RVectorisable types. Threads are set via `set_threads()`
-  void apply_with_index(std::invocable<r_size_t, T> auto fn, bool simd = false, bool parallel = false) {
-    maybe_ensure_exclusive();
-    map_impl(*this, fn, simd, parallel);
+  void apply_with_index(std::invocable<r_size_t, T> auto fn, bool simd, bool parallel) {
+    if (simd && parallel){
+      do_apply_with_index<true, true>(std::move(fn));
+    } else if (simd){
+      do_apply_with_index<true, false>(std::move(fn));
+    } else if (parallel){
+      do_apply_with_index<false, true>(std::move(fn));
+    } else {
+      do_apply_with_index<false, false>(std::move(fn));
+    }
+  }
+
+  void apply_with_index(std::invocable<r_size_t, T> auto fn) {
+    do_apply_with_index<false, false>(std::move(fn));
+  }
+
+  void apply_simd_with_index(std::invocable<r_size_t, T> auto fn) {
+    do_apply_with_index<true, false>(std::move(fn));
+  }
+
+  void apply_parallel_with_index(std::invocable<r_size_t, T> auto fn) {
+    do_apply_with_index<false, true>(std::move(fn));
+  }
+
+  void apply_parallel_simd_with_index(std::invocable<r_size_t, T> auto fn) {
+    do_apply_with_index<true, true>(std::move(fn));
+  }
+
+  void apply(std::invocable<T> auto fn, bool simd, bool parallel) {
+    if (simd && parallel){
+      do_apply<true, true>(std::move(fn));
+    } else if (simd){
+      do_apply<true, false>(std::move(fn));
+    } else if (parallel){
+      do_apply<false, true>(std::move(fn));
+    } else {
+      do_apply<false, false>(std::move(fn));
+    }
   }
 
   // Apply a function to each element, modifying *this in-place: fn(value) -> T
-  // simd - Should function be applied in an omp simd loop (via OMP_SIMD)? Only applicable for RVectorisable types
-  // parallel - Should loop be exected using multiple threads? Only applicable for RVectorisable types. Threads are set via `set_threads()`
-  void apply(std::invocable<T> auto fn, bool simd = false, bool parallel = false) {
-    apply_with_index([fn = std::move(fn)](r_size_t, auto v){ return fn(v); }, simd, parallel);
+  // apply_simd - Applies function under OpenMP simd loop. Only applicable for RVectorisable types.
+  // apply_parallel - Applies function using multiple threads. Also only applicable for RVectorisable types.
+  // apply_parallel_simd - Applies function using multiple threads and under OpenMP simd.
+  void apply(std::invocable<T> auto fn) {
+    do_apply<false, false>(std::move(fn));
+  }
+
+  void apply_simd(std::invocable<T> auto fn) {
+    do_apply<true, false>(std::move(fn));
+  }
+
+  void apply_parallel(std::invocable<T> auto fn) {
+    do_apply<false, true>(std::move(fn));
+  }
+
+  void apply_parallel_simd(std::invocable<T> auto fn) {
+    do_apply<true, true>(std::move(fn));
   }
 
   // From left-to-right: recursively apply a binary function to pairs of elements across *this
@@ -971,7 +1034,7 @@ struct r_vec {
   }
 
   void iota(T init = T(0)) requires (any<T, r_int, r_int64>) {
-    apply_with_index([init](r_size_t i, auto){ return init + i; }, /*simd = */ true);
+    apply_simd_with_index([init](r_size_t i, auto){ return init + i; });
   }
 
   // Attribute members
