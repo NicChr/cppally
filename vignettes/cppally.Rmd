@@ -606,6 +606,11 @@ cpp_set_threads = '
 void cpp_set_threads(int n){
   set_threads(n);
 }
+
+[[cppally::register]]
+int cpp_get_threads(){
+  return get_threads();
+}
 '
 )
 
@@ -1750,6 +1755,23 @@ To set the number of global OpenMP threads, use `cppally::set_threads()`.
 
 ```cpp
 cppally::set_threads(4); // Sets the number of threads to 4
+```
+
+To see the number of currently available threads, use `cppally::get_threads()`.
+
+From R we can then register these C++ function and use them.
+
+```{r, echo=FALSE, results = 'asis'}
+as_cpp_chunk(benchmark_examples[["cpp_set_threads"]])
+```
+
+```{r}
+
+cpp_set_threads(2) # Set to 2 threads
+cpp_get_threads()  # Number of threads now available
+
+cpp_set_threads(1) # Reset back to 1
+cpp_get_threads()  # Should return 1
 ```
 
 Because this is unique to each dll file, setting threads in one R package doesn't affect another. Once threads have been set, all cppally code that 
