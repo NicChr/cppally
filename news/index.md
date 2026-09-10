@@ -24,6 +24,10 @@
   [`cppally::length`](https://rdrr.io/r/base/length.html) for returning
   object length.
 
+- `as<r_str>(r_dbl::inf())` now returns title case `r_str("Inf")`
+  instead of lower case `r_str("inf")`. Similarly
+  `as<r_str>( -r_dbl::inf() )` returns `r_str("-Inf")`.
+
 - C++ char types (except `const char*` and `unsigned char`) no longer
   satisfy `CastableToRScalar` and therefore cannot participate in R/C++
   function registration.

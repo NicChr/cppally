@@ -198,10 +198,10 @@ mark(
   check = FALSE
 )
 #> # A tibble: 2 × 6
-#>   expression                            min  median `itr/sec` mem_alloc `gc/sec`
-#>   <bch:expr>                       <bch:tm> <bch:t>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_sample_int_with_replace… 179.78µs 290.7µs     3410.     391KB    25.8 
-#> 2 base_sample_int_with_replacement   2.29ms   2.3ms      433.     391KB     2.02
+#>   expression                           min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>                       <bch:t> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_sample_int_with_replace… 241.3µs 369.09µs     2694.     391KB    18.9 
+#> 2 base_sample_int_with_replacement   2.2ms   2.34ms      426.     391KB     4.12
 ```
 
 In this simple benchmark we achieve a large speed improvement over base
@@ -407,8 +407,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally      17.3ms   17.5ms      56.3    15.4MB     35.2
-#> 2 base_r       57.7ms   58.1ms      17.2    23.1MB     60.3
+#> 1 cppally      23.3ms   23.5ms      41.7    15.4MB     27.8
+#> 2 base_r       62.7ms   63.1ms      15.8    23.1MB     47.5
 ```
 
 The hand-tuned bootstrap mean naturally is faster.
@@ -423,8 +423,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression                      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>                 <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 boot_mean_cppally(x, 2000)  17.27ms  17.48ms      57.0    15.4MB     33.6
-#> 2 boot_mean(x, 2000)           3.38ms   3.38ms     295.     21.8KB      0
+#> 1 boot_mean_cppally(x, 2000)  23.38ms  23.72ms      42.1    15.4MB     28.0
+#> 2 boot_mean(x, 2000)           3.73ms   3.74ms     267.     21.8KB      0
 ```
 
 ### A flexible and fast bootstrapper
@@ -523,8 +523,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 boot_mean(x, 2000)    3.38ms   3.38ms      295.    15.7KB        0
-#> 2 boot_mean2(x, 2000)   4.54ms   4.55ms      219.    23.5KB        0
+#> 1 boot_mean(x, 2000)    3.73ms   3.74ms      267.    15.7KB        0
+#> 2 boot_mean2(x, 2000)   5.01ms   5.02ms      199.    23.5KB        0
 ```
 
 Almost as fast as the hand-tuned version, which is a nice result given

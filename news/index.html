@@ -50,6 +50,7 @@
 <li><p>Relocated various headers to and from the sugar folder.</p></li>
 <li><p><code>r_factors</code> member functions <code>get_codes</code>, <code>set_codes</code>, and <code>new_codes</code> have been removed. The functionality of these can be achieved with the existing members.</p></li>
 <li><p><code>r_sexp::length</code> has been fully deprecated and removed. Use <code><a href="https://rdrr.io/r/base/length.html" class="external-link">cppally::length</a></code> for returning object length.</p></li>
+<li><p><code>as&lt;r_str&gt;(r_dbl::inf())</code> now returns title case <code>r_str("Inf")</code> instead of lower case <code>r_str("inf")</code>. Similarly <code>as&lt;r_str&gt;( -r_dbl::inf() )</code> returns <code>r_str("-Inf")</code>.</p></li>
 <li><p>C++ char types (except <code>const char*</code> and <code>unsigned char</code>) no longer satisfy <code>CastableToRScalar</code> and therefore cannot participate in R/C++ function registration.</p></li>
 <li><p>Many <code>r_sexp</code>-based free functions have been removed and there are a few reasons for doing so. The first being that cppally didn’t provide a complete set of <code>r_sexp</code> free functions anyway, and so providing an incomplete set felt lackluster. Another reason is that removing these methods speeds up compilation and makes the API more lightweight and predictable. Users are now encouraged to write their own <code>r_sexp</code> methods as and when they require them.</p></li>
 </ul></div>
