@@ -367,7 +367,7 @@ inline groups make_ordered_groups(const T& x) {
 
 template <RVector T>
 inline groups make_groups(const T& x, bool ordered = false) {
-    if (x.is_long()){
+    if (x.is_long()) [[unlikely]] {
         abort("Cannot group a long-vector");
     }
     if (ordered){
