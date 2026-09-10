@@ -52,34 +52,6 @@ inline void check_can_have_attributes(const T& x){
   }
 }
 
-template <RObject T>
-inline bool can_have_names(const T& x) noexcept {
-  if constexpr (RComposite<T>){
-    return true; 
-  } else if constexpr (is_sexp<T>){
-    switch (TYPEOF(x)){
-      case LGLSXP:
-      case INTSXP: 
-      case REALSXP: 
-      case STRSXP: 
-      case CPLXSXP: 
-      case RAWSXP: 
-      case VECSXP: 
-      case LISTSXP:
-      case ENVSXP:
-      case LANGSXP:
-      case EXPRSXP: {
-        return true;
-      }
-      default: {
-        return false;
-      }
-    }
-  } else {
-    return false;
-  }
-}
-
 inline bool inherits1(SEXP x, const char *r_cls){
   return Rf_inherits(x, r_cls);
 }
