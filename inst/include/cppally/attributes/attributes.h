@@ -22,11 +22,11 @@ inline void set_attr_impl(SEXP x, r_sym sym, SEXP value){
   safe[Rf_setAttrib](x, sym, value);
 
   if (internal::ptrs_identical(sym, symbol::names_sym)) [[unlikely]] {
-    if (auto sp = internal::name_cache().try_lookup(static_cast<SEXP>(x))){
+    if (auto sp = internal::name_cache().try_lookup(x)){
       sp->invalidate();
     }
   } else if (internal::ptrs_identical(sym, symbol::levels_sym)) [[unlikely]] {
-    if (auto sp = internal::levels_cache().try_lookup(static_cast<SEXP>(x))){
+    if (auto sp = internal::levels_cache().try_lookup(x)){
       sp->invalidate();
     }
   }
