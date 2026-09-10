@@ -50,19 +50,19 @@ inline consteval uint64_t nan_hash() noexcept {
     return mix_u64(nan_bits());
 }
 
-template <typename T>
-uint64_t r_hash_impl(const T& x) noexcept {
-    if constexpr (RTimeType<T>){
-        return r_hash_impl(typename T::value_type(x));
-    } else if constexpr (RIntegerType<T>){
-        return mix_u64(static_cast<uint64_t>(unwrap(x)));
-    } else {
-        return ankerl::unordered_dense::hash<unwrap_t<T>>{}(unwrap(x));
-    }
+
+// Fallback
+template <RScalar T>
+uint64_t r_hash_impl(T x) noexcept {
+    return ankerl::unordered_dense::hash<unwrap_t<T>>{}(unwrap(x));
 };
 
-template <>
-inline uint64_t r_hash_impl(const r_dbl& x) noexcept {
+template <RIntegerType T>
+uint64_t r_hash_impl(T x) noexcept {
+    return mix_u64(static_cast<uint64_t>(unwrap(x)));
+};
+
+inline uint64_t r_hash_impl(r_dbl x) noexcept {
     if (is_na(x)){
         // Checks that x matches exactly to R's NA_REAL
         return has_na_real_payload(x) ? na_real_hash() : nan_hash();
@@ -73,14 +73,17 @@ inline uint64_t r_hash_impl(const r_dbl& x) noexcept {
     }
 };
 
-template <>
+template <RTimeType T>
+uint64_t r_hash_impl(T x) noexcept {
+    return r_hash_impl(typename std::remove_cvref_t<T>::value_type(x));
+}
+
 inline uint64_t r_hash_impl(const r_cplx& x) noexcept {
         // Hash real and imag parts and mix
         return hash_combine(r_hash_impl(x.re()), r_hash_impl(x.im()));
 };
 
-template <>
-inline uint64_t r_hash_impl(const r_str_view& x) noexcept {
+inline uint64_t r_hash_impl(r_str_view x) noexcept {
     // Cast pointer to integer (uintptr_t)
     auto ptr_val = reinterpret_cast<uintptr_t>(unwrap(x));
     
@@ -89,13 +92,7 @@ inline uint64_t r_hash_impl(const r_str_view& x) noexcept {
     return ankerl::unordered_dense::detail::wyhash::hash(ptr_val);
 };
 
-template <>
-inline uint64_t r_hash_impl(const r_str& x) noexcept {
-    return r_hash_impl(r_str_view(x));
-};
-
-template <>
-inline uint64_t r_hash_impl(const r_sym& x) noexcept {
+inline uint64_t r_hash_impl(r_sym x) noexcept {
     auto ptr_val = reinterpret_cast<uintptr_t>(unwrap(x));
     return ankerl::unordered_dense::detail::wyhash::hash(ptr_val);
 };
@@ -149,9 +146,8 @@ inline uint64_t r_hash_impl(const r_sexp& x) {
     return r_sexp_view(x, CPPALLY_MAKE_VISITOR(uint64_t, v, r_hash_impl(v)));
 }
 
-
 template <typename T>
-struct r_hash_fn {
+struct r_hash_fn_impl {
     using is_avalanching = void; // Tells ankerl this is already a good quality hash
     using is_transparent = void;
     // For hash map memory efficiency we use the underlying type
@@ -164,7 +160,7 @@ struct r_hash_fn {
 // Hash equality
 
 template <typename T>
-struct r_hash_eq {
+struct r_hash_eq_impl {
 
     using is_transparent = void;
     using base_t = unwrap_t<T>;
@@ -173,6 +169,11 @@ struct r_hash_eq {
         return identical(internal::unsafe_reconstruct_view<T>(a), internal::unsafe_reconstruct_view<T>(b));
     }
 };
+
+template <typename T>
+using r_hash_fn = r_hash_fn_impl<r_base_scalar_t<T>>;
+template <typename T>
+using r_hash_eq = r_hash_eq_impl<r_base_scalar_t<T>>;
 
 // An extension of Chao's estimator of population size based on the first three capture frequency counts
 // doi:10.1016/j.csda.2011.01.017
