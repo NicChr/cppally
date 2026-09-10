@@ -230,47 +230,25 @@ struct r_df {
     r_df get_row(int index) const;
     void set_row(r_size_t index, const r_df& row);
 
-    r_sexp get_col(int index) const {
+    template <typename T>
+    r_sexp get_col(T index) const {
         return value.get(index);
     }
-
-    r_sexp view_col(r_str_view name) const {
-        return value.view(name);
-    }
-
-    r_sexp view_col(const char* name) const {
-        return view_col(r_str(name));
-    }
-
-    r_sexp get_col(r_str_view name) const {
-        return value.get(name);
-    }
-
-    r_sexp get_col(const char* name) const {
-        return get_col(r_str(name));
-    }
-
-    r_sexp view_col(int index) const {
+    
+    template <typename T>
+    r_sexp view_col(T index) const {
         return value.view(index);
+    }
+
+    template <typename T>
+    void set_col(T index, SEXP col) {
+        value.set(index, r_sexp(col, internal::view_tag{}));
     }
 
     // Visit the i-th column dispatched to its concrete RComposite type.
     // Definition in data_frame/r_df_methods.h (needs r_sexp_visit)
     template <typename index_t, class F>
     decltype(auto) with_col(const index_t& index, F&& f, bool view_only = false) const;
-
-    template <RObject col_t>
-    void set_col(int index, const col_t& col) {
-        value.set(index, r_sexp(col, internal::view_tag{}));
-    }
-    template <RObject col_t>
-    void set_col(r_str_view colname, const col_t& col) {
-        set_col(value.name_index(colname), col);
-    }
-    template <RObject col_t>
-    void set_col(const char* colname, const col_t& col) {
-        set_col(r_str(colname), col);
-    }
 
 };
 
