@@ -238,8 +238,9 @@ struct chunk {
 };
 
 // Token returned by insert; opaque to callers other than `release`.
+// Refcounting already handles nullptr and R_NilValue, so c is always a live chunk
 struct slot_ref {
-    chunk* c;     // owning chunk (nullptr means "no slot / R_NilValue")
+    chunk* c;     // owning chunk
     int    slot;  // index within c->vec
 };
 
@@ -337,10 +338,6 @@ inline void destroy_chunk(chunk* c) noexcept {
 }
 
 inline slot_ref insert(SEXP x) {
-    if (x == R_NilValue) {
-        return {nullptr, -1};
-    }
-
     chunk* c = free_list_head();
     if (c == nullptr) [[unlikely]] {
         // Every chunk is full (or none exist). Allocate a new one.
@@ -374,9 +371,6 @@ inline slot_ref insert(SEXP x) {
 }
 
 inline void release(slot_ref ref) noexcept {
-    if (ref.c == nullptr) {
-        return;
-    }
     chunk* c = ref.c;
     SET_VECTOR_ELT(c->vec, ref.slot, R_NilValue);
 
