@@ -248,30 +248,29 @@ struct slot_ref {
     int    slot;  // index within c->vec
 };
 
-// Singletons (one per shared library via `static` in inline functions).
 //   head_chunk     -- master chain of every chunk that currently exists
 //   free_list_head -- head of the intrusive "has free slots" list
 //   watermark_size -- capacity of the largest chunk allocated so far
 //   reserved_slots -- total capacity of currently-retained empty chunks
-inline chunk*& head_chunk()     { static chunk* head = nullptr; return head; }
-inline chunk*& free_list_head() { static chunk* head = nullptr; return head; }
-inline int&    watermark_size() { static int n = 0; return n; }
-inline int&    reserved_slots() { static int n = 0; return n; }
+inline chunk* head_chunk     = nullptr;
+inline chunk* free_list_head = nullptr;
+inline int    watermark_size = 0;
+inline int    reserved_slots = 0;
 
 inline void master_push(chunk* c) noexcept {
     c->prev = nullptr;
-    c->next = head_chunk();
+    c->next = head_chunk;
     if (c->next != nullptr) {
         c->next->prev = c;
     }
-    head_chunk() = c;
+    head_chunk = c;
 }
 
 inline void master_unlink(chunk* c) noexcept {
     if (c->prev != nullptr) {
         c->prev->next = c->next;
     } else {
-        head_chunk() = c->next;
+        head_chunk = c->next;
     }
     if (c->next != nullptr) {
         c->next->prev = c->prev;
@@ -282,18 +281,18 @@ inline void master_unlink(chunk* c) noexcept {
 
 inline void free_push(chunk* c) noexcept {
     c->free_prev = nullptr;
-    c->free_next = free_list_head();
+    c->free_next = free_list_head;
     if (c->free_next != nullptr) {
         c->free_next->free_prev = c;
     }
-    free_list_head() = c;
+    free_list_head = c;
 }
 
 inline void free_unlink(chunk* c) noexcept {
     if (c->free_prev != nullptr) {
         c->free_prev->free_next = c->free_next;
     } else {
-        free_list_head() = c->free_next;
+        free_list_head = c->free_next;
     }
     if (c->free_next != nullptr) {
         c->free_next->free_prev = c->free_prev;
@@ -304,7 +303,7 @@ inline void free_unlink(chunk* c) noexcept {
 
 // Keep alive if the only chunk
 inline bool is_sole_chunk(const chunk* c) noexcept {
-    return head_chunk() == c && c->next == nullptr;
+    return head_chunk == c && c->next == nullptr;
 }
 
 // Start at 1024 slots: skips two doublings of warmup so the first
@@ -346,7 +345,7 @@ inline chunk* add_chunk() {
     if (next_size < max_chunk_size) {
         next_size *= 2;
     }
-    watermark_size() = cap;
+    watermark_size = cap;
     return c;
 }
 
@@ -364,7 +363,7 @@ inline void destroy_chunk(chunk* c) noexcept {
 }
 
 inline slot_ref insert(SEXP x) {
-    chunk* c = free_list_head();
+    chunk* c = free_list_head;
     if (c == nullptr) [[unlikely]] {
         // Every chunk is full (or none exist). Allocate a new one.
         // Allocation may GC, so PROTECT x. This cold path runs only when
@@ -384,7 +383,7 @@ inline slot_ref insert(SEXP x) {
     // Taking a slot from a retained empty chunk brings it back into service.
     if (c->reserved) [[unlikely]] {
         c->reserved = false;
-        reserved_slots() -= c->capacity;
+        reserved_slots -= c->capacity;
     }
 
     // If this chunk just became full, unlink it from the free list.
@@ -416,10 +415,10 @@ inline void release(slot_ref ref) noexcept {
     // warmup size, budget full) so GC scan cost stays proportional to the
     // working set.
     if (c->is_empty() && !is_sole_chunk(c)) [[unlikely]] {
-        if (c->capacity == watermark_size() &&
-            (reserved_slots() + c->capacity) <= max_reserved_slots) {
+        if (c->capacity == watermark_size &&
+            (reserved_slots + c->capacity) <= max_reserved_slots) {
             c->reserved = true;
-            reserved_slots() += c->capacity;
+            reserved_slots += c->capacity;
         } else {
             destroy_chunk(c);
         }
@@ -428,7 +427,7 @@ inline void release(slot_ref ref) noexcept {
 
 inline r_size_t count() {
     r_size_t n = 0;
-    for (chunk* c = head_chunk(); c != nullptr; c = c->next) {
+    for (chunk* c = head_chunk; c != nullptr; c = c->next) {
         n += (c->capacity - c->free_count);
     }
     return n;
@@ -437,7 +436,7 @@ inline r_size_t count() {
 inline void print() {
     REprintf("vec_store:\n");
     int idx = 0;
-    for (chunk* c = head_chunk(); c != nullptr; c = c->next, ++idx) {
+    for (chunk* c = head_chunk; c != nullptr; c = c->next, ++idx) {
         REprintf("  chunk %d: vec=%p capacity=%d in_use=%d%s\n",
                  idx, reinterpret_cast<void*>(c->vec),
                  c->capacity, c->capacity - c->free_count,
@@ -471,25 +470,20 @@ struct protect_cell {
 
 // C++-side freelist of recycled protect_cell instances. Not thread-safe,
 // but R itself is single-threaded.
-inline protect_cell*& free_list() {
-    static protect_cell* head = nullptr;
-    return head;
-}
+inline protect_cell* free_list = nullptr;
 
 inline protect_cell* alloc_cell() {
-    protect_cell*& head = free_list();
-    if (head != nullptr) {
-        protect_cell* p = head;
-        head = p->next;
+    if (free_list != nullptr) {
+        protect_cell* p = free_list;
+        free_list = p->next;
         return p;
     }
     return new protect_cell{};
 }
 
 inline void free_cell(protect_cell* p) {
-    protect_cell*& head = free_list();
-    p->next = head;
-    head = p;
+    p->next = free_list;
+    free_list = p;
 }
 
 // Create a new protection token for `x`. Returns nullptr for R_NilValue.

@@ -21,7 +21,7 @@ static void check_eq(long long got, long long expected, const char* what) {
 
 static int pool_chunks() {
     int n = 0;
-    for (vs::chunk* c = vs::head_chunk(); c != nullptr; c = c->next) {
+    for (vs::chunk* c = vs::head_chunk; c != nullptr; c = c->next) {
         ++n;
     }
     return n;
@@ -29,7 +29,7 @@ static int pool_chunks() {
 
 static long long pool_capacity() {
     long long n = 0;
-    for (vs::chunk* c = vs::head_chunk(); c != nullptr; c = c->next) {
+    for (vs::chunk* c = vs::head_chunk; c != nullptr; c = c->next) {
         n += c->capacity;
     }
     return n;
@@ -44,15 +44,15 @@ static long long pool_free() {
 static void check_pool_invariants() {
     long long reserved_total = 0;
 
-    for (vs::chunk* c = vs::head_chunk(); c != nullptr; c = c->next) {
+    for (vs::chunk* c = vs::head_chunk; c != nullptr; c = c->next) {
         if (c->prev == nullptr) {
-            check_true(vs::head_chunk() == c, "chunk with no prev must be the master head");
+            check_true(vs::head_chunk == c, "chunk with no prev must be the master head");
         } else {
             check_true(c->prev->next == c, "master chain back-links consistent");
         }
 
         check_true(c->capacity >= vs::min_chunk_size && c->capacity <= vs::max_chunk_size, "chunk capacity within bounds");
-        check_true(c->capacity <= vs::watermark_size(), "chunk capacity never exceeds the watermark");
+        check_true(c->capacity <= vs::watermark_size, "chunk capacity never exceeds the watermark");
         check_true(c->free_count >= 0 && c->free_count <= c->capacity, "free_count within bounds");
 
         if (c->reserved) {
@@ -83,7 +83,7 @@ static void check_pool_invariants() {
         }
 
         bool on_free_list = false;
-        for (vs::chunk* f = vs::free_list_head(); f != nullptr; f = f->free_next) {
+        for (vs::chunk* f = vs::free_list_head; f != nullptr; f = f->free_next) {
             if (f == c) {
                 on_free_list = true;
                 break;
@@ -92,13 +92,13 @@ static void check_pool_invariants() {
         check_true(on_free_list == (c->free_count > 0), "free-list membership iff free_count > 0");
     }
 
-    check_eq(reserved_total, vs::reserved_slots(), "reserved_slots matches reserved chunk capacities");
+    check_eq(reserved_total, vs::reserved_slots, "reserved_slots matches reserved chunk capacities");
     check_true(reserved_total <= vs::max_reserved_slots, "reserve within its slot budget");
 
-    if (vs::free_list_head() != nullptr) {
-        check_true(vs::free_list_head()->free_prev == nullptr, "free-list head has no back-link");
+    if (vs::free_list_head != nullptr) {
+        check_true(vs::free_list_head->free_prev == nullptr, "free-list head has no back-link");
     }
-    for (vs::chunk* f = vs::free_list_head(); f != nullptr; f = f->free_next) {
+    for (vs::chunk* f = vs::free_list_head; f != nullptr; f = f->free_next) {
         check_true(f->free_count > 0, "only chunks with free slots sit on the free list");
         if (f->free_next != nullptr) {
             check_true(f->free_next->free_prev == f, "free-list back-links consistent");
@@ -186,7 +186,7 @@ bool test_protect_chunk_growth() {
 
     const long long baseline     = vs::count();
     const int       chunks       = pool_chunks();
-    const int       expected_cap = std::min(vs::watermark_size() * 2, 16384);
+    const int       expected_cap = std::min(vs::watermark_size * 2, 16384);
     const long long free_slots   = pool_free();
 
     std::vector<r_sexp> objs;
@@ -196,13 +196,13 @@ bool test_protect_chunk_growth() {
     }
 
     check_eq(pool_chunks(), chunks, "filling existing free slots allocates nothing");
-    check_true(vs::free_list_head() == nullptr, "free list empty once every slot is taken");
+    check_true(vs::free_list_head == nullptr, "free list empty once every slot is taken");
     check_eq(vs::count(), baseline + free_slots, "count tracks the fill exactly");
 
     objs.emplace_back(static_cast<SEXP>(keeper));
     check_eq(pool_chunks(), chunks + 1, "one insert past capacity adds exactly one chunk");
-    check_eq(vs::head_chunk()->capacity, expected_cap, "new chunk doubles the last size, capped");
-    check_eq(vs::watermark_size(), expected_cap, "watermark moves to the new capacity");
+    check_eq(vs::head_chunk->capacity, expected_cap, "new chunk doubles the last size, capped");
+    check_eq(vs::watermark_size, expected_cap, "watermark moves to the new capacity");
     check_pool_invariants();
 
     objs.clear();
@@ -237,8 +237,8 @@ bool test_protect_burst_reserve() {
         }
 
         check_eq(vs::count(), entry + 1 + n, "count tracks the whole burst");
-        check_eq(vs::watermark_size(), 16384, "burst drives the watermark to the cap");
-        check_eq(vs::head_chunk()->capacity, 16384, "newest chunk is cap-sized");
+        check_eq(vs::watermark_size, 16384, "burst drives the watermark to the cap");
+        check_eq(vs::head_chunk->capacity, 16384, "newest chunk is cap-sized");
         check_true(pool_chunks() >= 2, "burst spans multiple chunks");
         check_pool_invariants();
 
@@ -252,19 +252,19 @@ bool test_protect_burst_reserve() {
 
     if (clean) {
         check_eq(pool_chunks(), 1, "quiet pool retains exactly one chunk");
-        check_eq(vs::head_chunk()->capacity, 16384, "retained chunk is watermark-sized");
-        check_true(vs::head_chunk()->reserved, "retained chunk sits in the reserve");
-        check_eq(vs::reserved_slots(), 16384, "reserve accounting matches");
+        check_eq(vs::head_chunk->capacity, 16384, "retained chunk is watermark-sized");
+        check_true(vs::head_chunk->reserved, "retained chunk sits in the reserve");
+        check_eq(vs::reserved_slots, 16384, "reserve accounting matches");
 
         {
             r_sexp probe(safe[Rf_allocVector](INTSXP, 1));
             check_eq(pool_chunks(), 1, "probe reuses the reserved chunk, no allocation");
-            check_true(!vs::head_chunk()->reserved, "chunk leaves the reserve when used");
-            check_eq(vs::reserved_slots(), 0, "reserve accounting drops on reuse");
+            check_true(!vs::head_chunk->reserved, "chunk leaves the reserve when used");
+            check_eq(vs::reserved_slots, 0, "reserve accounting drops on reuse");
         }
 
         check_eq(pool_chunks(), 1, "sole chunk kept as scratchpad after the probe dies");
-        check_eq(vs::reserved_slots(), 0, "sole scratchpad is not re-reserved");
+        check_eq(vs::reserved_slots, 0, "sole scratchpad is not re-reserved");
         check_pool_invariants();
     }
 
