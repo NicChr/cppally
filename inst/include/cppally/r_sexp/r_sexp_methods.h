@@ -10,40 +10,42 @@ namespace cppally {
 
 namespace internal {
 
+inline bool attrs_identical(const r_sexp& a, const r_sexp& b) {
+    
+    r_vec<r_sexp> a_attrs = attr::get_attrs(a);
+    r_vec<r_sexp> b_attrs = attr::get_attrs(b);
+
+    if (internal::ptrs_identical(a_attrs, b_attrs)) return true;
+    if (a_attrs.length() != b_attrs.length()) return false;
+    if (!identical_impl(a_attrs.names(), b_attrs.names())) return false;
+
+    r_size_t n = a_attrs.length();
+
+    for (r_size_t i = 0; i < n; ++i){
+        if (!identical_impl(a_attrs.view(i), b_attrs.view(i))){
+            return false;
+        }
+    }
+    return true;
+}
+
 template <RVector T>
 inline bool identical_impl(const T& a, const T& b) {
+    
     if (internal::ptrs_identical(a, b)) return true; // same pointer
     if (a.length() != b.length()) return false;
-    
+
     bool x_has_attrs = attr::has_attrs(a);
     bool y_has_attrs = attr::has_attrs(b);
     if (x_has_attrs != y_has_attrs) return false;
-    
-    if (x_has_attrs && y_has_attrs){
-        r_vec<r_sexp> a_attrs = attr::get_attrs(a);
-        r_vec<r_sexp> b_attrs = attr::get_attrs(b);
-
-        if (a_attrs.length() != b_attrs.length()) return false;
-        if (!identical_impl(a_attrs.names(), b_attrs.names())) return false;
-
-        // Only do the rest of the attr checks if pointers do not match
-        if (unwrap(a_attrs) != unwrap(b_attrs)){
-            r_vec<r_str_view> names1 = a_attrs.names();
-            r_vec<r_str_view> names2 = b_attrs.names();
-            if (!identical_impl(names1, names2)) return false;
-
-            for (r_size_t i = 0; i < a_attrs.length(); ++i){
-                if (!identical_impl(a_attrs.view(i), b_attrs.view(i))) return false;
-            }
-        }
-    }
+    if (x_has_attrs && !attrs_identical(static_cast<r_sexp>(a), static_cast<r_sexp>(b))) return false;
 
     r_size_t n = a.length();
     for (r_size_t i = 0; i < n; ++i){
         if (!identical_impl(a.view(i), b.view(i))){
             return false;
         }
-    } 
+    }
     return true;
 }
 
