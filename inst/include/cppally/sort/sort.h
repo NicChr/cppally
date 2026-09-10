@@ -39,14 +39,14 @@ r_vec<r_int> order_cmp(const T& x, bool stable = true) {
     pv.iota();
     auto* RESTRICT p = pv.data();
 
+    auto cmp = [&x](int i, int j) noexcept {
+        return is_na(x.view(i)) ? false : !((x.view(i) < x.view(j)).is_false());
+    };
+
     if (stable){
-        std::stable_sort(p, p + n, [&x](int i, int j) noexcept {
-            return is_na(x.view(i)) ? false : !((x.view(i) < x.view(j)).is_false());
-        });
+        std::stable_sort(p, p + n, cmp);
     } else {
-        std::sort(p, p + n, [&x](int i, int j) noexcept {
-            return is_na(x.view(i)) ? false : !((x.view(i) < x.view(j)).is_false());
-        });
+        std::sort(p, p + n, cmp);
     }
     return pv;
 }
@@ -333,13 +333,10 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         // Low cardinality: strcmp sort is already trivial, and building keys would
         // be pure overhead. High cardinality: pack the first 8 bytes of each unique
         // big-endian so a plain uint64 compare reproduces strcmp's unsigned byte
-        // order, letting most comparisons skip the strcmp call (strcmp breaks ties)
-        if (n_uniques < 256) {
-            std::sort(sorted_ids.begin(), sorted_ids.end(), [&](uint32_t a, uint32_t b) {
-                return std::strcmp(CHAR(uniques[a]), CHAR(uniques[b])) < 0;
-            });
-        } else {
-            std::vector<uint64_t> prefix(n_uniques);
+        // order, letting most comparisons skip the strcmp call (strcmp breaks ties).
+        std::vector<uint64_t> prefix;
+        if (n_uniques >= 256) {
+            prefix.resize(n_uniques);
             for (uint32_t id = 0; id < n_uniques; ++id) {
                 const char* s = CHAR(uniques[id]);
                 uint64_t k = 0;
@@ -348,11 +345,13 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
                 }
                 prefix[id] = k;
             }
-            std::sort(sorted_ids.begin(), sorted_ids.end(), [&](uint32_t a, uint32_t b) {
-                if (prefix[a] != prefix[b]) { return prefix[a] < prefix[b]; }
-                return std::strcmp(CHAR(uniques[a]), CHAR(uniques[b])) < 0;
-            });
         }
+
+        const bool use_prefix = !prefix.empty();
+        std::sort(sorted_ids.begin(), sorted_ids.end(), [&](uint32_t a, uint32_t b) {
+            if (use_prefix && prefix[a] != prefix[b]) { return prefix[a] < prefix[b]; }
+            return std::strcmp(CHAR(uniques[a]), CHAR(uniques[b])) < 0;
+        });
         
         // Prefix Sums: calculate the starting write offset for each group
         std::vector<uint32_t> offsets(n_uniques);
