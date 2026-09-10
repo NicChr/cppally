@@ -71,7 +71,7 @@ r_int64 sum(const r_vec<T>& x, bool na_rm = false){
         internal::simd_reduce_add(x, [](auto v) noexcept { return is_na(v) ? 0 : static_cast<int_fast64_t>(unwrap(v)); }, res);
     } else {
 
-        r_size_t k = std::min(k, x.length());
+        r_size_t k = std::min(r_size_t(20), x.length());
 
         for (r_size_t i = 0; i < k; ++i){
             if (is_na(x.get(i))){
