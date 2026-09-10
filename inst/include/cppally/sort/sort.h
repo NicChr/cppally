@@ -16,6 +16,7 @@
 #include <cppally/hash/hash.h>
 #include <cppally/stats/stats.h>
 #include <cppally/unique/unique.h>
+#include <cppally/group/groups.h>
 #include <cstdint> // For uint32_t and similar
 #include <cstring> // For strcmp
 #include <vector> // For C++ vectors
@@ -491,6 +492,23 @@ T unique(const T& x, bool sort) {
 
 inline r_factors unique(const r_factors& x, bool sort) {
     return r_factors(unique(x.value, sort), x.levels(), false);
+}
+
+template <RVector T>
+inline groups make_groups(const T& x, bool ordered) {
+    if constexpr (RSortableType<typename T::data_type>){
+        if (ordered){
+            if (x.is_long()) [[unlikely]] {
+                abort("Cannot group a long-vector");
+            }
+            return internal::make_groups_from_order(x, order(x, /*preserve_ties = */ false));
+        }
+    }
+    return make_groups(x);
+}
+
+inline groups make_groups(const r_factors& x, bool ordered) {
+    return make_groups(x.value, ordered);
 }
 
 }

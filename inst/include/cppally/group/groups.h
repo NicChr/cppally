@@ -8,7 +8,6 @@
 #include <cppally/coerce.h>
 #include <cppally/hash/hash.h>
 #include <cppally/group/dense_int_map.h>
-#include <cppally/sort/sort.h>
 #include <cppally/random/random_stream.h>
 #include <cppally/identical.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
@@ -354,31 +353,18 @@ inline groups make_unordered_groups(const T& x) {
       return groups(group_ids, n_groups, false, ids_are_sorted(p_id, n));
 }
 
-template <RVector T>
-inline groups make_ordered_groups(const T& x) {
-    if constexpr (!RSortableType<typename T::data_type>){
-        return make_unordered_groups(x);
-    } else {
-        return make_groups_from_order(x, order(x, /*preserve_ties = */ false));
-    }
-}
-
 }
 
 template <RVector T>
-inline groups make_groups(const T& x, bool ordered = false) {
+inline groups make_groups(const T& x) {
     if (x.is_long()) [[unlikely]] {
         abort("Cannot group a long-vector");
     }
-    if (ordered){
-        return internal::make_ordered_groups(x);
-    } else {
-        return internal::make_unordered_groups(x);
-    }
+    return internal::make_unordered_groups(x);
 }
 
-inline groups make_groups(const r_factors& x, bool ordered = false) {
-    return make_groups(x.value, ordered);
+inline groups make_groups(const r_factors& x) {
+    return make_groups(x.value);
 }
 
 template <typename T>
