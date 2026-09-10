@@ -239,19 +239,10 @@ template <RVector T, typename U>
 inline uint64_t get_hash_map_reserve_size(const U *px, uint64_t data_size) {
 
     using data_t = typename T::data_type;
-    using primitive_t = unwrap_t<data_t>;
 
     // Logical vectors can only have at most 3 unique elements
     if constexpr (is<T, r_vec<r_lgl>>){
-        return 4;
-    }
-
-    // If the range of possible values is small then no need to sample, we can use that range as the estimate
-    if constexpr (CppIntegerType<primitive_t>){
-        constexpr uint64_t span = static_cast<uint64_t>(std::numeric_limits<primitive_t>::max()) - static_cast<uint64_t>(std::numeric_limits<primitive_t>::min());
-        if (span < 999u){
-            return std::min(data_size, span + 1u);
-        }
+        return 8;
     }
 
     // Just a guess (nothing informing this)
