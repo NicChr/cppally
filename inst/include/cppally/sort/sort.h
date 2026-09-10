@@ -15,6 +15,7 @@
 #include <cppally/vector/r_vector.h>
 #include <cppally/hash/hash.h>
 #include <cppally/stats/stats.h>
+#include <cppally/unique/unique.h>
 #include <cstdint> // For uint32_t and similar
 #include <cstring> // For strcmp
 #include <vector> // For C++ vectors
@@ -471,6 +472,25 @@ std::remove_cvref_t<T> sort(T&& x){
         }
     }
     return pmap_parallel_simd([&](r_int a){ return x.view(unwrap(a));}, std::move(o));
+}
+
+
+template <RVector T>
+T unique(const T& x, bool sort) {
+
+    T out = unique(x);
+
+    if constexpr (RSortableVector<T>) {
+        if (sort) {
+            // std::move out so sort() can sort it in-place
+            return cppally::sort(std::move(out));
+        }
+    }
+    return out;
+}
+
+inline r_factors unique(const r_factors& x, bool sort) {
+    return r_factors(unique(x.value, sort), x.levels(), false);
 }
 
 }

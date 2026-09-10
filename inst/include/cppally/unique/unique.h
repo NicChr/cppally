@@ -1,17 +1,16 @@
 #ifndef CPPALLY_R_UNIQUE_H
 #define CPPALLY_R_UNIQUE_H
 
-#include <cppally/length.h>
 #include <cppally/factor/r_factors.h>
-#include <cppally/group/groups.h>
-#include <cppally/sort/sort.h>
+#include <cppally/group/dense_int_map.h>
+#include <cppally/hash/hash.h>
 #include <cppally/vector/vector_ops.h>
-#include <cppally/sugar/subset.h>
+#include <ankerl/unordered_dense.h> // Hash maps for unique + duplicated
 
 namespace cppally {
 
 template <RVector T>
-T unique(const T& x, bool sort = false) {
+T unique(const T& x) {
 
   using data_t = typename T::data_type;
 
@@ -75,40 +74,60 @@ T unique(const T& x, bool sort = false) {
       out = std::move(res);
     }
   }
-
-  if constexpr (RSortableType<data_t>) {
-    if (sort) {
-      // std::move out so sort() sorts it in-place
-      return cppally::sort(std::move(out));
-    }
-  }
   return out;
 }
 
-inline r_factors unique(const r_factors& x, bool sort = false) {
-  return r_factors(unique(x.value, sort), x.levels(), false);
+inline r_factors unique(const r_factors& x) {
+  return r_factors(unique(x.value), x.levels(), false);
 }
 
-template <typename T>
-requires requires (const T& vec) { make_groups(vec); }
+template <RVector T>
 r_vec<r_lgl> duplicated(const T& x, bool all = false){
-  
-  groups g = make_groups(x);
 
-  if (all){
-    return subset(g.counts() > r_int(1), g.ids, /*invert=*/ false, /*check=*/ false);
-  } else {
-    r_vec<r_lgl> out(x.length(), r_true);
-    auto starts = g.starts();
-    r_size_t n_groups = g.n_groups;
+  using data_t = typename T::data_type;
 
-    // out[starts] = r_false
-    for (r_size_t i = 0; i < n_groups; ++i){
-      out.set(static_cast<r_size_t>(unwrap(starts.get(i))), r_false);
+  r_size_t n = x.length();
+  r_vec<r_lgl> out(n, r_false);
+
+  bool done = internal::try_dense_int_map(x, r_size_t(-1), [&out, &x, n, all](auto&& try_emplace, auto&&) {
+    for (r_size_t i = 0; i < n; ++i) {
+      auto [first, inserted] = try_emplace(x.view(i), i);
+      if (!inserted) {
+        out.set(i, r_true);
+        if (all) {
+          out.set(first, r_true);
+        }
+      }
     }
-    return out;
+  });
+
+  if (!done) {
+
+    ankerl::unordered_dense::map<
+      unwrap_t<data_t>,
+      r_size_t,
+      internal::r_hash_fn<data_t>,
+      internal::r_hash_eq<data_t>
+    > seen;
+
+    seen.reserve(internal::get_hash_map_reserve_size<T>(x.data(), n));
+
+    for (r_size_t i = 0; i < n; ++i) {
+      auto [it, inserted] = seen.try_emplace(x.view(i), i);
+      if (!inserted) {
+        out.set(i, r_true);
+        if (all) {
+          out.set(it->second, r_true);
+        }
+      }
+    }
   }
 
+  return out;
+}
+
+inline r_vec<r_lgl> duplicated(const r_factors& x, bool all = false){
+  return duplicated(x.value, all);
 }
 
 template <RVector T>
@@ -138,7 +157,6 @@ inline r_size_t n_unique(const T& x) {
 
   if (done) return n_unq;
 
-  // Hash set for O(n) de-duplication
   ankerl::unordered_dense::map<
     unwrap_t<data_t>,
     uint8_t,
