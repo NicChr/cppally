@@ -51,7 +51,7 @@ static void check_pool_invariants() {
             check_true(c->prev->next == c, "master chain back-links consistent");
         }
 
-        check_true(c->capacity >= 1024 && c->capacity <= 16384, "chunk capacity within bounds");
+        check_true(c->capacity >= vs::min_chunk_size && c->capacity <= vs::max_chunk_size, "chunk capacity within bounds");
         check_true(c->capacity <= vs::watermark_size(), "chunk capacity never exceeds the watermark");
         check_true(c->free_count >= 0 && c->free_count <= c->capacity, "free_count within bounds");
 
@@ -93,7 +93,7 @@ static void check_pool_invariants() {
     }
 
     check_eq(reserved_total, vs::reserved_slots(), "reserved_slots matches reserved chunk capacities");
-    check_true(reserved_total <= 16384, "reserve within its slot budget");
+    check_true(reserved_total <= vs::max_reserved_slots, "reserve within its slot budget");
 
     if (vs::free_list_head() != nullptr) {
         check_true(vs::free_list_head()->free_prev == nullptr, "free-list head has no back-link");

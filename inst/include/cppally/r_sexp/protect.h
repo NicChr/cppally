@@ -163,9 +163,10 @@ namespace vec_store {
 //
 // Two intrusive lists are threaded through `chunk`, both doubly linked so
 // every link/unlink is O(1):
-//   * `next`/`prev`           -- master allocation chain (every chunk ever
-//                                created). Used for diagnostics (count/print)
-//                                and for O(1) unlink in destroy_chunk.
+//   * `next`/`prev`           -- master allocation chain (every chunk that
+//                                currently exists; destroy_chunk unlinks).
+//                                Used for diagnostics (count/print) and for
+//                                O(1) unlink in destroy_chunk.
 //   * `free_next`/`free_prev` -- the "has free slots" list. A chunk is on
 //                                this list iff its free_count > 0. Insert
 //                                and release are O(1) on every path, hot or
@@ -174,7 +175,7 @@ namespace vec_store {
 //                                free list; when a previously-full chunk has
 //                                a slot released, it is pushed back on.
 //
-// New chunks double in capacity (256, 512, 1024, ...) up to `max_chunk_size`.
+// New chunks double in capacity from `min_chunk_size` up to `max_chunk_size`.
 // Crucially, growing the pool means *appending* a new chunk -- existing
 // chunks are never copied or moved, so all outstanding `slot_ref` tokens
 // remain valid forever
@@ -235,6 +236,9 @@ struct chunk {
     chunk* free_next;   // "has free slots" list, forward; nullptr if full
     chunk* free_prev;   // "has free slots" list, back; nullptr if full or head
     bool   reserved;    // entirely empty and counted in the retained reserve
+
+    bool is_full()  const noexcept { return free_count == 0; }
+    bool is_empty() const noexcept { return free_count == capacity; }
 };
 
 // Token returned by insert; opaque to callers other than `release`.
@@ -245,7 +249,7 @@ struct slot_ref {
 };
 
 // Singletons (one per shared library via `static` in inline functions).
-//   head_chunk     -- master chain of every chunk ever allocated
+//   head_chunk     -- master chain of every chunk that currently exists
 //   free_list_head -- head of the intrusive "has free slots" list
 //   watermark_size -- capacity of the largest chunk allocated so far
 //   reserved_slots -- total capacity of currently-retained empty chunks
@@ -254,21 +258,73 @@ inline chunk*& free_list_head() { static chunk* head = nullptr; return head; }
 inline int&    watermark_size() { static int n = 0; return n; }
 inline int&    reserved_slots() { static int n = 0; return n; }
 
+inline void master_push(chunk* c) noexcept {
+    c->prev = nullptr;
+    c->next = head_chunk();
+    if (c->next != nullptr) {
+        c->next->prev = c;
+    }
+    head_chunk() = c;
+}
+
+inline void master_unlink(chunk* c) noexcept {
+    if (c->prev != nullptr) {
+        c->prev->next = c->next;
+    } else {
+        head_chunk() = c->next;
+    }
+    if (c->next != nullptr) {
+        c->next->prev = c->prev;
+    }
+    c->next = nullptr;
+    c->prev = nullptr;
+}
+
+inline void free_push(chunk* c) noexcept {
+    c->free_prev = nullptr;
+    c->free_next = free_list_head();
+    if (c->free_next != nullptr) {
+        c->free_next->free_prev = c;
+    }
+    free_list_head() = c;
+}
+
+inline void free_unlink(chunk* c) noexcept {
+    if (c->free_prev != nullptr) {
+        c->free_prev->free_next = c->free_next;
+    } else {
+        free_list_head() = c->free_next;
+    }
+    if (c->free_next != nullptr) {
+        c->free_next->free_prev = c->free_prev;
+    }
+    c->free_next = nullptr;
+    c->free_prev = nullptr;
+}
+
+// Keep alive if the only chunk
+inline bool is_sole_chunk(const chunk* c) noexcept {
+    return head_chunk() == c && c->next == nullptr;
+}
+
+// Start at 1024 slots: skips two doublings of warmup so the first
+// ~thousand protections in any .Call doesn't trigger any growth, while
+// staying small enough that GC scan cost stays trivial when the chunk
+// is sparsely populated)
+inline constexpr int min_chunk_size     = 1024;
+inline constexpr int max_chunk_size     = 16384;
+inline constexpr int max_reserved_slots = 16384;  // Reserve slots for when all (except 1) slots are destroyed to avoid warmup
+
 // Allocate a new chunk and push it onto both the master chain and the
 // free list. Capacity doubles each time, capped at `max_chunk_size`. Caller
 // is responsible for protecting any SEXPs that must outlive this allocation.
 inline chunk* add_chunk() {
-    // Start at 1024 slots: skips two doublings of warmup so the first
-    // ~thousand protections in any .Call don't trigger any growth, while
-    // staying small enough that GC scan cost stays trivial when the chunk
-    // is sparsely populated)
-    constexpr int first_chunk_size = 1024;
-    constexpr int max_chunk_size   = 16384;
-    static int next_size = first_chunk_size;
+
+    static int next_size = min_chunk_size;
 
     int cap = next_size;
 
-    SEXP v = cppally::internal::unwind_protect([&]{
+    SEXP v = cppally::internal::unwind_protect([cap]{
         SEXP v_local = Rf_allocVector(VECSXP, cap);
         R_PreserveObject(v_local);
         return v_local;
@@ -284,21 +340,8 @@ inline chunk* add_chunk() {
         c->free_stack[i] = cap - 1 - i;
     }
 
-    // Link into master chain (doubly-linked for O(1) unlink in release).
-    c->prev = nullptr;
-    c->next = head_chunk();
-    if (c->next != nullptr) {
-        c->next->prev = c;
-    }
-    head_chunk() = c;
-
-    // Link into "has free slots" list (it's empty, so it definitely has free).
-    c->free_prev = nullptr;
-    c->free_next = free_list_head();
-    if (c->free_next != nullptr) {
-        c->free_next->free_prev = c;
-    }
-    free_list_head() = c;
+    master_push(c);
+    free_push(c);
 
     if (next_size < max_chunk_size) {
         next_size *= 2;
@@ -312,25 +355,8 @@ inline chunk* add_chunk() {
 // live slots, that it is on the free list (free_count > 0), and that it is
 // not the only chunk in existence.
 inline void destroy_chunk(chunk* c) noexcept {
-    // Unlink from master chain (doubly linked).
-    if (c->prev != nullptr) {
-        c->prev->next = c->next;
-    } else {
-        head_chunk() = c->next;
-    }
-    if (c->next != nullptr) {
-        c->next->prev = c->prev;
-    }
-
-    // Unlink from free list (also doubly linked -- O(1)).
-    if (c->free_prev != nullptr) {
-        c->free_prev->free_next = c->free_next;
-    } else {
-        free_list_head() = c->free_next;
-    }
-    if (c->free_next != nullptr) {
-        c->free_next->free_prev = c->free_prev;
-    }
+    master_unlink(c);
+    free_unlink(c);
 
     R_ReleaseObject(c->vec);
     delete[] c->free_stack;
@@ -343,6 +369,10 @@ inline slot_ref insert(SEXP x) {
         // Every chunk is full (or none exist). Allocate a new one.
         // Allocation may GC, so PROTECT x. This cold path runs only when
         // the pool needs a new chunk — effectively never after warmup.
+
+        // This can technically longjump (due to protection stack overflow) but should be almost impossible unless 
+        // the user is writing calling Rf_protect() many times themselves.
+        // As always, R C API usage is discouraged when using cppally, especially manual protection.
         Rf_protect(x);
         c = add_chunk();
         Rf_unprotect(1);
@@ -358,13 +388,8 @@ inline slot_ref insert(SEXP x) {
     }
 
     // If this chunk just became full, unlink it from the free list.
-    if (c->free_count == 0) [[unlikely]] {
-        free_list_head() = c->free_next;
-        if (c->free_next != nullptr) {
-            c->free_next->free_prev = nullptr;
-        }
-        c->free_next = nullptr;
-        c->free_prev = nullptr;
+    if (c->is_full()) [[unlikely]] {
+        free_unlink(c);
     }
 
     return {c, slot};
@@ -374,17 +399,12 @@ inline void release(slot_ref ref) noexcept {
     chunk* c = ref.c;
     SET_VECTOR_ELT(c->vec, ref.slot, R_NilValue);
 
-    bool was_full = (c->free_count == 0);
+    bool was_full = c->is_full();
     c->free_stack[c->free_count++] = ref.slot;
 
     // If the chunk was full, it wasn't on the free list -- put it back.
     if (was_full) [[unlikely]] {
-        c->free_prev = nullptr;
-        c->free_next = free_list_head();
-        if (c->free_next != nullptr) {
-            c->free_next->free_prev = c;
-        }
-        free_list_head() = c;
+        free_push(c);
     }
 
     // The chunk is now entirely empty. A sole chunk is always kept alive as
@@ -395,10 +415,9 @@ inline void release(slot_ref ref) noexcept {
     // reuses it with no R-side allocation), or free it back to R (stale
     // warmup size, budget full) so GC scan cost stays proportional to the
     // working set.
-    if (c->free_count == c->capacity && head_chunk() != nullptr &&
-        head_chunk()->next != nullptr) [[unlikely]] {
+    if (c->is_empty() && !is_sole_chunk(c)) [[unlikely]] {
         if (c->capacity == watermark_size() &&
-            (reserved_slots() + c->capacity) <= 16384) {
+            (reserved_slots() + c->capacity) <= max_reserved_slots) {
             c->reserved = true;
             reserved_slots() += c->capacity;
         } else {
