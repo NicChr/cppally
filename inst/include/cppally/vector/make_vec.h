@@ -43,10 +43,12 @@ inline r_vec<T> make_vec(Args... args) {
 
 namespace attr {
 
-template <typename... Args>
-inline void modify_attrs(r_sexp& x, Args&&... args) {
+template <RObject T, typename... Args>
+requires requires(T& x) { x.maybe_ensure_exclusive(); }
+inline void modify_attrs(T& x, Args&&... args) {
   r_vec<r_sexp> attrs = make_vec<r_sexp>(std::forward<Args>(args)...);
-  internal::modify_attrs_impl(x, attrs);
+  x.maybe_ensure_exclusive();
+  attr::impl::modify_attrs_impl(x, attrs);
 }
 
 }

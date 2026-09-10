@@ -17,6 +17,9 @@ inline r_vec<r_sexp> get_attrs(SEXP x);
 
 namespace impl {
 
+// All functions in impl assume SEXP is exclusive.
+// To ensure exclusivity before calling them, call `maybe_ensure_exclusive()`.
+
 inline void set_attr_impl(SEXP x, r_sym sym, SEXP value){
 
   safe[Rf_setAttrib](x, sym, value);
@@ -50,6 +53,34 @@ inline void clear_attrs_impl(SEXP x){
   }
   if (auto sp = internal::levels_cache().try_lookup(x)){
     sp->invalidate();
+  }
+}
+
+inline void modify_attrs_impl(SEXP x, const r_vec<r_sexp>& attrs) {
+
+  if (r_sexp(x, internal::view_tag{}).is_null()) [[unlikely]] {
+    abort("Cannot add attributes to `NULL`");
+  }
+
+  if (attrs.is_null()){
+    return;
+  }
+
+  r_vec<r_str_view> names = attrs.names();
+
+  if (names.is_null()) [[unlikely]] { 
+    abort("attributes must be a named list");
+  }
+
+  r_sym attr_nm;
+
+  int n = names.length();
+
+  for (int i = 0; i < n; ++i){
+    if ( (names.view(i) != cached_str<"">()).is_true() ) {
+      attr_nm = r_sym(names.view(i));
+      set_attr_impl(x, attr_nm, attrs.view(i));
+    }
   }
 }
 
@@ -133,47 +164,13 @@ inline void clear_attrs(T& x){
 
 }
 
-namespace internal {
-
-template <RObject T>
-requires requires(T& x) { x.maybe_ensure_exclusive(); }
-inline void modify_attrs_impl(T& x, const r_vec<r_sexp>& attrs) {
-
-  if (x.is_null()) [[unlikely]] {
-    abort("Cannot add attributes to `NULL`");
-  }
-
-  if (attrs.is_null()){
-    return;
-  }
-
-  r_vec<r_str_view> names = attrs.names();
-
-  if (names.is_null()) [[unlikely]] { 
-    abort("attributes must be a named list");
-  }
-
-  r_sym attr_nm;
-
-  int n = names.length();
-
-  for (int i = 0; i < n; ++i){
-    if ( (names.view(i) != cached_str<"">()).is_true() ) {
-      attr_nm = r_sym(names.view(i));
-      attr::set_attr(x, attr_nm, attrs.view(i));
-    }
-  }
-}
-
-}
-
 namespace attr {
 
 template <RObject T>
 requires requires(T& x) { x.maybe_ensure_exclusive(); }
 inline void set_attrs(T& x, const r_vec<r_sexp>& attrs){
   clear_attrs(x);
-  internal::modify_attrs_impl(x, attrs);
+  impl::modify_attrs_impl(x, attrs);
 }
 
 }
