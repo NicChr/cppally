@@ -2,14 +2,52 @@
 #define CPPALLY_RANDOM_STREAM_H
 
 #include <cppally/r_setup.h>
+#include <cppally/r_sexp/protect.h> // for abort
+#include <cppally/utils.h> // for exp2
 #include <R_ext/Random.h>
-#include <ankerl/unordered_dense.h> // wyhash::mum - portable 64x64 -> 128 multiply
 #include <Xoshiro-cpp/XoshiroCpp.hpp> // xoshiro256++ (Ryo Suzuki, MIT)
 #include <cmath>
+#include <cstdint>
+#if defined(_MSC_VER) && defined(_M_X64)
+#include <intrin.h> // _umul128
+#endif
 
 namespace cppally {
 
 namespace internal {
+
+// Taken from ankerl/unordered_dense.h
+// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2022 Martin Leitner-Ankerl <martin.ankerl@gmail.com>
+inline void mum(std::uint64_t* a, std::uint64_t* b) {
+#if defined(__SIZEOF_INT128__)
+  __uint128_t r = *a;
+  r *= *b;
+  *a = static_cast<std::uint64_t>(r);
+  *b = static_cast<std::uint64_t>(r >> 64U);
+#elif defined(_MSC_VER) && defined(_M_X64)
+  *a = _umul128(*a, *b, b);
+#else
+  std::uint64_t ha = *a >> 32U;
+  std::uint64_t hb = *b >> 32U;
+  std::uint64_t la = static_cast<std::uint32_t>(*a);
+  std::uint64_t lb = static_cast<std::uint32_t>(*b);
+  std::uint64_t hi{};
+  std::uint64_t lo{};
+  std::uint64_t rh = ha * hb;
+  std::uint64_t rm0 = ha * lb;
+  std::uint64_t rm1 = hb * la;
+  std::uint64_t rl = la * lb;
+  std::uint64_t t = rl + (rm0 << 32U);
+  auto c = static_cast<std::uint64_t>(t < rl);
+  lo = t + (rm1 << 32U);
+  c += static_cast<std::uint64_t>(lo < t);
+  hi = rh + (rm0 >> 32U) + (rm1 >> 32U) + c;
+  *a = lo;
+  *b = hi;
+#endif
+}
 
 struct rng_guard {
   rng_guard() { safe[GetRNGstate](); }
@@ -117,14 +155,14 @@ struct random_stream {
   
       uint64_t lo = engine_();
       uint64_t hi = range;
-      ankerl::unordered_dense::detail::wyhash::mum(&lo, &hi);
+      internal::mum(&lo, &hi);
   
       if (lo < range) {
           uint64_t threshold = (~range + 1) % range; // (2^64 - range) % range
           while (lo < threshold) {
               lo = engine_();
               hi = range;
-              ankerl::unordered_dense::detail::wyhash::mum(&lo, &hi);
+              internal::mum(&lo, &hi);
           }
       }
       return hi;
