@@ -101,38 +101,29 @@ inline constexpr r_int abs(r_lgl x) noexcept {
 
 template <RNumber T>
 constexpr T floor(T x) noexcept {
-  if constexpr (RIntegerNumber<T>){
-    return x;
-  } else {
-    return is_na(x) ? x : T{internal::floor2(unwrap(x))};
-  }
+  return is_na(x) ? x : T{internal::floor2(unwrap(x))};
 }
-inline constexpr r_int floor(r_lgl x) noexcept {
-  return r_int(unwrap(x));
+template <RIntegerType T>
+constexpr auto floor(T x) noexcept { 
+  return +x;
 }
 
 template <RNumber T>
 constexpr T ceiling(T x) noexcept {
-  if constexpr (RIntegerNumber<T>){
-    return x;
-  } else {
-    return is_na(x) ? x : T{internal::ceiling2(unwrap(x))};
-  }
+  return is_na(x) ? x : T{std::ceil(unwrap(x))};
 }
-inline constexpr r_int ceiling(r_lgl x) noexcept {
-  return r_int(unwrap(x));
+template <RIntegerType T>
+constexpr auto ceiling(T x) noexcept { 
+  return +x;
 }
 
 template <RNumber T>
 constexpr T trunc(T x) noexcept {
-  if constexpr (RIntegerNumber<T>){
-    return x;
-  } else {
-    return is_na(x) ? x : T{std::trunc(unwrap(x))};
-  }
+  return is_na(x) ? x : T{std::trunc(unwrap(x))};
 }
-inline constexpr r_int trunc(r_lgl x) noexcept {
-  return r_int(unwrap(x));
+template <RIntegerType T>
+constexpr auto trunc(T x) noexcept { 
+  return +x;
 }
 
 template <RMathType T>
@@ -141,7 +132,7 @@ constexpr r_int sign(T x) noexcept {
 }
 
 template <RMathType T>
-r_dbl sqrt(T x){
+r_dbl sqrt(T x) {
   return r_dbl(std::sqrt(unwrap(internal::coerce_number<r_dbl>(x))));
 }
 
@@ -210,22 +201,18 @@ r_dbl round(T x, U digits){
 
 template <RNumber T>
 T round(T x){
-  if constexpr (RIntegerNumber<T>){
+  if (is_na(x)){
+    return x;
+  } else if (internal::coerce_number<r_dbl>(x).is_infinite()){
     return x;
   } else {
-    if (is_na(x)){
-      return x;
-    } else if (internal::coerce_number<r_dbl>(x).is_infinite()){
-      return x;
-    } else {
-      return internal::coerce_number<T>(internal::round_to_even(x));
-    }
+    return internal::coerce_number<T>(internal::round_to_even(x));
   }
-
 }
 
-inline constexpr r_int round(r_lgl x){
-  return r_int(unwrap(x));
+template <RIntegerType T>
+auto round(T x){
+  return +x;
 }
 
 template <MathType T, MathType U>

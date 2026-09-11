@@ -125,30 +125,6 @@ constexpr double floor2(double x) noexcept {
   #endif
 }
 
-constexpr double ceiling2(double x) noexcept {
-
-  #if defined(__cpp_lib_constexpr_cmath) && __cpp_lib_constexpr_cmath >= 202202L
-    return std::ceil(x);
-  #else
-
-    if (!std::is_constant_evaluated()){
-      return std::ceil(x);
-    }
-
-    // If x is very large then it won't have a fractional part anyway
-    if (!numeric_can_be_cast_without_complete_loss<int64_t>(x)){
-      return x;
-    }
-
-    // If the round-trip from double -> int64_t -> double is lossless (i.e identity preserving), then it needs no flooring since it's a whole number
-    if (numeric_cast_is_lossless<int64_t>(x)){
-      return x;
-    }
-    int64_t int_res = x > 0 ? static_cast<int64_t>(x) + 1 : static_cast<int64_t>(x);
-    return static_cast<double>(int_res);
-  #endif
-}
-
 inline int calc_threads(r_size_t data_size){
     if (OMP_IN_PARALLEL){
       return 1;
