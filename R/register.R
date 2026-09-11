@@ -323,9 +323,9 @@ wrap_call_template <- function(name, return_type, args, template_params) {
   template_args_def <- paste(paste0("typename ", template_params), collapse = ", ")
 
   # Construct the lambda parameters (ALL args)
-  lambda_params <- glue::glue_collapse(glue::glue("SEXP {args$name}_internal"), ", ")
+  lambda_params <- glue::glue_collapse(glue::glue("SEXP {args$name}_sexp"), ", ")
 
-  conversions <- glue::glue("r_to_cpp<{args$type}>({args$name}_internal)")
+  conversions <- glue::glue("r_to_cpp<{args$type}>({args$name}_sexp)")
 
   # Only an lvalue-reference param needs a named lvalue to bind to, since `as<>()`
   # returns a prvalue. By-value and `&&` bind the prvalue directly, so they are
