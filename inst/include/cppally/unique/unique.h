@@ -4,7 +4,6 @@
 #include <cppally/factor/r_factors.h>
 #include <cppally/group/dense_int_map.h>
 #include <cppally/hash/hash.h>
-#include <cppally/vector/vector_ops.h>
 #include <ankerl/unordered_dense.h> // Hash maps for unique + duplicated
 
 namespace cppally {
