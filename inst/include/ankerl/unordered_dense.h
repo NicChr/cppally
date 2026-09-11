@@ -1695,6 +1695,9 @@ private:
         // unrolled loop. *Always* check a few directly, then enter the loop. This is faster.
         if (dist_and_fingerprint == bucket->m_dist_and_fingerprint && m_equal(key, get_key(m_values[bucket->m_value_idx]))) {
             return begin() + static_cast<difference_type>(bucket->m_value_idx);
+        // LOCAL_PATCH
+        } else if (dist_and_fingerprint > bucket->m_dist_and_fingerprint) {
+            return end();
         }
         dist_and_fingerprint = dist_inc(dist_and_fingerprint);
         bucket_idx = next(bucket_idx);
@@ -1702,6 +1705,9 @@ private:
 
         if (dist_and_fingerprint == bucket->m_dist_and_fingerprint && m_equal(key, get_key(m_values[bucket->m_value_idx]))) {
             return begin() + static_cast<difference_type>(bucket->m_value_idx);
+        // LOCAL_PATCH
+        } else if (dist_and_fingerprint > bucket->m_dist_and_fingerprint) {
+            return end();
         }
         dist_and_fingerprint = dist_inc(dist_and_fingerprint);
         bucket_idx = next(bucket_idx);
