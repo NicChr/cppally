@@ -6,7 +6,6 @@
 #include <cppally/identical.h>
 #include <cppally/vector/vector_names.h>
 #include <cppally/attributes/attributes.h>
-#include <cppally/functional/pmap.h>
 
 namespace cppally {
 
@@ -330,12 +329,14 @@ struct r_factors {
     r_factors new_lvls_fct(r_vec<r_int>(), new_levels);
 
     // For each of this factor's levels, find its position in new_levels
-    r_vec<r_int> remap = pmap(
-      /*fn = */ [&new_lvls_fct](const auto& lvl){
-        return new_lvls_fct.get_code(lvl); 
-      },
-      levels()
-    );
+    r_vec<r_str_view> lvls = levels();
+    r_size_t n_lvls = lvls.length();
+    r_vec<r_int> remap(n_lvls);
+
+    for (r_size_t i = 0; i < n_lvls; ++i){
+      remap.set(i, new_lvls_fct.get_code(lvls.view(i)));
+    }
+
     r_size_t n = length();
     r_vec<r_int> out(n);
     for (r_size_t i = 0; i < n; ++i){
