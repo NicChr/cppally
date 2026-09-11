@@ -273,3 +273,129 @@ inline uint64_t get_hash_map_reserve_size(const U *px, uint64_t data_size) {
 }
 
 #endif
+
+
+// template <
+//     typename key,
+//     typename storage,
+//     typename hash,
+//     typename comparator
+// >
+// inline uint64_t unique_count_estimate(const key *px, uint64_t data_size){
+    
+//     if (data_size == 0){
+//         return 0;
+//     }
+
+//     uint64_t sample_size = static_cast<uint64_t>(std::sqrt(2.0 * data_size)) + 1u;
+
+//     // Setup RNG engine using custom seed
+//     random_stream rs(mix_u64(data_size));
+
+//     ankerl::unordered_dense::map<key, storage, hash, comparator> counts;
+//     counts.reserve(sample_size);
+
+//     uint64_t f1 = 0;
+//     uint64_t f2 = 0;
+//     uint64_t f3 = 0;
+
+//     for (uint64_t i = 0; i < sample_size; ++i) {
+
+//         r_size_t sample_pick = rs.index(0, static_cast<r_size_t>(data_size) - 1);
+//         storage& count = counts[px[sample_pick]];
+//         ++count;
+
+//         if (count == 1) {
+//             // Increase number of singletons by 1
+//             ++f1;
+//         } else if (count == 2) {
+//             // Increase number of doubletons by 1
+//             // Since this is a doubleton, we decrease the singleton count by 1
+//             --f1;
+//             ++f2;
+//         } else if (count == 3) {
+//             // Increase number of tripletons by 1
+//             // Decrease count of doubletons by 1
+//             --f2;
+//             ++f3;
+//         } else if (count == 4){
+//             // Appears more than 3 times, hence decrease tripleton count by 1
+//             --f3;
+//         }
+//     }
+
+//     uint64_t est = counts.size();
+
+//     // chao1 estimator formula
+//     // chao1 = n_obs + ( (f1) * (f1-1) ) / ( 2 * (f2+1) )
+//     //
+//     // Lanumteang & Bohning extension
+//     // Extended chao1 estimator formula
+//     // chao1_ext = n_obs + ( (3f1f3) / (2f2^2) ) * ( (f1^2) / (2f2) ) = n_obs + ( (3f1^3f3) / (4f2^3) )
+
+//     double chao1 = f1 > 1
+//         ? static_cast<double>(f1 * (f1 - 1)) / static_cast<double>(2 * (f2 + 1))
+//         : 0.0;
+
+//     if (f2 > 5 && f3 > 5) {
+//         double lb = (3.0 * f1 * f1 * f1 * f3) / (4.0 * f2 * f2 * f2);
+//         est += static_cast<uint64_t>(std::min(lb, 4.0 * chao1));
+//     } else {
+//         est += static_cast<uint64_t>(chao1);
+//     }
+
+//     return std::min(est, data_size);
+// }
+
+// // Don't sample below this data size threshold
+// inline constexpr uint64_t cardinality_sampling_threshold = static_cast<uint64_t>(internal::exp2<double>(16));
+
+// template <RVector T, typename U>
+// inline uint64_t get_cardinality_estimate(const U *px, uint64_t data_size) {
+
+//     // Logical vectors hold at most TRUE, FALSE and NA
+//     if constexpr (is<T, r_vec<r_lgl>>){
+//         return std::min<uint64_t>(data_size, 8);
+//     } else {
+
+//         using data_t = typename T::data_type;
+
+//         // Just a guess (nothing informing this)
+//         if (data_size < cardinality_sampling_threshold){
+//             return data_size / 4;
+//         }
+
+//         return unique_count_estimate<U, uint32_t, r_hash_fn<data_t>, r_hash_eq<data_t>>(px, data_size);
+//     }
+// }
+
+// inline constexpr uint64_t hash_map_alpha_inv = 1;
+
+// // Number of entries to size the bucket array for.
+// inline uint64_t hash_map_bucket_target(uint64_t cardinality_est, uint64_t data_size) {
+//     if (data_size < cardinality_sampling_threshold){
+//         return cardinality_est;
+//     }
+//     return std::min(2 * data_size, hash_map_alpha_inv * cardinality_est);
+// }
+
+// // bucket size load factor
+// // dense value storage stays at the estimate
+// inline float hash_map_load_factor(float default_load, uint64_t cardinality_est, uint64_t data_size) {
+//     uint64_t bucket_target = hash_map_bucket_target(cardinality_est, data_size);
+//     if (bucket_target <= cardinality_est){
+//         return default_load;
+//     }
+//     return default_load * static_cast<float>(
+//         static_cast<double>(cardinality_est) / static_cast<double>(bucket_target)
+//     );
+// }
+
+// // Size an empty map. widening goes through load factor rather than reserving the target immediately.
+// template <typename map_type>
+// inline void reserve_hash_map(map_type& map, uint64_t cardinality_est, uint64_t data_size) {
+//     float default_load = map.max_load_factor();
+//     map.max_load_factor(hash_map_load_factor(default_load, cardinality_est, data_size));
+//     map.reserve(cardinality_est);
+//     map.max_load_factor(default_load); // Growth past the estimate returns to the default
+// }
