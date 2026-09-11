@@ -249,6 +249,14 @@ R C API tag `attribute_hidden`.
 
 - `r_vec<>` gains an `initializer_list` constructor.
 
+- Auto-generated C++ code for R function registration now uses a 
+tidier naming convention for generated lambda arguments in 
+registered template functions. 
+Previously "_internal" was appended to each arg. Now "_sexp" is appended, reducing
+visual bloat and conveying a more accurate meaning. This should have no backwards
+compatibility consequences as it simply renames the auto-generated lambda 
+argument names on re-registration.
+
 ## Other new features
 
 - New function `scalar_coerce`. Use this with 
