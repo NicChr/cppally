@@ -117,7 +117,7 @@ constexpr bool any_arithmetic_na(T x, U y) noexcept {
 }
 
 // Generic safe coercion to RNumber
-template <RNumber T, RMathType U>
+template <RNumber T, MathType U>
 constexpr T coerce_number(U x) noexcept {
 
   using unwrapped_from_t = unwrap_t<U>;
@@ -126,7 +126,7 @@ constexpr T coerce_number(U x) noexcept {
   if constexpr (is<unwrapped_from_t, unwrapped_to_t>){
     return T(unwrap(x));
   } else {
-    return x.is_na() || !numeric_can_be_cast_without_complete_loss<unwrapped_to_t>(unwrap(x)) ? std::remove_cvref_t<T>::na() : T(static_cast<unwrapped_to_t>(unwrap(x)));
+    return as_r_scalar_t<U>(x).is_na() || !numeric_can_be_cast_without_complete_loss<unwrapped_to_t>(unwrap(x)) ? std::remove_cvref_t<T>::na() : T(static_cast<unwrapped_to_t>(unwrap(x)));
   }
 }
 

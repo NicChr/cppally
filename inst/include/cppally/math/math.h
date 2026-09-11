@@ -140,8 +140,8 @@ template <MathType T, MathType U>
   requires (RMathType<T> || RMathType<U>)
 r_dbl pow(T x, U y){
 
-  r_dbl x_ = internal::coerce_number<r_dbl>(as_r_scalar_t<T>(x));
-  r_dbl y_ = internal::coerce_number<r_dbl>(as_r_scalar_t<U>(y));
+  r_dbl x_ = internal::coerce_number<r_dbl>(x);
+  r_dbl y_ = internal::coerce_number<r_dbl>(y);
 
   if (unwrap(y_) == 0.0){
      return r_dbl(1.0);
@@ -163,27 +163,25 @@ r_dbl log10(T x){
 
 template <RMathType T>
 r_dbl exp(T x){
-  return r_dbl(std::exp(internal::coerce_number<r_dbl>(x).value));
+  return r_dbl(std::exp(internal::coerce_number<r_dbl>(x)));
 }
 
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>)
 r_dbl log(T x, U base){
-  using x_r_type = as_r_scalar_t<T>;
-  using base_r_type = as_r_scalar_t<U>;
-  return r_dbl(std::log(internal::coerce_number<r_dbl>(x_r_type(x))) / std::log(internal::coerce_number<r_dbl>(base_r_type(base))));
+  return r_dbl(std::log(internal::coerce_number<r_dbl>(x)) / std::log(internal::coerce_number<r_dbl>(base)));
 }
 template <RMathType T>
 r_dbl log(T x){
-  return r_dbl(std::log(internal::coerce_number<r_dbl>(x).value));
+  return r_dbl(std::log(internal::coerce_number<r_dbl>(x)));
 }
 
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>)
 r_dbl round(T x, U digits){
 
-  r_dbl x_ = internal::coerce_number<r_dbl>(as_r_scalar_t<T>(x));
-  r_dbl digits_ = internal::coerce_number<r_dbl>(as_r_scalar_t<U>(digits));
+  r_dbl x_ = internal::coerce_number<r_dbl>(x);
+  r_dbl digits_ = internal::coerce_number<r_dbl>(digits);
 
   if (is_na(x_)){
     return x_;
@@ -219,8 +217,8 @@ template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>)
 r_dbl signif(T x, U digits){
 
-  r_dbl x_ = internal::coerce_number<r_dbl>(as_r_scalar_t<T>(x));
-  r_dbl digits_ = internal::coerce_number<r_dbl>(as_r_scalar_t<U>(digits));
+  r_dbl x_ = internal::coerce_number<r_dbl>(x);
+  r_dbl digits_ = internal::coerce_number<r_dbl>(digits);
   r_dbl new_digits = max(1, digits_);
 
   if (is_na(x_)){
