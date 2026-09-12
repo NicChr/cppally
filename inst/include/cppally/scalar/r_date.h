@@ -450,22 +450,9 @@ inline constexpr r_dbl diff_days(r_date x, r_date y, r_dbl n) noexcept {
     return diff_days(x, y) / n;
 }
 
-// Number of n-month periods between two dates
-inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl n = r_dbl(1.0), bool fractional = true, roll on_impossible_date = roll::none) noexcept {
+inline constexpr r_dbl diff_months(r_date x, r_date y, bool fractional = true, roll on_impossible_date = roll::none) noexcept {
 
-    if (n.is_na()){
-        return r_dbl::na();
-    }
-    
     if (!x.days_since_epoch().is_finite() || !y.days_since_epoch().is_finite()){
-        return r_dbl::na();
-    }
-
-    if (n.is_infinite()){
-        return r_dbl(0.0);
-    }
-
-    if (unwrap(n) == 0){
         return r_dbl::na();
     }
 
@@ -487,26 +474,22 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl n = r_dbl(1.0), boo
         ? whole_months - r_int(static_cast<int>(unwrap(emd) < unwrap(smd)))
         : whole_months + r_int(static_cast<int>(unwrap(emd) > unwrap(smd)));
 
-    r_dbl q = whole_months / n;
-    whole_months = internal::coerce_number<r_int>(q);
     r_dbl out = internal::coerce_number<r_dbl>(whole_months);
 
     if (!fractional){
         return out;
     }
 
-    r_dbl months_add = whole_months * n;
-    r_date small_int_start = x.add<"months">(months_add, on_impossible_date);
+    r_date small_int_start = x.add<"months">(out, on_impossible_date);
 
     if (static_cast<double>(y) == static_cast<double>(small_int_start)){
         return out;
     }
 
-    bool forward = l2r == (unwrap(n) > 0);
-    r_date big_int_end = x.add<"months">(months_add + (forward ? n : -n), on_impossible_date);
+    r_date big_int_end = x.add<"months">(out + (l2r ? r_dbl(1.0) : r_dbl(-1.0)), on_impossible_date);
     r_dbl ratio = diff_days(small_int_start, y) / diff_days(small_int_start, big_int_end);
 
-    return forward ? out + ratio : out - ratio;
+    return l2r ? out + ratio : out - ratio;
 }
 
 }
@@ -524,11 +507,11 @@ inline constexpr r_dbl time_diff(r_date x, r_date y, N n = 1.0, roll on_impossib
 
     if constexpr (unit == "years") {
 
-        return internal::diff_months(x, y, n_blocks * 12.0, true, on_impossible_date);
+        return internal::diff_months(x, y, true, on_impossible_date) / (n_blocks * 12.0);
 
     } else if constexpr (unit == "months") {
 
-        return internal::diff_months(x, y, n_blocks, true, on_impossible_date);
+        return internal::diff_months(x, y, true, on_impossible_date) / n_blocks;
 
     } else if constexpr (unit == "weeks"){
 
