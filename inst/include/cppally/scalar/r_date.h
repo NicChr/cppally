@@ -227,7 +227,7 @@ struct r_date {
 
     public:
 
-    template <string_literal Unit, typename N> 
+    template <string_literal Unit, Number N> 
     constexpr r_date add(N n, roll on_impossible_date = roll::none) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
@@ -511,7 +511,7 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl n = r_dbl(1.0), boo
 
 }
 
-template <string_literal Unit, MathType N>
+template <string_literal Unit, Number N>
 inline constexpr r_dbl time_diff(r_date x, r_date y, N n = 1, roll on_impossible_date = roll::none) noexcept {
 
     constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
