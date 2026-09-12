@@ -479,10 +479,11 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl n = r_dbl(1.0), b
         return out;
     }
 
-    r_psxct big_int_end = x.add<"months">(months_add + (unwrap(y) >= unwrap(x) ? n : -n), on_impossible_date);
-    r_dbl fraction = diff_seconds(small_int_start, y) / r_dbl(internal::abs2(unwrap(diff_seconds(small_int_start, big_int_end))));
+    bool forward = (unwrap(y) >= unwrap(x)) == (unwrap(n) > 0);
+    r_psxct big_int_end = x.add<"months">(months_add + (forward ? n : -n), on_impossible_date);
+    r_dbl ratio = diff_seconds(small_int_start, y) / diff_seconds(small_int_start, big_int_end);
 
-    return out + fraction;
+    return forward ? out + ratio : out - ratio;
 }
 
 }
