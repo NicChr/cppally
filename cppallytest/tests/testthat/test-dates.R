@@ -36,3 +36,15 @@ test_that("Date-time rounding", {
 test_that("Date and date-time edge cases", {
   expect_no_error(test_date_edge_cases())
 })
+
+test_that("time_diff units", {
+  expect_no_error(test_time_diff_units())
+})
+
+test_that("time_diff signs and mirroring", {
+  expect_no_error(test_time_diff_signs())
+})
+
+test_that("time_diff round-trips through add", {
+  expect_no_error(test_time_diff_round_trip())
+})
