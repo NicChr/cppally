@@ -168,10 +168,18 @@ struct cursor {
 
 }
 
+
+template <RVal T>
+bool lag_exists(const internal::cursor<T>& c, r_size_t k = 1) noexcept {
+  return !c.oob(c.i - k);
+}
+template <RVal T>
+bool lead_exists(const internal::cursor<T>& c, r_size_t k = 1) noexcept {
+  return lag_exists(c, -k);
+}
 template <RVal T>
 T lag(const internal::cursor<T>& c, r_size_t k = 1, const T& default_value = na<T>()) {
-  r_size_t idx = c.i - k;
-  return c.oob(idx) ? default_value : c.src->view(idx);
+  return lag_exists(c, k) ? c.src->view(c.i - k) : default_value;
 }
 template <RVal T>
 T lead(const internal::cursor<T>& c, r_size_t k = 1, const T& default_value = na<T>()) {
