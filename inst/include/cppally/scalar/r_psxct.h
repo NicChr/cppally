@@ -465,7 +465,7 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, bool fractional = true,
 
     r_dbl out = diff_months(x.as_date(), y.as_date(), false, on_impossible_date);
 
-    if (out.is_na() || !fractional){
+    if (out.is_na()){
         return out;
     }
 
@@ -473,7 +473,13 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, bool fractional = true,
 
     r_psxct small_int_start = x.add<"months">(out, on_impossible_date);
 
-    if (static_cast<double>(y) == static_cast<double>(small_int_start)){
+    // If we have overshot, adjust by 1 month
+    if (l2r ? unwrap(small_int_start) > unwrap(y) : unwrap(small_int_start) < unwrap(y)){
+        out = l2r ? out - r_dbl(1.0) : out + r_dbl(1.0);
+        small_int_start = x.add<"months">(out, on_impossible_date);
+    }
+
+    if (!fractional || static_cast<double>(y) == static_cast<double>(small_int_start)){
         return out;
     }
 
