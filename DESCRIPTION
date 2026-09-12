@@ -38,6 +38,7 @@ Suggests:
     fs,
     glue,
     knitr,
+    pkgbuild,
     pkgload,
     purrr,
     readr,
