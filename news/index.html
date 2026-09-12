@@ -20,6 +20,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/functionals.html">Functional Programming with cppally</a></li>
+    <li><a class="dropdown-item" href="../articles/lists.html">Working with lists</a></li>
     <li><a class="dropdown-item" href="../articles/protection.html">Automatic Protection</a></li>
     <li><a class="dropdown-item" href="../articles/random.html">Random number generation</a></li>
     <li><a class="dropdown-item" href="../articles/vector_name_hashing.html">Vector Names Hashing</a></li>
@@ -131,6 +132,7 @@
 <li><p>Algorithms that utilise hashing should now see speed improvements for strings in particular, as SEXP type checking is now skipped for hashing specifically.</p></li>
 <li><p><code><a href="../reference/use_cppally.html">use_cppally()</a></code> now includes the “$(CXX_VISIBILITY)” Makevars flag, making dll symbol visibility hidden by default. This should have no effect on code written with cppally, though it may slightly improve compilation time. R/C++ registered functions are now registered with the R C API tag <code>attribute_hidden</code>.</p></li>
 <li><p><code>r_vec&lt;&gt;</code> gains an <code>initializer_list</code> constructor.</p></li>
+<li><p>Auto-generated C++ code for R function registration now uses a tidier naming convention for generated lambda arguments in registered template functions. Previously “_internal” was appended to each arg. Now “_sexp” is appended, reducing visual bloat and conveying a more accurate meaning. This should have no backwards compatibility consequences as it simply renames the auto-generated lambda argument names on re-registration.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="other-new-features-development-version">Other new features<a class="anchor" aria-label="anchor" href="#other-new-features-development-version"></a></h3>

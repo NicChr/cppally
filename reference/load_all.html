@@ -20,6 +20,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/functionals.html">Functional Programming with cppally</a></li>
+    <li><a class="dropdown-item" href="../articles/lists.html">Working with lists</a></li>
     <li><a class="dropdown-item" href="../articles/protection.html">Automatic Protection</a></li>
     <li><a class="dropdown-item" href="../articles/random.html">Random number generation</a></li>
     <li><a class="dropdown-item" href="../articles/vector_name_hashing.html">Vector Names Hashing</a></li>
@@ -51,6 +52,7 @@
 <span>  path <span class="op">=</span> <span class="st">"."</span>,</span>
 <span>  debug <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  cppally_header <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cppally.hpp"</span>, <span class="st">"cppally_light.hpp"</span><span class="op">)</span>,</span>
+<span>  compile <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -73,6 +75,10 @@ Default is <code>FALSE</code> which builds with optimisations.</p></dd>
 included with the registered C++ code? The default is the full library
 "cppally.hpp". Choose "cppally_light.hpp" for the lighter header, which may
 provide quicker compile times, at the cost of less features.</p></dd>
+
+
+<dt id="arg-compile">compile<a class="anchor" aria-label="anchor" href="#arg-compile"></a></dt>
+<dd><p>See <code><a href="https://pkgload.r-lib.org/reference/load_all.html" class="external-link">?pkgload::load_all</a></code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

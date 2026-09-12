@@ -1,0 +1,407 @@
+# Working with lists
+
+Lists are R’s generic vector class, capable of holding any object. Every
+other vector holds elements of a single known type, but a list can hold
+anything — including other lists. This vignette explains how cppally
+represents lists, why that representation falls naturally out of the
+type system, and how to bridge the gap between R’s dynamically typed
+lists and C++’s statically typed world.
+
+``` r
+
+library(cppally)
+```
+
+## Everything is a SEXP
+
+In R’s C API, every R object — an integer vector, a list, a function, an
+environment, even `NULL` — is represented by a single C type: `SEXP`. A
+`SEXP` is a pointer to R’s internal object representation, and the
+actual type of the object it points to is stored inside the object
+itself, discovered at runtime with `TYPEOF()`.
+
+In other words, a `SEXP` is dynamically typed, just like R. This is what
+makes it so flexible: any C function that accepts a `SEXP` can, in
+principle, accept any R object. The flip side is that a raw `SEXP`
+offers no compile-time guarantees about what it holds, and any `SEXP`
+you allocate must be manually protected from R’s garbage collector.
+
+## cppally’s `r_sexp`
+
+`r_sexp` is cppally’s answer to the raw `SEXP`: a thin wrapper that
+keeps all of the flexibility while removing the manual protection
+burden. When you construct an `r_sexp` from a `SEXP`, the object is
+automatically inserted into cppally’s protection pool and released again
+when the last `r_sexp` pointing to it is destroyed. Copies are
+reference-counted and practically free. See
+[`vignette("protection")`](https://nicchr.github.io/cppally/articles/protection.md)
+for the details and benchmarks of this design.
+
+Crucially, `r_sexp` inherits the dynamic nature of `SEXP`: an `r_sexp`
+can hold any R object. It also converts implicitly back to `SEXP`, so it
+can be passed anywhere a `SEXP` is expected.
+
+## Fixed scalar and vector types
+
+Most of cppally lives at the opposite end of the spectrum. The scalar
+types (`r_lgl`, `r_int`, `r_dbl`, `r_str`, and friends) and the vector
+template `r_vec<T>` are statically typed: the element type is fixed at
+compile time. This is what you want most of the time — a signature like
+
+``` cpp
+r_dbl cpp_sum(r_vec<r_dbl> x)
+```
+
+documents exactly what the function accepts, lets the compiler generate
+fast type-specific code, and turns type mistakes into compile-time
+errors rather than runtime surprises.
+
+## Lists are generic vectors
+
+So where do lists fit in? At the C level, a list is a *generic vector*
+(`VECSXP`): a vector whose elements are themselves `SEXP`s. Each element
+can be any R object, so no fixed C++ element type can describe a list’s
+contents — except the one type designed to hold any R object: `r_sexp`.
+
+This is exactly how cppally represents lists. There is no separate list
+class; a list is simply
+
+``` cpp
+r_vec<r_sexp>
+```
+
+a vector whose elements are dynamically typed handles. All the usual
+`r_vec` machinery applies, including initialisation with `r_vec<T>(n)`:
+
+``` cpp
+
+[[cppally::register]]
+r_vec<r_sexp> new_list(int n){
+  return r_vec<r_sexp>(n);
+}
+```
+
+``` r
+
+new_list(3)
+#> [[1]]
+#> NULL
+#> 
+#> [[2]]
+#> NULL
+#> 
+#> [[3]]
+#> NULL
+```
+
+You can also use an alias, such as `list`, for stylistic preference.
+
+``` cpp
+using list = r_vec<r_sexp>;
+
+[[cppally::register]]
+list new_list(int n){
+  return list(n);
+}
+```
+
+Just note that a `list` alias will clash with `std::list` if you also
+have `using namespace std;` in the same translation unit.
+
+## Bridging the gap with `r_sexp_visit()`
+
+Building lists is the easy part. The moment you pull an element back
+*out* of a list, you are handed an `r_sexp` — a dynamically typed handle
+— and the statically typed world has no idea what to do with it. You
+cannot sum it, compare its elements or check them for `NA`, because none
+of those operations make sense until the concrete type is known.
+
+The concrete type *is* known — but only at runtime, inside the object.
+What we need is a mechanism that inspects the runtime type and hands us
+back the matching statically typed wrapper. That mechanism is
+`r_sexp_visit()`:
+
+``` cpp
+r_sexp_visit(x, []<typename T>(const T& v){
+  // `v` is a concrete typed wrapper of type `T`, e.g. r_vec<r_int> or r_vec<r_str>
+});
+```
+
+You pass an `r_sexp` and a generic function (typically a template
+lambda). `r_sexp_visit()` checks the runtime type of the underlying
+object and invokes your function with the corresponding cppally wrapper
+— `r_vec<r_lgl>`, `r_vec<r_int>`, `r_vec<r_dbl>`, `r_vec<r_str>`, and so
+on, including `r_vec<r_sexp>` itself for nested lists, and `r_factors`
+or `r_df` for factors and data frames.
+
+The concept on the lambda’s template parameter constrains which types
+your visitor accepts.
+
+``` cpp
+r_sexp_visit(x, []<RVector T>(const T& v){
+  // Try visit `x` as an RVector
+});
+```
+
+If the object’s runtime type is not one the visitor accepts,
+`r_sexp_visit()` aborts with an error at runtime — the dynamic world’s
+version of a compile-time type error.
+
+Here is the classic first example, an implementation of R’s
+[`lengths()`](https://rdrr.io/r/base/lengths.html):
+
+``` cpp
+
+[[cppally::register]]
+r_vec<r_int> list_lengths(r_vec<r_sexp> x){
+  r_size_t n = x.length();
+  r_vec<r_int> out(n);
+  for (r_size_t i = 0; i < n; ++i){
+  
+    r_sexp list_elem = x.get(i);
+    
+    r_int elem_length = r_sexp_visit(list_elem, []<RVector V>(const V& v){
+      return as<r_int>(v.length());
+    });
+    
+    out.set(i, elem_length);
+
+  }
+  return out;
+}
+```
+
+``` r
+
+list_lengths(list(1:10, letters, NULL, list("a", 1)))
+#> [1] 10 26  0  2
+```
+
+For each element we visit its concrete type and ask for its length. The
+visitor is instantiated once per possible wrapper type at compile time,
+so inside the lambda you get full static typing — the dynamic dispatch
+happens exactly once, at the visit itself.
+
+Since we constrained on `RVector`, visited types must satisfy that and
+can’t be for example, a data frame.
+
+``` r
+
+list_lengths(list(data.frame(x = 1:3)))
+#> Error:
+#> ! r_sexp visitor cannot accept the value's type: r_df
+#> Accepted types that satisfy the constraints: r_vec<r_lgl>, r_vec<r_int>, r_vec<r_int64>, r_vec<r_dbl>, r_vec<r_str>, r_vec<r_sexp>, r_vec<r_cplx>, r_vec<r_raw>, r_vec<r_date>, r_vec<r_psxct>
+```
+
+`r_sexp_visit()` also has a mutating sibling, `r_sexp_mutate()`, which
+the next section covers.
+
+## Modifying in place with `r_sexp_mutate()`
+
+`r_sexp_mutate()` hands your visitor a *mutable* typed wrapper, and any
+modification the visitor makes lands back in the `r_sexp` you passed in.
+Note the signature: it takes its argument by `r_sexp&`, not
+`const r_sexp&`, because under the hood it moves the object into the
+typed wrapper, runs your visitor on it, and then writes the wrapper’s
+(possibly replaced) `SEXP` back out.
+
+A visitor doesn’t have to be a template, either. A plain lambda taking
+exactly one wrapper type is a perfectly good visitor — it simply
+constrains the accepted types to that single type:
+
+``` cpp
+
+[[cppally::register]]
+r_sexp times_two(r_sexp x){
+  r_sexp_mutate(x, [](r_vec<r_dbl>& v){
+    r_size_t n = v.length();
+    for (r_size_t i = 0; i < n; ++i){
+      v.set(i, v.get(i) * 2);
+    }
+  });
+  return x;
+}
+```
+
+``` r
+
+times_two(c(1.5, 2.5, 3.5))
+#> [1] 3 5 7
+```
+
+Any other type is rejected, and the error message tells us exactly what
+this visitor is prepared to accept:
+
+``` r
+
+times_two(letters)
+#> Error:
+#> ! r_sexp visitor cannot accept the value's type: r_vec<r_str>
+#> Accepted types that satisfy the constraints: r_vec<r_dbl>
+```
+
+Applied to lists, `r_sexp_mutate()` lets us modify each element of a
+list in turn:
+
+``` cpp
+
+[[cppally::register]]
+r_vec<r_sexp> list_times_two(r_vec<r_sexp> x){
+  r_size_t n = x.length();
+  for (r_size_t i = 0; i < n; ++i){
+
+    r_sexp elem = x.get(i);
+
+    r_sexp_mutate(elem, [](r_vec<r_dbl>& v){
+      r_size_t m = v.length();
+      for (r_size_t j = 0; j < m; ++j){
+        v.set(j, v.get(j) * 2);
+      }
+    });
+
+    x.set(i, elem);
+
+  }
+  return x;
+}
+```
+
+``` r
+
+list_times_two(list(c(1.5, 2.5), c(30, 40)))
+#> [[1]]
+#> [1] 3 5
+#> 
+#> [[2]]
+#> [1] 60 80
+```
+
+Note the pull-out / mutate / write-back rhythm: we
+[`get()`](https://rdrr.io/r/base/get.html) the element, mutate it, then
+`set()` it back into the list. The write-back matters —
+`r_sexp_mutate()` is allowed to *replace* the element’s underlying
+`SEXP` rather than modify it (for instance when the object is shared and
+must be duplicated first to preserve R’s copy-on-modify semantics), and
+the final `set()` is what makes the list point at the result.
+
+## Writing methods that work on `r_sexp`
+
+cppally ships a family of free functions that work on any cppally type —
+[`length()`](https://rdrr.io/r/base/length.html),
+[`rep_len()`](https://rdrr.io/r/base/rep.html),
+[`rep()`](https://rdrr.io/r/base/rep.html),
+[`subset()`](https://rdrr.io/r/base/subset.html),
+[`order()`](https://bit64.r-lib.org/reference/bit64S3.html),
+`n_unique()` and friends. Each follows the same two-part pattern: a set
+of typed overloads that do the real work, plus an `r_sexp` overload that
+recovers the concrete type and forwards. Here is the essence of
+[`length()`](https://rdrr.io/r/base/length.html), simplified:
+
+``` cpp
+// Typed: one template covers every vector
+template <RVector T>
+r_size_t length(const T& x){
+  return x.length();
+}
+
+// Dynamic: recover the type, then reuse the typed overload
+r_size_t length(const r_sexp& x){
+  return r_sexp_visit(x, []<RVector V>(const V& v){
+    return length(v);
+  });
+}
+```
+
+For a function that *produces* a vector, like
+[`rep_len()`](https://rdrr.io/r/base/rep.html), there is one extra
+wrinkle: the visitor’s arms must all agree on a single return type, and
+when the input could be any vector type, the output could be too. The
+type that can hold any result is, once again, `r_sexp`:
+
+``` cpp
+template <RVector T>
+T rep_len(const T& x, r_size_t n){
+  return x.rep_len(n);
+}
+
+r_sexp rep_len(const r_sexp& x, r_size_t n){
+  return r_sexp_visit(x, [&]<RVector V>(const V& v){
+    return static_cast<r_sexp>(rep_len(v, n));
+  });
+}
+```
+
+There is a pleasing symmetry to it: typed in, typed out; dynamic in,
+dynamic out.
+
+Writing your own method in this style is no different. Here is a reverse
+function — a typed template that does the work, plus the `r_sexp`
+overload that bridges:
+
+``` cpp
+
+template <RVector T>
+T my_rev(const T& x){
+  r_size_t n = x.length();
+  T out(n);
+  for (r_size_t i = 0; i < n; ++i){
+    out.set(i, x.get(n - i - 1));
+  }
+  return out;
+}
+
+r_sexp my_rev(const r_sexp& x){
+  return r_sexp_visit(x, []<RVector V>(const V& v){
+    return static_cast<r_sexp>(my_rev(v));
+  });
+}
+```
+
+Neither of these is exposed to R directly — they are building blocks. We
+register two thin wrappers instead:
+
+``` cpp
+
+[[cppally::register]]
+r_sexp cpp_rev(r_sexp x){
+  return my_rev(x);
+}
+
+[[cppally::register]]
+r_vec<r_sexp> rev_list(r_vec<r_sexp> x){
+  r_size_t n = x.length();
+  r_vec<r_sexp> out(n);
+  for (r_size_t i = 0; i < n; ++i){
+    out.set(i, my_rev(x.get(i)));
+  }
+  return out;
+}
+```
+
+``` r
+
+cpp_rev(c(1.5, 2.5, 3.5))
+#> [1] 3.5 2.5 1.5
+cpp_rev(list(1:3, letters[1:3]))
+#> [[1]]
+#> [1] "a" "b" "c"
+#> 
+#> [[2]]
+#> [1] 1 2 3
+rev_list(list(1:3, letters[1:3]))
+#> [[1]]
+#> [1] 3 2 1
+#> 
+#> [[2]]
+#> [1] "c" "b" "a"
+```
+
+Two things worth noticing. `cpp_rev()` on a list reverses the *order of
+the elements* — the visit dispatches the list to the `r_vec<r_sexp>` arm
+of the template, where elements are shuffled around as opaque handles,
+exactly like R’s [`rev()`](https://rdrr.io/r/base/rev.html). And
+`rev_list()` shows the payoff of the `r_sexp` overload for list
+processing: each element comes out of the list as an `r_sexp`, and
+`my_rev(x.get(i))` just works on every one of them, whatever they hold —
+the dispatch is tucked away in the overload, and the calling code stays
+one line per element.

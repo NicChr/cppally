@@ -4,8 +4,23 @@ This vignette is mainly a gallery of examples, serving to provide
 intuition behind the usage of cppally functionals, as well as showcasing
 their utility.
 
+### A note on writing code in C++ versus R
+
+Working with scalars demands a different mental model to the one R
+typically encourages.
+
+In R we usually vectorise everything upfront by using vectors and
+vectorised operations everywhere possible. For R this is both cleaner
+and more efficient. In C++ the reverse is true. It is arguably cleaner
+to write functions at the scalar level, and then **vectorise after the
+fact**.
+
+As will soon be demonstrated in this vignette, `pmap()` exists to bridge
+that final step of taking **scalar-based** functions and vectorising[^1]
+them.
+
 Let’s load cppally in R and include cppally in our cpp or header file to
-get started
+get started.
 
 ``` r
 
@@ -13,17 +28,109 @@ library(cppally)
 ```
 
 ``` cpp
+// Include this if you are copying the code example-by-example
 #include <cppally.hpp>
 using namespace cppally;
 ```
 
+### pmap
+
+`pmap` is a C++ variadic function that allows one to apply a function
+across corresponding elements of multiple vectors.
+
+**Example:** vectorised binary max
+
+``` cpp
+
+[[cppally::register]]
+r_vector<r_dbl> cpp_pmax(r_vector<r_dbl> x, r_vector<r_dbl> y){
+    return pmap(
+    
+    /* fn = */ [](auto a, auto b){
+    
+      /* expr = */ return max(a, b);
+        
+    }, 
+    
+    /* vectors = */ x, y
+  );
+}
+  
+```
+
+``` r
+
+x <- c(10, 20, 30)
+y <- c(10, 50, 0)
+cpp_pmax(x, y)
+#> [1] 10 50 30
+
+# pmap also recycles vectors
+
+cpp_pmax(x, 15)
+#> [1] 15 20 30
+```
+
+**Example:** vectorised if else
+
+``` cpp
+
+template <RVector T>
+[[cppally::register]]
+T cpp_if_else(r_vector<r_lgl> condition, T if_true, T if_false, T if_na){
+    return pmap(
+      [](r_lgl condition_, auto yes, auto no, auto missing) {
+        if (condition_.is_true()){
+            return yes;
+        } else if (condition_.is_false()){
+            return no;
+        } else {
+            return missing;
+        }
+    }, 
+    
+    condition, if_true, if_false, if_na
+  );
+}
+```
+
+``` r
+
+cpp_if_else(c(TRUE, FALSE, NA), "yes", "no", "missing")
+#> [1] "yes"     "no"      "missing"
+```
+
+`pmap_with_index()` is a variant that allows one to capture the index as
+we iterate along the vector
+
+**Example:** Integer sequence along vector
+
+``` cpp
+
+template <RVector T>
+[[cppally::register]]
+r_vector<r_int> cpp_seq_along(T x){
+    return pmap_with_index([](r_size_t i, auto){ // 2nd arg included so function can compile
+        return as<r_int>(i) + 1; // R is 1-indexed
+    }, x);
+}
+```
+
+``` r
+
+cpp_seq_along(letters)
+#>  [1]  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+#> [26] 26
+```
+
 ### reduce
 
-`r_vec::reduce()` is a left-fold reduction functional that successively
-applies a binary function along the elements of the vector (from
-left-to-right). It allows for returning early and explicitly continuing
-by calling `done()` and `keep()`. The input function is typically a
-lambda, but can also be a callable (struct with `operator()`).
+`r_vector::reduce()` is a left-fold reduction functional that
+successively applies a binary function along the elements of the vector
+(from left-to-right). It allows for returning early and explicitly
+continuing by calling `done()` and `keep()`. The input function is
+typically a lambda, but can also be a callable (struct with
+`operator()`).
 
 Example of summing a vector with `reduce`
 
@@ -42,7 +149,7 @@ cpp_sum(1:10)
 ```
 
 We could have also passed the callable `std::plus<>{}`, which makes it
-even more readable
+even more readable.
 
 ``` cpp
 
@@ -57,6 +164,44 @@ r_dbl cpp_sum2(r_vector<r_dbl> x){
 cpp_sum2(1:10)
 #> [1] 55
 ```
+
+Use `cumulative_reduce` to return a vector of all the intermediate
+results of the reduction.
+
+``` cpp
+
+[[cppally::register]]
+r_vector<r_dbl> cpp_cumsum(r_vector<r_dbl> x){
+    return x.cumulative_reduce(std::plus<>{});
+}
+  
+```
+
+``` r
+
+cpp_cumsum(1:10)
+#>  [1]  1  3  6 10 15 21 28 36 45 55
+```
+
+While the above examples are useful for showing how to write a sum by
+hand, cppally provides [`sum()`](https://rdrr.io/r/base/sum.html) for
+free.
+
+``` cpp
+
+[[cppally::register]]
+r_dbl cpp_sum3(r_vector<r_dbl> x){
+    return sum(x);
+}
+```
+
+``` r
+
+cpp_sum3(c(10, 20, 30))
+#> [1] 60
+```
+
+#### Returning early
 
 To perform a reduction until a condition is met, use the helpers
 `done()` and `keep()`
@@ -90,19 +235,22 @@ Notice that the two folds are identical - only `done`/`keep` and `init`
 are swapped. This is the general pattern for any/all-style predicates.
 
 **Example:** greatest-common-divisor across integer vector. The trick
-here is to break when the result is 1 as `gcd(1, x) = 1` for any x
+here is to break when the result is 1 as `gcd(1, x) = 1` for any x.
 
 ``` cpp
 
 [[cppally::register]]
 r_int cpp_gcd(r_vector<r_int> x){
     return x.reduce([](auto acc, auto curr){
+    
         auto res = cppally::gcd(acc, curr); // cppally has its own NA-aware gcd
+        
         if ( (res == 1).is_true() ){
             return done(res);
         } else {
             return keep(res);
         }
+        
     });
 }
   
@@ -116,102 +264,143 @@ cpp_gcd(c(5L, 25L, 1L, 125L))
 #> [1] 1
 ```
 
-Use `cumulative_reduce` to return a vector of all the intermediate
-results of the reduction
+### Other pmap helpers
+
+There are 2 core pmap functionals, with 9 variants in total.
+
+**Core pmap functionals**
+
+- `pmap` - Applies a function across elements.
+
+- `pmap_with_index` - Like `pmap` but the first argument of the lambda
+  must be an index.
+
+**Other pmap variants**
+
+- `pmap_parallel` - Like `pmap` but executed using multiple threads
+
+- `pmap_simd` - Like `pmap` but executed under OpenMP SIMD instructions
+
+- `pmap_parallel_simd` - Like `pmap` but multi-threaded and executed
+  under OpenMP SIMD instructions
+
+- `pmap_parallel_with_index` - Like `pmap_with_index` but executed using
+  multiple threads
+
+- `pmap_simd_with_index` - Like `pmap_with_index` but executed under
+  OpenMP SIMD instructions
+
+- `pmap_parallel_simd_with_index` - Like `pmap_with_index` but executed
+  using multiple threads and under OpenMP SIMD instructions
+
+- `pmap_with_shift` - A convenient wrapper around `pmap` to work with
+  lagged values. Positional helpers `lag(k)`, `lead(k)`, `curr()` must
+  be used to access lagged values. `lag_exists()` and `lead_exists()`
+  can be used to test for out-of-bounds indexing. Out-of-bounds indexing
+  returns `NA` by default, though this default can be changed in
+  [`lag()`](https://rdrr.io/r/stats/lag.html) and `lead()`.
+
+#### Multi-threading safety
+
+All `pmap` variants try very hard to avoid unsafe multi-threaded calls
+to R C API entry-points. Multi-threaded and/or SIMD execution only
+applies for `RVectorisable` types, meaning that for types like `r_str`
+which are not inherently thread-safe, execution is **always
+single-threaded** and **non-SIMD**, even if you request multiple threads
+or SIMD.
+
+To illustrate this, let’s revisit our `pmax` from earlier but this time
+using `pmap_parallel` and with a template that accepts `r_dbl` or
+`r_str` vectors.
 
 ``` cpp
 
+ 
+// Allows us to set threads and automatically restore them once thread_guard is destroyed (even if R aborts)
+struct thread_guard {
+
+  int curr_threads;
+  
+  // Set threads and store previous threads
+  thread_guard(int n) {
+    curr_threads = get_threads();
+    set_threads(n);
+  }
+  
+  // Restore threads on destruction
+  ~thread_guard() {
+    set_threads(curr_threads);
+  }
+  
+};
+template <typename F>
+decltype(auto) with_threads(int n, F&& f) {
+  thread_guard guard(n);
+  return std::forward<F>(f)();
+}
+ 
+template <typename T>
+requires (any<T, r_dbl, r_str>) // doubles or strings
 [[cppally::register]]
-r_vector<r_dbl> cpp_cumsum(r_vector<r_dbl> x){
-    return x.cumulative_reduce(std::plus<>{});
+r_vector<T> cpp_parallel_pmax(r_vector<T> x, r_vector<T> y, int n_threads){
+    return with_threads(n_threads, [&]{
+    
+      return pmap_parallel(
+      [](const auto& a, const auto& b){
+          return max(a, b);
+      }, 
+      x, y
+    );
+  });
 }
   
 ```
 
-``` r
-
-cpp_cumsum(1:10)
-#>  [1]  1  3  6 10 15 21 28 36 45 55
-```
-
-### pmap
-
-`pmap` is a C++ variadic function that allows one to apply a function
-across corresponding elements of multiple vectors.
-
-**Example:** vectorised binary max
-
-``` cpp
-
-[[cppally::register]]
-r_vector<r_dbl> cpp_pmax(r_vector<r_dbl> x, r_vector<r_dbl> y){
-    return pmap([](auto a, auto b){
-        return max(a, b);
-    }, x, y);
-}
-  
-```
+We can detect whether or not multiple threads were used by observing
+benchmark time.
 
 ``` r
 
-x <- c(10, 20, 30)
-y <- c(10, 50, 0)
-cpp_pmax(x, y)
-#> [1] 10 50 30
+library(bench)
+library(ggplot2)
 
-# pmap also recycles vectors
+x <- as.double(rpois(5e05, lambda = 10))
+y <- as.double(rpois(5e05, lambda = 15))
 
-cpp_pmax(x, 15)
-#> [1] 15 20 30
+(
+  mark(
+    single_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = 1),
+    multi_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = 4)
+  ) |> 
+    autoplot(type = "violin") 
+) +
+  labs(title = "Numeric data")
 ```
 
-**Example:** vectorised if else
+![](functionals_files/figure-html/unnamed-chunk-24-1.png)
 
-``` cpp
-
-template <RVector T>
-[[cppally::register]]
-T cpp_if_else(r_vec<r_lgl> condition, T if_true, T if_false, T if_na){
-    return pmap([](r_lgl condition_, auto yes, auto no, auto missing) {
-        if (condition_.is_true()){
-            return yes;
-        } else if (condition_.is_false()){
-            return no;
-        } else {
-            return missing;
-        }
-    }, condition, if_true, if_false, if_na);
-}
-```
+We can see that the same benchmarks on character vector data yield
+identical results between the one requesting 1 thread and the one
+requesting 4 threads. Even though we request 4 threads, it still gets
+executed as single-threaded.
 
 ``` r
 
-cpp_if_else(c(TRUE, FALSE, NA), "yes", "no", "missing")
-#> [1] "yes"     "no"      "missing"
+
+x <- as.character(x)
+y <- as.character(y)
+
+(
+  mark(
+    single_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = 1),
+    multi_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = 4)
+  ) |> 
+    autoplot(type = "violin") 
+) +
+  labs(title = "Character data")
 ```
 
-`pmap_with_index()` is a variant that allows one to capture the index as
-we iterate along the vector
-
-**Example:** Integer sequence along vector
-
-``` cpp
-
-template <RVector T>
-[[cppally::register]]
-r_vector<r_int> cpp_seq_along(T x){
-    return pmap_with_index([](int i, auto){ // 2nd arg included so function can compile
-        return r_int(i + 1); // R is 1-indexed
-    }, x);
-}
-```
-
-``` r
-
-cpp_seq_along(letters)
-#>  [1]  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
-#> [26] 26
-```
+![](functionals_files/figure-html/unnamed-chunk-25-1.png)
 
 ### Lagged operations
 
@@ -248,10 +437,11 @@ cpp_lag(1:10, k = -3)
 #>  [1]  4  5  6  7  8  9 10 NA NA NA
 ```
 
-`pmap_with_shift` has three helpers:
-[`lag()`](https://rdrr.io/r/stats/lag.html), `lead()` and `curr()`.
-These are designed to assist in performing efficient lagged operations
-in a vectorised context, while maintaining readability
+`pmap_with_shift` has five helpers:
+[`lag()`](https://rdrr.io/r/stats/lag.html), `lead()`, `curr()`,
+`lag_exists()`, and `lead_exists()`. These are designed to assist in
+performing efficient lagged operations in a vectorised context, while
+maintaining readability.
 
 **Example:** Lagged differencing
 
@@ -275,14 +465,17 @@ cpp_diff(seq(10, 100, by = 5))
 
 ### In-place functionals
 
-To perform in-place transformations, use `r_vec::apply` as `pmap` always
-allocates a fresh vector and therefore cannot do in-place modification.
+To perform in-place transformations, use `r_vector::apply` as `pmap`
+always allocates a fresh vector and therefore cannot do in-place
+modification. `apply` comes in the same flavours as `pmap` -
+`apply_simd`, `apply_parallel`, `apply_parallel_simd`, and the
+`_with_index` variants.
 
 ``` cpp
 
 [[cppally::register]]
 r_vector<r_dbl> cpp_in_place_abs(r_vector<r_dbl>& x){
-    x.apply([](auto a){ return abs(a);});
+    x.apply([](auto a){ return abs(a); });
     return x;
 }
 ```
@@ -297,7 +490,8 @@ x # Modified in-place
 #> [1] 20 10
 ```
 
-`r_vec::shift` is a helper which can shift an entire vector in-place
+`r_vector::shift` is a helper which can shift an entire vector in-place.
+It takes shift `k` and an optional `fill_value` which defaults to `NA`.
 
 ``` cpp
 
@@ -329,88 +523,113 @@ cpp_in_place_lag(x, k = 1)
 
 ### Vectorised math
 
-`pmap` makes it easy to write vectorised math functions
+`pmap` also makes it easy to write vectorised math functions.
 
-**Example:** Binary addition
+**Example:** Vectorised square-root
 
-Here we are using `pmap_simd`, a variant of `pmap` that applies the
-supplied transformation under an omp simd directive. SIMD
-(single-instruction-multiple-data) is when the machine performs the same
-operation on multiple data points instead of one data point at time. In
-this case we are performing addition across multiple `r_int` values
-simultaneously. To safely use `pmap_simd`, iterations must be
-independent, not throw any errors, and the body must not have any side
-effects, which for math operations on `RMathType` classes is true.
+cppally provides a scalar version of
+[`sqrt()`](https://rdrr.io/r/base/MathFun.html), which can be easily
+vectorised with `pmap`.
 
 ``` cpp
 
+
 [[cppally::register]]
-r_vector<r_int> cpp_add2(r_vector<r_int> x, r_vector<r_int> y){
-    return pmap_simd([](auto a, auto b){ return a + b; }, x, y);
+r_vector<r_dbl> cpp_sqrt(r_vector<r_dbl> x){
+    return pmap_parallel_simd(
+      [](auto v){
+        return sqrt(v);
+      }, 
+    x
+  );
+}
+```
+
+Here we are using `pmap_parallel_simd`, a variant of `pmap` that applies
+the supplied transformation under multiple threads and under an OpenMP
+SIMD directive. SIMD (single-instruction-multiple-data) is when the
+machine performs the same operation on multiple data points instead of
+one data point at time.
+
+Let’s benchmark this against
+[`base::sqrt()`](https://rdrr.io/r/base/MathFun.html), but first let’s
+use 4 threads for the rest of the examples in this vignette.
+
+``` cpp
+
+
+[[cppally::register]]
+void cpp_set_threads(int n){
+  set_threads(n);
 }
 ```
 
 ``` r
 
-cpp_add2(1:5, 10)
-#> [1] 11 12 13 14 15
+cpp_set_threads(4) # Set 4 threads for the rest of the vignette
 ```
 
-While we could go ahead and write vectorised versions of all the core
-operators, cppally has already done this with particular focus on
-efficiency. All operators are parallelised via simd and avoid allocating
-new vectors (like R does) where possible.
+``` r
 
+x <- rnorm(5e05, mean = 50)
+
+(
+  mark(
+    base_sqrt = sqrt(x),
+    cpp_sqrt = cpp_sqrt(x)
+  ) |> 
+    autoplot(type = "violin")
+) + 
+  labs(title = "R vs C++ vectorised square-root")
+```
+
+![](functionals_files/figure-html/unnamed-chunk-37-1.png)
+
+For more math functions, see `cppally/math/math.h`, a header containing
+a rich set of cppally math functions.
+
+cppally also provides quite a few vectorised operators out-of-the-box.
 The vectorised operators currently defined:
 
 binary: `+,-,*,/,+=,-=,*=,/=,==,<=,<,>=,>,|,&`
 
 unary: `!,-`
 
-**Example:** Mixed math operations
+When it comes to arithmetic operations, both cppally and R are heavily
+optimised to use in-place modification where possible. This greatly
+improves performance when multiple arithmetic operations are chained one
+after the other.
+
+Since R is heavily optimised in this case, any performance gains cppally
+makes over R are likely to come from using multiple threads.
 
 ``` cpp
 
+
 [[cppally::register]]
-r_vector<r_dbl> cpp_pythagorean_theorem(r_vector<r_dbl> a, r_vector<r_dbl> b){
-    return (a * a) + (b * b); // Pythagorean theorem - a^2 + b^2 = c^2
+r_vector<r_dbl> cpp_arithmetic_ops(r_vector<r_dbl> x, r_vector<r_dbl> y){
+  return (x * y) + (x / y); // Already vectorised and heavily optimised by cppally!
 }
 ```
 
 ``` r
 
-cpp_pythagorean_theorem(1:10, 10:1)
-#>  [1] 101  85  73  65  61  61  65  73  85 101
+y <- rnorm(5e05)
+
+(
+ mark(
+   base_ops = (x * y) + (x / y),
+   cpp_ops = cpp_arithmetic_ops(x, y)
+ ) |> 
+    autoplot(type = "violin")
+) + 
+  labs(title = "R vs C++ vectorised arithmetic: (x * y) + (x / y)")
 ```
 
-cppally provides a rich set of scalar math functions (defined in
-r_math.h) which can be trivially vectorised.
+![](functionals_files/figure-html/unnamed-chunk-39-1.png)
 
-**Example:** vectorising `round`, `floor` and `ceiling`
-
-``` cpp
-
-[[cppally::register]]
-r_vector<r_dbl> cpp_round(r_vector<r_dbl> x, r_vector<r_dbl> digits){
-    return pmap([](auto a, auto b){ return round(a, b); }, x, digits);
-}
-[[cppally::register]]
-r_vector<r_dbl> cpp_floor(r_vector<r_dbl> x){
-    return pmap([](auto a){ return floor(a); }, x);
-}
-[[cppally::register]]
-r_vector<r_dbl> cpp_ceiling(r_vector<r_dbl> x){
-    return pmap([](auto a){ return ceiling(a); }, x);
-}
-```
-
-``` r
-
-x <- seq(-2, 2, by = 0.5)
-cpp_round(x, digits = 0)
-#> [1] -2 -2 -1  0  0  0  1  2  2
-cpp_floor(x)
-#> [1] -2 -2 -1 -1  0  0  1  1  2
-cpp_ceiling(x)
-#> [1] -2 -1 -1  0  0  1  1  2  2
-```
+[^1]: Vectorising in the R sense, not the SIMD
+    (single-instruction-multiple-data) sense. In R, vectorising
+    literally means taking a fully or partially scalar-based function
+    and expanding the domain of the scalar inputs (or outputs) into the
+    vector domain.

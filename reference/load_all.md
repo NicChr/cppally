@@ -11,6 +11,7 @@ load_all(
   path = ".",
   debug = FALSE,
   cppally_header = c("cppally.hpp", "cppally_light.hpp"),
+  compile = NA,
   ...
 )
 ```
@@ -32,6 +33,11 @@ load_all(
   default is the full library "cppally.hpp". Choose "cppally_light.hpp"
   for the lighter header, which may provide quicker compile times, at
   the cost of less features.
+
+- compile:
+
+  See
+  [`?pkgload::load_all`](https://pkgload.r-lib.org/reference/load_all.html).
 
 - ...:
 
