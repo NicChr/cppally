@@ -36,6 +36,7 @@ Suggests:
     desc,
     devtools,
     fs,
+    ggplot2,
     glue,
     knitr,
     pkgbuild,
