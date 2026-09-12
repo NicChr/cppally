@@ -511,8 +511,8 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl n = r_dbl(1.0), boo
 
 }
 
-template <string_literal Unit, Number N>
-inline constexpr r_dbl time_diff(r_date x, r_date y, N n = 1, roll on_impossible_date = roll::none) noexcept {
+template <string_literal Unit, Number N = double>
+inline constexpr r_dbl time_diff(r_date x, r_date y, N n = 1.0, roll on_impossible_date = roll::none) noexcept {
 
     constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
