@@ -511,42 +511,44 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl n = r_dbl(1.0), boo
 
 }
 
-template <string_literal Unit>
-inline constexpr r_dbl time_diff(r_date x, r_date y, r_dbl n = r_dbl(1.0), roll on_impossible_date = roll::none) noexcept {
+template <string_literal Unit, MathType N>
+inline constexpr r_dbl time_diff(r_date x, r_date y, N n = 1, roll on_impossible_date = roll::none) noexcept {
 
     constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
-    if (n.is_na() || unwrap(n) == 0){
+    r_dbl n_blocks = internal::coerce_number<r_dbl>(n);
+
+    if (n_blocks.is_na() || unwrap(n_blocks) == 0.0){
         return r_dbl::na();
     }
 
     if constexpr (unit == "years") {
 
-        return internal::diff_months(x, y, n * 12.0, true, on_impossible_date);
+        return internal::diff_months(x, y, n_blocks * 12.0, true, on_impossible_date);
 
     } else if constexpr (unit == "months") {
 
-        return internal::diff_months(x, y, n, true, on_impossible_date);
+        return internal::diff_months(x, y, n_blocks, true, on_impossible_date);
 
     } else if constexpr (unit == "weeks"){
 
-        return internal::diff_days(x, y, 7.0 * n);
+        return internal::diff_days(x, y, 7.0 * n_blocks);
 
     } else if constexpr (unit == "days"){
 
-        return internal::diff_days(x, y, n);
+        return internal::diff_days(x, y, n_blocks);
         
     } else if constexpr (unit == "hours"){
 
-        return (internal::diff_days(x, y) * r_dbl(24.0)) / n;
+        return (internal::diff_days(x, y) * r_dbl(24.0)) / n_blocks;
 
     } else if constexpr (unit == "minutes"){
 
-        return (internal::diff_days(x, y) * r_dbl(1440.0)) / n;
+        return (internal::diff_days(x, y) * r_dbl(1440.0)) / n_blocks;
 
     } else { // Seconds
 
-        return (internal::diff_days(x, y) * r_dbl(86400.0)) / n;
+        return (internal::diff_days(x, y) * r_dbl(86400.0)) / n_blocks;
 
     }
 }
