@@ -151,18 +151,18 @@ struct r_date {
 
     private: 
 
-    constexpr r_date add_days(double n) const noexcept {
-        return r_date(days_since_epoch() + r_dbl(n));
+    constexpr r_date add_days(r_dbl n) const noexcept {
+        return r_date(days_since_epoch() + n);
     }
     
     // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls
     // to the start of the next month when `n >= 0` and to the last day of the current month when 
     // `n < 0`
-    constexpr r_date add_months(int n, roll on_impossible_date = roll::none) const noexcept {
+    constexpr r_date add_months(r_int n, roll on_impossible_date = roll::none) const noexcept {
         
         using namespace std::chrono;
 
-        if (r_int(n).is_na()){
+        if (n.is_na()){
             return na();
         }
 
@@ -171,15 +171,15 @@ struct r_date {
         }
         
         year_month_day ymd = chrono_ymd();
-        ymd += months{n};
+        ymd += months{unwrap(n)};
         
         if (!ymd.ok()) {
             bool forward = false;
             switch (on_impossible_date) {
                 case roll::forward:  { forward = true;      break; }
                 case roll::backward: { forward = false;     break; }
-                case roll::away:     { forward = (n >= 0);  break; }
-                case roll::nearest:  { forward = (n < 0);   break; }
+                case roll::away:     { forward = (unwrap(n) >= 0);  break; }
+                case roll::nearest:  { forward = (unwrap(n) < 0);   break; }
                 default:             { return na(); }
             }
             if (forward) {
@@ -195,14 +195,12 @@ struct r_date {
         return r_date(static_cast<double>(sys_days{ymd}.time_since_epoch().count()) + rem);
     }
 
-    template <typename F>
-    requires (is<F, r_dbl> || CppFloatType<F>)
-    constexpr r_date add_months(F n, roll on_impossible_date = roll::none) const noexcept {
+    constexpr r_date add_months(r_dbl n, roll on_impossible_date = roll::none) const noexcept {
         
         using namespace std::chrono;
 
-        if (!is_chrono_safe() || !r_dbl(n).is_finite()){
-            return r_date(days_since_epoch() + r_dbl(n));
+        if (!is_chrono_safe() || !n.is_finite()){
+            return r_date(days_since_epoch() + n);
         }
 
         r_int whole_months = internal::coerce_number<r_int>(r_dbl(internal::floor2(n)));
@@ -217,11 +215,11 @@ struct r_date {
             return out;
         }
 
-        double fraction = n - whole_months;
-        r_date next_month = add_months(whole_months + 1, on_impossible_date);
+        r_dbl fraction = n - whole_months;
+        r_date next_month = add_months(whole_months + r_dbl(1.0), on_impossible_date);
         
         // Number of days between result and next month
-        double n_days = next_month.days_since_epoch() - out.days_since_epoch();
+        r_dbl n_days = next_month.days_since_epoch() - out.days_since_epoch();
 
         // add (fraction * n_days) days to result
         return out.add_days(fraction * n_days);
@@ -236,31 +234,31 @@ struct r_date {
 
         if constexpr (unit == "years") {
 
-            return add_months(n * r_int(12), on_impossible_date);
+            return add_months(n * r_dbl(12.0), on_impossible_date);
 
         } else if constexpr (unit == "months") {
 
-            return add_months(n, on_impossible_date);
+            return add_months(internal::coerce_number<r_dbl>(n), on_impossible_date);
 
         } else if constexpr (unit == "weeks") {
 
-            return add_days(n * r_dbl(7));
+            return add_days(n * r_dbl(7.0));
 
         } else if constexpr (unit == "days"){
 
-            return add_days(n);
+            return add_days(internal::coerce_number<r_dbl>(n));
 
         } else if constexpr (unit == "hours"){
 
-            return add_days(n / r_dbl(24));
+            return add_days(n / r_dbl(24.0));
 
         } else if constexpr (unit == "minutes"){
 
-            return add_days(n / r_dbl(1440));
+            return add_days(n / r_dbl(1440.0));
 
         } else { // Seconds
 
-            return add_days(n / r_dbl(86400));
+            return add_days(n / r_dbl(86400.0));
 
         }
 
@@ -323,7 +321,7 @@ struct r_date {
     constexpr r_int days_in_month() const noexcept {
 
         r_date first_day_of_month = r_date(year(), month(), 1);
-        r_date first_day_of_next_month = first_day_of_month.add_months(1);
+        r_date first_day_of_next_month = first_day_of_month.add_months(r_int(1));
         r_dbl out = first_day_of_next_month.days_since_epoch() - first_day_of_month.days_since_epoch();
 
         return internal::coerce_number<r_int>(out);
@@ -448,11 +446,26 @@ namespace internal {
 inline constexpr r_dbl diff_days(r_date x, r_date y) noexcept {
     return y.days_since_epoch() - x.days_since_epoch();
 }
+inline constexpr r_dbl diff_days(r_date x, r_date y, r_dbl n) noexcept {
+    return diff_days(x, y) / n;
+}
 
 // Number of n-month periods between two dates
-inline constexpr r_dbl diff_months(r_date x, r_date y, int n = 1, bool fractional = true, roll on_impossible_date = roll::none) noexcept {
+inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl n = r_dbl(1.0), bool fractional = true, roll on_impossible_date = roll::none) noexcept {
 
-    if (n == 0 || r_int(n).is_na() || !x.days_since_epoch().is_finite() || !y.days_since_epoch().is_finite()){
+    if (n.is_na()){
+        return r_dbl::na();
+    }
+    
+    if (!x.days_since_epoch().is_finite() || !y.days_since_epoch().is_finite()){
+        return r_dbl::na();
+    }
+
+    if (n.is_infinite()){
+        return r_dbl(0.0);
+    }
+
+    if (unwrap(n) == 0){
         return r_dbl::na();
     }
 
@@ -474,7 +487,7 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, int n = 1, bool fractiona
         ? whole_months - r_int(static_cast<int>(unwrap(emd) < unwrap(smd)))
         : whole_months + r_int(static_cast<int>(unwrap(emd) > unwrap(smd)));
 
-    r_dbl q = whole_months / r_int(n);
+    r_dbl q = whole_months / n;
     whole_months = internal::coerce_number<r_int>(q);
     r_dbl out = internal::coerce_number<r_dbl>(whole_months);
 
@@ -482,14 +495,14 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, int n = 1, bool fractiona
         return out;
     }
 
-    r_int months_add = whole_months * r_int(n);
+    r_dbl months_add = whole_months * n;
     r_date small_int_start = x.add<"months">(months_add, on_impossible_date);
 
     if (static_cast<double>(y) == static_cast<double>(small_int_start)){
         return out;
     }
 
-    r_date big_int_end = x.add<"months">(months_add + r_int(l2r ? n : -n), on_impossible_date);
+    r_date big_int_end = x.add<"months">(months_add + (l2r ? n : -n), on_impossible_date);
     r_dbl fraction = diff_days(small_int_start, y) / r_dbl(internal::abs2(unwrap(diff_days(small_int_start, big_int_end))));
 
     return out + fraction;
@@ -498,17 +511,17 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, int n = 1, bool fractiona
 }
 
 template <string_literal Unit>
-inline constexpr r_dbl time_diff(r_date x, r_date y, int n = 1, roll on_impossible_date = roll::none) noexcept {
+inline constexpr r_dbl time_diff(r_date x, r_date y, r_dbl n = r_dbl(1.0), roll on_impossible_date = roll::none) noexcept {
 
     constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
-    if (n == 0 || r_int(n).is_na()){
+    if (n.is_na() || unwrap(n) == 0){
         return r_dbl::na();
     }
 
     if constexpr (unit == "years") {
 
-        return internal::diff_months(x, y, n * r_int(12), true, on_impossible_date);
+        return internal::diff_months(x, y, n * 12.0, true, on_impossible_date);
 
     } else if constexpr (unit == "months") {
 
@@ -516,23 +529,23 @@ inline constexpr r_dbl time_diff(r_date x, r_date y, int n = 1, roll on_impossib
 
     } else if constexpr (unit == "weeks"){
 
-        return internal::diff_days(x, y) / (r_dbl(7) * n);
+        return internal::diff_days(x, y, 7.0 * n);
 
     } else if constexpr (unit == "days"){
 
-        return internal::diff_days(x, y) / n;
+        return internal::diff_days(x, y, n);
         
     } else if constexpr (unit == "hours"){
 
-        return internal::diff_days(x, y) * r_dbl(24) / n;
+        return (internal::diff_days(x, y) * r_dbl(24.0)) / n;
 
     } else if constexpr (unit == "minutes"){
 
-        return internal::diff_days(x, y) * r_dbl(1440) / n;
+        return (internal::diff_days(x, y) * r_dbl(1440.0)) / n;
 
     } else { // Seconds
 
-        return internal::diff_days(x, y) * r_dbl(86400) / n;
+        return (internal::diff_days(x, y) * r_dbl(86400.0)) / n;
 
     }
 }
