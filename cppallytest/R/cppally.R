@@ -336,6 +336,18 @@ test_date_edge_cases <- function() {
   invisible(.Call(`_cppallytest_test_date_edge_cases`))
 }
 
+test_time_diff_units <- function() {
+  invisible(.Call(`_cppallytest_test_time_diff_units`))
+}
+
+test_time_diff_signs <- function() {
+  invisible(.Call(`_cppallytest_test_time_diff_signs`))
+}
+
+test_time_diff_round_trip <- function() {
+  invisible(.Call(`_cppallytest_test_time_diff_round_trip`))
+}
+
 test_factor1 <- function(x) {
   .Call(`_cppallytest_test_factor1`, x)
 }

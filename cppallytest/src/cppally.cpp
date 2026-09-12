@@ -778,6 +778,30 @@ extern "C" attribute_visible SEXP _cppallytest_test_date_edge_cases() {
   return R_NilValue;
   END_CPPALLY
 }
+// test_dates.cpp
+void test_time_diff_units();
+extern "C" attribute_visible SEXP _cppallytest_test_time_diff_units() {
+  BEGIN_CPPALLY
+  ::test_time_diff_units();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_dates.cpp
+void test_time_diff_signs();
+extern "C" attribute_visible SEXP _cppallytest_test_time_diff_signs() {
+  BEGIN_CPPALLY
+  ::test_time_diff_signs();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_dates.cpp
+void test_time_diff_round_trip();
+extern "C" attribute_visible SEXP _cppallytest_test_time_diff_round_trip() {
+  BEGIN_CPPALLY
+  ::test_time_diff_round_trip();
+  return R_NilValue;
+  END_CPPALLY
+}
 // test_factor.cpp
 r_vec<r_sexp> test_factor1(r_factors x);
 extern "C" attribute_visible SEXP _cppallytest_test_factor1(SEXP x) {
@@ -1369,6 +1393,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_temp_by_rvalue_ref",           (DL_FUNC) &_cppallytest_test_temp_by_rvalue_ref,           1},
     {"_cppallytest_test_temp_by_value",                (DL_FUNC) &_cppallytest_test_temp_by_value,                1},
     {"_cppallytest_test_template_null",                (DL_FUNC) &_cppallytest_test_template_null,                1},
+    {"_cppallytest_test_time_diff_round_trip",         (DL_FUNC) &_cppallytest_test_time_diff_round_trip,         0},
+    {"_cppallytest_test_time_diff_signs",              (DL_FUNC) &_cppallytest_test_time_diff_signs,              0},
+    {"_cppallytest_test_time_diff_units",              (DL_FUNC) &_cppallytest_test_time_diff_units,              0},
     {"_cppallytest_test_to_bool",                      (DL_FUNC) &_cppallytest_test_to_bool,                      0},
     {"_cppallytest_test_to_double",                    (DL_FUNC) &_cppallytest_test_to_double,                    0},
     {"_cppallytest_test_to_int",                       (DL_FUNC) &_cppallytest_test_to_int,                       0},
