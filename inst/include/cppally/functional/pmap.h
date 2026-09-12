@@ -7,6 +7,8 @@
 
 namespace cppally {
 
+  namespace internal {
+
 // Engine for the pmap family. fn(r_size_t index, x0, x1, ..., xn) -> output element type.
 // simd applies the loop in an OMP SIMD region; only honoured when every type is RVectorisable,
 // otherwise it falls through to the scalar path.
@@ -99,54 +101,56 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
   #undef CPPALLY_DO_MAP
 }
 
+}
+
 // map m x n vectors to 1 x n output by applying a user function: fn(x0, x1, x2, ..., xn)
 template <typename F, RVal... Ts>
   requires std::invocable<F&, Ts...>
 auto pmap(F fn, const r_vec<Ts>&... vecs) {
-  return pmap_impl<false>([&](r_size_t, Ts... vs){ return fn(vs...); }, vecs...);
+  return internal::pmap_impl<false>([&](r_size_t, Ts... vs){ return fn(vs...); }, vecs...);
 }
 
 // map m x n vectors to 1 x n output by applying a user function: fn(r_size_t index, x0, x1, x2, ..., xn)
 template <typename F, RVal... Ts>
   requires std::invocable<F&, r_size_t, Ts...>
 auto pmap_with_index(F fn, const r_vec<Ts>&... vecs) {
-  return pmap_impl<false>(fn, vecs...);
+  return internal::pmap_impl<false>(fn, vecs...);
 }
 
 template <typename F, RVal... Ts>
   requires std::invocable<F&, r_size_t, Ts...>
 auto pmap_simd_with_index(F fn, const r_vec<Ts>&... vecs) {
-  return pmap_impl<true>(fn, vecs...);
+  return internal::pmap_impl<true>(fn, vecs...);
 }
 
 template <typename F, RVal... Ts>
   requires std::invocable<F&, r_size_t, Ts...>
 auto pmap_parallel_with_index(F fn, const r_vec<Ts>&... vecs) {
-  return pmap_impl<false, true>(fn, vecs...);
+  return internal::pmap_impl<false, true>(fn, vecs...);
 }
 
 template <typename F, RVal... Ts>
   requires std::invocable<F&, r_size_t, Ts...>
 auto pmap_parallel_simd_with_index(F fn, const r_vec<Ts>&... vecs) {
-  return pmap_impl<true, true>(fn, vecs...);
+  return internal::pmap_impl<true, true>(fn, vecs...);
 }
 
 template <typename F, RVal... Ts>
   requires std::invocable<F&, Ts...>
 auto pmap_simd(F fn, const r_vec<Ts>&... vecs) {
-  return pmap_impl<true>([&](r_size_t, Ts... vs){ return fn(vs...); }, vecs...);
+  return internal::pmap_impl<true>([&](r_size_t, Ts... vs){ return fn(vs...); }, vecs...);
 }
 
 template <typename F, RVal... Ts>
   requires std::invocable<F&, Ts...>
 auto pmap_parallel(F fn, const r_vec<Ts>&... vecs) {
-  return pmap_impl<false, true>([&](r_size_t, Ts... vs){ return fn(vs...); }, vecs...);
+  return internal::pmap_impl<false, true>([&](r_size_t, Ts... vs){ return fn(vs...); }, vecs...);
 }
 
 template <typename F, RVal... Ts>
   requires std::invocable<F&, Ts...>
 auto pmap_parallel_simd(F fn, const r_vec<Ts>&... vecs) {
-  return pmap_impl<true, true>([&](r_size_t, Ts... vs){ return fn(vs...); }, vecs...);
+  return internal::pmap_impl<true, true>([&](r_size_t, Ts... vs){ return fn(vs...); }, vecs...);
 }
 
 namespace internal {
