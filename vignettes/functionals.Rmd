@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 ```{r, include = FALSE}
 required <- c("bench", "brio", "callr", "cli", "cpp11",
               "decor", "desc", "ggplot2", "glue", "purrr", "readr",
-              "stringr", "utils", "vctrs", "withr")
+              "stringr", "tidyr", "utils", "vctrs", "withr")
 if (!all(vapply(required, requireNamespace, logical(1), quietly = TRUE))) {
   knitr::knit_exit()
 }
