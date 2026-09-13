@@ -853,7 +853,7 @@ struct r_vec {
     using int_t = unwrap_t<V>;
   
     if constexpr (is<V, r_int>){
-      if ( (n > r_limits<r_int>::max()).is_true()){
+      if ( (n > r_limits<r_int>::max()).is_true()) [[unlikely]] {
         abort("`x` is a long vector, please use `find<r_int64>` instead");
       }
     }
