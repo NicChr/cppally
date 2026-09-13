@@ -264,9 +264,15 @@ r_vector<r_dbl> cpp_sqrt(r_vector<r_dbl> x){
 ', 
 cpp_ops = '
 
+template <RNumber T>
 [[cppally::register]]
-r_vector<r_dbl> cpp_arithmetic_ops(r_vector<r_dbl> x, r_vector<r_dbl> y){
-  return (x * y) + (x / y); // Already vectorised and heavily optimised by cppally!
+r_vector<T> cpp_add(r_vector<T> x, r_vector<T> y, r_vector<T> z){
+  return x + y + z;
+}
+template <RNumber T>
+[[cppally::register]]
+r_vector<T> cpp_multiply(r_vector<T> x, r_vector<T> y, r_vector<T> z){
+  return x * y * z;
 }
 '
 )
@@ -594,14 +600,36 @@ as_cpp_chunk(benchmark_examples[["cpp_ops"]])
 ```
 
 ```{r}
-y <- rnorm(5e05)
+a <- sample(c(-1L, NA_integer_, 0L, 1L, -100L, 100L), 5e05, replace = TRUE)
+b <- sample(c(NA_real_, 0, -1/3, 1/3, -10^9, 10^9), 5e05, replace = TRUE)
 
-(
+results <-
  mark(
-   base_ops = (x * y) + (x / y),
-   cpp_ops = cpp_arithmetic_ops(x, y)
- ) |> 
-    autoplot(type = "violin")
-) + 
-  labs(title = "R vs C++ vectorised arithmetic: (x * y) + (x / y)")
+   `a + a + a (base w/integers)` = a + a + a,
+   `a * a * a (base w/integers)` = a * a * a,
+   `b + b + b (base w/doubles)` = b + b + b,
+   `b * b * b (base w/doubles)` = b * b * b,
+   
+   `a + a + a (cppally w/integers)` = cpp_add(a, a, a),
+   `a * a * a (cppally w/integers)` = cpp_multiply(a, a, a),
+   `b + b + b (cppally w/doubles)` = cpp_add(b, b, b),
+   `b * b * b (cppally w/doubles)` = cpp_multiply(b, b, b),
+   check = FALSE
+ )
+
+results |> 
+  autoplot(type = "violin") +
+  geom_violin(aes(fill = ifelse(grepl("base", expression), "base", "cppally"))) +
+  labs(title = "cppally vs R arithmetic operations") + 
+  scale_y_discrete(limits = rev) +
+  theme(legend.title = element_blank())
+  
 ```
+
+From the results we can see that integer operations are faster with cppally. 
+This is partly due to multiple threads being used, but also because cppally 
+integer arithmetic is carefully written to be SIMD-friendly. It propagates 
+`NA` values and also returns `NA` on integer-overflow, so it is just as
+safe as R. The difference is that the arithmetic is written to be as branchless 
+as possible, allowing SIMD instructions to be executed. You can see the internal 
+implementation in `scalar/arithmetic_ops.h`.
