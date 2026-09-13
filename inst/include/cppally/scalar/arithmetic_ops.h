@@ -203,7 +203,7 @@ inline constexpr auto operator*(T lhs, U rhs) noexcept {
     I a = static_cast<I>(unwrap(lhs));
     I b = static_cast<I>(unwrap(rhs));
     I p;
-    bool bad = internal::mul_overflow(a, b, p) | internal::any_arithmetic_na(lhs, rhs);
+    bool bad = internal::mul_overflow(a, b, p) | static_cast<int>(internal::any_arithmetic_na(lhs, rhs));
     return bad ? common_t::na() : common_t(p);
   } else if constexpr (is<T, r_dbl> && is<U, r_dbl>){
     return r_dbl(static_cast<double>(unwrap(lhs)) * static_cast<double>(unwrap(rhs)));
