@@ -6,8 +6,6 @@
   cppally](https://nicchr.github.io/cppally/articles/cppally.md):
 - [Functional Programming with
   cppally](https://nicchr.github.io/cppally/articles/functionals.md):
-- [Working with
-  lists](https://nicchr.github.io/cppally/articles/lists.md):
 - [Automatic
   Protection](https://nicchr.github.io/cppally/articles/protection.md):
 - [Random number

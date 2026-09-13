@@ -200,8 +200,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression                           min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>                       <bch:t> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_sample_int_with_replace… 243.2µs 370.15µs     2683.     391KB    19.1 
-#> 2 base_sample_int_with_replacement   2.2ms   2.33ms      428.     391KB     4.14
+#> 1 cppally_sample_int_with_replace… 231.8µs 368.11µs     2696.     391KB    18.9 
+#> 2 base_sample_int_with_replacement   2.2ms   2.33ms      427.     391KB     4.12
 ```
 
 In this simple benchmark we achieve a large speed improvement over base
@@ -407,8 +407,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally      23.1ms   23.7ms      41.3    15.4MB     27.5
-#> 2 base_r         63ms   63.2ms      15.8    23.1MB     47.4
+#> 1 cppally        23ms   23.2ms      42.2    15.4MB     28.2
+#> 2 base_r       62.8ms   63.4ms      15.8    23.1MB     47.3
 ```
 
 The hand-tuned bootstrap mean naturally is faster.
@@ -423,7 +423,7 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression                      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>                 <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 boot_mean_cppally(x, 2000)  23.19ms  23.46ms      42.4    15.4MB     28.3
+#> 1 boot_mean_cppally(x, 2000)  23.04ms  23.26ms      42.8    15.4MB     26.3
 #> 2 boot_mean(x, 2000)           4.36ms   4.36ms     229.     21.8KB      0
 ```
 
