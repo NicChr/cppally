@@ -220,9 +220,9 @@ the same integers everywhere.</p>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression                           min   median `itr/sec` mem_alloc `gc/sec`</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>                      <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sample_int_with_replac… 159.51µs 291.94µs     <span style="text-decoration: underline;">3</span>467.     391KB    26.1 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sample_int_with_replaceme…   1.89ms   2.07ms      493.     391KB     4.11</span></span></code></pre></div>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>                       <span style="color: #949494; font-style: italic;">&lt;bch:t&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sample_int_with_replace… 243.2µs 370.15µs     <span style="text-decoration: underline;">2</span>683.     391KB    19.1 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sample_int_with_replacement   2.2ms   2.33ms      428.     391KB     4.14</span></span></code></pre></div>
 <p>In this simple benchmark we achieve a large speed improvement over
 base R. The whole loop runs without re-entering R’s RNG once - only the
 <code>random_stream r;</code> line does that.</p>
@@ -401,8 +401,8 @@ sample-with-replacement.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally      14.3ms   15.6ms      62.7    15.4MB     38.3</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_r         46ms   46.7ms      21.4    23.1MB     96.4</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally      23.1ms   23.7ms      41.3    15.4MB     27.5</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_r         63ms   63.2ms      15.8    23.1MB     47.4</span></span></code></pre></div>
 <p>The hand-tuned bootstrap mean naturally is faster.</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
@@ -413,8 +413,8 @@ sample-with-replacement.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression                      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>                 <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> boot_mean_cppally(x, 2000)  14.04ms  14.71ms      67.7    15.4MB     40.6</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> boot_mean(x, 2000)           2.91ms   3.11ms     325.     21.8KB      0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> boot_mean_cppally(x, 2000)  23.19ms  23.46ms      42.4    15.4MB     28.3</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> boot_mean(x, 2000)           4.36ms   4.36ms     229.     21.8KB      0</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="a-flexible-and-fast-bootstrapper">A flexible and fast bootstrapper<a class="anchor" aria-label="anchor" href="#a-flexible-and-fast-bootstrapper"></a>
@@ -506,8 +506,8 @@ version.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression               min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> boot_mean(x, 2000)     2.9ms   3.19ms      320.    15.7KB        0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> boot_mean2(x, 2000)   3.49ms   3.84ms      257.    23.5KB        0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> boot_mean(x, 2000)    4.36ms   4.36ms      229.    15.7KB        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> boot_mean2(x, 2000)    4.7ms   4.71ms      212.    23.5KB        0</span></span></code></pre></div>
 <p>Almost as fast as the hand-tuned version, which is a nice result
 given that <code>boot_mean2</code> was written using a functional.</p>
 <p>One benefit of a generic bootstrap functional like
