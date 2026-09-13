@@ -23,13 +23,13 @@ namespace cppally {
 // the table is built only on the first find(). Most wrappers never look
 // up by name, so both stages matter.
 
+namespace internal {
+
 // Knuth multiplicative hash
 inline std::uint64_t sexp_data_hash(SEXP p) noexcept {
     constexpr std::uint64_t phi = 0x9E3779B97F4A7C15ull;
     return static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(p)) * phi;
 }
-
-namespace internal {
 
 // Open-addressing hash from SEXP keys to indices into an external names
 // array. Keys aren't stored — comparison goes back through names_ptr_, so
