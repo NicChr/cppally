@@ -170,41 +170,7 @@ struct r_vec {
     return static_cast<bool>(m_ptr); 
   }
 
-  // data is copied but attributes are shallow copied, matching Rf_shallow_duplicate.
-  r_vec<T> copy() const {
-    if (is_null()) return *this;
-    r_size_t n = length();
-    r_vec<T> new_vec(n);
-    r_copy_n(new_vec, *this, 0, n);
-    safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
-    return new_vec;
-  }
-
   private:
-
-  void CPPALLY_NOINLINE copy_to_make_exclusive() {
-    r_vec<T> new_vec = copy();
-    *this = std::move(new_vec);
-  }
-
-  public: 
-
-  void ensure_exclusive() {
-    if (!is_exclusive()) [[unlikely]] {
-      copy_to_make_exclusive();
-    }
-  }
-
-  void maybe_ensure_exclusive() {
-    #ifdef CPPALLY_COPY_ON_MODIFY
-    ensure_exclusive();
-    #endif
-  }
-
-  private:
-
-  template <RVector U>
-  friend void r_copy_n(U& target, const U& source, r_size_t target_offset, r_size_t n, r_size_t source_offset);
 
   // Initialise data (pointer) to:
   // const SEXP* (read-only) - If T is a type convertible to SEXP
@@ -266,7 +232,17 @@ struct r_vec {
     }
   }
 
-  public:
+  void CPPALLY_NOINLINE copy_to_make_exclusive() {
+    r_vec<T> new_vec = copy();
+    *this = std::move(new_vec);
+  }
+
+  template <RVector U>
+  friend void r_copy_n(U& target, const U& source, r_size_t target_offset, r_size_t n, r_size_t source_offset);
+
+  public: 
+
+  // ----- Constructors -----
 
   // Construct new r_vec of length n
   template <CppIntegerNumber N>
@@ -280,7 +256,7 @@ struct r_vec {
     fill(r_size_t{0}, static_cast<r_size_t>(n), default_value);
   }
   
-  r_vec(): r_vec(r_size_t(0)){
+  r_vec() : r_vec(r_size_t(0)){
     initialise_ptr();
   }
 
@@ -335,6 +311,29 @@ struct r_vec {
   template <typename V>
   requires (RVector<V> && internal::r_typeof<V> != internal::r_typeof<r_vec<T>>)
   r_vec(const V&) = delete;
+
+
+  // data is copied but attributes are shallow copied, matching Rf_shallow_duplicate.
+  r_vec<T> copy() const {
+    if (is_null()) return *this;
+    r_size_t n = length();
+    r_vec<T> new_vec(n);
+    r_copy_n(new_vec, *this, 0, n);
+    safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
+    return new_vec;
+  }
+
+  void ensure_exclusive() {
+    if (!is_exclusive()) [[unlikely]] {
+      copy_to_make_exclusive();
+    }
+  }
+
+  void maybe_ensure_exclusive() {
+    #ifdef CPPALLY_COPY_ON_MODIFY
+    ensure_exclusive();
+    #endif
+  }
 
   // Direct pointer access - materialises ALTREP when CPPALLY_PRESERVE_ALTREP is on
   #ifdef CPPALLY_PRESERVE_ALTREP
