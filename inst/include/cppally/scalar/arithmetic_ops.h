@@ -18,7 +18,6 @@
 #include <cppally/scalar/r_int64.h>
 #include <cppally/scalar/r_dbl.h>
 #include <algorithm> // For std::min
-#include <cmath> // For std::floor
 
 namespace cppally {
 
