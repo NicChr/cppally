@@ -313,7 +313,7 @@ struct r_vec {
     initialise_ptr();
   }
 
-  explicit r_vec(std::initializer_list<T> elements) : r_vec(elements.size()) {
+  explicit r_vec(std::initializer_list<T> elements) : r_vec(static_cast<r_size_t>(elements.size())) {
     
     r_size_t i = 0;
     for (const auto& elem : elements) {
