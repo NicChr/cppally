@@ -317,7 +317,7 @@ inline constexpr int max_reserved_slots = 16384;  // Reserve slots for when all 
 // Allocate a new chunk and push it onto both the master chain and the
 // free list. Capacity doubles each time, capped at `max_chunk_size`. Caller
 // is responsible for protecting any SEXPs that must outlive this allocation.
-inline chunk* add_chunk() {
+inline CPPALLY_NOINLINE chunk* add_chunk() {
 
     static int next_size = min_chunk_size;
 
