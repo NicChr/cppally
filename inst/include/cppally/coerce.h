@@ -39,7 +39,7 @@ inline T as_impl(const U& x) {
     return static_cast<T>(x);
   } else {
     using scalar_t = as_r_scalar_t<U>;
-    return T(r_vec<scalar_t>({ scalar_t(x) }));
+    return static_cast<T>(static_cast<r_sexp>(r_vec<scalar_t>({ scalar_t(x) })));
   }
 }
 
