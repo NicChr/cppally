@@ -48,16 +48,32 @@ consteval F exp2(int n) noexcept {
   return out;
 }
 
+// constexpr abs() since std::abs isn't constexpr until C++23
+// Only defined for arithmetic types.
+// This may retain negative zeroes and negative-signed NaN but
+// that's okay since we never want to distinguish those in outputs the user cares about.
+template <CppNumber T>
+constexpr T abs2(T x) noexcept {
+  #if defined(__cpp_lib_constexpr_cmath) && __cpp_lib_constexpr_cmath >= 202202L
+    return std::abs(x);
+  #else 
+    return std::is_constant_evaluated() ? (x < 0 ? -x : x) : std::abs(x);
+  #endif
+}
+
 // Complete loss means the value can't survive the cast in any recognisable
 // form: integer overflow, float overflow, Inf/NaN into an integer.
 // Precision loss (fraction truncation, mantissa rounding) is tolerated.
 template <CppMathType To, CppMathType From>
 constexpr bool numeric_can_be_cast_without_complete_loss(From x) noexcept {
+  
+  constexpr To upper = std::numeric_limits<To>::max();
+
   if constexpr (lossless_numeric_cast<From, To>()){
     return true;
   } else if constexpr (CppIntegerType<From> && CppIntegerType<To>){
-    return std::cmp_greater_equal(+x, +std::numeric_limits<To>::min())
-        && std::cmp_less_equal(+x, +std::numeric_limits<To>::max());
+    constexpr To lower = std::numeric_limits<To>::min();
+    return std::cmp_greater_equal(+x, +lower) && std::cmp_less_equal(+x, +upper);
   } else if constexpr (CppIntegerType<From> && CppFloatType<To>){
     // int -> float: magnitude always fits; only precision is lost (tolerated)
     return true;
@@ -65,14 +81,12 @@ constexpr bool numeric_can_be_cast_without_complete_loss(From x) noexcept {
     // Float -> integer: fractions truncate toward zero, out-of-range is complete loss
     // Open upper bound: 2^digits is exact in From whereas To's max may round up
     constexpr From hi = exp2<From>(std::numeric_limits<To>::digits);
-    constexpr From lo = std::is_signed_v<To> ? -hi : From(0);
-    return x >= lo && x < hi; // also rejects Inf/NaN
+    return (std::is_signed_v<To> ? x >= -hi : x > From(-1)) && x < hi; // also rejects Inf/NaN
   } else {
+    constexpr From to_max = static_cast<From>(upper);
+    constexpr From inf = std::numeric_limits<From>::infinity();
     // Narrowing float -> float, e.g. double -> float: overflow to Inf is complete loss
-    constexpr From to_max = static_cast<From>(std::numeric_limits<To>::max());
-    return (x >= -to_max && x <= to_max)
-      || x == std::numeric_limits<From>::infinity()
-      || x == -std::numeric_limits<From>::infinity();
+    return (x >= -to_max && x <= to_max) || abs2(x) == inf;
   }
 }
 
@@ -85,19 +99,6 @@ constexpr bool numeric_can_be_cast_without_complete_loss(From x) noexcept {
 template <CppMathType To, CppMathType From>
 constexpr bool numeric_cast_is_lossless(From x) noexcept {
     return numeric_can_be_cast_without_complete_loss<To>(x) && numeric_can_be_cast_without_complete_loss<From>(static_cast<To>(x)) && static_cast<From>(static_cast<To>(x)) == x;
-}
-
-// constexpr abs() since std::abs isn't constexpr until C++23
-// Only defined for arithmetic types.
-// This may retain negative zeroes and negative-signed NaN but
-// that's okay since we never want to distinguish those in outputs the user cares about.
-template <CppNumber T>
-constexpr T abs2(T x) noexcept {
-  #if defined(__cpp_lib_constexpr_cmath) && __cpp_lib_constexpr_cmath >= 202202L
-    return std::abs(x);
-  #else 
-    return std::is_constant_evaluated() ? (x < 0 ? -x : x) : std::abs(x);
-  #endif
 }
 
 // constexpr floor
