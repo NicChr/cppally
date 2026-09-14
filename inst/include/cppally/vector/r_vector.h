@@ -37,7 +37,7 @@ template <typename T>
 r_sexp as_list_element(const T& x) {
     if constexpr (CastableToRScalar<T>){
       using data_t = as_r_scalar_t<T>;
-      return r_sexp(r_vec<data_t>(1, data_t(x)));
+      return r_sexp(r_vec<data_t>({ data_t(x) }));
     } else if constexpr (std::is_constructible_v<r_sexp, const T&>){
       return r_sexp(x);
     } else {
@@ -1071,7 +1071,7 @@ struct r_vec {
 
   void set_tzone(const char* tz) requires RPsxctType<T> {
     maybe_ensure_exclusive();
-    safe[Rf_setAttrib](value, cached_sym<"tzone">(), r_vec<r_str>(1, r_str(tz)));
+    safe[Rf_setAttrib](value, cached_sym<"tzone">(), r_vec<r_str>({ r_str(tz) }));
   }
 
 };

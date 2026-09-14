@@ -39,7 +39,7 @@ inline T as_impl(const U& x) {
     return static_cast<T>(x);
   } else {
     using scalar_t = as_r_scalar_t<U>;
-    return T(r_vec<scalar_t>(1, scalar_t(x)));
+    return T(r_vec<scalar_t>({ scalar_t(x) }));
   }
 }
 
@@ -207,10 +207,10 @@ template <RComposite T, CastableToRScalar U>
 inline T as_impl(const U& x) {
   if constexpr (RVector<T>){
     using data_t = typename T::data_type;
-    return r_vec<data_t>(1, as<data_t>(x)); 
+    return r_vec<data_t>({ as<data_t>(x) }); 
   } else {
     using scalar_t = as_r_scalar_t<U>;
-    return as<T>(r_vec<scalar_t>(1, scalar_t(x)));
+    return as<T>(r_vec<scalar_t>({ scalar_t(x) }));
   }
 }
 
@@ -260,7 +260,7 @@ inline auto as_vector(const T& x){
     return x.value;
   } else if constexpr (CastableToRScalar<T>){
     using scalar_t = as_r_scalar_t<T>;
-    return r_vec<scalar_t>(1, scalar_t(x));
+    return r_vec<scalar_t>({ scalar_t(x) });
   } else {
     static_assert(always_false<T>, "Can't convert `x` to vector, please use `as<>`");
     return T();

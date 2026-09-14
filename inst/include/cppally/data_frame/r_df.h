@@ -11,7 +11,7 @@ namespace internal {
 
 // Lazily cache data frame class for re-use
 inline r_vec<r_str_view> data_frame_class(){
-    static r_vec<r_str_view>& df_cls = *new r_vec<r_str_view>(1, r_str_view(cached_str<"data.frame">()));
+    static r_vec<r_str_view>& df_cls = *new r_vec<r_str_view>({ r_str_view(cached_str<"data.frame">()) });
     return df_cls;
 }
     
@@ -19,10 +19,7 @@ inline r_vec<r_int> create_row_names(int n){
     if (n == 0){
         return r_vec<r_int>();
     } else {
-        r_vec<r_int> out(2); 
-        out.set(0, na<r_int>());
-        out.set(1, r_int(-n));
-        return out;
+        return r_vec<r_int>({ na<r_int>(), r_int(-n) });
     }
 }
 

@@ -66,7 +66,7 @@ inline CPPALLY_NOINLINE void copy_error(char (&buf)[CPPALLY_ERROR_BUFSIZE], cons
 template <typename T>
 SEXP cpp_to_r(const T& x) {
     if constexpr (RScalar<T>){
-      return static_cast<SEXP>(r_vec<T>(1, x));
+      return static_cast<SEXP>(r_vec<T>({ x }));
     } else {
       return as<SEXP>(x);
     }
