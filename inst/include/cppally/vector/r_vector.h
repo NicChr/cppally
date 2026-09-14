@@ -469,8 +469,7 @@ struct r_vec {
     return name_index(r_str(name), abort_on_missing);
   }
 
-  // Get element (no bounds-check)
-  
+  // Get element by index (no bounds-check)
   #ifdef CPPALLY_PRESERVE_ALTREP
   template <CppIntegerNumber I>
   T get(I index) const {
@@ -487,10 +486,12 @@ struct r_vec {
   }
   #endif
   
+  // Get element by name
   T get(r_str_view name) const {
     return get(static_cast<r_size_t>(unwrap(name_index(name))));
   }
 
+  // Get element by name
   T get(const char* name) const {
     return get(r_str(name));
   }
@@ -525,6 +526,10 @@ struct r_vec {
   // Set element (no bounds-check)
   template <CppIntegerNumber I>
   void set(I index, const T& val) noexcept(
+
+    // If CPPALLY_PRESERVE_ALTREP is defined then data() may materialise and throw
+    // If CPPALLY_COPY_ON_MODIFY is defined then ensure_exclusive() may also materialise and throw
+
     #if defined(CPPALLY_COPY_ON_MODIFY) || defined(CPPALLY_PRESERVE_ALTREP)
     false
     #else
@@ -554,10 +559,11 @@ struct r_vec {
     }
   }
 
+  // Set element by vector name
   void set(r_str_view name, const T& val) {
       set(static_cast<r_size_t>(unwrap(name_index(name))), val);
   }
-  
+  // Set element by vector name
   void set(const char* name, const T& val) {
       set(r_str(name), val);
   }
