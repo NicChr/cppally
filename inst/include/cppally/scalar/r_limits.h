@@ -67,10 +67,10 @@ struct r_limits<r_int64>{
 template <>
 struct r_limits<r_dbl>{
     static constexpr r_dbl min() noexcept {
-        return r_dbl(-std::numeric_limits<double>::infinity());
+        return r_dbl(-unwrap(r_dbl::inf()));
     }
     static constexpr r_dbl max() noexcept {
-        return r_dbl(std::numeric_limits<double>::infinity());
+        return r_dbl::inf();
     }
     static constexpr r_dbl epsilon() noexcept {
         return r_dbl(std::numeric_limits<double>::epsilon());

@@ -18,11 +18,11 @@ inline constexpr r_dbl round_to_even(r_dbl x){
 }
 
 inline constexpr bool is_pos_inf(r_dbl x) noexcept {
-  return x.is_infinite() && unwrap(x) > 0;
+  return unwrap(x) == unwrap(r_dbl::inf());
 }
 
 inline constexpr bool is_neg_inf(r_dbl x) noexcept {
-  return x.is_infinite() && unwrap(x) < 0;
+  return unwrap(x) == -unwrap(r_dbl::inf());
 }
 
 }
