@@ -332,6 +332,10 @@ struct r_vec {
     return value;
   }
 
+  template <typename V>
+  requires (RVector<V> && internal::r_typeof<V> != internal::r_typeof<r_vec<T>>)
+  r_vec(const V&) = delete;
+
   // Direct pointer access - materialises ALTREP when CPPALLY_PRESERVE_ALTREP is on
   #ifdef CPPALLY_PRESERVE_ALTREP
   ptr_t data() const {
