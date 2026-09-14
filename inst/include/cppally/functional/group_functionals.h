@@ -22,6 +22,12 @@ void check_groups_span_data(const T& x, const groups& g){
     }
 }
 
+inline void sort_group_order_by_size(std::vector<int>& group_order, const int* p_bounds){
+    std::sort(group_order.begin(), group_order.end(), [p_bounds](int a, int b){
+        return p_bounds[a] < p_bounds[b];
+    });
+}
+
 template <bool SeedFromFirst, RVal T, typename Acc, typename F>
 void reduce_by_group_impl(const r_vec<T>& x, const groups& g, std::vector<Acc>& accs, F& fn, bool na_skip){
 
@@ -186,9 +192,7 @@ auto apply_by_group(const T& x, const groups& g, F fn) {
     for (int j = 0; j < ng; ++j){
         group_order.push_back(j);
     }
-    std::sort(group_order.begin(), group_order.end(), [p_bounds](int a, int b){
-        return p_bounds[a] < p_bounds[b];
-    });
+    internal::sort_group_order_by_size(group_order, p_bounds);
 
     // Overwrite the group counts into group "ends" (the start indices of the next group)
     for (int j = 1; j < ng; ++j){
