@@ -256,26 +256,18 @@ struct r_vec {
     fill(r_size_t{0}, static_cast<r_size_t>(n), default_value);
   }
   
-  r_vec() : r_vec(r_size_t(0)){
-    initialise_ptr();
-  }
+  r_vec() : r_vec(r_size_t(0)){}
 
   // Constructors from existing r_sexp/SEXP
   explicit r_vec(r_sexp s) : value(std::move(s)) {
     if (!is_null()) {
       internal::check_valid_construction<r_vec<T>>(value);
-      validate_class<T>(value.value);
+      validate_class<T>(value);
       initialise_ptr();
     }
   }
 
-  explicit r_vec(const r_sexp& s, internal::view_tag) : value(s.value, internal::view_tag{}){
-    if (!is_null()){
-      internal::check_valid_construction<r_vec<T>>(value);
-      validate_class<T>(value.value);
-      initialise_ptr();
-    }
-  }
+  explicit r_vec(const r_sexp& s, internal::view_tag) : r_vec(r_sexp(s, internal::view_tag{})){}
 
   explicit r_vec(SEXP s) : r_vec(r_sexp(s)) {}
   explicit r_vec(SEXP s, internal::view_tag) : r_vec(r_sexp(s, internal::view_tag{}), internal::view_tag{}) {}
@@ -285,9 +277,7 @@ struct r_vec {
   explicit r_vec(r_sexp s, internal::no_checks_tag) : value(std::move(s)) {
     initialise_ptr();
   }
-  explicit r_vec(const r_sexp& s, internal::view_tag, internal::no_checks_tag) : value(s.value, internal::view_tag{}){
-    initialise_ptr();
-  }
+  explicit r_vec(const r_sexp& s, internal::view_tag, internal::no_checks_tag) : r_vec(r_sexp(s, internal::view_tag{}), internal::no_checks_tag{}){}
 
   explicit r_vec(std::initializer_list<T> elements) : r_vec(static_cast<r_size_t>(elements.size())) {
     
