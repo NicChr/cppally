@@ -33,42 +33,36 @@ namespace internal {
 // On overflow returns true and out is unspecified, otherwise false
 template <CppIntegerType I>
 inline constexpr bool mul_overflow(I a, I b, I& out) noexcept {
-    if constexpr (sizeof(I) < 8){
+  if constexpr (sizeof(I) < 8){
     int_fast64_t p = static_cast<int_fast64_t>(a) * static_cast<int_fast64_t>(b);
     out = static_cast<I>(p);
     return p != static_cast<int_fast64_t>(out);
-    } 
-    // else if constexpr (sizeof(I) == 8 && int128_available){
-    //   int128_otherwise_64_t p = static_cast<int128_otherwise_64_t>(a) * static_cast<int128_otherwise_64_t>(b);
-    //   out = static_cast<I>(p);
-    //   return p != static_cast<int128_otherwise_64_t>(out);
-    // } 
-    else {
+  } else {
     #ifdef CPPALLY_HAS_BUILTIN_MUL_OVERFLOW
-    return __builtin_mul_overflow(a, b, &out);
+      return __builtin_mul_overflow(a, b, &out);
     #else
-    using UI = std::make_unsigned_t<I>;
-    out = static_cast<I>(static_cast<UI>(a) * static_cast<UI>(b));
-    if (a == 0 || b == 0){
-        return false;
-    }
-    if (b == -1){
-        return a == std::numeric_limits<I>::min(); // avoid MIN / -1 trap below
-    }
-    // If the product wrapped, it is off by a multiple of 2^64 and division cannot recover a
-    return (out / b) != a;
+      using UI = std::make_unsigned_t<I>;
+      out = static_cast<I>(static_cast<UI>(a) * static_cast<UI>(b));
+      if (a == 0 || b == 0){
+          return false;
+      }
+      if (b == -1){
+          return a == std::numeric_limits<I>::min(); // avoid MIN / -1 trap below
+      }
+      // If the product wrapped, it is off by a multiple of 2^64 and division cannot recover a
+      return (out / b) != a;
     #endif
-    }
+  }
 }
 
 // Floored quotient, matching R's %/%
 template <CppIntegerType I>
 inline constexpr I floor_div(I a, I b) noexcept {
-    I q = a / b;
-    if ((a % b) != 0 && ((a > 0) != (b > 0))){
-    --q;
-    }
-    return q;
+  I q = a / b;
+  if ((a % b) != 0 && ((a > 0) != (b > 0))){
+  --q;
+  }
+  return q;
 }
 
 template <CppFloatType F>
@@ -79,16 +73,16 @@ inline constexpr F floor_div(F a, F b) noexcept {
 // Floored remainder, matching R's %%
 template <CppIntegerType I>
 inline constexpr I floor_mod(I a, I b) noexcept {
-    I r = a % b;
-    if (r != 0 && ((a > 0) != (b > 0))){
-    r += b;
-    }
-    return r;
+  I r = a % b;
+  if (r != 0 && ((a > 0) != (b > 0))){
+  r += b;
+  }
+  return r;
 }
 
 template <CppFloatType F>
 inline constexpr F floor_mod(F a, F b) noexcept {
-    return a - (b * floor_div(a, b));
+  return a - (b * floor_div(a, b));
 }
 
 template <RMathType T, RMathType U>
@@ -118,7 +112,6 @@ constexpr bool any_arithmetic_na(T x, U y) noexcept {
 // Generic safe coercion to RNumber
 template <RNumber T, MathType U>
 constexpr T coerce_number(U x) noexcept {
-
   using unwrapped_from_t = unwrap_t<U>;
   using unwrapped_to_t = unwrap_t<T>;
 
