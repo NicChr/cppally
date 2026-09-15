@@ -7,6 +7,7 @@
 #include <cppally/scalar/r_dbl.h>
 #include <cppally/scalar/r_str.h>
 #include <cppally/scalar/arithmetic_ops.h>
+#include <cppally/utils.h>
 #include <cstdint>
 #include <chrono> // For r_date/r_psxt
 #include <cstdio> // For snprintf
@@ -195,55 +196,31 @@ struct r_date {
         return r_date(static_cast<double>(sys_days{ymd}.time_since_epoch().count()) + rem);
     }
 
-    constexpr r_date add_months(r_dbl n, roll on_impossible_date = roll::none) const noexcept {
+    constexpr r_date add_months(r_dbl n, roll on_impossible_date = roll::none, r_dbl k = r_dbl(1.0)) const noexcept {
 
-        using namespace std::chrono;
-
-        if (!is_chrono_safe() || !n.is_finite()){
-            return r_date(days_since_epoch() + n);
+        if (!is_chrono_safe() || !n.is_finite() || !k.is_finite()){
+            return r_date(days_since_epoch() + (n * k));
         }
 
-        r_int whole_months = internal::coerce_number<r_int>(r_dbl(internal::floor2(n)));
-
-        if (whole_months.is_na()){
-            return na();
-        }
-
-        r_date out = add_months(whole_months, on_impossible_date);
-
-        if (unwrap(n) == unwrap(whole_months)){
-            return out;
-        }
-
-        r_dbl fraction = n - whole_months;
-        r_date next_month = add_months(whole_months + r_dbl(1.0), on_impossible_date);
-
-        // Number of days between result and next month
-        r_dbl n_days = next_month.days_since_epoch() - out.days_since_epoch();
-
-        // add (fraction * n_days) days to result
-        return out.add_days(fraction * n_days);
-    }
-
-    constexpr r_date add_month_blocks(r_dbl n, r_dbl k, roll on_impossible_date) const noexcept {
-
-        if (!is_chrono_safe() || !n.is_finite()){
-            return add_months(n * k, on_impossible_date);
-        }
+        auto boundary = [&](r_dbl m) noexcept -> r_date {
+            if (unwrap(m) == internal::floor2(unwrap(m))){
+                return add_months(internal::coerce_number<r_int>(m), on_impossible_date);
+            }
+            return add_months(m, on_impossible_date);
+        };
 
         r_dbl whole_blocks = r_dbl(internal::floor2(n));
-
-        r_date out = add_months(whole_blocks * k, on_impossible_date);
+        r_date lhs = boundary(whole_blocks * k);
 
         if (unwrap(n) == unwrap(whole_blocks)){
-            return out;
+            return lhs;
         }
 
-        r_dbl fraction = n - whole_blocks;
-        r_date next_block = add_months((whole_blocks + r_dbl(1.0)) * k, on_impossible_date);
-        r_dbl n_days = next_block.days_since_epoch() - out.days_since_epoch();
+        r_date rhs = boundary((whole_blocks + r_dbl(1.0)) * k);
 
-        return out.add_days(fraction * n_days);
+        r_dbl fraction = n - whole_blocks;
+        r_dbl n_days = rhs.days_since_epoch() - lhs.days_since_epoch();
+        return lhs.add_days(fraction * n_days);
     }
 
     public:
@@ -261,11 +238,11 @@ struct r_date {
 
         if constexpr (unit == "years") {
 
-            return add_month_blocks(n_units, width * r_dbl(12.0), on_impossible_date);
+            return add_months(n_units, on_impossible_date, width * r_dbl(12.0));
 
         } else if constexpr (unit == "months") {
 
-            return add_month_blocks(n_units, width, on_impossible_date);
+            return add_months(n_units, on_impossible_date, width);
 
         } else if constexpr (unit == "weeks") {
 

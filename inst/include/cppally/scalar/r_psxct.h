@@ -185,55 +185,31 @@ struct r_psxct {
         return r_psxct(static_cast<double>(sys_days{ymd}.time_since_epoch().count()) * 86400.0 + rem);
     }
 
-    constexpr r_psxct add_months(r_dbl n, roll on_impossible_date = roll::none) const noexcept {
-        
-        using namespace std::chrono;
+    constexpr r_psxct add_months(r_dbl n, roll on_impossible_date = roll::none, r_dbl k = r_dbl(1.0)) const noexcept {
 
-        if (!is_chrono_safe() || !n.is_finite()){
-            return r_psxct(seconds_since_epoch() + n);
+        if (!is_chrono_safe() || !n.is_finite() || !k.is_finite()){
+            return r_psxct(seconds_since_epoch() + (n * k));
         }
 
-        r_int whole_months = internal::coerce_number<r_int>(r_dbl(internal::floor2(n)));
-
-        if (whole_months.is_na()){
-            return na();
-        }
-
-        r_psxct out = add_months(whole_months, on_impossible_date);
-
-        if (unwrap(n) == unwrap(whole_months)){
-            return out;
-        }
-
-        r_dbl fraction = n - whole_months;
-        r_psxct next_month = add_months(whole_months + r_dbl(1.0), on_impossible_date);
-        
-        // Number of seconds between result and next month
-        r_dbl n_seconds = next_month.seconds_since_epoch() - out.seconds_since_epoch();
-
-        // add (fraction * n_seconds) seconds to result
-        return out.add_seconds(fraction * n_seconds);
-    }
-
-    constexpr r_psxct add_month_blocks(r_dbl n, r_dbl k, roll on_impossible_date) const noexcept {
-
-        if (!is_chrono_safe() || !n.is_finite()){
-            return add_months(n * k, on_impossible_date);
-        }
+        auto boundary = [&](r_dbl m) -> r_psxct {
+            if (unwrap(m) == internal::floor2(unwrap(m))){
+                return add_months(internal::coerce_number<r_int>(m), on_impossible_date);
+            }
+            return add_months(m, on_impossible_date);
+        };
 
         r_dbl whole_blocks = r_dbl(internal::floor2(n));
-
-        r_psxct out = add_months(whole_blocks * k, on_impossible_date);
+        r_psxct lhs = boundary(whole_blocks * k);
 
         if (unwrap(n) == unwrap(whole_blocks)){
-            return out;
+            return lhs;
         }
 
-        r_dbl fraction = n - whole_blocks;
-        r_psxct next_block = add_months((whole_blocks + r_dbl(1.0)) * k, on_impossible_date);
-        r_dbl n_seconds = next_block.seconds_since_epoch() - out.seconds_since_epoch();
+        r_psxct rhs = boundary((whole_blocks + r_dbl(1.0)) * k);
 
-        return out.add_seconds(fraction * n_seconds);
+        r_dbl fraction = n - whole_blocks;
+        r_dbl n_seconds = rhs.seconds_since_epoch() - lhs.seconds_since_epoch();
+        return lhs.add_seconds(fraction * n_seconds);
     }
 
     public:
@@ -271,11 +247,11 @@ struct r_psxct {
 
         } else if constexpr (unit == "months") {
 
-            return add_month_blocks(n_units, width, on_impossible_date);
+            return add_months(n_units, on_impossible_date, width);
 
         } else { // Years
 
-            return add_month_blocks(n_units, width * r_dbl(12.0), on_impossible_date);
+            return add_months(n_units, on_impossible_date, width * r_dbl(12.0));
 
         }
     }
