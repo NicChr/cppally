@@ -215,40 +215,67 @@ struct r_psxct {
         return out.add_seconds(fraction * n_seconds);
     }
 
+    constexpr r_psxct add_month_blocks(r_dbl n, r_dbl k, roll on_impossible_date) const noexcept {
+
+        if (!is_chrono_safe() || !n.is_finite()){
+            return add_months(n * k, on_impossible_date);
+        }
+
+        r_dbl whole_blocks = r_dbl(internal::floor2(n));
+
+        r_psxct out = add_months(whole_blocks * k, on_impossible_date);
+
+        if (unwrap(n) == unwrap(whole_blocks)){
+            return out;
+        }
+
+        r_dbl fraction = n - whole_blocks;
+        r_psxct next_block = add_months((whole_blocks + r_dbl(1.0)) * k, on_impossible_date);
+        r_dbl n_seconds = next_block.seconds_since_epoch() - out.seconds_since_epoch();
+
+        return out.add_seconds(fraction * n_seconds);
+    }
+
     public:
 
-    template <string_literal Unit, Number N> 
-    constexpr r_psxct add(N n, roll on_impossible_date = roll::none) const noexcept {
+    template <string_literal Unit, Number N>
+    constexpr r_psxct add(N n, roll on_impossible_date = roll::none, r_dbl width = r_dbl(1.0)) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
+        if (width.is_na() || unwrap(width) < 1.0){
+            return na();
+        }
+
+        r_dbl n_units = internal::coerce_number<r_dbl>(n);
+
         if constexpr (unit == "seconds") {
-            
-            return add_seconds(internal::coerce_number<r_dbl>(n));
-            
+
+            return add_seconds(n_units * width);
+
         } else if constexpr (unit == "minutes") {
 
-            return add_seconds(n * r_dbl(60.0));
+            return add_seconds((n_units * width) * r_dbl(60.0));
 
         } else if constexpr (unit == "hours") {
 
-            return add_seconds(n * r_dbl(3600.0));
+            return add_seconds((n_units * width) * r_dbl(3600.0));
 
         } else if constexpr (unit == "days") {
 
-            return add_seconds(n * r_dbl(86400.0));
+            return add_seconds((n_units * width) * r_dbl(86400.0));
 
         } else if constexpr (unit == "weeks") {
 
-            return add_seconds(n * r_dbl(604800.0));
+            return add_seconds((n_units * width) * r_dbl(604800.0));
 
         } else if constexpr (unit == "months") {
 
-            return add_months(internal::coerce_number<r_dbl>(n), on_impossible_date);
+            return add_month_blocks(n_units, width, on_impossible_date);
 
-        } else {
+        } else { // Years
 
-            return add_months(n * r_dbl(12.0), on_impossible_date);
+            return add_month_blocks(n_units, width * r_dbl(12.0), on_impossible_date);
 
         }
     }
@@ -461,74 +488,78 @@ inline constexpr r_dbl diff_seconds(r_psxct x, r_psxct y, r_dbl n) noexcept {
     return diff_seconds(x, y) / n;
 }
 
-inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, bool fractional = true, roll on_impossible_date = roll::none) noexcept {
+inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k = r_dbl(1.0), bool fractional = true, roll on_impossible_date = roll::none) noexcept {
 
-    r_dbl out = diff_months(x.as_date(), y.as_date(), false, on_impossible_date);
+    r_dbl out = diff_months(x.as_date(), y.as_date(), k, false, on_impossible_date);
 
     if (out.is_na()){
         return out;
     }
 
-    bool l2r = unwrap(y) >= unwrap(x);
+    r_psxct small_int_start = x.add<"months">(out * k, on_impossible_date);
+    r_psxct big_int_end = x.add<"months">((out + r_dbl(1.0)) * k, on_impossible_date);
 
-    r_psxct small_int_start = x.add<"months">(out, on_impossible_date);
+    r_dbl ratio = diff_seconds(small_int_start, y) / diff_seconds(small_int_start, big_int_end);
 
-    // If we have overshot, adjust by 1 month
-    if (l2r ? unwrap(small_int_start) > unwrap(y) : unwrap(small_int_start) < unwrap(y)){
-        out = l2r ? out - r_dbl(1.0) : out + r_dbl(1.0);
-        small_int_start = x.add<"months">(out, on_impossible_date);
+    if (ratio.is_finite() && (unwrap(ratio) < 0.0 || unwrap(ratio) >= 1.0)){
+
+        out = out + r_dbl(internal::floor2(ratio));
+
+        small_int_start = x.add<"months">(out * k, on_impossible_date);
+        big_int_end = x.add<"months">((out + r_dbl(1.0)) * k, on_impossible_date);
+
+        ratio = diff_seconds(small_int_start, y) / diff_seconds(small_int_start, big_int_end);
+    }
+
+    if (small_int_start.is_na()){
+        return r_dbl::na();
     }
 
     if (!fractional || static_cast<double>(y) == static_cast<double>(small_int_start)){
         return out;
     }
 
-    r_psxct big_int_end = x.add<"months">(out + (l2r ? r_dbl(1.0) : r_dbl(-1.0)), on_impossible_date);
-    r_dbl ratio = diff_seconds(small_int_start, y) / diff_seconds(small_int_start, big_int_end);
-
-    return l2r ? out + ratio : out - ratio;
+    return ratio.is_finite() ? out + ratio : r_dbl::na();
 }
 
 }
 
-template <string_literal Unit, Number N = double>
-inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, N n = 1.0, roll on_impossible_date = roll::none) noexcept {
+template <string_literal Unit>
+inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width = r_dbl(1.0), roll on_impossible_date = roll::none) noexcept {
 
     constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
-    r_dbl n_blocks = internal::coerce_number<r_dbl>(n);
-
-    if (n_blocks.is_na() || unwrap(n_blocks) == 0.0){
+    if (width.is_na() || unwrap(width) < 1.0){
         return r_dbl::na();
     }
 
     if constexpr (unit == "years") {
 
-        return internal::diff_months(x, y, true, on_impossible_date) / (n_blocks * 12.0);
+        return internal::diff_months(x, y, width * 12.0, true, on_impossible_date);
 
     } else if constexpr (unit == "months") {
 
-        return internal::diff_months(x, y, true, on_impossible_date) / n_blocks;
+        return internal::diff_months(x, y, width, true, on_impossible_date);
 
     } else if constexpr (unit == "weeks"){
 
-        return internal::diff_seconds(x, y, n_blocks * 604800.0);
+        return internal::diff_seconds(x, y, width * 604800.0);
 
     } else if constexpr (unit == "days"){
 
-        return internal::diff_seconds(x, y, n_blocks * 86400.0);
+        return internal::diff_seconds(x, y, width * 86400.0);
 
     } else if constexpr (unit == "hours"){
 
-        return internal::diff_seconds(x, y, n_blocks * 3600.0);
+        return internal::diff_seconds(x, y, width * 3600.0);
 
     } else if constexpr (unit == "minutes"){
 
-        return internal::diff_seconds(x, y, n_blocks * 60.0);
+        return internal::diff_seconds(x, y, width * 60.0);
 
     } else {
 
-        return internal::diff_seconds(x, y, n_blocks);
+        return internal::diff_seconds(x, y, width);
 
     }
 }

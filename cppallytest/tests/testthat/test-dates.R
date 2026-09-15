@@ -48,3 +48,7 @@ test_that("time_diff signs and mirroring", {
 test_that("time_diff round-trips through add", {
   expect_no_error(test_time_diff_round_trip())
 })
+
+test_that("time_diff block widths", {
+  expect_no_error(test_time_diff_blocks())
+})
