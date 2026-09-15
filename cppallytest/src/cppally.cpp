@@ -795,6 +795,14 @@ extern "C" attribute_visible SEXP _cppallytest_test_time_diff_signs() {
   END_CPPALLY
 }
 // test_dates.cpp
+void test_time_diff_blocks();
+extern "C" attribute_visible SEXP _cppallytest_test_time_diff_blocks() {
+  BEGIN_CPPALLY
+  ::test_time_diff_blocks();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_dates.cpp
 void test_time_diff_round_trip();
 extern "C" attribute_visible SEXP _cppallytest_test_time_diff_round_trip() {
   BEGIN_CPPALLY
@@ -1393,6 +1401,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_temp_by_rvalue_ref",           (DL_FUNC) &_cppallytest_test_temp_by_rvalue_ref,           1},
     {"_cppallytest_test_temp_by_value",                (DL_FUNC) &_cppallytest_test_temp_by_value,                1},
     {"_cppallytest_test_template_null",                (DL_FUNC) &_cppallytest_test_template_null,                1},
+    {"_cppallytest_test_time_diff_blocks",             (DL_FUNC) &_cppallytest_test_time_diff_blocks,             0},
     {"_cppallytest_test_time_diff_round_trip",         (DL_FUNC) &_cppallytest_test_time_diff_round_trip,         0},
     {"_cppallytest_test_time_diff_signs",              (DL_FUNC) &_cppallytest_test_time_diff_signs,              0},
     {"_cppallytest_test_time_diff_units",              (DL_FUNC) &_cppallytest_test_time_diff_units,              0},

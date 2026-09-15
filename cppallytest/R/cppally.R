@@ -344,6 +344,10 @@ test_time_diff_signs <- function() {
   invisible(.Call(`_cppallytest_test_time_diff_signs`))
 }
 
+test_time_diff_blocks <- function() {
+  invisible(.Call(`_cppallytest_test_time_diff_blocks`))
+}
+
 test_time_diff_round_trip <- function() {
   invisible(.Call(`_cppallytest_test_time_diff_round_trip`))
 }
