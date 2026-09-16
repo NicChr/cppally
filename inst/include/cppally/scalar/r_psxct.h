@@ -219,7 +219,7 @@ struct r_psxct {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
-        if (width.is_na() || unwrap(width) < 1.0){
+        if (width.is_na() || unwrap(width) == 0.0){
             return na();
         }
 
@@ -479,7 +479,7 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k = r_dbl(1.0), b
 
     if (ratio.is_finite() && (unwrap(ratio) < 0.0 || unwrap(ratio) >= 1.0)){
 
-        out = out + r_dbl(internal::floor2(ratio));
+        out = out + (unwrap(ratio) < 0.0 ? -1.0 : 1.0);
 
         small_int_start = x.add<"months">(out * k, on_impossible_date);
         big_int_end = x.add<"months">((out + r_dbl(1.0)) * k, on_impossible_date);
@@ -505,7 +505,7 @@ inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width = r_dbl(1.0),
 
     constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
-    if (width.is_na() || unwrap(width) < 1.0){
+    if (width.is_na() || unwrap(width) == 0.0){
         return r_dbl::na();
     }
 
