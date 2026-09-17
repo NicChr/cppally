@@ -449,9 +449,6 @@ namespace internal {
 inline constexpr r_dbl diff_days(r_date x, r_date y) noexcept {
     return y.days_since_epoch() - x.days_since_epoch();
 }
-inline constexpr r_dbl diff_days(r_date x, r_date y, r_dbl n) noexcept {
-    return diff_days(x, y) / n;
-}
 
 inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl k = r_dbl(1.0), bool fractional = true, roll on_impossible_date = roll::none) noexcept {
 
@@ -536,23 +533,27 @@ inline constexpr r_dbl time_diff(r_date x, r_date y, r_dbl width = r_dbl(1.0), r
 
     } else if constexpr (unit == "weeks"){
 
-        return internal::diff_days(x, y, 7.0 * width);
+        return internal::diff_days(x, y) / (7.0 * width);
 
     } else if constexpr (unit == "days"){
 
-        return internal::diff_days(x, y, width);
+        r_dbl out = internal::diff_days(x, y);
+        return unwrap(width) == 1.0 ? out : out / width;
         
     } else if constexpr (unit == "hours"){
 
-        return (internal::diff_days(x, y) * r_dbl(24.0)) / width;
+        r_dbl out = internal::diff_days(x, y) * 24.0;
+        return unwrap(width) == 1.0 ? out : out / width;
 
     } else if constexpr (unit == "minutes"){
 
-        return (internal::diff_days(x, y) * r_dbl(1440.0)) / width;
+        r_dbl out = internal::diff_days(x, y) * 1440.0;
+        return unwrap(width) == 1.0 ? out : out / width;
 
     } else { // Seconds
 
-        return (internal::diff_days(x, y) * r_dbl(86400.0)) / width;
+        r_dbl out = internal::diff_days(x, y) * 86400.0;
+        return unwrap(width) == 1.0 ? out : out / width;
 
     }
 }

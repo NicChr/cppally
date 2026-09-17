@@ -547,7 +547,8 @@ inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width = r_dbl(1.0),
 
     } else {
 
-        return internal::diff_seconds(x, y, width);
+        r_dbl out = internal::diff_seconds(x, y);
+        return unwrap(width) == 1.0 ? out : out / width;
 
     }
 }
