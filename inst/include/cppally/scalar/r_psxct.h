@@ -475,7 +475,7 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k = r_dbl(1.0), b
     if (unwrap(k) != 1.0){
         r_dbl exact_months = diff_months(x, y, r_dbl(1.0), true, on_impossible_date);
         if (!exact_months.is_na()){
-            out = r_dbl(internal::floor2(exact_months / k));
+            out = r_dbl(floor2(exact_months / k));
         }
     }
 
@@ -486,7 +486,7 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k = r_dbl(1.0), b
 
     if (ratio.is_finite() && (unwrap(ratio) < 0.0 || unwrap(ratio) >= 1.0)){
 
-        out = out + (unwrap(ratio) < 0.0 ? -1.0 : 1.0);
+        out = out + r_dbl(unwrap(ratio) < 0.0 ? -1.0 : 1.0);
 
         small_int_start = x.add<"months">(out * k, on_impossible_date);
         big_int_end = x.add<"months">((out + r_dbl(1.0)) * k, on_impossible_date);
@@ -523,7 +523,7 @@ inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width = r_dbl(1.0),
 
     if constexpr (unit == "years") {
 
-        return internal::diff_months(x, y, width * 12.0, true, on_impossible_date);
+        return internal::diff_months(x, y, width * r_dbl(12.0), true, on_impossible_date);
 
     } else if constexpr (unit == "months") {
 
@@ -531,19 +531,19 @@ inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width = r_dbl(1.0),
 
     } else if constexpr (unit == "weeks"){
 
-        return internal::diff_seconds(x, y, width * 604800.0);
+        return internal::diff_seconds(x, y, width * r_dbl(604800.0));
 
     } else if constexpr (unit == "days"){
 
-        return internal::diff_seconds(x, y, width * 86400.0);
+        return internal::diff_seconds(x, y, width * r_dbl(86400.0));
 
     } else if constexpr (unit == "hours"){
 
-        return internal::diff_seconds(x, y, width * 3600.0);
+        return internal::diff_seconds(x, y, width * r_dbl(3600.0));
 
     } else if constexpr (unit == "minutes"){
 
-        return internal::diff_seconds(x, y, width * 60.0);
+        return internal::diff_seconds(x, y, width * r_dbl(60.0));
 
     } else {
 
