@@ -455,7 +455,7 @@ inline constexpr r_dbl diff_days(r_date x, r_date y, r_dbl n) noexcept {
 
 inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl k = r_dbl(1.0), bool fractional = true, roll on_impossible_date = roll::none) noexcept {
 
-    if (!x.days_since_epoch().is_finite() || !y.days_since_epoch().is_finite() || !k.is_finite() || (unwrap(k) < 1.0 && unwrap(k) > -1.0)){
+    if (!x.days_since_epoch().is_finite() || !y.days_since_epoch().is_finite()){
         return r_dbl::na();
     }
 
@@ -473,7 +473,16 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl k = r_dbl(1.0), boo
         return r_dbl::na();
     }
 
-    r_dbl out = r_dbl(internal::floor2(whole_months / k));
+    r_dbl months = internal::coerce_number<r_dbl>(whole_months);
+
+    if (unwrap(k) != 1.0){
+        r_dbl exact_months = diff_months(x, y, r_dbl(1.0), true, on_impossible_date);
+        if (!exact_months.is_na()){
+            months = exact_months;
+        }
+    }
+
+    r_dbl out = r_dbl(internal::floor2(months / k));
 
     r_date small_int_start = x.add<"months">(out * k, on_impossible_date);
     r_date big_int_end = x.add<"months">((out + 1.0) * k, on_impossible_date);
@@ -510,6 +519,11 @@ inline constexpr r_dbl time_diff(r_date x, r_date y, r_dbl width = r_dbl(1.0), r
 
     if (width.is_na() || unwrap(width) == 0.0){
         return r_dbl::na();
+    }
+
+    // (a - b) / Inf = 0
+    if (width.is_infinite() && x.days_since_epoch().is_finite() && y.days_since_epoch().is_finite()){
+        return r_dbl(0.0);
     }
 
     if constexpr (unit == "years") {

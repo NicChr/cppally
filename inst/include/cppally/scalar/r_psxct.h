@@ -472,6 +472,13 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k = r_dbl(1.0), b
         return out;
     }
 
+    if (unwrap(k) != 1.0){
+        r_dbl exact_months = diff_months(x, y, r_dbl(1.0), true, on_impossible_date);
+        if (!exact_months.is_na()){
+            out = r_dbl(internal::floor2(exact_months / k));
+        }
+    }
+
     r_psxct small_int_start = x.add<"months">(out * k, on_impossible_date);
     r_psxct big_int_end = x.add<"months">((out + r_dbl(1.0)) * k, on_impossible_date);
 
@@ -507,6 +514,11 @@ inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width = r_dbl(1.0),
 
     if (width.is_na() || unwrap(width) == 0.0){
         return r_dbl::na();
+    }
+
+    // (a - b) / Inf = 0
+    if (width.is_infinite() && x.seconds_since_epoch().is_finite() && y.seconds_since_epoch().is_finite()){
+        return r_dbl(0.0);
     }
 
     if constexpr (unit == "years") {

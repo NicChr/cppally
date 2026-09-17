@@ -308,6 +308,8 @@ void test_time_diff_units(){
 [[cppally::register]]
 void test_time_diff_signs(){
 
+    constexpr double fp_ulp = 1e-12;
+
     r_date a(2019, 1, 1);
     r_date b(2020, 1, 1);
 
@@ -320,17 +322,21 @@ void test_time_diff_signs(){
     r_date c(2024, 3, 15);
     r_date d(2026, 11, 20);
     r_psxct p(2024, 3, 15, 13, 45, 30.0);
+    r_psxct p2(2024, 3, 15, 14, 45, 30.0);
 
-    expect_identical(time_diff<"months">(c, d, r_dbl(0.5)), r_dbl::na(), "width below 1, months");
-    expect_identical(time_diff<"months">(c, d, r_dbl(-1.0)), r_dbl::na(), "negative width, months");
-    expect_identical(time_diff<"years">(c, d, r_dbl(-1.0)), r_dbl::na(), "negative width, years");
-    expect_identical(time_diff<"days">(c, d, r_dbl(-3.0)), r_dbl::na(), "negative width, days");
-    expect_identical(time_diff<"hours">(c, d, r_dbl(0.5)), r_dbl::na(), "width below 1, hours");
-    expect_identical(time_diff<"seconds">(p, p, r_dbl(-30.0)), r_dbl::na(), "negative width, datetime");
+    expect_near(time_diff<"months">(c, d, r_dbl(0.5)), 2.0 * time_diff<"months">(c, d), fp_ulp, "width below 1, months");
+    expect_identical(time_diff<"hours">(c, d, r_dbl(0.5)), r_dbl(2.0 * static_cast<double>(time_diff<"hours">(c, d))), "width below 1, hours");
+    expect_identical(c.add<"months">(1, roll::none, r_dbl(0.5)), c.add<"months">(r_dbl(0.5)), "add, width below 1");
+    expect_identical(p.add<"years">(1, roll::none, r_dbl(0.5)), p.add<"months">(6), "add, width below 1, datetime");
 
-    expect_identical(c.add<"months">(1, roll::none, r_dbl(0.5)), r_date::na(), "add, width below 1");
-    expect_identical(c.add<"days">(1, roll::none, r_dbl(-2.0)), r_date::na(), "add, negative width");
-    expect_identical(p.add<"years">(1, roll::none, r_dbl(0.5)), r_psxct::na(), "add, width below 1, datetime");
+    expect_near(time_diff<"months">(c, d, r_dbl(-1.0)), -static_cast<double>(time_diff<"months">(c, d, r_dbl(1.0))), fp_ulp, "negative width, months");
+    expect_near(time_diff<"months">(d, c, r_dbl(-5.0)), -static_cast<double>(time_diff<"months">(d, c, r_dbl(5.0))), fp_ulp, "negative width, months, y before x");
+    expect_near(time_diff<"years">(c, d, r_dbl(-1.0)), -static_cast<double>(time_diff<"years">(c, d, r_dbl(1.0))), fp_ulp, "negative width, years");
+    expect_identical(time_diff<"days">(c, d, r_dbl(-3.0)), r_dbl(-static_cast<double>(time_diff<"days">(c, d, r_dbl(3.0)))), "negative width, days");
+    expect_identical(time_diff<"seconds">(p, p2, r_dbl(-30.0)), r_dbl(-120.0), "negative width, datetime");
+
+    expect_identical(c.add<"days">(1, roll::none, r_dbl(-2.0)), c.add<"days">(-2), "add, negative width");
+    expect_identical(c.add<"months">(1, roll::none, r_dbl(-3.0)), c.add<"months">(-3), "add, negative width, months");
 
     expect_identical(time_diff<"months">(a, b, r_dbl(0.0)), r_dbl::na(), "zero period");
     expect_identical(time_diff<"days">(a, b, r_dbl(0.0)), r_dbl::na(), "zero period, days");
@@ -371,6 +377,20 @@ void test_time_diff_blocks(){
     expect_identical(time_diff<"months">(q2, q1, r_dbl(3.0)), r_dbl(-4.0), "4 whole quarters backwards");
     expect_identical(time_diff<"years">(q1, q2), r_dbl(1.0), "1 whole year");
 
+    r_date n1(2003, 1, 15);
+    r_date n2(2003, 4, 14);
+
+    expect_near(time_diff<"months">(n1, n2, r_dbl(-1.0)), -(2.0 + 30.0 / 31.0), fp_ulp, "negative width, bracket overshoot");
+
+    r_date w1(2003, 1, 15);
+    r_date w2(2003, 2, 12);
+
+    expect_near(time_diff<"months">(w1, w2, r_dbl(0.4)), 2.0 + 3.2 / 11.8, fp_ulp, "sub-month width, straddling block");
+
+    expect_near(time_diff<"years">(r_psxct(2003, 1, 31, 0, 0, 0.0), r_psxct(2003, 3, 15, 0, 0, 0.0)),
+                time_diff<"years">(r_date(2003, 1, 31), r_date(2003, 3, 15)), fp_ulp, "impossible whole month, datetime");
+    expect_near(time_diff<"years">(r_date(2003, 1, 31), r_date(2003, 3, 15)), 43.0 / 365.0, fp_ulp, "impossible whole month");
+
     r_psxct p1(2024, 3, 15, 13, 45, 30.0);
     r_psxct p2(2024, 6, 15, 13, 45, 30.0);
 
@@ -406,6 +426,11 @@ void test_time_diff_round_trip(){
     expect_round_trip<"years">(c, d, r_dbl(2.0), fp_days, "years n=2");
     expect_round_trip<"years">(e, f, r_dbl(2.0), fp_days, "years n=2, y before x");
 
+    expect_round_trip<"months">(c, d, r_dbl(-1.0), fp_days, "months n=-1");
+    expect_round_trip<"months">(e, f, r_dbl(-1.0), fp_days, "months n=-1, y before x");
+    expect_round_trip<"months">(c, d, r_dbl(-12.0), fp_days, "months n=-12");
+    expect_round_trip<"years">(d, c, r_dbl(-2.0), fp_days, "years n=-2, y before x");
+
     r_date g(2003, 1, 4);
     r_date h(2003, 1, 1);
 
@@ -413,8 +438,22 @@ void test_time_diff_round_trip(){
     expect_round_trip<"months">(g, h, r_dbl(12.0), fp_days, "months n=12, sub-block gap");
     expect_round_trip<"months">(h, g, r_dbl(12.0), fp_days, "months n=12, sub-block gap forwards");
 
+    r_date i(2003, 1, 15);
+    r_date j(2003, 4, 14);
+
+    expect_round_trip<"months">(i, j, r_dbl(-1.0), fp_days, "months n=-1, bracket overshoot");
+
+    r_date w1(2003, 1, 15);
+    r_date w2(2003, 2, 12);
+
+    expect_round_trip<"months">(w1, w2, r_dbl(0.4), fp_days, "months n=0.4, straddling block");
+    expect_round_trip<"months">(w2, w1, r_dbl(0.4), fp_days, "months n=0.4, straddling block, y before x");
+    expect_round_trip<"months">(c, d, r_dbl(0.5), fp_days, "months n=0.5");
+    expect_round_trip<"months">(c, d, r_dbl(-0.4), fp_days, "months n=-0.4");
+
     expect_round_trip<"days">(c, d, r_dbl(1.0), fp_days, "days n=1");
     expect_round_trip<"days">(c, d, r_dbl(3.0), fp_days, "days n=3");
+    expect_round_trip<"days">(c, d, r_dbl(-3.0), fp_days, "days n=-3");
     expect_round_trip<"weeks">(c, d, r_dbl(2.0), fp_days, "weeks n=2");
     expect_round_trip<"hours">(c, d, r_dbl(6.0), fp_days, "hours n=6");
     expect_round_trip<"minutes">(c, d, r_dbl(90.0), fp_days, "minutes n=90");
@@ -431,6 +470,8 @@ void test_time_diff_round_trip(){
     expect_round_trip<"months">(q, p, r_dbl(12.0), fp_secs, "months n=12, datetime, y before x");
     expect_round_trip<"years">(p, q, r_dbl(1.0), fp_secs, "years n=1, datetime");
     expect_round_trip<"years">(p, q, r_dbl(2.0), fp_secs, "years n=2, datetime");
+    expect_round_trip<"months">(p, q, r_dbl(-1.0), fp_secs, "months n=-1, datetime");
+    expect_round_trip<"months">(q, p, r_dbl(-12.0), fp_secs, "months n=-12, datetime, y before x");
 
     expect_round_trip<"seconds">(p, q, r_dbl(1.0), fp_secs, "seconds n=1, datetime");
     expect_round_trip<"hours">(p, q, r_dbl(6.0), fp_secs, "hours n=6, datetime");
