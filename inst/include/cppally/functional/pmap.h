@@ -41,9 +41,25 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
       }      
     }
 
+    // Binary functions with the lhs or rhs being a scalar are very common
+    if constexpr (n_vecs == 2){
+      if (recycle && (lens[0] == 1 || lens[1] == 1)){
+        return [&]<typename A, typename B>(const r_vec<A>& a, const r_vec<B>& b){
+          if (lens[0] == 1){ // If LHS is a scalar
+            return pmap_impl<simd, parallel>(
+              [&fn, val = a.get(0)](r_size_t i, B y){ return fn(i, val, y); }, b
+            );
+          } else { // RHS is a scalar
+            return pmap_impl<simd, parallel>(
+              [&fn, val = b.get(0)](r_size_t i, A x){ return fn(i, x, val); }, a
+            );
+          }
+        }(vecs...);
+      }
+    }
+
     r_vec<out_t> out(n);
 
-    // With a single vector n == lens[0] always, so `recycle` is unreachable
     if constexpr (n_vecs > 1){
       if (recycle){
         // Can't use SIMD or multiple threads here. Per-vector counters wrap via recycle_index

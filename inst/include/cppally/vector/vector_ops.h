@@ -30,15 +30,7 @@ namespace cppally {
 using lhs_t = decltype(lhs);                                                                                                    \
 using rhs_t = decltype(rhs);                                                                                                    \
 if constexpr (RAtomicVector<lhs_t> && RAtomicVector<rhs_t>){                                                                    \
-  if (rhs.length() == 1){                                                                                                       \
-    auto val = rhs.view(0);                                                                                                     \
-    return pmap_parallel_simd([val](auto a) noexcept { return a OP val; }, lhs);                                                \
-  } else if (lhs.length() == 1){                                                                                                \
-    auto val = lhs.view(0);                                                                                                     \
-    return pmap_parallel_simd([val](auto b) noexcept { return val OP b; }, rhs);                                                \
-  } else {                                                                                                                      \
-    return pmap_parallel_simd([](auto a, auto b) noexcept { return a OP b; }, lhs, rhs);                                        \
-  }                                                                                                                             \
+  return pmap_parallel_simd([](auto a, auto b) noexcept { return a OP b; }, lhs, rhs);                                          \
   /*Cases where one is a scalar*/                                                                                               \
 } else if constexpr (RAtomicVector<lhs_t>) {                                                                                    \
   return pmap_parallel_simd([rhs](auto a) noexcept { return a OP rhs; }, lhs);                                                  \
