@@ -196,31 +196,46 @@ struct r_date {
         return r_date(static_cast<double>(sys_days{ymd}.time_since_epoch().count()) + rem);
     }
 
-    constexpr r_date add_months(r_dbl n, roll on_impossible_date = roll::none, r_dbl k = r_dbl(1.0)) const noexcept {
+    // Returns the date that is partway through the interval [lhs, rhs)
+    static constexpr r_date interpolate(r_date lhs, r_date rhs, r_dbl fraction) noexcept {
+        r_dbl n_days = rhs.days_since_epoch() - lhs.days_since_epoch();
+        return lhs.add_days(fraction * n_days);
+    }
+
+    // Callers must have checked that both `*this` and `m` are finite
+    constexpr r_date add_months(r_dbl m, roll on_impossible_date) const noexcept {
+
+        double floored = internal::floor2(m);
+        r_int whole_months = internal::coerce_number<r_int>(r_dbl(floored));
+        r_date lhs = add_months(whole_months, on_impossible_date);
+
+        if (unwrap(m) == floored){
+            return lhs;
+        }
+
+        r_date rhs = add_months(whole_months + r_int(1), on_impossible_date);
+        return interpolate(lhs, rhs, /*fraction = */ m - whole_months);
+    }
+
+    constexpr r_date add_months(r_dbl n, roll on_impossible_date, r_dbl k) const noexcept {
 
         if (!is_chrono_safe() || !n.is_finite() || !k.is_finite()){
             return r_date(days_since_epoch() + (n * k));
         }
 
-        auto boundary = [&](r_dbl m) noexcept -> r_date {
-            if (unwrap(m) == internal::floor2(unwrap(m))){
-                return add_months(internal::coerce_number<r_int>(m), on_impossible_date);
-            }
-            return add_months(m, on_impossible_date);
-        };
+        if (unwrap(k) == 1.0){
+            return add_months(n, on_impossible_date);
+        }
 
         r_dbl whole_blocks = r_dbl(internal::floor2(n));
-        r_date lhs = boundary(whole_blocks * k);
+        r_date lhs = add_months(whole_blocks * k, on_impossible_date);
 
         if (unwrap(n) == unwrap(whole_blocks)){
             return lhs;
         }
 
-        r_date rhs = boundary((whole_blocks + r_dbl(1.0)) * k);
-
-        r_dbl fraction = n - whole_blocks;
-        r_dbl n_days = rhs.days_since_epoch() - lhs.days_since_epoch();
-        return lhs.add_days(fraction * n_days);
+        r_date rhs = add_months((whole_blocks + r_dbl(1.0)) * k, on_impossible_date);
+        return interpolate(lhs, rhs, /*fraction = */ n - whole_blocks);
     }
 
     public:
