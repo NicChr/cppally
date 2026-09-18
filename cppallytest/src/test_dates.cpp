@@ -338,9 +338,17 @@ void test_time_diff_signs(){
     expect_identical(c.add<"days">(1, roll::none, r_dbl(-2.0)), c.add<"days">(-2), "add, negative width");
     expect_identical(c.add<"months">(1, roll::none, r_dbl(-3.0)), c.add<"months">(-3), "add, negative width, months");
 
-    expect_identical(time_diff<"months">(a, b, r_dbl(0.0)), r_dbl::na(), "zero period");
-    expect_identical(time_diff<"days">(a, b, r_dbl(0.0)), r_dbl::na(), "zero period, days");
+    expect_identical(time_diff<"months">(a, a, r_dbl(0.0)), r_dbl::nan(), "zero period, same time points");
+    expect_identical(time_diff<"months">(a, b, r_dbl(0.0)), r_dbl::inf(), "zero period");
+    expect_identical(time_diff<"days">(a, b, r_dbl(0.0)), r_dbl::inf(), "zero period, days");
+    expect_identical(time_diff<"days">(b, a, r_dbl(0.0)), -r_dbl::inf(), "zero period, y before x");
+    expect_identical(a.add<"months">(1, roll::none, r_dbl(0.0)), a, "zero width, add months");
+    expect_identical(a.add<"days">(3, roll::none, r_dbl(0.0)), a, "zero width, add days");
+
     expect_identical(time_diff<"months">(a, b, r_dbl::na()), r_dbl::na(), "NA period");
+    expect_identical(time_diff<"days">(a, b, r_dbl::na()), r_dbl::na(), "NA period, days");
+    expect_identical(a.add<"months">(1, roll::none, r_dbl::na()), r_date::na(), "NA width, add months");
+    expect_identical(a.add<"days">(3, roll::none, r_dbl::na()), r_date::na(), "NA width, add days");
     expect_identical(time_diff<"months">(r_date::na(), b), r_dbl::na(), "NA start");
     expect_identical(time_diff<"months">(a, r_date::na()), r_dbl::na(), "NA end");
 }

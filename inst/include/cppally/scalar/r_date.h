@@ -230,10 +230,6 @@ struct r_date {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
-        if (width.is_na() || unwrap(width) == 0.0){
-            return na();
-        }
-
         r_dbl n_units = internal::coerce_number<r_dbl>(n);
 
         if constexpr (unit == "years") {
@@ -450,7 +446,40 @@ inline constexpr r_dbl diff_days(r_date x, r_date y) noexcept {
     return y.days_since_epoch() - x.days_since_epoch();
 }
 
+// Adjust the whole month estimate
+inline constexpr r_dbl diff_month_blocks(r_date x, r_date y, r_dbl k, r_dbl estimate, bool fractional, roll on_impossible_date) noexcept {
+
+    r_date small_int_start = x.add<"months">(estimate * k, on_impossible_date);
+    r_date big_int_end = x.add<"months">((estimate + r_dbl(1.0)) * k, on_impossible_date);
+
+    r_dbl ratio = diff_days(small_int_start, y) / diff_days(small_int_start, big_int_end);
+
+    if (ratio.is_finite() && (unwrap(ratio) < 0.0 || unwrap(ratio) >= 1.0)){
+
+        estimate = estimate + r_dbl(unwrap(ratio) < 0.0 ? -1.0 : 1.0);
+
+        small_int_start = x.add<"months">(estimate * k, on_impossible_date);
+        big_int_end = x.add<"months">((estimate + r_dbl(1.0)) * k, on_impossible_date);
+
+        ratio = diff_days(small_int_start, y) / diff_days(small_int_start, big_int_end);
+    }
+
+    if (small_int_start.is_na()){
+        return r_dbl::na();
+    }
+
+    if (!fractional || static_cast<double>(y) == static_cast<double>(small_int_start)){
+        return estimate;
+    }
+
+    return ratio.is_finite() ? estimate + ratio : r_dbl::na();
+}
+
 inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl k = r_dbl(1.0), bool fractional = true, roll on_impossible_date = roll::none) noexcept {
+
+    if (!k.is_finite() || unwrap(k) == 0.0){
+        return ( y.days_since_epoch() - x.days_since_epoch() ) / k;
+    }
 
     if (!x.days_since_epoch().is_finite() || !y.days_since_epoch().is_finite()){
         return r_dbl::na();
@@ -473,38 +502,13 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl k = r_dbl(1.0), boo
     r_dbl months = coerce_number<r_dbl>(whole_months);
 
     if (unwrap(k) != 1.0){
-        r_dbl exact_months = diff_months(x, y, r_dbl(1.0), true, on_impossible_date);
+        r_dbl exact_months = diff_month_blocks(x, y, r_dbl(1.0), months, true, on_impossible_date);
         if (!exact_months.is_na()){
             months = exact_months;
         }
     }
 
-    r_dbl out = r_dbl(floor2(months / k));
-
-    r_date small_int_start = x.add<"months">(out * k, on_impossible_date);
-    r_date big_int_end = x.add<"months">((out + r_dbl(1.0)) * k, on_impossible_date);
-
-    r_dbl ratio = diff_days(small_int_start, y) / diff_days(small_int_start, big_int_end);
-
-    if (ratio.is_finite() && (unwrap(ratio) < 0.0 || unwrap(ratio) >= 1.0)){
-
-        out = out + r_dbl(unwrap(ratio) < 0.0 ? -1.0 : 1.0);
-
-        small_int_start = x.add<"months">(out * k, on_impossible_date);
-        big_int_end = x.add<"months">((out + r_dbl(1.0)) * k, on_impossible_date);
-
-        ratio = diff_days(small_int_start, y) / diff_days(small_int_start, big_int_end);
-    }
-
-    if (small_int_start.is_na()){
-        return r_dbl::na();
-    }
-
-    if (!fractional || static_cast<double>(y) == static_cast<double>(small_int_start)){
-        return out;
-    }
-
-    return ratio.is_finite() ? out + ratio : r_dbl::na();
+    return diff_month_blocks(x, y, k, /*estimate = */ r_dbl(floor2(months / k)), fractional, on_impossible_date);
 }
 
 }
@@ -513,15 +517,6 @@ template <string_literal Unit>
 inline constexpr r_dbl time_diff(r_date x, r_date y, r_dbl width = r_dbl(1.0), roll on_impossible_date = roll::none) noexcept {
 
     constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
-
-    if (width.is_na() || unwrap(width) == 0.0){
-        return r_dbl::na();
-    }
-
-    // (a - b) / Inf = 0
-    if (width.is_infinite() && x.days_since_epoch().is_finite() && y.days_since_epoch().is_finite()){
-        return r_dbl(0.0);
-    }
 
     if constexpr (unit == "years") {
 
