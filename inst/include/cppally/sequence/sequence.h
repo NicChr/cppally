@@ -66,8 +66,8 @@ auto seq_end(int size, T from, U by){
 }
 
 // increment given a size and the two end points
-template <RNumber T, RNumber U>
-r_dbl seq_increment(int size, T from, U to){
+template <RNumber T>
+r_dbl seq_increment(int size, T from, T to){
     if ( (from == to).is_true() || (size == 1) ){
         return r_dbl(0.0);
     }
