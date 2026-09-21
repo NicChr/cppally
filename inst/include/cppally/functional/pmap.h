@@ -16,19 +16,19 @@
 // Note on usage of macros: The macro plumbing can in theory be replaced with a single variadic template + if constexpr branches (as used to be done), 
 // but I have found the macro approach lighter on compile-size, and since pmap is large and commonly used, the option that results in a smaller binary size is preferred.
 
-#define CPPALLY_DO_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, Ts(ps[i])...));
+#define CPPALLY_DO_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<Ts>(ps[i])...));
 #define CPPALLY_DO_MAP for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, vecs.view(i)...));
 
-#define CPPALLY_DO_UNARY_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, T(p_x[i])));
+#define CPPALLY_DO_UNARY_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x[i])));
 #define CPPALLY_DO_UNARY_MAP for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, vec.view(i)));
 
-#define CPPALLY_DO_BINARY_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, T(p_x1[i]), U(p_x2[i])));
+#define CPPALLY_DO_BINARY_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x1[i]), internal::unsafe_reconstruct_view<U>(p_x2[i])));
 #define CPPALLY_DO_BINARY_MAP for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, vec1.view(i), vec2.view(i)));
 
 // Binary with one scalar
-#define CPPALLY_DO_LHS_SCALAR_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, val, U(p_x[i])));
+#define CPPALLY_DO_LHS_SCALAR_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, val, internal::unsafe_reconstruct_view<U>(p_x[i])));
 #define CPPALLY_DO_LHS_SCALAR_MAP for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, val, vec2.view(i)));
-#define CPPALLY_DO_RHS_SCALAR_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, T(p_x[i]), val));
+#define CPPALLY_DO_RHS_SCALAR_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x[i]), val));
 #define CPPALLY_DO_RHS_SCALAR_MAP for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, vec1.view(i), val));
 
 #define CPPALLY_OMP_DISPATCH(LOOP)                     \
