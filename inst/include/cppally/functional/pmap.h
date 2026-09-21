@@ -6,53 +6,35 @@
 #include <utility>
 
 // pmap is a powerful utility for vectorising scalar C++ functions.
-// It executes user-supplied lambdas (optionally with SIMD instructions and/or multiple parallel threads) across all elements of the supplied vectors. 
+// It executes user-supplied lambdas (optionally with SIMD instructions and/or multiple parallel threads) across all elements of the supplied vectors.
 // If vectors do not share the same length, elements are traversed by recycling through the shorter vectors' elements. If any vectors are empty (0-length), the output vector will also be empty.
 // Please note that SIMD/multiple threads are ALWAYS disabled for some types (concept: RVectorisable) like r_str and r_sexp, even when explicitly requested.
 // Author: Nick Christofides
 // License: MIT
 // Year: 2026
 
-// Note on usage of macros: The macro plumbing can in theory be replaced with a single variadic template + if constexpr branches (as used to be done), 
-// but I have found the macro approach lighter on compile-size, and since pmap is large and commonly used, the option that results in a smaller binary size is preferred.
-
-#define CPPALLY_DO_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<Ts>(ps[i])...));
-#define CPPALLY_DO_MAP for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, vecs.view(i)...));
-
-#define CPPALLY_DO_UNARY_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x[i])));
-#define CPPALLY_DO_UNARY_MAP for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, vec.view(i)));
-
-#define CPPALLY_DO_BINARY_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x1[i]), internal::unsafe_reconstruct_view<U>(p_x2[i])));
-#define CPPALLY_DO_BINARY_MAP for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, vec1.view(i), vec2.view(i)));
-
-// Binary with one scalar
-#define CPPALLY_DO_LHS_SCALAR_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, val, internal::unsafe_reconstruct_view<U>(p_x[i])));
-#define CPPALLY_DO_LHS_SCALAR_MAP for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, val, vec2.view(i)));
-#define CPPALLY_DO_RHS_SCALAR_MAP_WITH_DATA for (r_size_t i = 0; i < n; ++i) p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x[i]), val));
-#define CPPALLY_DO_RHS_SCALAR_MAP for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, vec1.view(i), val));
-
-#define CPPALLY_OMP_DISPATCH(LOOP)                     \
-  if constexpr (parallel){                             \
-    const int n_threads = internal::calc_threads(n);   \
-    if constexpr (simd){                               \
-      if (n_threads > 1){                              \
-        OMP_PARALLEL_FOR_SIMD(n_threads)               \
-        LOOP                                           \
-      } else {                                         \
-        OMP_SIMD                                       \
-        LOOP                                           \
-      }                                                \
-    } else {                                           \
-      if (n_threads > 1){                              \
-        OMP_PARALLEL_FOR(n_threads)                    \
-        LOOP                                           \
-      } else {                                         \
-        LOOP                                           \
-      }                                                \
-    }                                                  \
-  } else {                                             \
-    OMP_SIMD                                           \
-    LOOP                                               \
+#define CPPALLY_OMP_DISPATCH(body, n, parallel, simd)    \
+  if constexpr (parallel){                               \
+    const int n_threads = internal::calc_threads(n);     \
+    if constexpr (simd){                                 \
+      if (n_threads > 1){                                \
+        OMP_PARALLEL_FOR_SIMD(n_threads)                 \
+        for (r_size_t i = 0; i < n; ++i) body(i);        \
+      } else {                                           \
+        OMP_SIMD                                         \
+        for (r_size_t i = 0; i < n; ++i) body(i);        \
+      }                                                  \
+    } else {                                             \
+      if (n_threads > 1){                                \
+        OMP_PARALLEL_FOR(n_threads)                      \
+        for (r_size_t i = 0; i < n; ++i) body(i);        \
+      } else {                                           \
+        for (r_size_t i = 0; i < n; ++i) body(i);        \
+      }                                                  \
+    }                                                    \
+  } else {                                               \
+    OMP_SIMD                                             \
+    for (r_size_t i = 0; i < n; ++i) body(i);            \
   }
 
 namespace cppally {
@@ -95,12 +77,18 @@ auto pmap_impl(F fn, const r_vec<T>& vec) {
 
   if constexpr (vectorisable_or_parallelisable && (simd || parallel)) {
 
-    [&](auto* RESTRICT p_out, auto* RESTRICT p_x){
-      CPPALLY_OMP_DISPATCH(CPPALLY_DO_UNARY_MAP_WITH_DATA)
+    [&, n](auto* RESTRICT p_out, auto* RESTRICT p_x){
+
+      auto body = [&fn, p_out, p_x](r_size_t i){
+        p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x[i])));
+      };
+
+      CPPALLY_OMP_DISPATCH(body, n, parallel, simd)
+
     }(out.data(), vec.data());
 
   } else {
-    CPPALLY_DO_UNARY_MAP
+    for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, vec.view(i)));
   }
   return out;
 }
@@ -127,20 +115,32 @@ auto pmap_impl(F fn, const r_vec<T>& vec1, const r_vec<U>& vec2) {
     if (lens[0] == 1){ // If LHS is a scalar
       const T val = vec1.get(0);
       if constexpr (RVectorisable<U> && RVectorisable<out_t> && (simd || parallel)){
-        [&](auto* RESTRICT p_out, auto* RESTRICT p_x){
-          CPPALLY_OMP_DISPATCH(CPPALLY_DO_LHS_SCALAR_MAP_WITH_DATA)
+        [&, n](auto* RESTRICT p_out, auto* RESTRICT p_x){
+          
+          auto body = [&fn, val, p_out, p_x](r_size_t i){
+            p_out[i] = unwrap(fn(i, val, internal::unsafe_reconstruct_view<U>(p_x[i])));
+          };
+          
+          CPPALLY_OMP_DISPATCH(body, n, parallel, simd)
+
         }(out.data(), vec2.data());
       } else {
-        CPPALLY_DO_LHS_SCALAR_MAP
+        for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, val, vec2.view(i)));
       }
     } else { // RHS is a scalar
       const U val = vec2.get(0);
       if constexpr (RVectorisable<T> && RVectorisable<out_t> && (simd || parallel)){
-        [&](auto* RESTRICT p_out, auto* RESTRICT p_x){
-          CPPALLY_OMP_DISPATCH(CPPALLY_DO_RHS_SCALAR_MAP_WITH_DATA)
+        [&, n](auto* RESTRICT p_out, auto* RESTRICT p_x){
+          
+          auto body = [&fn, val, p_out, p_x](r_size_t i){
+            p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x[i]), val));
+          };
+
+          CPPALLY_OMP_DISPATCH(body, n, parallel, simd)
+
         }(out.data(), vec1.data());
       } else {
-        CPPALLY_DO_RHS_SCALAR_MAP
+        for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, vec1.view(i), val));
       }
     }
     return out;
@@ -163,12 +163,18 @@ auto pmap_impl(F fn, const r_vec<T>& vec1, const r_vec<U>& vec2) {
 
   if constexpr (vectorisable_or_parallelisable && (simd || parallel)) {
 
-    [&](auto* RESTRICT p_out, auto* RESTRICT p_x1, auto* RESTRICT p_x2){
-      CPPALLY_OMP_DISPATCH(CPPALLY_DO_BINARY_MAP_WITH_DATA)
+    [&, n](auto* RESTRICT p_out, auto* RESTRICT p_x1, auto* RESTRICT p_x2){
+      
+      auto body = [&fn, p_out, p_x1, p_x2](r_size_t i){
+        p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x1[i]), internal::unsafe_reconstruct_view<U>(p_x2[i])));
+      };
+
+      CPPALLY_OMP_DISPATCH(body, n, parallel, simd)
+
     }(out.data(), vec1.data(), vec2.data());
 
   } else {
-    CPPALLY_DO_BINARY_MAP
+    for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, vec1.view(i), vec2.view(i)));
   }
   return out;
 }
@@ -211,16 +217,18 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
     constexpr bool vectorisable_or_parallelisable = (RVectorisable<Ts> && ...) && RVectorisable<out_t>;
 
     if constexpr (vectorisable_or_parallelisable && (simd || parallel)) {
+      
+      [&, n](auto* RESTRICT p_out, auto* RESTRICT ... ps){
+        
+        auto body = [&fn, p_out, ps...](r_size_t i){
+          p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<Ts>(ps[i])...));
+        };
+        
+        CPPALLY_OMP_DISPATCH(body, n, parallel, simd)
 
-      // Unpack the output + input pointers once as parameters so RESTRICT is honoured
-      // and the loops read no closure state.
-      // RESTRICT is sound: inputs are read-only in the loops and out is freshly allocated.
-      // Revisit if pmap ever writes through ps or reuses an input as out.
-      [&](auto* RESTRICT p_out, auto* RESTRICT ... ps){
-        CPPALLY_OMP_DISPATCH(CPPALLY_DO_MAP_WITH_DATA)
       }(out.data(), vecs.data()...);
     } else {
-      CPPALLY_DO_MAP
+      for (r_size_t i = 0; i < n; ++i) out.set(i, fn(i, vecs.view(i)...));
     }
     return out;
   }
@@ -311,7 +319,7 @@ T lead(const internal::cursor<T>& c, r_size_t k = 1, const T& default_value = na
   return lag(c, -k, default_value);
 }
 template <RVal T>
-T curr(const internal::cursor<T>& c) { 
+T curr(const internal::cursor<T>& c) {
   return c.src->view(c.i);
 }
 
@@ -333,16 +341,6 @@ auto pmap_with_shift(F fn, const r_vec<Ts>&... vecs) {
 
 }
 
-#undef CPPALLY_DO_MAP_WITH_DATA
-#undef CPPALLY_DO_MAP
-#undef CPPALLY_DO_UNARY_MAP_WITH_DATA
-#undef CPPALLY_DO_UNARY_MAP
-#undef CPPALLY_DO_BINARY_MAP_WITH_DATA
-#undef CPPALLY_DO_BINARY_MAP
-#undef CPPALLY_DO_LHS_SCALAR_MAP_WITH_DATA
-#undef CPPALLY_DO_LHS_SCALAR_MAP
-#undef CPPALLY_DO_RHS_SCALAR_MAP_WITH_DATA
-#undef CPPALLY_DO_RHS_SCALAR_MAP
 #undef CPPALLY_OMP_DISPATCH
 
 #endif
