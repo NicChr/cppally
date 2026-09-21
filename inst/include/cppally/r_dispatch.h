@@ -64,7 +64,7 @@ inline CPPALLY_NOINLINE void copy_error(char (&buf)[CPPALLY_ERROR_BUFSIZE], cons
 
 // RScalar -> RVector, everything else -> SEXP
 template <typename T>
-SEXP cpp_to_r(const T& x) {
+CPPALLY_NOINLINE SEXP cpp_to_r(const T& x) {
     if constexpr (RScalar<T>){
       return static_cast<SEXP>(r_vec<T>({ x }));
     } else {
@@ -74,7 +74,7 @@ SEXP cpp_to_r(const T& x) {
 
 // NULL is left alone where RComposite is concerned to allow passing optional arguments
 template <typename T>
-auto r_to_cpp(SEXP x) {
+CPPALLY_NOINLINE auto r_to_cpp(SEXP x) {
     using out_t = std::remove_cvref_t<T>;
     if constexpr (RComposite<out_t>){
         if (x == R_NilValue){
