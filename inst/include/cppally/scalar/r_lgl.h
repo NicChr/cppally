@@ -73,26 +73,28 @@ inline constexpr r_lgl operator!(r_lgl x) noexcept {
 
 // ---------------------------------------------------------
 // OPTIMIZED OR (||) for r_lgl
-// If LSB is set (1), return 1
+// If either is 1, return 1.
 // Otherwise return (a|b).
 // ---------------------------------------------------------
 inline constexpr r_lgl operator||(r_lgl lhs, r_lgl rhs) noexcept {
-    int val = lhs.value | rhs.value;
-    return (val & 1) ? r_true : internal::new_r_lgl(val);
+  int o = lhs.value | rhs.value;
+  // o << 31 moves the TRUE bit onto the NA bit, clearing NA when TRUE is present
+  return internal::new_r_lgl(o & ~(o << 31));
 }
 
 // ---------------------------------------------------------
 // OPTIMIZED AND (&&) for r_lgl
 // If either is 0, return 0.
-// if either is NA (negative), return NA.
-// otherwise return 1.
+// Otherwise if either is NA, return NA.
+// Otherwise return 1.
 // ---------------------------------------------------------
 
 inline constexpr r_lgl operator&&(r_lgl lhs, r_lgl rhs) noexcept {
   int a = lhs.value;
   int b = rhs.value;
   int o = a | b;
-  int res = (a & b) | ((o & r_na.value) & -(o & 1));
+  // (a & b) misses only TRUE && NA; o & (o << 31) is NA exactly in that case
+  int res = (a & b) | (o & (o << 31));
   return internal::new_r_lgl(res);
 }
 
