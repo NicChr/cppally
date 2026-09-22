@@ -6,11 +6,27 @@
 #include <cppally/r_sexp/r_sexp.h>
 #include <cppally/r_sexp/r_sexp_types.h>
 #include <cppally/string/string_literal.h>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <cstdio> // For snprintf
 
 namespace cppally {
+
+namespace internal {
+
+inline constexpr std::size_t str_length(const char* x) noexcept {
+  return std::string_view(x).size();
+}
+
+inline SEXP mk_char_utf8(const char* x, std::size_t n) {
+  if (n > static_cast<std::size_t>(std::numeric_limits<int>::max())) [[unlikely]] {
+    abort("string is too large (>= 2^31 bytes long)");
+  }
+  return Rf_mkCharLenCE(x, static_cast<int>(n), CE_UTF8);
+}
+
+}
 
 // R String - cppally version of CHARSXP
 // r_str must never be converted to `SEXP`/`r_sexp` except where cppally returns `r_str` to R.
@@ -32,7 +48,7 @@ struct r_str {
   explicit r_str(SEXP x, internal::no_checks_tag) : r_str(r_sexp(x), internal::no_checks_tag{}) {}
   explicit r_str(SEXP x, internal::view_tag, internal::no_checks_tag) noexcept : value(x, internal::view_tag{}) {}
 
-  explicit r_str(const char *x) : r_str(Rf_mkCharCE(x, CE_UTF8), internal::no_checks_tag{}) {}
+  explicit r_str(const char *x) : r_str(internal::mk_char_utf8(x, internal::str_length(x)), internal::no_checks_tag{}) {}
 
   // Implicit r_str -> SEXP 
   operator SEXP() const noexcept { return value; }
@@ -98,11 +114,10 @@ struct r_str {
           return r_str(safe[Rf_translateCharUTF8](*this));
         }
       }
-      return r_str(Rf_mkCharLenCE(out.data(), static_cast<int>(out.size()), CE_UTF8), internal::no_checks_tag{});
+      return r_str(internal::mk_char_utf8(out.data(), out.size()), internal::no_checks_tag{});
     }
     return r_str(safe[Rf_translateCharUTF8](*this));
   }
-
 
 };
 
@@ -171,7 +186,7 @@ namespace internal {
 // e.g. by setting it as an element to r_vec<r_str_view>
 // Otherwise just use `r_str()` or `as<r_str>` 
 inline r_str_view c_str_to_r_str_view(const char* x){
-  return r_str_view(Rf_mkCharCE(x, CE_UTF8), internal::no_checks_tag{});
+  return r_str_view(mk_char_utf8(x, str_length(x)), internal::no_checks_tag{});
 }
 
 }
