@@ -172,6 +172,14 @@ struct r_date {
         }
         
         year_month_day ymd = chrono_ymd();
+
+        // Return NA for out-of-range years
+        int64_t total_months = static_cast<int64_t>(static_cast<int>(ymd.year())) * 12 + (static_cast<unsigned int>(ymd.month()) - 1) + unwrap(n);
+        int64_t target_year = (total_months >= 0 ? total_months : total_months - 11) / 12;
+        if (target_year < static_cast<int>(std::chrono::year::min()) || target_year > static_cast<int>(std::chrono::year::max())) [[unlikely]] {
+            return na();
+        }
+
         ymd += months{unwrap(n)};
         
         if (!ymd.ok()) {
