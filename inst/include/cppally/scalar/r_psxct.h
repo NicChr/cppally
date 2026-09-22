@@ -441,7 +441,7 @@ struct r_psxct {
             return lower;
         }
 
-        return add<Unit>(1, roll::backward).floor<Unit>(week_start);
+        return add<Unit>(1, roll::backward).template floor<Unit>(week_start);
     }
 
     template <string_literal Unit>
