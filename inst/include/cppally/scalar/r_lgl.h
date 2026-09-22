@@ -66,7 +66,7 @@ inline constexpr r_lgl new_r_lgl(int x) noexcept {
 // Logical operators
 
 inline constexpr r_lgl operator!(r_lgl x) noexcept {
-  return x.is_na() ? r_lgl::na() : r_lgl(x.value == 0);
+  return x.is_na() ? r_lgl::na() : r_lgl(x.is_false());
 }
 
 // r_true = 1, r_false = 0, r_na = INT_MIN
