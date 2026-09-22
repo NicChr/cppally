@@ -195,26 +195,18 @@ struct r_factors {
     init_factor(r_vec<r_str_view>(), false);
   }
 
-  explicit r_factors(SEXP x, bool check_valid_levels = chk_fct_lvls_opt) : value(x) {
-    if (!value.is_null()){
-      validate_factor(check_valid_levels);
-    }
-  }
   explicit r_factors(r_sexp x, bool check_valid_levels = chk_fct_lvls_opt) : value(std::move(x)) {
     if (!value.is_null()){
       validate_factor(check_valid_levels);
     }
   }
 
-  explicit r_factors(SEXP x, internal::view_tag, bool check_valid_levels = chk_fct_lvls_opt) : value(x, internal::view_tag{}) {
-    if (!value.is_null()){
-      validate_factor(check_valid_levels);
-    }
-  }
+  explicit r_factors(SEXP x, bool check_valid_levels = chk_fct_lvls_opt) : r_factors(r_sexp(x), check_valid_levels) {}
+  explicit r_factors(SEXP x, internal::view_tag, bool check_valid_levels = chk_fct_lvls_opt) : r_factors(r_sexp(x, internal::view_tag{}), check_valid_levels) {}
 
   // Unchecked constructors, for use where the SEXP is already known to be a factor
   explicit r_factors(r_sexp x, internal::no_checks_tag) : value(std::move(x), internal::no_checks_tag{}) {}
-  explicit r_factors(const r_sexp& x, internal::view_tag, internal::no_checks_tag) : value(x, internal::view_tag{}, internal::no_checks_tag{}) {}
+  explicit r_factors(SEXP x, internal::view_tag, internal::no_checks_tag) : value(x, internal::view_tag{}, internal::no_checks_tag{}) {}
 
   explicit r_factors(r_size_t n): value(n, na<r_int>()){
     init_factor(r_vec<r_str_view>(), false);
