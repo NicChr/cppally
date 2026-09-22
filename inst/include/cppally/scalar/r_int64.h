@@ -3,6 +3,7 @@
 
 #include <cppally/r_concepts.h>
 #include <cstdint> // For int64_t
+#include <limits>
 
 namespace cppally {
 
@@ -14,7 +15,8 @@ struct r_int64 {
     template <CppIntegerType T>
     requires (internal::lossless_numeric_cast<T, int64_t>())
     explicit constexpr r_int64(T x) noexcept : value{static_cast<int64_t>(x)} {}
-    template <typename U> requires (is<U, int64_t>)
+    template <typename U>
+    requires (std::signed_integral<std::remove_cvref_t<U>> && std::numeric_limits<std::remove_cvref_t<U>>::digits == std::numeric_limits<int64_t>::digits)
     constexpr operator U() const noexcept { return value; }
 
     static constexpr r_int64 na() noexcept {
