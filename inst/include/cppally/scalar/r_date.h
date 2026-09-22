@@ -325,7 +325,7 @@ struct r_date {
     // Day of the week (1-based)
     // week_start = [1 = Monday, 7 = Sunday]
     constexpr r_int wday(int week_start = 7) const noexcept {
-        return !is_chrono_safe() || r_int(week_start).is_na() ? r_int::na() :  r_int( ( static_cast<int>(std::chrono::weekday(chrono_ymd()).iso_encoding()) - week_start + 7 ) % 7 + 1 );
+        return !is_chrono_safe() || week_start < 1 || week_start > 7 ? r_int::na() :  r_int( ( static_cast<int>(std::chrono::weekday(chrono_ymd()).iso_encoding()) - week_start + 7 ) % 7 + 1 );
     }
 
     constexpr r_lgl is_leap_year() const noexcept {
