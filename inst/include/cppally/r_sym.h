@@ -13,8 +13,9 @@ namespace cppally {
 
 // Alias type for SYMSXP
 struct r_sym {
+  
   SEXP value;
-  using value_type = r_sexp;
+  using value_type = SEXP;
 
   r_sym() : value(internal::lazy_sym_impl<"NA">()){}
 
