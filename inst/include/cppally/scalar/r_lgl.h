@@ -17,8 +17,10 @@ struct r_lgl {
   using value_type = int;
   constexpr r_lgl() noexcept : value{0} {}
   // explicit constexpr r_lgl(int x) noexcept : value{(static_cast<unsigned int>(x) * 2u) != 0u ? 1 : x} {} // Has trouble vectorising on GCC
-  explicit constexpr r_lgl(int x) noexcept : value(r_int(x).is_na() ? x : static_cast<int>(static_cast<bool>(x))){}
-  explicit constexpr r_lgl(bool x) noexcept : value{static_cast<int>(x)} {}
+  template <typename T> requires (is<T, int>)
+  explicit constexpr r_lgl(T x) noexcept : value(r_int(x).is_na() ? x : static_cast<int>(static_cast<bool>(x))){}
+  template <typename T> requires (is<T, bool>)
+  explicit constexpr r_lgl(T x) noexcept : value{static_cast<int>(x)} {}
   template <typename U> requires (is<U, int>)
   constexpr operator U() const noexcept { return value; }
 
