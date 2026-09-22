@@ -417,17 +417,17 @@ struct r_date {
         }
 
         r_date lower = floor<Unit>(week_start);
-        r_date upper = add<Unit>(1);
 
         if (lower.is_na()){
             return na();
         }
 
+        // If on the boundary, return the boundary
         if ( unwrap(lower.days_since_epoch() - days_since_epoch()) == 0 ){
             return lower;
         }
 
-        return upper.floor<Unit>(week_start);
+        return add<Unit>(1, roll::backward).floor<Unit>(week_start);
     }
 
     template <string_literal Unit>
