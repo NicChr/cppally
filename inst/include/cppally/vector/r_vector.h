@@ -267,17 +267,13 @@ struct r_vec {
     }
   }
 
-  explicit r_vec(const r_sexp& s, internal::view_tag) : r_vec(r_sexp(s, internal::view_tag{})){}
-
   explicit r_vec(SEXP s) : r_vec(r_sexp(s)) {}
-  explicit r_vec(SEXP s, internal::view_tag) : r_vec(r_sexp(s, internal::view_tag{}), internal::view_tag{}) {}
+  explicit r_vec(SEXP s, internal::view_tag) : r_vec(r_sexp(s, internal::view_tag{})) {}
 
   // Unchecked constructors: skip type and class validation
   // For use where the SEXP type is already established (e.g. r_visit.h dispatchers)
-  explicit r_vec(r_sexp s, internal::no_checks_tag) : value(std::move(s)) {
-    initialise_ptr();
-  }
-  explicit r_vec(const r_sexp& s, internal::view_tag, internal::no_checks_tag) : r_vec(r_sexp(s, internal::view_tag{}), internal::no_checks_tag{}){}
+  explicit r_vec(r_sexp s, internal::no_checks_tag) : value(std::move(s)) { initialise_ptr(); }
+  explicit r_vec(SEXP s, internal::view_tag, internal::no_checks_tag) : r_vec(r_sexp(s, internal::view_tag{}), internal::no_checks_tag{}){}
 
   explicit r_vec(std::initializer_list<T> elements) : r_vec(static_cast<r_size_t>(elements.size())) {
     

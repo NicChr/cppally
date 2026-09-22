@@ -58,27 +58,21 @@ struct r_function {
   
     // By default, construct a NULL returning empty fn
     r_function() : r_function(internal::empty_fn(), internal::no_checks_tag{}) {}
-
-    explicit r_function(SEXP x) : value(x) {
-      check_is_function(value);
-    }
-    explicit r_function(SEXP x, internal::view_tag) : value(x, internal::view_tag{}) {
-      check_is_function(value);
-    }
+    
     explicit r_function(r_sexp x) : value(std::move(x)) {
       check_is_function(value);
     }
-    explicit r_function(const r_sexp& x, internal::view_tag) : value(unwrap(x), internal::view_tag{}) {
-      check_is_function(value);
-    }
+
+    explicit r_function(SEXP x) : r_function(r_sexp(x)){}
+    explicit r_function(SEXP x, internal::view_tag) : r_function(r_sexp(x, internal::view_tag{})) {}
 
     // Unchecked constructors: skip function-type validation
     // For use where the SEXP type is already established (e.g. r_visit.h dispatchers)
     explicit r_function(r_sexp x, internal::no_checks_tag) : value(std::move(x)) {}
-    explicit r_function(const r_sexp& x, internal::view_tag, internal::no_checks_tag) : value(unwrap(x), internal::view_tag{}) {}
+    explicit r_function(SEXP x, internal::view_tag, internal::no_checks_tag) : value(x, internal::view_tag{}) {}
 
     // Look a function up by symbol
-    explicit r_function(const r_sym& name, const r_sexp& env = env::global_env) : value(safe[Rf_findFun](name, env)) {}
+    explicit r_function(r_sym name, const r_sexp& env = env::global_env) : value(safe[Rf_findFun](name, env)) {}
     // Look a function up by name (string)
     explicit r_function(const char* name, const r_sexp& env = env::global_env) : r_function(r_sym(name), env) {}
     // Look a function up by name (string)

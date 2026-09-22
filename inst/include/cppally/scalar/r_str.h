@@ -20,21 +20,19 @@ struct r_str {
   r_sexp value;
   using value_type = r_sexp;
   r_str() : value{internal::lazy_str_impl<"">(), internal::view_tag{}} {}
-  // Explicit SEXP/const char* -> r_str
-  explicit r_str(SEXP x) : value{x} {
-    internal::check_valid_construction<r_str>(value);
-  }
-  explicit r_str(SEXP x, internal::view_tag) : value(x, internal::view_tag{}) {
-    internal::check_valid_construction<r_str>(value);
-  }
+
   explicit r_str(r_sexp x) : value(std::move(x)) {
     internal::check_valid_construction<r_str>(value);
   }
+
+  // Explicit SEXP -> r_str
+  explicit r_str(SEXP x) : r_str(r_sexp(x)){}
+  explicit r_str(SEXP x, internal::view_tag) : r_str(r_sexp(x, internal::view_tag{})) {}
   explicit r_str(r_sexp x, internal::no_checks_tag) : value(std::move(x)) {}
-  explicit r_str(SEXP x, internal::no_checks_tag) : value{x} {}
+  explicit r_str(SEXP x, internal::no_checks_tag) : r_str(r_sexp(x), internal::no_checks_tag{}) {}
   explicit r_str(SEXP x, internal::view_tag, internal::no_checks_tag) noexcept : value(x, internal::view_tag{}) {}
 
-  explicit r_str(const char *x) : value(Rf_mkCharCE(x, CE_UTF8)) {}
+  explicit r_str(const char *x) : r_str(Rf_mkCharCE(x, CE_UTF8), internal::no_checks_tag{}) {}
 
   // Implicit r_str -> SEXP 
   operator SEXP() const noexcept { return value; }
@@ -59,7 +57,7 @@ struct r_str {
   }
 
   bool is_na() const noexcept {
-    return static_cast<SEXP>(*this) == NA_STRING;
+    return unwrap(*this) == unwrap(na());
   }
 
   // Is string valid UTF-8? (ASCII is also valid UTF8)
@@ -125,11 +123,9 @@ struct r_str_view {
   explicit r_str_view(SEXP x) : value{x} {
     internal::check_valid_construction<r_str_view>(value);
   }
-  explicit r_str_view(SEXP x, internal::view_tag) : value(x) {
-    internal::check_valid_construction<r_str_view>(value);
-  }
+  explicit r_str_view(SEXP x, internal::view_tag) : r_str_view(x) {}
   explicit r_str_view(SEXP x, internal::no_checks_tag) noexcept : value{x} {}
-  explicit r_str_view(SEXP x, internal::view_tag, internal::no_checks_tag) noexcept : value(x) {}
+  explicit r_str_view(SEXP x, internal::view_tag, internal::no_checks_tag) noexcept : r_str_view(x, internal::no_checks_tag{}) {}
   // Can't construct `r_str_view` from `const char*` — use `r_str` instead
   explicit r_str_view(const char *x) = delete;
   explicit r_str_view(std::string_view x) = delete;
@@ -152,7 +148,7 @@ struct r_str_view {
   }
 
   bool is_na() const noexcept {
-    return value == NA_STRING;
+    return unwrap(*this) == unwrap(na());
   }
 
 };
