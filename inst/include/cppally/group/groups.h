@@ -338,18 +338,17 @@ inline groups make_unordered_groups(const T& x) {
       lookup.reserve(hash_map_reserve_guess);
 
       for (r_size_t i = 0; i < n; ++i) {
-        key_type key = p_x[i];
-        auto [it, inserted] = lookup.try_emplace(key, next_id);
+        auto [id, inserted] = lookup.try_emplace(p_x[i], next_id);
         if (inserted) {
-            p_id[i] = next_id++;
-        } else {
-            p_id[i] = it->second;
+            ++next_id;
         }
+        p_id[i] = id->second;
       }
 
     }
-      n_groups = next_id;
-      return groups(group_ids, n_groups, false, ids_are_sorted(p_id, n));
+    
+    n_groups = next_id;
+    return groups(group_ids, n_groups, false, ids_are_sorted(p_id, n));
 }
 
 }
