@@ -39,6 +39,10 @@ inline r_vec<T> make_vec(Args... args) {
     return out;
   }
 }
+template <RVal T, typename... Args>
+inline r_vec<T> make_vector(Args&&... args) {
+  return make_vec<T>(std::forward<Args>(args)...);
+}
 
 
 namespace attr {
