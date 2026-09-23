@@ -141,10 +141,15 @@ inline constexpr auto operator+(T lhs, U rhs) noexcept {
     I a = static_cast<I>(unwrap(lhs));
     I b = static_cast<I>(unwrap(rhs));
 
-    // Wraparound sum via unsigned: defined behaviour, no CPU flags
+    // Wraparound sum via unsigned: defined behaviour
     I s = static_cast<I>(static_cast<UI>(a) + static_cast<UI>(b));
 
     // Overflowed iff a and b share a sign that s does not
+    // a ^ s: Sign bit of the XOR is 1 when a and s have different signs, otherwise 0
+    // b ^ s: Same logic as a ^ s
+    // (a ^ s) & (b ^ s): bitwise AND, the sign bit of the result is 1 only when both a ^ s and b ^ s have their sign bit set
+    // Overflow can only happen when we are adding two numbers of the same sign
+    // and because this is C++20, two's complement applies, which means we can check whether the top bit is set via < 0
     bool bad = (((a ^ s) & (b ^ s)) < 0) | internal::any_arithmetic_na(lhs, rhs);
     return bad ? common_t::na() : common_t(s);
   } else if constexpr (is<T, r_dbl> && is<U, r_dbl>){
