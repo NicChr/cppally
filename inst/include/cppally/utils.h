@@ -17,12 +17,13 @@ inline int max_threads() noexcept {
 }
 // get the number of OMP threads currently set for use
 inline int get_threads() noexcept {
-  auto n_threads = internal::CPPALLY_N_THREADS > max_threads() ? max_threads() : internal::CPPALLY_N_THREADS;
+  const int upper = max_threads();
+  int n_threads = internal::CPPALLY_N_THREADS > upper ? upper : internal::CPPALLY_N_THREADS;
   return n_threads > 1 ? n_threads : 1;
 }
 // Set number threads to be used throughout the program
 inline void set_threads(int n) noexcept {
-  internal::CPPALLY_N_THREADS = n < max_threads() ? n : max_threads();
+  internal::CPPALLY_N_THREADS = (n < 1 ? 1 : n);
 }
 
 // Recycle loop indices
