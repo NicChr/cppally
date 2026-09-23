@@ -61,7 +61,7 @@ struct r_str {
   }
 
   std::string_view cpp_str() const noexcept {
-    return std::string_view{c_str()};
+    return std::string_view{c_str(), static_cast<std::size_t>(n_bytes())};
   }
 
   // Explicit conversions
@@ -76,9 +76,17 @@ struct r_str {
     return unwrap(*this) == unwrap(na());
   }
 
+  int n_bytes() const noexcept {
+    return LENGTH(*this);
+  }
+
   // Is string valid UTF-8? (ASCII is also valid UTF8)
   bool is_utf8() const noexcept {
-    return static_cast<bool>(Rf_charIsUTF8(*this) || Rf_charIsASCII(*this));
+    return static_cast<bool>(Rf_charIsUTF8(*this));
+  }
+
+  bool is_ascii() const noexcept {
+    return static_cast<bool>(Rf_charIsASCII(*this));
   }
 
   // Convert to UTF-8 (ASCII is left alone)
@@ -91,9 +99,8 @@ struct r_str {
     // Latin-1 mapping is a (most of the time) fixed, locale-independent byte transform
     // In the case that there is divergence, we fall back to Rf_translateCharUTF8
     if (static_cast<bool>(Rf_charIsLatin1(*this))) {
-      const SEXP s = *this;
-      const unsigned char *p = reinterpret_cast<const unsigned char *>(CHAR(s));
-      const int n = Rf_length(s);
+      const unsigned char *p = reinterpret_cast<const unsigned char *>(c_str());
+      const int n = n_bytes();
       std::string out;
       // Most Latin-1 text is mostly ASCII, so n is a good guess; grows only if high bytes are dense
       out.reserve(static_cast<std::size_t>(n));
@@ -151,7 +158,7 @@ struct r_str_view {
   r_str_view(const r_str& x) noexcept : value(static_cast<SEXP>(x)) {}
   
   const char* c_str() const noexcept { return CHAR(value); }
-  std::string_view cpp_str() const noexcept { return std::string_view{c_str()}; }
+  std::string_view cpp_str() const noexcept { return std::string_view{c_str(), static_cast<std::size_t>(n_bytes())}; }
 
 
   // Explicit conversions
@@ -164,6 +171,19 @@ struct r_str_view {
 
   bool is_na() const noexcept {
     return unwrap(*this) == unwrap(na());
+  }
+
+  int n_bytes() const noexcept {
+    return LENGTH(*this);
+  }
+
+  // Is string valid UTF-8? (ASCII is also valid UTF8)
+  bool is_utf8() const noexcept {
+    return static_cast<bool>(Rf_charIsUTF8(*this));
+  }
+
+  bool is_ascii() const noexcept {
+    return static_cast<bool>(Rf_charIsASCII(*this));
   }
 
 };
