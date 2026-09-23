@@ -264,7 +264,8 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         if (is_na(p_x[i])) {
             key = std::numeric_limits<unsigned_t>::max();
         } else {
-            key = ska_sort::detail::to_unsigned_or_bool(p_x[i]);
+            base_t v = p_x[i] + base_t(0); // To normalise -0.0 into 0.0, preserving tie order
+            key = ska_sort::detail::to_unsigned_or_bool(v);
             if constexpr (RIntegerType<data_t> && (unwrap(na<data_t>()) == std::numeric_limits<base_t>::min())){
                 key -= 1u; // keep max real value below the NA sentinel
             }
@@ -280,7 +281,6 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
 
     else if constexpr (RStringType<data_t>) {
     
-        r_size_t n = x.length();
         r_vec<r_int> out(n);
         auto* RESTRICT px = x.data();
         
@@ -303,8 +303,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
             
             if (internal::ptrs_identical(str, na<r_str_view>())){
                 group_ids.push_back(uint32_t(-1));
-                last_id = uint32_t(-1); // Break linear cache
-            } 
+            }
             // Linear Scan Cache - identical strings have identical pointers
             else if (i > 0 && str == px[i - 1]) { 
                 group_ids.push_back(last_id);
@@ -352,20 +351,21 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
             if (pref && pref[a] != pref[b]) { return pref[a] < pref[b]; }
             return std::strcmp(CHAR(uniques[a]), CHAR(uniques[b])) < 0;
         });
-        
+
         // Prefix Sums: calculate the starting write offset for each group
         std::vector<uint32_t> offsets(n_uniques);
         uint32_t current_offset = 0;
-        
+
         for (uint32_t id : sorted_ids) {
             offsets[id] = current_offset;
             current_offset += counts[id];
         }
+        
         uint32_t na_offset = current_offset; // NAs go at the very end
         
         // Distribute indices (Counting Sort)
         int* RESTRICT p_out = out.data();
-        
+
         for (uint32_t i = 0; i < n; ++i) {
             uint32_t id = group_ids[i];
             if (id == uint32_t(-1)) {
