@@ -34,7 +34,7 @@ inline groups make_groups(const T& x, bool ordered) {
             if (x.is_long()) [[unlikely]] {
                 abort("Cannot group a long-vector");
             }
-            return internal::make_groups_from_order(x, order(x, /*preserve_ties = */ false));
+            return internal::make_groups_from_order(x, order(x));
         }
     }
     return make_groups(x);

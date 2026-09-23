@@ -22,37 +22,24 @@ test_that("C++ radix sorting", {
   f <- b[1:100]
   g <- c[1:100]
 
-  expect_identical(test_sort(a, preserve_ties = TRUE), radix_sort(a))
-  expect_identical(test_sort(b, preserve_ties = TRUE), radix_sort(b))
-  expect_identical(test_sort(c, preserve_ties = TRUE), radix_sort(c))
-  expect_identical(test_sort(d, preserve_ties = TRUE), radix_sort(d))
-  expect_identical(test_sort(e, preserve_ties = TRUE), radix_sort(e))
-  expect_identical(test_sort(f, preserve_ties = TRUE), radix_sort(f))
-  expect_identical(test_sort(g, preserve_ties = TRUE), radix_sort(g))
+  expect_identical(test_sort(a), radix_sort(a))
+  expect_identical(test_sort(b), radix_sort(b))
+  expect_identical(test_sort(c), radix_sort(c))
+  expect_identical(test_sort(d), radix_sort(d))
+  expect_identical(test_sort(e), radix_sort(e))
+  expect_identical(test_sort(f), radix_sort(f))
+  expect_identical(test_sort(g), radix_sort(g))
 
-  expect_identical(test_sort(a, preserve_ties = FALSE), radix_sort(a))
-  expect_identical(test_sort(b, preserve_ties = FALSE), radix_sort(b))
-  expect_identical(test_sort(c, preserve_ties = FALSE), radix_sort(c))
-  expect_identical(test_sort(d, preserve_ties = FALSE), radix_sort(d))
-  expect_identical(test_sort(e, preserve_ties = FALSE), radix_sort(e))
-  expect_identical(test_sort(f, preserve_ties = FALSE), radix_sort(f))
-  expect_identical(test_sort(g, preserve_ties = FALSE), radix_sort(g))
-
-  expect_identical(test_order(a, preserve_ties = TRUE) + 1L, radix_order(a))
-  expect_identical(test_order(b, preserve_ties = TRUE) + 1L, radix_order(b))
-  expect_identical(test_order(c, preserve_ties = TRUE) + 1L, radix_order(c))
-  expect_identical(test_order(d, preserve_ties = TRUE) + 1L, radix_order(d))
-  expect_identical(test_order(e, preserve_ties = TRUE) + 1L, radix_order(e))
-  expect_identical(test_order(f, preserve_ties = TRUE) + 1L, radix_order(f))
-  expect_identical(test_order(g, preserve_ties = TRUE) + 1L, radix_order(g))
+  expect_identical(test_order(a) + 1L, radix_order(a))
+  expect_identical(test_order(b) + 1L, radix_order(b))
+  expect_identical(test_order(c) + 1L, radix_order(c))
+  expect_identical(test_order(d) + 1L, radix_order(d))
+  expect_identical(test_order(e) + 1L, radix_order(e))
+  expect_identical(test_order(f) + 1L, radix_order(f))
+  expect_identical(test_order(g) + 1L, radix_order(g))
 
   expect_identical(
-    lapply(airquality, test_sort, TRUE),
-    lapply(airquality, radix_sort)
-  )
-
-  expect_identical(
-    lapply(airquality, test_sort, FALSE),
+    lapply(airquality, test_sort),
     lapply(airquality, radix_sort)
   )
 

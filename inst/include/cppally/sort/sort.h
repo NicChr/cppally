@@ -4,7 +4,7 @@
 // ------- Hybrid sorting for R vectors -------
 // All sorting is implemented by sorting NA values last (like `order(..., na.last = TRUE)`)
 // ska_sort is used for radix sorting. Copyright Malte Skarupke 2016.
-// Small vectors are sorted using a comparison sort via std::sort/std::stable_sort.
+// Small vectors are sorted using a comparison sort via std::stable_sort.
 // Large vectors of integers or doubles with no fractional part use a counting sort when the
 // range is relatively small. 
 // 64-bit types (int64, dates, date-times) with a wider range that still fits
@@ -33,21 +33,19 @@ namespace internal {
 // NAs are ordered last
 // Internal function to be used for low overhead sorting small vectors
 template <RSortableVector T>
-r_vec<r_int> order_cmp(const T& x, bool stable = true) {
+r_vec<r_int> order_cmp(const T& x) {
+
     int n = x.length();
     r_vec<r_int> pv(n);
     pv.iota();
-    auto* RESTRICT p = pv.data();
 
+    auto* RESTRICT p = pv.data();
     auto cmp = [&x](int i, int j) noexcept {
         return is_na(x.view(i)) ? false : !((x.view(i) < x.view(j)).is_false());
     };
 
-    if (stable){
-        std::stable_sort(p, p + n, cmp);
-    } else {
-        std::sort(p, p + n, cmp);
-    }
+    std::stable_sort(p, p + n, cmp);
+
     return pv;
 }
 
@@ -66,43 +64,35 @@ struct key_of {
 // the index so every pass is a sequential scan - no per-pass gather through
 // the permutation index. NAs must already be mapped to the max key value.
 template <typename key_t>
-inline r_vec<r_int> order_radix(std::vector<key_index<key_t>>& pairs, bool stable) {
+inline r_vec<r_int> order_radix(std::vector<key_index<key_t>>& pairs) {
 
     uint32_t n = static_cast<uint32_t>(pairs.size());
 
     // Where the sorted result ends up; usually `pairs`, but ska_sort_copy may
     // leave it in the scratch buffer.
     const key_index<key_t>* RESTRICT src = pairs.data();
-    std::vector<key_index<key_t>> buffer; // only allocated for the 32-bit stable path
+    std::vector<key_index<key_t>> buffer;
 
     if constexpr (sizeof(key_t) == sizeof(int)) {
         // 32-bit key: LSD ska_sort_copy is stable by construction, so the stable
         // case sorts on the bare key (~4 flat passes) instead of widening to a
-        // (key, index) pair. Unstable sorts in place - no scratch buffer.
-        if (stable) {
-            buffer.resize(n);
-            bool in_buffer = ska_sort::ska_sort_copy(pairs.begin(), pairs.end(), buffer.begin(), key_of{});
-            if (in_buffer) {
-                src = buffer.data();
-            }
-        } else {
-            ska_sort::ska_sort(pairs.begin(), pairs.end(), key_of{});
+        // (key, index) pair.
+        buffer.resize(n);
+        bool in_buffer = ska_sort::ska_sort_copy(pairs.begin(), pairs.end(), buffer.begin(), key_of{});
+        if (in_buffer) {
+            src = buffer.data();
         }
     } else {
         // 64-bit key: ska_sort_copy degrades to unstable in-place at this width,
         // so stability still needs the (key, index) composite.
-        if (stable) {
-            ska_sort::ska_sort(pairs.begin(), pairs.end(),
-                [](const key_index<key_t>& k) { return std::make_pair(k.key, k.index); });
-        } else {
-            ska_sort::ska_sort(pairs.begin(), pairs.end(), key_of{});
-        }
+        ska_sort::ska_sort(pairs.begin(), pairs.end(),
+        [](const key_index<key_t>& k) { return std::make_pair(k.key, k.index); });
     }
 
     r_vec<r_int> out(static_cast<r_size_t>(n));
     int* RESTRICT p_out = out.data();
 
-    OMP_SIMD
+    OMP_PARALLEL_FOR_SIMD(calc_threads(n))
     for (uint32_t i = 0; i < n; ++i) {
         p_out[i] = static_cast<int>(src[i].index);
     }
@@ -114,7 +104,7 @@ inline r_vec<r_int> order_radix(std::vector<key_index<key_t>>& pairs, bool stabl
 // 0-indexed ordering permutation vector that represents in sequential order, 
 // the indices of `x` elements that need to be chosen to return a sorted `x`
 template <RSortableVector T>
-inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
+inline r_vec<r_int> order(const T& x) {
 
     using data_t = typename T::data_type;
     using base_t = unwrap_t<data_t>;
@@ -122,7 +112,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
     uint32_t n = x.length();
     
     if (n < 200){
-        return internal::order_cmp(x, preserve_ties);
+        return internal::order_cmp(x);
     }
 
     if constexpr (RNumericType<data_t>) {
@@ -255,7 +245,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
                 : static_cast<uint32_t>(v - lo);
             pairs[i] = { key, i };
         }
-        return internal::order_radix(pairs, preserve_ties);
+        return internal::order_radix(pairs);
     }
 
     std::vector<internal::key_index<unsigned_t>> pairs(n);
@@ -272,7 +262,7 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         }
         pairs[i] = { key, i };
     }
-    return internal::order_radix(pairs, preserve_ties);
+    return internal::order_radix(pairs);
     }
 
     // ----------------------------------------------------------------------
@@ -377,12 +367,19 @@ inline r_vec<r_int> order(const T& x, bool preserve_ties = true) {
         
         return out;
     } else {
-        return internal::order_cmp(x, preserve_ties);
+        return internal::order_cmp(x);
     }
 }
 
-inline r_vec<r_int> order(const r_factors& x, bool preserve_ties = true) {
-    return order(x.value, preserve_ties);
+inline r_vec<r_int> order(const r_factors& x) {
+    return order(x.value);
+}
+
+template <typename T>
+requires (requires (const T&x) { order(x); })
+[[deprecated("order(): preserve_ties is ignored")]]
+inline r_vec<r_int> order(const T& x, bool) {
+    return order(x);
 }
 
 // Sorting
@@ -462,7 +459,7 @@ std::remove_cvref_t<T> sort(T&& x){
         }
     }
 
-    r_vec<r_int> o = order(x, /*preserve_ties = */ false);
+    r_vec<r_int> o = order(x);
 
     if constexpr (std::is_same_v<T, std::remove_cvref_t<T>>){
         if (x.is_exclusive()){

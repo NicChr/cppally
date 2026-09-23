@@ -1182,24 +1182,24 @@ extern "C" attribute_visible SEXP _cppallytest_test_replace_at(SEXP x, SEXP wher
   END_CPPALLY
 }
 // test_sort.h
-extern "C" attribute_visible SEXP _cppallytest_test_order(SEXP x, SEXP preserve_ties) {
+extern "C" attribute_visible SEXP _cppallytest_test_order(SEXP x) {
   BEGIN_CPPALLY
-  return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_sexp, SEXP preserve_ties_sexp) -> decltype(cpp_to_r(::test_order(std::declval<T>(), std::declval<bool>()))) {
-        return cpp_to_r(::test_order(r_to_cpp<T>(x_sexp), r_to_cpp<bool>(preserve_ties_sexp)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_sexp) -> decltype(cpp_to_r(::test_order(std::declval<T>()))) {
+        return cpp_to_r(::test_order(r_to_cpp<T>(x_sexp)));
     },
-    x, preserve_ties
+    x
   );
   END_CPPALLY
 }
 // test_sort.h
-extern "C" attribute_visible SEXP _cppallytest_test_sort(SEXP x, SEXP preserve_ties) {
+extern "C" attribute_visible SEXP _cppallytest_test_sort(SEXP x) {
   BEGIN_CPPALLY
-  return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
-    []<typename T>(SEXP x_sexp, SEXP preserve_ties_sexp) -> decltype(cpp_to_r(::test_sort(std::declval<T>(), std::declval<bool>()))) {
-        return cpp_to_r(::test_sort(r_to_cpp<T>(x_sexp), r_to_cpp<bool>(preserve_ties_sexp)));
+  return dispatch_template_impl<1, 1, std::array<int, 1>{0}>(
+    []<typename T>(SEXP x_sexp) -> decltype(cpp_to_r(::test_sort(std::declval<T>()))) {
+        return cpp_to_r(::test_sort(r_to_cpp<T>(x_sexp)));
     },
-    x, preserve_ties
+    x
   );
   END_CPPALLY
 }
@@ -1361,7 +1361,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_names_sweep",                  (DL_FUNC) &_cppallytest_test_names_sweep,                  0},
     {"_cppallytest_test_nas",                          (DL_FUNC) &_cppallytest_test_nas,                          1},
     {"_cppallytest_test_null",                         (DL_FUNC) &_cppallytest_test_null,                         0},
-    {"_cppallytest_test_order",                        (DL_FUNC) &_cppallytest_test_order,                        2},
+    {"_cppallytest_test_order",                        (DL_FUNC) &_cppallytest_test_order,                        1},
     {"_cppallytest_test_overflow",                     (DL_FUNC) &_cppallytest_test_overflow,                     0},
     {"_cppallytest_test_protect_burst_reserve",        (DL_FUNC) &_cppallytest_test_protect_burst_reserve,        0},
     {"_cppallytest_test_protect_chunk_growth",         (DL_FUNC) &_cppallytest_test_protect_chunk_growth,         0},
@@ -1387,7 +1387,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_sexp2",                        (DL_FUNC) &_cppallytest_test_sexp2,                        1},
     {"_cppallytest_test_sexp3",                        (DL_FUNC) &_cppallytest_test_sexp3,                        1},
     {"_cppallytest_test_sexp4",                        (DL_FUNC) &_cppallytest_test_sexp4,                        1},
-    {"_cppallytest_test_sort",                         (DL_FUNC) &_cppallytest_test_sort,                         2},
+    {"_cppallytest_test_sort",                         (DL_FUNC) &_cppallytest_test_sort,                         1},
     {"_cppallytest_test_specialisation",               (DL_FUNC) &_cppallytest_test_specialisation,               1},
     {"_cppallytest_test_str1",                         (DL_FUNC) &_cppallytest_test_str1,                         1},
     {"_cppallytest_test_str2",                         (DL_FUNC) &_cppallytest_test_str2,                         1},

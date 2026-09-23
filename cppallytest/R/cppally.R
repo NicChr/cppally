@@ -528,12 +528,12 @@ test_replace_at <- function(x, where, with) {
   .Call(`_cppallytest_test_replace_at`, x, where, with)
 }
 
-test_order <- function(x, preserve_ties) {
-  .Call(`_cppallytest_test_order`, x, preserve_ties)
+test_order <- function(x) {
+  .Call(`_cppallytest_test_order`, x)
 }
 
-test_sort <- function(x, preserve_ties) {
-  .Call(`_cppallytest_test_sort`, x, preserve_ties)
+test_sort <- function(x) {
+  .Call(`_cppallytest_test_sort`, x)
 }
 
 test_range <- function(x, na_rm) {
