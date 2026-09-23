@@ -122,18 +122,11 @@ struct r_df {
     public: 
 
     // Constructor from existing SEXP
-    explicit r_df(SEXP s) : value(s) {
-        init_df();
-    }
-    explicit r_df(SEXP s, internal::view_tag) : value(s, internal::view_tag{}) {
-        init_df();
-    }
     explicit r_df(r_sexp s) : value(std::move(s)) {
         init_df();
     }
-    explicit r_df(const r_sexp& s, internal::view_tag) : value(s, internal::view_tag{}) {
-        init_df();
-    }
+    explicit r_df(SEXP s) : r_df(r_sexp(s)) {}
+    explicit r_df(SEXP s, internal::view_tag) : r_df(r_sexp(s, internal::view_tag{})) {}
 
     explicit r_df(int nrows) : value(internal::new_df_impl(nrows)) {
         cached_nrow = nrows;
@@ -150,9 +143,7 @@ struct r_df {
     explicit r_df(r_sexp s, internal::no_checks_tag) : value(std::move(s), internal::no_checks_tag{}) {
         cached_nrow = get_nrow();
     }
-    explicit r_df(const r_sexp& s, internal::view_tag, internal::no_checks_tag) : value(s, internal::view_tag{}, internal::no_checks_tag{}) {
-        cached_nrow = get_nrow();
-    }
+    explicit r_df(SEXP s, internal::view_tag, internal::no_checks_tag) : r_df(r_sexp(s, internal::view_tag{}), internal::no_checks_tag{}) {}
     
     // Forward declarations, defined in data_frame/r_df_methods.h
     explicit r_df(const r_vec<r_sexp>& cols, bool recycle = true);
