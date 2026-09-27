@@ -475,18 +475,18 @@ struct r_vec {
 
   // Get element by index (no bounds-check)
   #ifdef CPPALLY_PRESERVE_ALTREP
-  template <CppIntegerNumber I>
+  template <IntegerNumber I>
   T get(I index) const {
     if (m_ptr) {
-      return internal::unsafe_reconstruct<T>(m_ptr[index]);
+      return internal::unsafe_reconstruct<T>(m_ptr[unwrap(index)]);
     } else {
-      return internal::unsafe_reconstruct<T>(internal::elt<T>(value, index));
+      return internal::unsafe_reconstruct<T>(internal::elt<T>(value, unwrap(index)));
     }
   }
   #else
-  template <CppIntegerNumber I>
-  T get(I index) const noexcept(noexcept(internal::unsafe_reconstruct<T>(m_ptr[index]))) {
-    return internal::unsafe_reconstruct<T>(m_ptr[index]);
+  template <IntegerNumber I>
+  T get(I index) const noexcept(noexcept(internal::unsafe_reconstruct<T>(m_ptr[unwrap(index)]))) {
+    return internal::unsafe_reconstruct<T>(m_ptr[unwrap(index)]);
   }
   #endif
   
@@ -504,18 +504,18 @@ struct r_vec {
   // Element must not outlive the parent vector
 
   #ifdef CPPALLY_PRESERVE_ALTREP
-  template <CppIntegerNumber I>
+  template <IntegerNumber I>
   T view(I index) const {
     if (m_ptr) {
-      return internal::unsafe_reconstruct_view<T>(m_ptr[index]);
+      return internal::unsafe_reconstruct_view<T>(m_ptr[unwrap(index)]);
     } else {
-      return internal::unsafe_reconstruct_view<T>(internal::elt<T>(value, index));
+      return internal::unsafe_reconstruct_view<T>(internal::elt<T>(value, unwrap(index)));
     }
   }
   #else
-  template <CppIntegerNumber I>
-  T view(I index) const noexcept(noexcept(internal::unsafe_reconstruct_view<T>(m_ptr[index]))) {
-    return internal::unsafe_reconstruct_view<T>(m_ptr[index]);
+  template <IntegerNumber I>
+  T view(I index) const noexcept(noexcept(internal::unsafe_reconstruct_view<T>(m_ptr[unwrap(index)]))) {
+    return internal::unsafe_reconstruct_view<T>(m_ptr[unwrap(index)]);
   }
   #endif
 
@@ -528,7 +528,7 @@ struct r_vec {
   }
 
   // Set element (no bounds-check)
-  template <CppIntegerNumber I>
+  template <IntegerNumber I>
   void set(I index, const T& val) noexcept(
 
     // If CPPALLY_PRESERVE_ALTREP is defined then data() may materialise and throw
@@ -544,16 +544,16 @@ struct r_vec {
     ensure_exclusive();
     #endif
     if constexpr (RStringType<T>){
-      SET_STRING_ELT(value, index, val);
+      SET_STRING_ELT(value, unwrap(index), val);
     } else if constexpr (is<T, r_sexp>){
-      SET_VECTOR_ELT(value, index, val);
+      SET_VECTOR_ELT(value, unwrap(index), val);
     } else {
       static_assert(!is_write_barrier_protected, "Can't write data directly here, data is R write-barrier protected");
-      data()[index] = unwrap(val);
+      data()[unwrap(index)] = unwrap(val);
     }
   }
 
-  template <CppIntegerNumber I, typename U>
+  template <IntegerNumber I, typename U>
   void set(I index, const U& val) {
     // Lists must not hold RScalar, only RComposite (e.g. vectors) and other SEXP types
     if constexpr (is<T, r_sexp>) {
