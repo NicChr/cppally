@@ -202,11 +202,6 @@ struct r_vec {
   // Any two r_vec wrappers around the same SEXP point to the same names_map via the registry
   mutable std::shared_ptr<internal::names_map> cached_names;
 
-  // Counts name_index calls on this wrapper. First lookup uses a linear scan;
-  // the hash table is only built on the second, so one-shot callers pay no
-  // build cost and the benefit accrues to repeated-lookup C++ code.
-  mutable bool first_access = false;
-
   void initialise_ptr(){
 #ifdef CPPALLY_PRESERVE_ALTREP
     // For ALTREP leave m_ptr null so get/view go through elt<T>
@@ -436,9 +431,10 @@ struct r_vec {
   // `abort_on_missing` - When supplied name doesn't exist, abort, otherwise return `NA`
   r_int name_index(r_str_view name, bool abort_on_missing = true) const {
 
+    ensure_names_cached();
+
     // Second-or-later lookup - cache hash map
-    if (first_access) {
-      ensure_names_cached();
+    if (cached_names->accessed) {
       r_int index = cached_names->find(name);
       if (is_na(index)){ 
         if (abort_on_missing) {
@@ -450,7 +446,7 @@ struct r_vec {
       return index;
     }
 
-    first_access = true;
+    cached_names->accessed = true;
 
     // First lookup: linear scan, no hash-table allocation
     r_vec<r_str_view> names_attr = names();

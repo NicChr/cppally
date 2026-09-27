@@ -62,10 +62,6 @@ struct r_factors {
 
   // Shared cache for levels — see r_vec::cached_names for the design
   mutable std::shared_ptr<internal::names_map> cached_levels;
-  // Counts get_code calls on this wrapper. First lookup is a linear scan over
-  // levels; the hash is only built on the second so one-shot lookups pay no
-  // build cost.
-  mutable bool first_access = false;
 
   // Place names into cache (no hash map yet)
   void cache_levels(const r_vec<r_str_view>& lvls) const {
@@ -240,20 +236,14 @@ struct r_factors {
   // Since levels are assumed to be unique, we find the first match
   r_int get_code(r_str_view val, r_int no_match = na<r_int>()) const {
     
-    // Hash path: cache already built by us or by a sibling wrapper.
-    if (cached_levels && cached_levels->names.has_value()) {
+    ensure_levels_cached();
+
+    if (cached_levels->accessed || cached_levels->map) {
       r_int out = cached_levels->find(val, /*offset = */ 1);
       return is_na(out) ? no_match : out;
     }
 
-    // Second-or-later lookup without a built cache: build it.
-    if (first_access) {
-      ensure_levels_cached();
-      r_int out = cached_levels->find(val, /*offset = */ 1);
-      return is_na(out) ? no_match : out;
-    }
-
-    first_access = true;
+    cached_levels->accessed = true;
 
     // First lookup: linear scan over the levels STRSXP.
     r_vec<r_str_view> levels_attr = levels();

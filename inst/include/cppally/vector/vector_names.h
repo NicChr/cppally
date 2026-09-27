@@ -170,6 +170,8 @@ struct names_map {
     std::optional<r_sexp> names;
     mutable std::shared_ptr<sexp_index_table> map;
 
+    bool accessed = false;
+
     names_map() = default;
 
     void invalidate() noexcept {
