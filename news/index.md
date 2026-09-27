@@ -40,6 +40,12 @@
   predictable. Users are now encouraged to write their own `r_sexp`
   methods as and when they require them.
 
+- `r_sym::value_type` is now correctly `SEXP` and not `r_sexp`.
+
+- The `preserve_ties` argument of
+  [`order()`](https://bit64.r-lib.org/reference/bit64S3.html) is
+  deprecated and ignored. Stable-sorting is now always used.
+
 ### Bug fixes
 
 - Fixed a bug where matching on integer vectors with a non `NA`
@@ -232,6 +238,11 @@ giving a fractional answer that is slightly less than 1 month.
   `r_str_view`) under unwind protection, so R errors can no longer
   longjmp past C++ destructors.
 
+- `r_lgl` construction from integers other than `int` is now a SFINAE
+  error instead of an ambiguous constructor error.
+
+- Speed improvements to logical operators of `r_lgl`.
+
 - Sorting speed has been improved for both character vectors and numeric
   vectors. Sorting is faster for character vectors when there are a
   relatively high proportion of unique strings. Sorting is also
@@ -298,10 +309,16 @@ giving a fractional answer that is slightly less than 1 month.
   copies the vector by creating a fresh copy of the atomic data, without
   deep copying lists or attributes, just like `Rf_shallow_duplicate`.
 
+- New member `r_vec::materialise()`, a safe route to always materialise
+  a (possibly ALTREP) vector if it hasn’t already been materialised.
+
+- New member `r_vec::is_materialised()` to replace `materialised()`,
+  which has been soft-deprecated.
+
+- New template `make_vector`, an alias of `make_vec`.
+
 - New by-group left-fold functional `reduce_by_group`, allowing for very
   efficient binary reductions by-group.
-
-- New function `list_recycle` to recycle vectors of a list.
 
 - New `r_sexp` visit helpers `visit_as` and `view_as`.
 
@@ -312,6 +329,15 @@ giving a fractional answer that is slightly less than 1 month.
   string. If the string is already a UTF-8 string, it is a no-op and
   simply returns the same `r_str`.
 
+- `r_str` and `r_str_view` gain new member `n_bytes`, which returns the
+  length of the string in bytes.
+
+- `r_str` and `r_str_view` gain new member `is_ascii`, which checks if
+  the string is valid ASCII.
+
+- `r_sym` gains new static member `missing_symbol`, which returns R’s
+  symbol for a missing argument.
+
 - New class `string_literal` to facilitate compile-time string literal
   NTTP programming.
 
@@ -321,6 +347,8 @@ giving a fractional answer that is slightly less than 1 month.
 
 - `r_factors` gains a new member function, `refactor`, which creates a
   new `r_factors` object given a new set of levels.
+
+- New function `list_recycle` to recycle vectors of a list.
 
 - New R function
   [`use_openmp()`](https://nicchr.github.io/cppally/reference/use_openmp.md)

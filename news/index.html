@@ -53,6 +53,8 @@
 <li><p><code>as&lt;r_str&gt;(r_dbl::inf())</code> now returns title case <code>r_str("Inf")</code> instead of lower case <code>r_str("inf")</code>. Similarly <code>as&lt;r_str&gt;( -r_dbl::inf() )</code> returns <code>r_str("-Inf")</code>.</p></li>
 <li><p>C++ char types (except <code>const char*</code> and <code>unsigned char</code>) no longer satisfy <code>CastableToRScalar</code> and therefore cannot participate in R/C++ function registration.</p></li>
 <li><p>Many <code>r_sexp</code>-based free functions have been removed and there are a few reasons for doing so. The first being that cppally didn’t provide a complete set of <code>r_sexp</code> free functions anyway, and so providing an incomplete set felt lackluster. Another reason is that removing these methods speeds up compilation and makes the API more lightweight and predictable. Users are now encouraged to write their own <code>r_sexp</code> methods as and when they require them.</p></li>
+<li><p><code>r_sym::value_type</code> is now correctly <code>SEXP</code> and not <code>r_sexp</code>.</p></li>
+<li><p>The <code>preserve_ties</code> argument of <code><a href="https://bit64.r-lib.org/reference/bit64S3.html" class="external-link">order()</a></code> is deprecated and ignored. Stable-sorting is now always used.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
@@ -123,6 +125,8 @@
 <li><p><code>cpp_source</code> gains the <code>openmp</code> argument.</p></li>
 <li><p>Integer multiplication overflow handling is now more portable.</p></li>
 <li><p><code>r_sym</code> now constructs symbols from strings (<code>const char*</code>, <code>r_str</code>, <code>r_str_view</code>) under unwind protection, so R errors can no longer longjmp past C++ destructors.</p></li>
+<li><p><code>r_lgl</code> construction from integers other than <code>int</code> is now a SFINAE error instead of an ambiguous constructor error.</p></li>
+<li><p>Speed improvements to logical operators of <code>r_lgl</code>.</p></li>
 <li><p>Sorting speed has been improved for both character vectors and numeric vectors. Sorting is faster for character vectors when there are a relatively high proportion of unique strings. Sorting is also dramatically faster for double vectors when all values in the vector are exact whole numbers.</p></li>
 <li><p><code>groups</code> class members <code>starts()</code>, <code>counts()</code> now see substantial speed improvements when data are in group-sorted order. When sorted, <code>starts()</code> and <code>counts()</code> may perform a hybrid linear/exponential (or galloping) search. This new search strategy dramatically improves performance on large data with small numbers of groups. Time complexity now scales with the number of groups and not the size of data.</p></li>
 <li><p><code>groups::order()</code> also sees speed improvements for unsorted data, due to the fact that it unconditionally applies a counting sort, without checking for <code>NA</code> values (since group IDs do not have <code>NA</code> values) or scanning the group IDs for their range, like <code><a href="https://bit64.r-lib.org/reference/bit64S3.html" class="external-link">cppally::order()</a></code> generally (and correctly) does for other integer vectors. When data are already sorted it simply returns the sequence [0, n - 1] for n data points (as it did before).</p></li>
@@ -137,14 +141,20 @@
 <h3 id="other-new-features-development-version">Other new features<a class="anchor" aria-label="anchor" href="#other-new-features-development-version"></a></h3>
 <ul><li><p>New function <code>scalar_coerce</code>. Use this with <code>allow_lossy = true</code> if you want to return <code>NA</code> instead of an error on a completely lossy scalar coercion. For example, converting a letter string to a double (e.g. <code>as&lt;r_dbl&gt;(r_str("a"))</code>) always results in an error by default whereas <code>scalar_coerce&lt;r_dbl&gt;(r_str("a"), /*allow_lossy=*/ true)</code> returns <code>na&lt;r_dbl&gt;()</code>.</p></li>
 <li><p>New <code>copy</code> member for <code>r_vec</code>, <code>r_factors</code> and <code>r_df</code>. <code>copy</code> shallow copies the vector by creating a fresh copy of the atomic data, without deep copying lists or attributes, just like <code>Rf_shallow_duplicate</code>.</p></li>
+<li><p>New member <code>r_vec::materialise()</code>, a safe route to always materialise a (possibly ALTREP) vector if it hasn’t already been materialised.</p></li>
+<li><p>New member <code>r_vec::is_materialised()</code> to replace <code>materialised()</code>, which has been soft-deprecated.</p></li>
+<li><p>New template <code>make_vector</code>, an alias of <code>make_vec</code>.</p></li>
 <li><p>New by-group left-fold functional <code>reduce_by_group</code>, allowing for very efficient binary reductions by-group.</p></li>
-<li><p>New function <code>list_recycle</code> to recycle vectors of a list.</p></li>
 <li><p>New <code>r_sexp</code> visit helpers <code>visit_as</code> and <code>view_as</code>.</p></li>
 <li><p>New <code>r_str</code> member function <code>is_utf8</code> to check whether a string has valid UTF-8 encoding, which includes ASCII strings.</p></li>
 <li><p>New <code>r_str</code> member function <code>as_utf8</code> to convert a string to a UTF-8 string. If the string is already a UTF-8 string, it is a no-op and simply returns the same <code>r_str</code>.</p></li>
+<li><p><code>r_str</code> and <code>r_str_view</code> gain new member <code>n_bytes</code>, which returns the length of the string in bytes.</p></li>
+<li><p><code>r_str</code> and <code>r_str_view</code> gain new member <code>is_ascii</code>, which checks if the string is valid ASCII.</p></li>
+<li><p><code>r_sym</code> gains new static member <code>missing_symbol</code>, which returns R’s symbol for a missing argument.</p></li>
 <li><p>New class <code>string_literal</code> to facilitate compile-time string literal NTTP programming.</p></li>
 <li><p>R function <code>cpp_eval</code> gains a new argument, <code>cppally_header</code>, allowing one to compile expressions using the optional light header “cppally_light.hpp”.</p></li>
 <li><p><code>r_factors</code> gains a new member function, <code>refactor</code>, which creates a new <code>r_factors</code> object given a new set of levels.</p></li>
+<li><p>New function <code>list_recycle</code> to recycle vectors of a list.</p></li>
 <li><p>New R function <code><a href="../reference/use_openmp.html">use_openmp()</a></code> to set OpenMP-enabling Makevars flags.</p></li>
 <li><p>A new <strong>optional</strong> feature where users can now restrict the set of candidates that participate in template dispatch for template-registered R/C++ functions via <code><a href="../reference/use_template_dispatch_candidates.html">use_template_dispatch_candidates()</a></code>. For example, if a user wishes to write a C++ algebra library using only integers and doubles, they can call <code>use_template_dispatch_candidates(c("r_int", "r_dbl"))</code>, and any template they register to R will only ever accept <strong>at most</strong> those types, regardless of the concepts and constraints of the template. This can dramatically reduce compilation times for template-heavy code when specifying a small number of candidates. Generally the same effect can be achieved with concepts and constraints, but this acts as an additional layer to ensure faster compile-times in scenarios where it makes sense to use a small candidate set.</p></li>
 </ul></div>

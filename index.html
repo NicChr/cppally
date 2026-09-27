@@ -69,6 +69,35 @@
 <p>I first want to thank the authors and contributors of the fantastic <a href="https://cpp11.r-lib.org/" class="external-link">cpp11</a> R package, without which I would not have been inspired to write this package. I’d also like to thank the authors and contributors of <a href="https://github.com/RcppCore/Rcpp" class="external-link">Rcpp</a> for developing this ecosystem that has laid much of the groundwork for C++ and R integration.</p>
 </div>
 <div class="section level2">
+<h2 id="cppally-features">cppally features<a class="anchor" aria-label="anchor" href="#cppally-features"></a>
+</h2>
+<ul>
+<li><p>C++20 concepts specific to R</p></li>
+<li><p>Custom C++ scalar classes with NA-aware operators that mirror R semantics</p></li>
+<li><p><code>r_vector&lt;T&gt;</code> - A templated C++ style R vector class with many useful members</p></li>
+<li><p>A date (and date-time) class with a complete set of <code>std::chrono</code> backed members for date arithmetic and manipulation</p></li>
+<li><p>Automatic protection for <code>SEXP</code>-based objects with low overhead via custom class <code>r_sexp</code></p></li>
+<li><p>Registration of C++ template (and non-template) functions to R</p></li>
+<li><p>Very flexible coercion between types using <code>as&lt;T&gt;</code></p></li>
+<li><p>Visit type-erased <code>SEXP</code> with <code>r_sexp_visit</code></p></li>
+<li><p>SIMD vectorisation and multi-threaded execution</p></li>
+<li><p>Reproducible random number generation with <code>random_stream</code></p></li>
+<li><p>Common scalar Math functions such as <code><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs()</a></code>, <code><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt()</a></code>, <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">log()</a></code>, <code><a href="https://rdrr.io/r/base/Round.html" class="external-link">round()</a></code>, and many more</p></li>
+<li><p>Vector name-lookup and factor level lookup via lazily cached hash maps</p></li>
+<li><p>Factor manipulation with custom <code>r_factors</code> class</p></li>
+<li><p>Attribute manipulation with helpers defined in <code><a href="https://rdrr.io/r/base/attr.html" class="external-link">cppally::attr</a></code> namespace</p></li>
+<li><p>Custom classes for R symbols and R functions, <code>r_sym</code> and <code>r_function</code> respectively</p></li>
+<li><p>Powerful vectorisation of C++ functions using <code>pmap()</code></p></li>
+<li><p>Vectorised operators for vectorised arithmetic (e.g. addition of two or more vectors)</p></li>
+<li><p>Common vector algorithms like <code>unique</code>, <code>sort</code>, <code>match</code>, <code>subset</code>, <code>duplicated</code>, and more</p></li>
+<li><p>Common statistical summary functions such as <code><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum()</a></code>, <code><a href="https://rdrr.io/r/stats/cor.html" class="external-link">var()</a></code>, <code><a href="https://rdrr.io/r/base/range.html" class="external-link">range()</a></code>, etc</p></li>
+<li><p>A powerful class <code>groups</code> to encode groups into group Ids and other useful group metadata</p></li>
+<li><p>Regular sequence generation with <code><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq()</a></code>, <code><a href="https://rdrr.io/r/base/sequence.html" class="external-link">sequence()</a></code>, and other helpers</p></li>
+<li><p>Flexible in-line vector construction with <code>make_vector&lt;T&gt;</code>, plus <code>named_arg</code> for building named vectors</p></li>
+<li><p>Data frame manipulation via custom class <code>r_df</code></p></li>
+</ul>
+</div>
+<div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <p>Install the CRAN release</p>
@@ -119,6 +148,19 @@
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">cpp_sum</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NA</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] NA</span></span></code></pre></div>
+<p>Since it is a template, it can accept various classes (that satisfy <code>RMathType</code>).</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">cpp_sum</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">T</span>, <span class="cn">F</span><span class="op">)</span><span class="op">)</span> <span class="co"># Logicals</span></span>
+<span><span class="co">#&gt; [1] 1</span></span>
+<span><span class="fu">cpp_sum</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">2L</span>, <span class="fl">3L</span><span class="op">)</span><span class="op">)</span> <span class="co"># Integers</span></span>
+<span><span class="co">#&gt; [1] 6</span></span>
+<span><span class="fu">cpp_sum</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.5</span>, <span class="fl">2.5</span>, <span class="fl">3.5</span><span class="op">)</span><span class="op">)</span> <span class="co"># Doubles</span></span>
+<span><span class="co">#&gt; [1] 7.5</span></span></code></pre></div>
+<p>Character vector elements (<code>r_str</code>) don’t satisfy <code>RMathType</code>, so <code>r_vector&lt;r_str&gt;</code> is rejected.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">cpp_sum</span><span class="op">(</span><span class="st">"A STRING"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error:</span></span>
+<span><span class="co">#&gt; ! Argument 1 of type character does not satisfy the template constraints</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="design-choices">Design choices<a class="anchor" aria-label="anchor" href="#design-choices"></a>
@@ -127,22 +169,133 @@
 <h3 id="templates">Templates<a class="anchor" aria-label="anchor" href="#templates"></a>
 </h3>
 <p>cppally makes heavy use of templates for powerful generic programming. While this offers a flexible framework for writing generic functions, it comes at the cost of slower compile times and larger binary sizes.</p>
-<p>Users can write and optionally register their own templates (to R). There are two main limitations to be aware of. The first is that templates must be written in header files if they are to be used across multiple compilation units. The other big limitation is that template specialisations cannot be called from R, so when calling C++ template functions from R, we always rely on automatic deduction from the function inputs. There is a workaround discussed in the main vignette <a href="https://nicchr.github.io/cppally/articles/cppally.html">Getting started with cppally</a></p>
+<p>Users can write and register their own templates to R, but there are two main limitations to be aware of.</p>
+<p>The first is that templates must be written in header files if they are to be used across multiple compilation units.</p>
+<p>The second limitation is that template specialisations cannot be called from R. This means that automatic deduction is the only mechanism we have at our disposal when calling C++ template functions from R.</p>
 </div>
 <div class="section level3">
 <h3 id="scalar-r-types-and-custom-methods">Scalar R types and custom methods<a class="anchor" aria-label="anchor" href="#scalar-r-types-and-custom-methods"></a>
 </h3>
-<p>cppally offers R-based C++ scalar types that are <code>NA</code> aware. To achieve this multiple methods such as binary arithmetic operators have been written to ensure <code>NA</code> is propagated correctly. While every attempt has been made to make this as fast as possible, it adds some overhead and in some cases can prevent effective vectorisation (via e.g. SIMD instructions). If you find that this is slowing things down too much you can work with the underlying C/C++ types using <code>unwrap_t&lt;&gt;</code> and <code>unwrap()</code>.</p>
+<p>cppally offers scalar C++ types that mirror their R counterpart in the sense that they are <code>NA</code> aware and match other R semantics specific to that class.</p>
+<p>Scalar classes that cppally offers</p>
+<table class="table">
+<thead><tr>
+<th>Scalar class</th>
+<th>R-counterpart</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>r_lgl</code></td>
+<td><code>logical(1)</code></td>
+</tr>
+<tr>
+<td><code>r_int</code></td>
+<td><code>integer(1)</code></td>
+</tr>
+<tr>
+<td><code>r_dbl</code></td>
+<td><code>double(1)</code></td>
+</tr>
+<tr>
+<td><code>r_str</code></td>
+<td><code>character(1)</code></td>
+</tr>
+<tr>
+<td><code>r_cplx</code></td>
+<td><code>complex(1)</code></td>
+</tr>
+<tr>
+<td><code>r_int64</code></td>
+<td><code>bit64::integer64(1)</code></td>
+</tr>
+<tr>
+<td><code>r_date</code></td>
+<td><code>as.Date(double(1))</code></td>
+</tr>
+<tr>
+<td><code>r_psxct</code></td>
+<td><code>as.POSIXct(double(1))</code></td>
+</tr>
+<tr>
+<td><code>r_raw</code></td>
+<td><code>raw(1)</code></td>
+</tr>
+</tbody>
+</table>
+<div class="section level4">
+<h4 id="scalar-arithmetic">Scalar arithmetic<a class="anchor" aria-label="anchor" href="#scalar-arithmetic"></a>
+</h4>
+<p>Many operators and methods have been written to ensure safe, correct, and efficient behaviour. This includes binary arithmetic operators such as: <code>+</code>, <code>-</code>, <code>/</code>, <code>*</code>, and many more.</p>
+<p>For example, in standard C++, an integer divided by another integer <code>int / int</code> always results in an integer <code>int</code>. With cppally, division always results in an R double <code>r_dbl</code>, so <code>r_int / r_int</code> returns an R double, matching R semantics.</p>
+<p>Another example is the modulo operator <code>%</code>. With standard C++ integers, this returns the remainder after integer division (truncated towards zero), but R uses Knuth floored division, which cppally also implements to match. <code>(int) -5 % 2</code> returns -1 (truncated modulo), whereas <code>(r_int) -5 % 2</code> returns 1 (floored modulo).</p>
+</div>
+<div class="section level4">
+<h4 id="integer-overflow">Integer overflow<a class="anchor" aria-label="anchor" href="#integer-overflow"></a>
+</h4>
+<p>Integer overflow with cppally integers is <strong>never</strong> undefined behaviour. <code>NA</code> will <strong>always</strong> be returned where there is integer overflow. Let’s look at how cppally’s <code>+</code> operator is currently defined to see this in detail.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co">// First few lines of cppally::operator+</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>MathType T<span class="op">,</span> MathType U<span class="op">&gt;</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="kw">requires</span> <span class="op">(</span>RMathType<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="op">||</span> RMathType<span class="op">&lt;</span>U<span class="op">&gt;)</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="kw">inline</span> <span class="kw">constexpr</span> <span class="kw">auto</span> <span class="kw">operator</span><span class="op">+(</span>T lhs<span class="op">,</span> U rhs<span class="op">)</span> <span class="kw">noexcept</span> <span class="op">{</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>    </span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>    <span class="kw">using</span> <span class="dt">common_t</span> <span class="op">=</span> <span class="dt">common_math_t</span><span class="op">&lt;</span>T<span class="op">,</span> U<span class="op">&gt;;</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>    </span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">constexpr</span> <span class="op">(</span>RIntegerType<span class="op">&lt;</span><span class="dt">common_t</span><span class="op">&gt;){</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>      <span class="kw">using</span> I  <span class="op">=</span> <span class="dt">unwrap_t</span><span class="op">&lt;</span><span class="dt">common_t</span><span class="op">&gt;;</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>      <span class="kw">using</span> UI <span class="op">=</span> <span class="bu">std::</span>make_unsigned_t<span class="op">&lt;</span>I<span class="op">&gt;;</span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>      </span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>      I a <span class="op">=</span> <span class="kw">static_cast</span><span class="op">&lt;</span>I<span class="op">&gt;(</span>unwrap<span class="op">(</span>lhs<span class="op">));</span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>      I b <span class="op">=</span> <span class="kw">static_cast</span><span class="op">&lt;</span>I<span class="op">&gt;(</span>unwrap<span class="op">(</span>rhs<span class="op">));</span></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>      </span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>      <span class="co">// Wraparound sum via unsigned: defined behaviour</span></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>      I s <span class="op">=</span> <span class="kw">static_cast</span><span class="op">&lt;</span>I<span class="op">&gt;(</span><span class="kw">static_cast</span><span class="op">&lt;</span>UI<span class="op">&gt;(</span>a<span class="op">)</span> <span class="op">+</span> <span class="kw">static_cast</span><span class="op">&lt;</span>UI<span class="op">&gt;(</span>b<span class="op">));</span></span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>      </span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>      <span class="co">// Overflowed iff a and b share a sign that s does not</span></span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>      <span class="co">// a ^ s: Sign bit of the XOR is 1 when a and s have different signs, otherwise 0</span></span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>      <span class="co">// b ^ s: Same logic as a ^ s</span></span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a>      <span class="co">// (a ^ s) &amp; (b ^ s): bitwise AND, the sign bit of the result is 1 only when both a ^ s and b ^ s have their sign bit set</span></span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>      <span class="co">// Overflow can only happen when we are adding two numbers of the same sign</span></span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a>      <span class="co">// and because this is C++20, two's complement applies, which means we can check whether the top bit is set via &lt; 0</span></span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a>      <span class="dt">bool</span> bad <span class="op">=</span> <span class="op">(((</span>a <span class="op">^</span> s<span class="op">)</span> <span class="op">&amp;</span> <span class="op">(</span>b <span class="op">^</span> s<span class="op">))</span> <span class="op">&lt;</span> <span class="dv">0</span><span class="op">)</span> <span class="op">|</span> internal<span class="op">::</span>any_arithmetic_na<span class="op">(</span>lhs<span class="op">,</span> rhs<span class="op">);</span></span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a>      <span class="cf">return</span> bad <span class="op">?</span> <span class="dt">common_t</span><span class="op">::</span>na<span class="op">()</span> <span class="op">:</span> <span class="dt">common_t</span><span class="op">(</span>s<span class="op">);</span></span></code></pre></div>
+<p>The steps are as follows:</p>
+<ol style="list-style-type: decimal">
+<li>Find the common type between the two via <code>cppally::common_math_t</code>
+</li>
+<li>Work with the unwrapped C++ primitives</li>
+<li>Cast <code>lhs</code> and <code>rhs</code> to the common integer type</li>
+<li>Cast <code>lhs</code> and <code>rhs</code> to their unsigned type, add together, and cast back to the common signed type</li>
+<li>If <code>a</code> and <code>b</code> have identical sign but <code>s</code> does not, then there is integer overflow</li>
+<li>If there was overflow or if either <code>lhs</code> or <code>rhs</code> is <code>NA</code>, return <code>NA</code>, otherwise return the added result</li>
+</ol>
+<p>Since we are using same-width<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content="&lt;p&gt;We could also check 32-bit integers for overflow by first casting to 64-bit, but this is not as efficient as using 32-bit operations.&lt;/p&gt;"><sup>1</sup></a> integers and branchless operations, integer addition with cppally is fast and easily SIMD vectorisable.</p>
+</div>
+<div class="section level4">
+<h4 id="relational-operators">Relational operators<a class="anchor" aria-label="anchor" href="#relational-operators"></a>
+</h4>
+<p>Relational operators like <code>==</code>, <code>&lt;</code>, etc, are all NA-aware as well, and return <code>r_lgl</code> instead of <code>bool</code>.</p>
+<p>For example <code>r_int(5) == r_dbl(5)</code> returns <code>r_true</code>, whereas <code>na&lt;r_int&gt;() == na&lt;r_int&gt;()</code> returns <code>r_na</code>.</p>
+</div>
 </div>
 <div class="section level3">
 <h3 id="automatic-protection">Automatic protection<a class="anchor" aria-label="anchor" href="#automatic-protection"></a>
 </h3>
-<p>Like the excellent cpp11 package, cppally also handles automatic protection for R objects. For more info see <a href="https://nicchr.github.io/cppally/articles/protection.html">Automatic Protection</a></p>
+<p>Like the excellent cpp11 package, cppally also handles automatic protection for R objects. For more info see <a href="https://nicchr.github.io/cppally/articles/protection.html">Automatic Protection</a>.</p>
 </div>
 <div class="section level3">
 <h3 id="altrep">ALTREP<a class="anchor" aria-label="anchor" href="#altrep"></a>
 </h3>
-<p>For performance reasons, ALTREP materialisation is eager by default, which means that ALTREP vectors are materialised on construction. To preserve ALTREP compact representations, one can enable the package-wide ‘CPPALLY_PRESERVE_ALTREP’ flag. This can be done through <code><a href="reference/use_preserve_altrep_flag.html">cppally::use_preserve_altrep_flag()</a></code> or <code>cppally::cpp_source(..., preserve_altrep = TRUE)</code>. You can also manually add the ‘-DCPPALLY_PRESERVE_ALTREP’ flag to Makevars.</p>
+<p>For performance reasons, ALTREP materialisation is eager by default, which means that ALTREP vectors are materialised on construction.</p>
+<p>To preserve ALTREP compact representations, one can enable the package-wide <code>CPPALLY_PRESERVE_ALTREP</code> flag. This can be done through <code><a href="reference/use_preserve_altrep_flag.html">cppally::use_preserve_altrep_flag()</a></code> or <code>cppally::cpp_source(..., preserve_altrep = TRUE)</code>. You can also manually add the <code>-DCPPALLY_PRESERVE_ALTREP</code> flag to Makevars.</p>
+</div>
+<div class="section level3">
+<h3 id="copy-on-modify">Copy-on-modify<a class="anchor" aria-label="anchor" href="#copy-on-modify"></a>
+</h3>
+<p>Copy-on-modify is an opt-in feature which can be enabled via <code><a href="reference/use_copy_on_modify.html">cppally::use_copy_on_modify()</a></code> or by setting the <code>CPPALLY_COPY_ON_MODIFY</code> Makevars flag directly.</p>
+<p>When enabled, all modifications are first checked to ensure that the object being modified isn’t referenced or owned by another object. If it is referenced, a copy is taken first before modifying.</p>
+<p>This safety check is inherently single-threaded which means that enabling copy-on-modify disables almost all parallelisation, degrading cppally performance. Enable if you want to prevent accidental modification of shared objects.</p>
+<p>By default, copy-on-modify is disabled and hence all element setting is done in-place. It is up to the user to ensure that the vector they are modifying is safe to modify. Vectors you create with <code>r_vector&lt;T&gt;(n)</code> are freshly constructed, and hence safe to modify at that point. You can reliably check that it is safe to modify a vector by first calling <code>r_vector::is_exclusive()</code>. If the vector is exclusive, it means it is not referenced by another object and therefore is safe to modify in-place. If it is not exclusive, you can call <code>r_vector::copy()</code> to return a copied (fresh) vector.</p>
 </div>
 <div class="section level3">
 <h3 id="using-both-cppally-and-the-r-c-api">Using both cppally and the R C API<a class="anchor" aria-label="anchor" href="#using-both-cppally-and-the-r-c-api"></a>
@@ -162,43 +315,36 @@
 <p>To avoid the overhead associated with automatic protection entirely, one can use view types like e.g. <code>r_str_view</code>, a non-owning class for R strings. For more info on views see <a href="https://nicchr.github.io/cppally/articles/protection.html">Automatic Protection</a></p>
 </div>
 <div class="section level3">
-<h3 id="opt-in-copy-on-modify">Opt-in copy-on-modify<a class="anchor" aria-label="anchor" href="#opt-in-copy-on-modify"></a>
-</h3>
-<p>Copy-on-modify can be enabled via <code><a href="reference/use_copy_on_modify.html">cppally::use_copy_on_modify()</a></code> or by setting the CPPALLY_COPY_ON_MODIFY Makevars flag directly. When this is enabled, all in-place modifications check that the object being modified isn’t referenced or owned by another object. If it is referenced, a copy is taken first before modifying, otherwise it directly modifies.</p>
-<p>This safety check is inherently single-threaded which effectively disables almost all parallelisation. Enable this if prevention of accidental modification is a high concern. On the other hand, leaving it disabled may be preferable when performance is important.</p>
-<p>By default, copy-on-modify is disabled and hence all element setting is done in-place via <code>r_vector::set()</code>. It is up to the user to ensure that a fresh vector is created before further manipulation or that it’s safe to modify the existing vector.</p>
-</div>
-<div class="section level3">
 <h3 id="lossy-coercion">Lossy coercion<a class="anchor" aria-label="anchor" href="#lossy-coercion"></a>
 </h3>
 <p>Any coercion that results in complete information loss is an error (partial is allowed, e.g. double -&gt; int).</p>
-<p>For example, string -&gt; int may not be possible without complete information loss</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>as<span class="op">&lt;</span>r_int<span class="op">&gt;(</span>r_str<span class="op">(</span><span class="st">"a"</span><span class="op">))</span></span></code></pre></div>
-<div class="sourceCode" id="cb8"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co">#&gt; Error:</span></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="co">#&gt; ! Implicit NA coercion detected from r_str to r_int, please ensure data can be coerced without complete loss of information</span></span></code></pre></div>
+<p>For example, string -&gt; integer conversion may not be possible without complete information loss</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>as<span class="op">&lt;</span>r_int<span class="op">&gt;(</span>r_str<span class="op">(</span><span class="st">"a"</span><span class="op">))</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co">#&gt; Error:</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="co">#&gt; ! Implicit NA coercion detected from r_str to r_int, please ensure data can be coerced without complete loss of information</span></span></code></pre></div>
 <p>This is in contrast to R which returns an NA with a warning</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: NAs introduced by coercion</span></span>
 <span><span class="co">#&gt; [1] NA</span></span></code></pre></div>
 <p>The benefit of cppally’s approach is that when registering C++ functions to R, inputs can be supplied flexibly without unexpected behaviour.</p>
 <p>Let’s say you have a function <code>foo</code> that expects an <code>r_int</code> but you give it an <code>r_dbl</code> without realising - this will implicitly coerce to <code>r_int</code> without throwing an error.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a></span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>r_int foo<span class="op">(</span>r_int x<span class="op">){</span></span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  <span class="cf">return</span> x<span class="op">;</span></span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>r_int foo<span class="op">(</span>r_int x<span class="op">){</span></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>  <span class="cf">return</span> x<span class="op">;</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">foo</span><span class="op">(</span><span class="fl">1.2345</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 1</span></span></code></pre></div>
 <p>The double <code>1.2345</code> was implicitly converted to <code>1</code>, an example of <strong>partial lossy coercion</strong>. cppally allows this.</p>
 <p>What cppally doesn’t allow is <strong>total lossy coercion</strong>, which can result in ambiguity. Take the following example of counting the occurrence of a value in a vector.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a></span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="dt">int</span> count_val<span class="op">(</span>r_vector<span class="op">&lt;</span>r_dbl<span class="op">&gt;</span> x<span class="op">,</span> r_dbl value<span class="op">){</span></span>
-<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>  <span class="cf">return</span> x<span class="op">.</span>count<span class="op">(</span>value<span class="op">);</span></span>
-<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a></span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="dt">int</span> count_val<span class="op">(</span>r_vector<span class="op">&lt;</span>r_dbl<span class="op">&gt;</span> x<span class="op">,</span> r_dbl value<span class="op">){</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>  <span class="cf">return</span> x<span class="op">.</span>count<span class="op">(</span>value<span class="op">);</span></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">20</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">30</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="fl">40</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">count_val</span><span class="op">(</span><span class="va">x</span>, <span class="fl">0</span><span class="op">)</span></span>
@@ -215,14 +361,14 @@
 <span><span class="fu">count_val</span><span class="op">(</span><span class="va">x</span>, <span class="st">"1"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 30</span></span></code></pre></div>
 <p>So far so good. But what happens if we implicitly coerced to NA and then counted occurrences?</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">count_val</span><span class="op">(</span><span class="va">x</span>, <span class="fu"><a href="https://rdrr.io/r/base/double.html" class="external-link">as.double</a></span><span class="op">(</span><span class="st">"1. 0"</span><span class="op">)</span><span class="op">)</span> <span class="co"># Wrong</span></span>
 <span><span class="co">#&gt; Warning in count_val(x, as.double("1. 0")): NAs introduced by coercion</span></span>
 <span><span class="co">#&gt; [1] 40</span></span></code></pre></div>
 <p><code>as.double("1. 0")</code> was coerced to <code>NA</code>, <code>count_val()</code> then counted the number of <code>NA</code> values and returned 40, even though we didn’t ask for a count of <code>NA</code>, so the result should have been 0.</p>
 <p>This is the main issue with allowing total lossy coercion to <code>NA</code> - <code>count_val()</code> can’t distinguish between a true <code>NA</code> and an <code>NA</code> that has been produced from a lossy coercion.</p>
 <p>With cppally this ambiguity is impossible.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">count_val</span><span class="op">(</span><span class="va">x</span>, <span class="st">"1. 0"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error:</span></span>
 <span><span class="co">#&gt; ! Implicit NA coercion detected from r_str to r_dbl, please ensure data can be coerced without complete loss of information</span></span></code></pre></div>
@@ -231,97 +377,98 @@
 <h3 id="vector-indexing">Vector indexing<a class="anchor" aria-label="anchor" href="#vector-indexing"></a>
 </h3>
 <p>All indexing is 0-based including subsetting vectors.</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a>subset<span class="op">(</span>make_vector<span class="op">&lt;</span>r_dbl<span class="op">&gt;(</span><span class="dv">10</span><span class="op">,</span> <span class="dv">20</span><span class="op">,</span> <span class="dv">30</span><span class="op">),</span> make_vector<span class="op">&lt;</span>r_int<span class="op">&gt;(</span><span class="dv">1</span><span class="op">));</span> <span class="co">// index 1 = second element = 20</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="id_64-bit-integers">64-bit integers<a class="anchor" aria-label="anchor" href="#id_64-bit-integers"></a>
 </h3>
-<p>On the C++ side, 64-bit integers are fully supported, including vectors. To return 64-bit integers to R we need the bit64 package to be loaded. cppally delegates the handling of 64-bit integer vectors to bit64 by marking them with the “integer64” class.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<p>On the C++ side, 64-bit integers are fully supported, including vectors. To return 64-bit integers to R we need the bit64 package to be loaded. cppally delegates the handling of 64-bit integer vectors <strong>in R</strong> to bit64 by marking them with the “integer64” class.</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-lib/bit64" class="external-link">bit64</a></span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb17"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a></span>
-<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>r_int64 as_int64<span class="op">(</span>r_int x<span class="op">){</span></span>
-<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>    <span class="cf">return</span> as<span class="op">&lt;</span>r_int64<span class="op">&gt;(</span>x<span class="op">);</span></span>
-<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a></span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a>r_int64 as_int64<span class="op">(</span>r_int x<span class="op">){</span></span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a>    <span class="cf">return</span> as<span class="op">&lt;</span>r_int64<span class="op">&gt;(</span>x<span class="op">);</span></span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">as_int64</span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1L</span></span>
 <span><span class="co">#&gt; integer64</span></span>
 <span><span class="co">#&gt; [1] 2147483648</span></span></code></pre></div>
-<p>Please note that other signed 64-bit integer types like <code>int64_t</code>, <code>R_xlen_t</code> and cppally’s <code>r_size_t</code> will convert to 64-bit integer vectors when returned to R.</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a>as<span class="op">&lt;</span><span class="dt">r_size_t</span><span class="op">&gt;(</span>r_int<span class="op">(</span><span class="dv">0</span><span class="op">))</span></span></code></pre></div>
-<div class="sourceCode" id="cb20"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="co">#&gt; integer64</span></span>
-<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span></code></pre></div>
-<div class="sourceCode" id="cb21"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a>as<span class="op">&lt;</span><span class="dt">R_xlen_t</span><span class="op">&gt;(</span>r_int<span class="op">(</span><span class="dv">0</span><span class="op">))</span></span></code></pre></div>
-<div class="sourceCode" id="cb22"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="co">#&gt; integer64</span></span>
-<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span></code></pre></div>
-<div class="sourceCode" id="cb23"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a>as<span class="op">&lt;</span><span class="dt">int64_t</span><span class="op">&gt;(</span>r_int<span class="op">(</span><span class="dv">0</span><span class="op">))</span></span></code></pre></div>
+<p>Please note that aliases of standard C++ signed 64-bit integer types like <code>int64_t</code>, <code>R_xlen_t</code> and cppally’s <code>r_size_t</code> will convert to 64-bit integer vectors when returned to R.</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a>as<span class="op">&lt;</span><span class="dt">r_size_t</span><span class="op">&gt;(</span>r_int<span class="op">(</span><span class="dv">0</span><span class="op">))</span></span></code></pre></div>
 <div class="sourceCode" id="cb24"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co">#&gt; integer64</span></span>
 <span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a>as<span class="op">&lt;</span><span class="dt">R_xlen_t</span><span class="op">&gt;(</span>r_int<span class="op">(</span><span class="dv">0</span><span class="op">))</span></span></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="co">#&gt; integer64</span></span>
+<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a>as<span class="op">&lt;</span><span class="dt">int64_t</span><span class="op">&gt;(</span>r_int<span class="op">(</span><span class="dv">0</span><span class="op">))</span></span></code></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co">#&gt; integer64</span></span>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="using-rs-null">Using R’s <code>NULL</code>
 <a class="anchor" aria-label="anchor" href="#using-rs-null"></a>
 </h3>
-<p>The cppally version of R’s <code>R_NilValue</code> is <code>r_null</code> which is of type <code>r_sexp</code>. In an attempt to avoid the use of additional meta-programming tactics to deal with <code>r_null</code>, we allow vectors to be able to contain <code>r_null</code> which makes programming with R attributes easier. This means <code>r_vector&lt;T&gt;</code> objects can be <code>r_null</code>. To detect this, use the <code>is_null()</code> member function.</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;(</span>r_null<span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb26"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="co">#&gt; NULL</span></span></code></pre></div>
-<div class="sourceCode" id="cb27"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;(</span>r_null<span class="op">).</span>is_null<span class="op">()</span></span></code></pre></div>
-<div class="sourceCode" id="cb28"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>The cppally version of R’s <code>R_NilValue</code> is <code>r_null</code> which is of type <code>r_sexp</code>. In an attempt to avoid the use of additional meta-programming tactics to deal with <code>r_null</code>, we allow vectors the special ability to hold <code>r_null</code>. This makes programming with attributes easier, since attributes are sometimes vectors and sometimes <code>NULL</code>.</p>
+<p>To check if a vector is <code>NULL</code>, use <code>r_vector::is_null()</code>.</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;(</span>r_null<span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="co">#&gt; NULL</span></span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;(</span>r_null<span class="op">).</span>is_null<span class="op">()</span></span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
-<h2 id="useful-makevars-flags">Useful Makevars flags<a class="anchor" aria-label="anchor" href="#useful-makevars-flags"></a>
+<h2 id="large-cpp-files-on-windows">Large cpp files on Windows<a class="anchor" aria-label="anchor" href="#large-cpp-files-on-windows"></a>
 </h2>
-<p>Because cppally is a template-heavy library, binary sizes can sometimes get large. This is primarily an issue on windows which will throw a compiler error if a single .o file gets too big. In this case you may want to consider adding the following flag to Makevars.win</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a>PKG_CXXFLAGS <span class="ot">=</span> <span class="sc">-</span>Wa,<span class="sc">-</span>mbig<span class="sc">-</span>obj</span></code></pre></div>
-<p>To benefit from OMP SIMD vectorisation and parallelisation, it is recommended to add these flags to Makevars</p>
-<div class="sourceCode" id="cb30"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a>PKG_CXXFLAGS <span class="ot">=</span> <span class="er">$</span>(SHLIB_OPENMP_CXXFLAGS)</span>
-<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a>PKG_LIBS <span class="ot">=</span> <span class="er">$</span>(SHLIB_OPENMP_CXXFLAGS)</span></code></pre></div>
-<p>And these flags to Makevars.win (including the windows specific binary size flags)</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a>PKG_CXXFLAGS <span class="ot">=</span> <span class="er">$</span>(SHLIB_OPENMP_CXXFLAGS) <span class="sc">-</span>Wa,<span class="sc">-</span>mbig<span class="sc">-</span>obj</span>
-<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a>PKG_LIBS <span class="ot">=</span> <span class="er">$</span>(SHLIB_OPENMP_CXXFLAGS)</span></code></pre></div>
+<p>Because cppally is a template-heavy library, binary sizes can sometimes get large. Once a <code>.o</code> file gets too big, Windows will throw a compiler warning or error (the default limit is 65,279 addressable sections). To increase this limit to 4,294,967,296, add the following flag:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a>PKG_CXXFLAGS <span class="ot">=</span> <span class="sc">-</span>Wa,<span class="sc">-</span>mbig<span class="sc">-</span>obj</span></code></pre></div>
+<p>If you are submitting an R package to CRAN, this will likely trigger a CRAN note, so it is worth flagging this in your <code>cran-comments.md</code> file.</p>
+</div>
+<div class="section level2">
+<h2 id="enabling-openmp">Enabling OpenMP<a class="anchor" aria-label="anchor" href="#enabling-openmp"></a>
+</h2>
+<p>To benefit from OpenMP multi-threaded execution and SIMD vectorisation, run <code><a href="reference/use_openmp.html">cppally::use_openmp()</a></code> which will set the appropriate Makevars flags. Note that this is automatically set by <code><a href="reference/use_cppally.html">cppally::use_cppally()</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="c20-and-rstudio">C++20 and RStudio<a class="anchor" aria-label="anchor" href="#c20-and-rstudio"></a>
 </h2>
-<p>At the moment C++20 is not fully supported via RStudio, so I would recommend using vscode with the C/C++ for Visual Studio Code extension. Positron may also be an option but since I haven’t used it, I can’t speak to its capabilities.</p>
-<p>While I personally use vscode for C++ code and RStudio for R code and package development, you can also use vscode (or Positron) for both these things, but again, I haven’t personally used vscode for writing R code so I can’t say much about it.</p>
-<p>To get vscode’s intellisense to work correctly, you will likely need to set some parameters in c_cpp_properties.json.</p>
+<p>At the moment C++20 is not fully supported via RStudio, so I would recommend using VSCode with the C/C++ for Visual Studio Code extension.</p>
+<p>To get VSCode intellisense to work correctly, you will likely need to set some parameters in c_cpp_properties.json.</p>
 <p>My json file looks like this:</p>
-<div class="sourceCode" id="cb32"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="fu">{</span></span>
-<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a>  <span class="dt">"configurations"</span><span class="fu">:</span> <span class="ot">[</span></span>
-<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a>    <span class="fu">{</span></span>
-<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a>      <span class="dt">"name"</span><span class="fu">:</span> <span class="st">"Win32"</span><span class="fu">,</span></span>
-<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a>      <span class="dt">"includePath"</span><span class="fu">:</span> <span class="ot">[</span></span>
-<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a>        <span class="st">"${workspaceFolder}/**"</span><span class="ot">,</span></span>
-<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a>        <span class="st">"${workspaceFolder}/src"</span><span class="ot">,</span></span>
-<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a>        <span class="st">"${workspaceFolder}/inst/include"</span><span class="ot">,</span></span>
-<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a>        <span class="st">"C:/Program Files/R/R-4.*/include"</span><span class="ot">,</span></span>
-<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a>        <span class="st">"${env:LOCALAPPDATA}/R/win-library/4.*/cpp11/include"</span><span class="ot">,</span></span>
-<span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a>        <span class="st">"${env:LOCALAPPDATA}/R/win-library/4.*/Rcpp/include"</span><span class="ot">,</span></span>
-<span id="cb32-12"><a href="#cb32-12" tabindex="-1"></a>        <span class="st">"${env:LOCALAPPDATA}/R/win-library/4.*/cppally/include"</span></span>
-<span id="cb32-13"><a href="#cb32-13" tabindex="-1"></a>      <span class="ot">]</span><span class="fu">,</span></span>
-<span id="cb32-14"><a href="#cb32-14" tabindex="-1"></a>      <span class="dt">"defines"</span><span class="fu">:</span> <span class="ot">[</span></span>
-<span id="cb32-15"><a href="#cb32-15" tabindex="-1"></a>        <span class="st">"_DEBUG"</span><span class="ot">,</span></span>
-<span id="cb32-16"><a href="#cb32-16" tabindex="-1"></a>        <span class="st">"UNICODE"</span><span class="ot">,</span></span>
-<span id="cb32-17"><a href="#cb32-17" tabindex="-1"></a>        <span class="st">"_UNICODE"</span><span class="ot">,</span></span>
-<span id="cb32-18"><a href="#cb32-18" tabindex="-1"></a>        <span class="st">"STRICT_R_HEADERS"</span></span>
-<span id="cb32-19"><a href="#cb32-19" tabindex="-1"></a>      <span class="ot">]</span><span class="fu">,</span></span>
-<span id="cb32-20"><a href="#cb32-20" tabindex="-1"></a>      <span class="dt">"compilerPath"</span><span class="fu">:</span> <span class="st">"C:</span><span class="ch">\\</span><span class="st">rtools45</span><span class="ch">\\</span><span class="st">x86_64-w64-mingw32.static.posix</span><span class="ch">\\</span><span class="st">bin</span><span class="ch">\\</span><span class="st">g++.exe"</span><span class="fu">,</span></span>
-<span id="cb32-21"><a href="#cb32-21" tabindex="-1"></a>      <span class="dt">"cppStandard"</span><span class="fu">:</span> <span class="st">"gnu++20"</span><span class="fu">,</span></span>
-<span id="cb32-22"><a href="#cb32-22" tabindex="-1"></a>      <span class="dt">"intelliSenseMode"</span><span class="fu">:</span> <span class="st">"gcc-x64"</span></span>
-<span id="cb32-23"><a href="#cb32-23" tabindex="-1"></a>    <span class="fu">}</span></span>
-<span id="cb32-24"><a href="#cb32-24" tabindex="-1"></a>  <span class="ot">]</span><span class="fu">,</span></span>
-<span id="cb32-25"><a href="#cb32-25" tabindex="-1"></a>  <span class="dt">"version"</span><span class="fu">:</span> <span class="dv">4</span></span>
-<span id="cb32-26"><a href="#cb32-26" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a>  <span class="dt">"configurations"</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a>      <span class="dt">"name"</span><span class="fu">:</span> <span class="st">"Win32"</span><span class="fu">,</span></span>
+<span id="cb34-5"><a href="#cb34-5" tabindex="-1"></a>      <span class="dt">"includePath"</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a>        <span class="st">"${workspaceFolder}/**"</span><span class="ot">,</span></span>
+<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a>        <span class="st">"${workspaceFolder}/src"</span><span class="ot">,</span></span>
+<span id="cb34-8"><a href="#cb34-8" tabindex="-1"></a>        <span class="st">"${workspaceFolder}/inst/include"</span><span class="ot">,</span></span>
+<span id="cb34-9"><a href="#cb34-9" tabindex="-1"></a>        <span class="st">"C:/Program Files/R/R-4.*/include"</span><span class="ot">,</span></span>
+<span id="cb34-10"><a href="#cb34-10" tabindex="-1"></a>        <span class="st">"${env:LOCALAPPDATA}/R/win-library/4.*/cpp11/include"</span><span class="ot">,</span></span>
+<span id="cb34-11"><a href="#cb34-11" tabindex="-1"></a>        <span class="st">"${env:LOCALAPPDATA}/R/win-library/4.*/Rcpp/include"</span><span class="ot">,</span></span>
+<span id="cb34-12"><a href="#cb34-12" tabindex="-1"></a>        <span class="st">"${env:LOCALAPPDATA}/R/win-library/4.*/cppally/include"</span></span>
+<span id="cb34-13"><a href="#cb34-13" tabindex="-1"></a>      <span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb34-14"><a href="#cb34-14" tabindex="-1"></a>      <span class="dt">"defines"</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb34-15"><a href="#cb34-15" tabindex="-1"></a>        <span class="st">"_DEBUG"</span><span class="ot">,</span></span>
+<span id="cb34-16"><a href="#cb34-16" tabindex="-1"></a>        <span class="st">"UNICODE"</span><span class="ot">,</span></span>
+<span id="cb34-17"><a href="#cb34-17" tabindex="-1"></a>        <span class="st">"_UNICODE"</span><span class="ot">,</span></span>
+<span id="cb34-18"><a href="#cb34-18" tabindex="-1"></a>        <span class="st">"STRICT_R_HEADERS"</span></span>
+<span id="cb34-19"><a href="#cb34-19" tabindex="-1"></a>      <span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb34-20"><a href="#cb34-20" tabindex="-1"></a>      <span class="dt">"compilerPath"</span><span class="fu">:</span> <span class="st">"C:</span><span class="ch">\\</span><span class="st">rtools45</span><span class="ch">\\</span><span class="st">x86_64-w64-mingw32.static.posix</span><span class="ch">\\</span><span class="st">bin</span><span class="ch">\\</span><span class="st">g++.exe"</span><span class="fu">,</span></span>
+<span id="cb34-21"><a href="#cb34-21" tabindex="-1"></a>      <span class="dt">"cppStandard"</span><span class="fu">:</span> <span class="st">"gnu++20"</span><span class="fu">,</span></span>
+<span id="cb34-22"><a href="#cb34-22" tabindex="-1"></a>      <span class="dt">"intelliSenseMode"</span><span class="fu">:</span> <span class="st">"gcc-x64"</span></span>
+<span id="cb34-23"><a href="#cb34-23" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb34-24"><a href="#cb34-24" tabindex="-1"></a>  <span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb34-25"><a href="#cb34-25" tabindex="-1"></a>  <span class="dt">"version"</span><span class="fu">:</span> <span class="dv">4</span></span>
+<span id="cb34-26"><a href="#cb34-26" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
 <p>As your R installation path may differ, you can find the exact path with</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/normalizePath.html" class="external-link">normalizePath</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"R_HOME"</span><span class="op">)</span>, winslash <span class="op">=</span> <span class="st">"/"</span><span class="op">)</span></span></code></pre></div>
 <p>Your R libraries can be found with</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/libPaths.html" class="external-link">.libPaths</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>The compiler bundled with RTools is likely found here</p>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cxx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system2.html" class="external-link">system2</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Rhome.html" class="external-link">R.home</a></span><span class="op">(</span><span class="st">"bin"</span><span class="op">)</span>, <span class="st">"R"</span><span class="op">)</span>, </span>
 <span>               <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CMD"</span>, <span class="st">"config"</span>, <span class="st">"CXX20"</span><span class="op">)</span>, stdout <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">cxx_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">cxx</span>, <span class="st">" "</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
@@ -331,6 +478,7 @@
 <p>Once you have both paths, set compilerPath and the R include path in c_cpp_properties.json accordingly.</p>
 </div>
 </div>
+
 
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
