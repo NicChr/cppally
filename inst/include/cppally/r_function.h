@@ -101,6 +101,11 @@ struct r_function {
     operator SEXP() const noexcept { return value; }
     explicit operator r_sexp() const noexcept { return value; }
   
+    // Call R function without arguments
+    r_sexp operator()(const r_sexp& env = env::global_env) const {
+      return call_impl(r_null, env);
+    }
+
     // Call R function without named arguments
     r_sexp operator()(std::initializer_list<r_sexp> args, const r_sexp& env = env::global_env) const {
       return call_impl(internal::make_pairlist(args), env);
