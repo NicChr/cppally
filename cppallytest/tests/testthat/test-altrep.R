@@ -15,14 +15,14 @@ altrep_src <- '
   // TRUE if the wrapper has NOT materialised its data pointer yet.
   [[cppally::register]]
   bool altrep_lazy(r_vec<r_int> x){
-    return !x.materialised();
+    return !x.is_materialised();
   }
 
   // Force materialisation via data(), then report the state.
   [[cppally::register]]
   bool altrep_materialised_after_data(r_vec<r_int> x){
     (void) x.data();
-    return x.materialised();
+    return x.is_materialised();
   }
 
   // Sum via per-element get(), which must be correct whether or not the
@@ -35,7 +35,7 @@ altrep_src <- '
       total += x.get(i);
     }
 
-    if (x.materialised()){
+    if (x.is_materialised()){
       abort("`x` has materialised");
     }
 

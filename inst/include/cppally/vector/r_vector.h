@@ -166,8 +166,16 @@ struct r_vec {
 
   // Has data been materialised?
   // Will only have been materialised if data ptr has been assigned
+  bool is_materialised() const noexcept {
+    return static_cast<bool>(m_ptr); 
+  }
+  // Deprecated - use `is_materialised()`
   bool materialised() const noexcept {
     return static_cast<bool>(m_ptr); 
+  }
+
+  void materialise() {
+    static_cast<void>(data());
   }
 
   private:
