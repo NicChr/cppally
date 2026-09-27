@@ -11,7 +11,7 @@
 
 namespace cppally {
 
-// Alias type for SYMSXP
+// R symbol
 struct r_sym {
   
   SEXP value;
@@ -40,6 +40,10 @@ struct r_sym {
   }
   explicit operator r_str() const {
     return name();
+  }
+
+  static r_sym missing_symbol() {
+    return r_sym(R_MissingArg, internal::no_checks_tag{});
   }
 
 };
