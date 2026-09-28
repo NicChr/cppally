@@ -355,16 +355,13 @@ struct is_combo_callable<
 using erased_fn_t = SEXP(*)(void*, SEXP*);
 
 // Each valid combination becomes its own tiny function; invoke() casts the Functor back
-template <typename Functor, size_t NumArgs, typename ComboTuple>
+template <typename Functor, typename IndexSeq, typename ComboTuple>
 struct combo_invoker;
 
-template <typename Functor, size_t NumArgs, typename... Ts>
-struct combo_invoker<Functor, NumArgs, std::tuple<Ts...>> {
+template <typename Functor, size_t... Is, typename... Ts>
+struct combo_invoker<Functor, std::index_sequence<Is...>, std::tuple<Ts...>> {
     static SEXP invoke(void* f, SEXP* args) {
-        auto& functor = *static_cast<Functor*>(f);
-        return [&]<size_t... Is>(std::index_sequence<Is...>) {
-            return functor.template operator()<Ts...>(args[Is]...);
-        }(std::make_index_sequence<NumArgs>{});
+        return static_cast<Functor*>(f)->template operator()<Ts...>(args[Is]...);
     }
 };
 
@@ -387,7 +384,7 @@ struct dispatch_entry_impl {
 template <size_t I, size_t NumTemplateParams, size_t NumArgs, typename Functor>
 struct dispatch_entry_impl<I, NumTemplateParams, NumArgs, Functor, true> {
     static constexpr erased_fn_t value =
-        &combo_invoker<Functor, NumArgs, combo_t<I, NumTemplateParams>>::invoke;
+        &combo_invoker<Functor, std::make_index_sequence<NumArgs>, combo_t<I, NumTemplateParams>>::invoke;
 };
 
 template <size_t NumTemplateParams, size_t NumArgs, typename Functor, size_t... Is>
