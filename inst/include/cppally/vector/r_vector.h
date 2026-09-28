@@ -202,6 +202,16 @@ struct r_vec {
   // Any two r_vec wrappers around the same SEXP point to the same names_map via the registry
   mutable std::shared_ptr<internal::names_map> cached_names;
 
+  void invalidate_names_cache() noexcept {
+    if (cached_names) {
+      cached_names->invalidate();
+    } else if (auto sp = internal::name_cache().try_lookup(*this)) [[unlikely]] {
+      // If a sibling has cached names, adopt then invalidate the cache for all siblings
+      cached_names = std::move(sp);
+      cached_names->invalidate();
+    }
+  }
+
   void initialise_ptr(){
 #ifdef CPPALLY_PRESERVE_ALTREP
     // For ALTREP leave m_ptr null so get/view go through elt<T>
@@ -414,16 +424,12 @@ struct r_vec {
     maybe_ensure_exclusive();
 
     if (removing){
-      Rf_setAttrib(value, symbol::names_sym, r_null);
+      Rf_setAttrib(*this, symbol::names_sym, r_null);
     } else {
-      Rf_namesgets(value, names);
+      Rf_namesgets(*this, names);
     }
-    if (cached_names){ // We already hold the shared entry
-      cached_names->invalidate();
-    } else if (auto sp = internal::name_cache().try_lookup(value)){ // We never cached, but a sibling did
-      cached_names = std::move(sp);
-      cached_names->invalidate();
-    }
+
+    invalidate_names_cache();
     cache_names(r_vec<r_str_view>(r_sexp(Rf_getAttrib(*this, symbol::names_sym)), internal::no_checks_tag{}));
   }
 
