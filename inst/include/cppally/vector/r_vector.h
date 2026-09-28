@@ -473,11 +473,8 @@ struct r_vec {
   #ifdef CPPALLY_PRESERVE_ALTREP
   template <IntegerNumber I>
   T get(I index) const {
-    if (m_ptr) {
-      return internal::unsafe_reconstruct<T>(m_ptr[unwrap(index)]);
-    } else {
-      return internal::unsafe_reconstruct<T>(internal::elt<T>(value, unwrap(index)));
-    }
+    unwrap_t<I> i = unwrap(index);
+    return internal::unsafe_reconstruct<T>(is_materialised() ? m_ptr[i] : internal::elt<T>(value, i));
   }
   #else
   template <IntegerNumber I>
@@ -502,11 +499,8 @@ struct r_vec {
   #ifdef CPPALLY_PRESERVE_ALTREP
   template <IntegerNumber I>
   T view(I index) const {
-    if (m_ptr) {
-      return internal::unsafe_reconstruct_view<T>(m_ptr[unwrap(index)]);
-    } else {
-      return internal::unsafe_reconstruct_view<T>(internal::elt<T>(value, unwrap(index)));
-    }
+    unwrap_t<I> i = unwrap(index);
+    return internal::unsafe_reconstruct_view<T>(is_materialised() ? m_ptr[i] : internal::elt<T>(value, i));
   }
   #else
   template <IntegerNumber I>
