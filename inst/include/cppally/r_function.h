@@ -8,7 +8,6 @@
 #include <cppally/env.h>
 #include <cppally/named_arg.h>
 #include <initializer_list>
-#include <utility> // For std::pair
 
 namespace cppally {
 
@@ -28,17 +27,16 @@ inline r_sexp make_pairlist(std::initializer_list<r_sexp> args){
 }
 
 // named pairlist
-inline r_sexp make_pairlist(std::initializer_list<std::pair<r_str, r_sexp>> args) {
-  
+inline r_sexp make_pairlist(std::initializer_list<named_arg<r_sexp>> args) {
+
   r_sexp out = r_sexp(safe[Rf_allocList](static_cast<int>(args.size())));
 
   SEXP current = out;
-  for (const std::pair<r_str, r_sexp>& elem : args) {
-
-    if (unwrap(elem.first) != unwrap(cached_str<"">())){
-      SET_TAG(current, r_sym(elem.first));
+  for (const named_arg<r_sexp>& elem : args) {
+    if (elem.name && elem.name[0] != '\0'){
+      SET_TAG(current, r_sym(elem.name));
     }
-    SETCAR(current, elem.second);
+    SETCAR(current, elem.value);
     current = CDR(current);
   }
 
@@ -110,8 +108,8 @@ struct r_function {
     r_sexp operator()(std::initializer_list<r_sexp> args, const r_sexp& env = env::global_env) const {
       return call_impl(internal::make_pairlist(args), env);
     }
-    // Call R function with all arguments named
-    r_sexp operator()(std::initializer_list<std::pair<r_str, r_sexp>> args, const r_sexp& env = env::global_env) const {
+    // Call R function with all arguments named via arg("name") = r_sexp
+    r_sexp operator()(std::initializer_list<internal::named_arg<r_sexp>> args, const r_sexp& env = env::global_env) const {
       return call_impl(internal::make_pairlist(args), env);
     }
     
