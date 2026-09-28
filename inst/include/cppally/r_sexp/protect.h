@@ -31,7 +31,24 @@ inline SEXP unwind_token() {
     return token;
 }
 
-// The core unwind_protect (no tuple/gcc4.8 hacks)
+inline void unwind_cleanup(void* jmpbuf_ptr, Rboolean jump) {
+    if (jump == TRUE) [[unlikely]] {
+        longjmp(*static_cast<std::jmp_buf*>(jmpbuf_ptr), 1);
+    }
+}
+
+CPPALLY_NOINLINE inline SEXP unwind_protect_impl(SEXP (*body)(void*), void* data) {
+    SEXP token = unwind_token();
+
+    std::jmp_buf jmpbuf;
+    if (setjmp(jmpbuf)) [[unlikely]] {
+        throw unwind_exception(token);
+    }
+    SEXP res = R_UnwindProtect(body, data, unwind_cleanup, &jmpbuf, token);
+    SETCAR(token, R_NilValue);
+    return res;
+}
+
 template <typename Fun>
 auto unwind_protect(Fun&& code) -> decltype(code()) {
     using ReturnType = decltype(code());
@@ -40,21 +57,13 @@ auto unwind_protect(Fun&& code) -> decltype(code()) {
     constexpr bool sexp_res = std::is_same_v<ReturnType, SEXP>;
 
     if constexpr (!sexp_res && !void_res) {
-        // Delegate before setjmp -- only the delegate's jmp_buf is handed to R,
-        // so setting one up here would be pure dead weight
         ReturnType result{};
         unwind_protect([&] {
             result = code();
         });
         return result;
     } else {
-        SEXP token = unwind_token();
-
-        std::jmp_buf jmpbuf;
-        if (setjmp(jmpbuf)) [[unlikely]] {
-            throw unwind_exception(token);
-        }
-        SEXP res = R_UnwindProtect(
+        SEXP res = unwind_protect_impl(
             [](void* data) -> SEXP {
                 if constexpr (void_res){
                     (*static_cast<std::decay_t<Fun>*>(data))();
@@ -63,14 +72,8 @@ auto unwind_protect(Fun&& code) -> decltype(code()) {
                     return (*static_cast<std::decay_t<Fun>*>(data))();
                 }
             },
-            &code,
-            [](void* jmpbuf_ptr, Rboolean jump) {
-                if (jump == TRUE) [[unlikely]] {
-                    longjmp(*static_cast<std::jmp_buf*>(jmpbuf_ptr), 1);
-                }
-            },
-            &jmpbuf, token);
-        SETCAR(token, R_NilValue);
+            &code
+        );
         return static_cast<ReturnType>(res);
     }
 }
