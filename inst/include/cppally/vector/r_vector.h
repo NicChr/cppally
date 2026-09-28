@@ -151,33 +151,6 @@ struct r_vec {
   using value_type = r_sexp;
   using data_type = std::remove_cvref_t<T>;
 
-  bool is_null() const noexcept {
-    return value.is_null();
-  }
-
-  bool is_altrep() const noexcept {
-    return value.is_altrep();
-  }
-
-  // Is this the only r_vec holding this r_sexp?
-  bool is_exclusive() const noexcept {
-    return value.is_exclusive();
-  }
-
-  // Has data been materialised?
-  // Will only have been materialised if data ptr has been assigned
-  bool is_materialised() const noexcept {
-    return static_cast<bool>(m_ptr); 
-  }
-  // Deprecated - use `is_materialised()`
-  bool materialised() const noexcept {
-    return static_cast<bool>(m_ptr); 
-  }
-
-  void materialise() {
-    static_cast<void>(data());
-  }
-
   private:
 
   // Initialise data (pointer) to:
@@ -201,16 +174,6 @@ struct r_vec {
   // 3. Hashing is separate to caching and is only done on 2nd-lookup via `name_index()`
   // Any two r_vec wrappers around the same SEXP point to the same names_map via the registry
   mutable std::shared_ptr<internal::names_map> cached_names;
-
-  void invalidate_names_cache() noexcept {
-    if (cached_names) {
-      cached_names->invalidate();
-    } else if (auto sp = internal::name_cache().try_lookup(*this)) [[unlikely]] {
-      // If a sibling has cached names, adopt then invalidate the cache for all siblings
-      cached_names = std::move(sp);
-      cached_names->invalidate();
-    }
-  }
 
   void initialise_ptr(){
 #ifdef CPPALLY_PRESERVE_ALTREP
@@ -253,7 +216,7 @@ struct r_vec {
   template <RVector U>
   friend void r_copy_n(U& target, const U& source, r_size_t target_offset, r_size_t n, r_size_t source_offset);
 
-  public: 
+  public:
 
   // ----- Constructors -----
 
@@ -271,7 +234,7 @@ struct r_vec {
   
   r_vec() : r_vec(r_size_t(0)){}
 
-  // Constructors from existing r_sexp/SEXP
+  // Construct r_vector from r_sexp
   explicit r_vec(r_sexp s) : value(std::move(s)) {
     if (!is_null()) {
       internal::check_valid_construction<r_vec<T>>(value);
@@ -297,6 +260,10 @@ struct r_vec {
 
   }
 
+  template <typename V>
+  requires (RVector<V> && internal::r_typeof<V> != internal::r_typeof<r_vec<T>>)
+  r_vec(const V&) = delete;
+
   // Implicit conversion to SEXP
   operator SEXP() const noexcept {
     return value.value;
@@ -307,43 +274,34 @@ struct r_vec {
     return value;
   }
 
-  template <typename V>
-  requires (RVector<V> && internal::r_typeof<V> != internal::r_typeof<r_vec<T>>)
-  r_vec(const V&) = delete;
+  // ----- Predicates -----
 
-  template <RVal U>
-  void copy_attrs_from(const r_vec<U>& source) {
-    
-    maybe_ensure_exclusive();
-
-    safe[SHALLOW_DUPLICATE_ATTRIB](*this, source);
-    invalidate_names_cache();
-
-    if (auto sp = internal::levels_cache().try_lookup(*this)) [[unlikely]] {
-      sp->invalidate();
-    }
+  bool is_null() const noexcept {
+    return value.is_null();
   }
 
-  // data is copied but attributes are shallow copied, matching Rf_shallow_duplicate.
-  r_vec<T> copy() const {
-    if (is_null()) return *this;
-    r_size_t n = length();
-    r_vec<T> new_vec(n);
-    r_copy_n(new_vec, *this, 0, n);
-    safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
-    return new_vec;
+  bool is_altrep() const noexcept {
+    return value.is_altrep();
   }
 
-  void ensure_exclusive() {
-    if (!is_exclusive()) [[unlikely]] {
-      copy_to_make_exclusive();
-    }
+  // Is this the only r_vec holding this r_sexp?
+  bool is_exclusive() const noexcept {
+    return value.is_exclusive();
   }
 
-  void maybe_ensure_exclusive() {
-    #ifdef CPPALLY_COPY_ON_MODIFY
-    ensure_exclusive();
-    #endif
+  // Has data been materialised?
+  // Will only have been materialised if data ptr has been assigned
+  bool is_materialised() const noexcept {
+    return static_cast<bool>(m_ptr); 
+  }
+  // Deprecated - use `is_materialised()`
+  bool materialised() const noexcept {
+    return static_cast<bool>(m_ptr); 
+  }
+
+  // Materialise data. It's a no-op for already materialised vectors.
+  void materialise() {
+    static_cast<void>(data());
   }
 
   // Direct pointer access - materialises ALTREP when CPPALLY_PRESERVE_ALTREP is on
@@ -367,19 +325,71 @@ struct r_vec {
   }
   #endif
 
+  // Vector length
   r_size_t length() const noexcept {
     return Rf_xlength(value);
   }
 
+  // Is vector length >= 2^31?
   bool is_long() const noexcept {
     return length() > unwrap(r_limits<r_int>::max());
   }
 
+  // SEXP memory address
   r_str address() const {
     return value.address();
   }
 
+  // ----- Copy-on-modify -----
+
+  // data is copied but attributes are shallow copied, matching Rf_shallow_duplicate.
+  r_vec<T> copy() const {
+    if (is_null()) return *this;
+    r_size_t n = length();
+    r_vec<T> new_vec(n);
+    r_copy_n(new_vec, *this, 0, n);
+    safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
+    return new_vec;
+  }
+
+  void ensure_exclusive() {
+    if (!is_exclusive()) [[unlikely]] {
+      copy_to_make_exclusive();
+    }
+  }
+
+  void maybe_ensure_exclusive() {
+    #ifdef CPPALLY_COPY_ON_MODIFY
+    ensure_exclusive();
+    #endif
+  }
+
+  template <RVal U>
+  void copy_attrs_from(const r_vec<U>& source) {
+    
+    maybe_ensure_exclusive();
+
+    safe[SHALLOW_DUPLICATE_ATTRIB](*this, source);
+    invalidate_names_cache();
+
+    if (auto sp = internal::levels_cache().try_lookup(*this)) [[unlikely]] {
+      sp->invalidate();
+    }
+  }
+
+  // ----- Names -----
+
   private:
+
+  void invalidate_names_cache() noexcept {
+    if (cached_names) {
+      cached_names->invalidate();
+    } else if (auto sp = internal::name_cache().try_lookup(*this)) [[unlikely]] {
+      // If a sibling has cached names, adopt then invalidate the cache for all siblings
+      cached_names = std::move(sp);
+      cached_names->invalidate();
+    }
+  }
 
   // Place names into cache (no hash map yet)
   void cache_names(const r_vec<r_str_view>& nms) const {
@@ -401,7 +411,7 @@ struct r_vec {
     cache_names(r_vec<r_str_view>(Rf_getAttrib(value, symbol::names_sym)));
   }
 
-  public: 
+  public:
 
   r_vec<r_str_view> names() const {
     ensure_names_cached();
@@ -481,6 +491,8 @@ struct r_vec {
   r_int name_index(const char* name, bool abort_on_missing = true) const {
     return name_index(r_str(name), abort_on_missing);
   }
+
+  // ----- Element access -----
 
   // Get element by index (no bounds-check)
   #ifdef CPPALLY_PRESERVE_ALTREP
@@ -575,7 +587,9 @@ struct r_vec {
       set(r_str(name), val);
   }
 
-  private: 
+  // ----- Apply -----
+
+  private:
 
   // Core engine: fn(index, value) -> set onto target[i]. All map/apply variants use this
   template <bool simd = false, bool parallel = false, RVal U>
@@ -704,6 +718,8 @@ struct r_vec {
     do_apply<true, true>(fn);
   }
 
+  // ----- Algorithms -----
+
   // From left-to-right: recursively apply a binary function to pairs of elements across *this
   // the result of each fn is used the first argument of the next call
   // use `done(x)` and `keep(x)` to break early and/or continue,  where x is the result to escape or carry forward
@@ -783,8 +799,8 @@ struct r_vec {
     return out;
   }
 
-  // Very fast parallelised count of NAs in vector
-  // fallback to ALTREP-safe reads if data is not materialised
+  // Very fast multi-threaded count of NAs in vector.
+  // Fall-back to ALTREP-safe reads if data is not materialised.
   r_size_t na_count() const {
 
     r_size_t out = 0;
@@ -821,6 +837,7 @@ struct r_vec {
     return out;
   }
 
+  // Count of occurrences of `val`
   r_size_t count(const T& val) const {
     r_size_t out = 0;
     r_size_t n = length();
@@ -862,7 +879,7 @@ struct r_vec {
     return r_int64::na();
   }
 
-  // locations of value in vector
+  // Locations of value in vector
   template <internal::RNumericSubscript V = r_int>
   r_vec<V> find(const T& val, bool invert = false) const {
 
@@ -884,8 +901,8 @@ struct r_vec {
       int_t out_size = n - n_vals;
       r_vec<V> out(out_size);
       while (whichi < out_size){
-          out.set(whichi, V(i));
-          whichi += static_cast<int_t>(!identical(view(static_cast<r_size_t>(i++)), val));
+        out.set(whichi, V(i));
+        whichi += static_cast<int_t>(!identical(view(static_cast<r_size_t>(i++)), val));
       }
       return out;
     } else {
@@ -894,8 +911,8 @@ struct r_vec {
       while (whichi < out_size){
         out.set(whichi, V(i));
         whichi += static_cast<int_t>(identical(view(static_cast<r_size_t>(i++)), val));
-    }
-    return out;
+      }
+      return out;
     }
   }
 
@@ -933,6 +950,7 @@ struct r_vec {
     replace(0, length(), old_val, new_val);
   }
 
+  // Resize vector to desired length
   r_vec<T> resize(r_size_t n) const {
     r_size_t vec_size = length();
     if (n == vec_size || is_null()){
@@ -953,6 +971,7 @@ struct r_vec {
     }
   }
 
+  // Recycle vector elements to desired length
   r_vec<T> rep_len(r_size_t n) const {
 
     r_size_t size = length();
@@ -1044,17 +1063,6 @@ struct r_vec {
   void iota(T init = T(0)) requires (any<T, r_int, r_int64>) {
     apply_simd_with_index([init](r_size_t i, auto){ return init + i; });
   }
-
-  // Attribute members
-  // r_vec<r_sexp> attrs() const {
-  //   #if R_VERSION >= R_Version(4, 6, 0)
-  //   return r_vec<r_sexp>(safe[R_getAttributes](value));
-  //   #else
-  //   r_sexp expr = r_sexp(Rf_lang2(cppally::cached_sym<"attributes">(), value));
-  //   r_sexp res = safe[Rf_eval](expr, R_BaseEnv);
-  //   return r_vec<r_sexp>(res);
-  //   #endif 
-  // }
 
   // Conditional member functions (only available for certain types)
 
