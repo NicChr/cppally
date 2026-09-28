@@ -89,6 +89,10 @@ struct r_str {
     return static_cast<bool>(Rf_charIsASCII(*this));
   }
 
+  bool is_latin1() const noexcept {
+    return static_cast<bool>(Rf_charIsLatin1(*this));
+  }
+
   // Convert to UTF-8 (ASCII is left alone)
   r_str as_utf8() const {
     // Rf_translateCharUTF8 does indeed check for UTF8-ness BUT
@@ -98,7 +102,7 @@ struct r_str {
     }
     // Latin-1 mapping is a (most of the time) fixed, locale-independent byte transform
     // In the case that there is divergence, we fall back to Rf_translateCharUTF8
-    if (static_cast<bool>(Rf_charIsLatin1(*this))) {
+    if (is_latin1()) {
       const unsigned char *p = reinterpret_cast<const unsigned char *>(c_str());
       const int n = n_bytes();
       std::string out;
@@ -184,6 +188,10 @@ struct r_str_view {
 
   bool is_ascii() const noexcept {
     return static_cast<bool>(Rf_charIsASCII(*this));
+  }
+
+  bool is_latin1() const noexcept {
+    return static_cast<bool>(Rf_charIsLatin1(*this));
   }
 
 };
