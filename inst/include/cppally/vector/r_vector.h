@@ -777,31 +777,40 @@ struct r_vec {
   }
 
   // Very fast parallelised count of NAs in vector
+  // fallback to ALTREP-safe reads if data is not materialised
   r_size_t na_count() const {
 
     r_size_t out = 0;
     r_size_t n = length();
-    
-    const auto* RESTRICT p = data();
 
     static_assert(
-      noexcept(is_na(internal::unsafe_reconstruct_view<T>(*p))),
+      noexcept(is_na(internal::unsafe_reconstruct_view<T>(*m_ptr))),
       "internal error in na_count: constructor must be non-throwing"
     );
 
-    int n_threads = internal::calc_threads(n);
+    if (is_materialised()){
 
-    if (n_threads > 1){
-      OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:out)
-      for (r_size_t i = 0; i < n; ++i){
-        out += static_cast<r_size_t>(is_na(internal::unsafe_reconstruct_view<T>(p[i])));
+      const auto* RESTRICT p = data();
+  
+      int n_threads = internal::calc_threads(n);
+  
+      if (n_threads > 1){
+        OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:out)
+        for (r_size_t i = 0; i < n; ++i){
+          out += static_cast<r_size_t>(is_na(internal::unsafe_reconstruct_view<T>(p[i])));
+        }
+      } else {
+        OMP_SIMD_REDUCTION1(+:out)
+        for (r_size_t i = 0; i < n; ++i){
+          out += static_cast<r_size_t>(is_na(internal::unsafe_reconstruct_view<T>(p[i])));
+        }
       }
     } else {
-      OMP_SIMD_REDUCTION1(+:out)
       for (r_size_t i = 0; i < n; ++i){
-        out += static_cast<r_size_t>(is_na(internal::unsafe_reconstruct_view<T>(p[i])));
+        out += is_na(view(i));
       }
     }
+    
     return out;
   }
 
