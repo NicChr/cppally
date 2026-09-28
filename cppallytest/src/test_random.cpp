@@ -64,7 +64,7 @@ r_vec<r_int> test_rng_lemire_huge(uint64_t seed, r_size_t n) {
     int* p_out = out.data();
 
     for (r_size_t i = 0; i < n; ++i) {
-        uint64_t v = static_cast<uint64_t>(rs.index(lo, hi)) - static_cast<uint64_t>(lo);
+        uint64_t v = as<uint64_t>(rs.index(lo, hi)) - static_cast<uint64_t>(lo);
         if (v >= range) {
             abort("index() returned a value outside [0, range)");
         }
@@ -89,7 +89,7 @@ r_vec<r_int> test_rng_bounded_small(uint64_t seed, uint64_t range, r_size_t n) {
     int* p_out = out.data();
 
     for (r_size_t i = 0; i < n; ++i) {
-        uint64_t v = rs.index(uint64_t(0), range - 1);
+        uint64_t v = as<uint64_t>(rs.index(uint64_t(0), range - 1));
         if (v >= range) [[unlikely]] {
             abort("index() returned a value outside [0, range)");
         }
@@ -107,7 +107,7 @@ r_vec<r_int> test_rng_index(uint64_t seed, int a, int b, r_size_t n) {
     random_stream rs(seed);
     r_vec<r_int> out(n);
     for (r_size_t i = 0; i < n; ++i) {
-        out.set(i, r_int(static_cast<int>(rs.index(a, b))));
+        out.set(i, as<r_int>(rs.index(a, b)));
     }
     return out;
 }

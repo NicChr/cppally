@@ -104,27 +104,27 @@ struct random_stream {
   static constexpr result_type max() { return engine_type::max(); }
   result_type operator()() { return engine_(); }
 
-  double unif() {
+  r_dbl unif() {
     // Top 53 bits scaled into [0, 1) - exact, bit-reproducible as is
-    return static_cast<double>(engine_() >> 11) * 0x1.0p-53;
+    return r_dbl(static_cast<double>(engine_() >> 11) * 0x1.0p-53);
   }
   
-  double unif(double a, double b) {
+  r_dbl unif(double a, double b) {
     double u = unif(); 
-    return std::fma(b, u, a * (1.0 - u));
+    return r_dbl(std::fma(b, u, a * (1.0 - u)));
   }
 
   // Returns a random index in [a, b] : b > a
   // Lemire's divisionless method along with ankerl's portable 128bit multiply
   // makes this fast, portable, and hence reproducible.
-  int64_t index(int64_t a, int64_t b) {
+  r_int64 index(int64_t a, int64_t b) {
 
     if (b < a) [[unlikely]] {
-      abort("`index()`: upper bound must be >= lower bound");
+      return r_int64::na();
     }
 
     uint64_t span = static_cast<uint64_t>(b) - static_cast<uint64_t>(a);
-    return static_cast<int64_t>(static_cast<uint64_t>(a) + bounded(span + 1u));
+    return r_int64(static_cast<int64_t>(static_cast<uint64_t>(a) + bounded(span + 1u)));
   }
 
   // The seed this stream started from. Log it to replay a run via random_stream(seed)

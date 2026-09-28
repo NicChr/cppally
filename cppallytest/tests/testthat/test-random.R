@@ -23,7 +23,7 @@ test_that("bounded() is uniform on the ordinary path", {
   expect_equal(test_rng_bounded_small(42L, 1L, 1000L), 1000L)
 })
 
-test_that("index() covers its range inclusively and refuses a reversed one", {
+test_that("index() covers its range inclusively and returns NA for a reversed one", {
 
   x <- test_rng_index(1L, 0L, 2L, 1e5L)
   expect_setequal(x, 0:2)               # both endpoints reachable
@@ -36,7 +36,7 @@ test_that("index() covers its range inclusively and refuses a reversed one", {
   # degenerate range
   expect_equal(unique(test_rng_index(1L, 7L, 7L, 100L)), 7L)
 
-  expect_error(test_rng_index(1L, 5L, 3L, 10L), "upper bound")
+  expect_identical(test_rng_index(1L, 5L, 3L, 10L), rep(NA_integer_, 10L))
 
   # range wraps to 0 and must take the full-64-bit branch
   expect_true(test_rng_index_extremes(1L))
