@@ -809,17 +809,8 @@ struct r_vec {
     r_size_t out = 0;
     r_size_t n = length();
 
-    if constexpr (RVectorisable<T>){
-      const auto* RESTRICT p = data();
-      OMP_SIMD_REDUCTION1(+:out)
-      for (r_size_t i = 0; i < n; ++i){
-        out += identical(T(p[i]), val);
-      }
-    } else {
-      for (r_size_t i = 0; i < n; ++i){
-        out += identical(view(i), val);
-      }
-    }
+    for (r_size_t i = 0; i < n; ++i) out += identical(view(i), val);
+    
     return out;
   }
   r_vec<T> remove(const T& val) const {
@@ -886,22 +877,12 @@ struct r_vec {
     if constexpr (RVectorisable<T>){
       
       maybe_ensure_exclusive();
-
-      int n_threads = internal::calc_threads(n);
       auto* RESTRICT p_target = data();
       unwrap_t<T> v = unwrap(val);
-      if (n_threads > 1) {
-        OMP_PARALLEL_FOR_SIMD(n_threads)
-        for (r_size_t i = 0; i < n; ++i) {
-          p_target[start + i] = v;
-        }
-      } else {
-        std::fill_n(p_target + start, n, v);
-      }
+      std::fill_n(p_target + start, n, v);
+
     } else {
-      for (r_size_t i = 0; i < n; ++i) {
-        set(start + i, val);
-      }
+      for (r_size_t i = 0; i < n; ++i) set(start + i, val);
     }
   }
 
@@ -933,7 +914,7 @@ struct r_vec {
       r_size_t n_to_copy = std::min(n, vec_size);
 
       if constexpr (RVectorisable<T>){
-        std::copy_n(this->data(), n_to_copy, resized_vec.data());
+        std::copy_n(data(), n_to_copy, resized_vec.data());
       } else {
         for (r_size_t i = 0; i < n_to_copy; ++i){
           resized_vec.set(i, view(i)); 
@@ -968,7 +949,7 @@ struct r_vec {
           r_copy_n(out, out, copied, to_copy);
           copied += to_copy;
         }
-    }
+      }
       // If length > 0 but length(x) == 0 then fill with NA
     } else if (size == 0 && n > 0){
       if constexpr (RScalar<T>){
@@ -1088,21 +1069,13 @@ inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_
 
     auto* p_target = target.data();
     const auto* p_source = source.data();
-
-    int n_threads = internal::calc_threads(n);
-    if (n_threads > 1) {
-      OMP_PARALLEL_FOR_SIMD(n_threads)
-      for (r_size_t i = 0; i < n; ++i) {
-        p_target[target_offset + i] = p_source[source_offset + i];
-      }
-    } else {
-      std::memmove(p_target + target_offset, p_source + source_offset, n * sizeof(*p_target));
-    }
+    std::memmove(p_target + target_offset, p_source + source_offset, n * sizeof(*p_target));
   } else if constexpr (RStringType<data_t>){
 
     // Cast const SEXP* to SEXP* and write directly
     auto* p_target = const_cast<unwrap_t<data_t>*>(target.data());
-    std::memmove(p_target + target_offset, source.data() + source_offset, n * sizeof(*p_target));
+    const auto* p_source = source.data();
+    std::memmove(p_target + target_offset, p_source + source_offset, n * sizeof(*p_target));
   } else {
     for (r_size_t i = 0; i < n; ++i) {
       target.set(target_offset + i, source.view(source_offset + i));
