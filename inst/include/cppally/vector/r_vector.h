@@ -60,7 +60,10 @@ inline r_sexp make_pairlist(Args... args) {
     (([&]() {
       if constexpr (NamedArg<Args>) {
         SETCAR(current, as_list_element(args.value));
-        SET_TAG(current, r_sym(args.name));
+        // Named element only if name is not empty string
+        if (args.name && args.name[0] != '\0'){
+          SET_TAG(current, r_sym(args.name));
+        }
       } else {
         SETCAR(current, as_list_element(args));
       }
