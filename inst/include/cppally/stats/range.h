@@ -3,6 +3,7 @@
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/math/math.h>
+#include <cppally/na.h>
 
 namespace cppally {
 
@@ -179,7 +180,7 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
 
         // We use the fact that if there were NAs then min(x) would be NA
         // Only works for R's integer types
-        if (lo_ == unwrap(na<T>())){
+        if (is_na(T(lo_))){
             hi_ = unwrap(na<T>());
         }
     }
