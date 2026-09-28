@@ -151,8 +151,13 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
 
         internal::simd_reduce_minmax(
             x,
-            [lo](auto v) noexcept { return is_na(v) ? unwrap(lo) : unwrap(v); },
-            [](auto v) noexcept { return unwrap(v); },
+            [](auto v) noexcept {
+                constexpr unwrap_t<T> lower = unwrap(r_limits<T>::max());
+                return is_na(v) ? lower : unwrap(v); 
+            },
+            [](auto v) noexcept {
+                return unwrap(v); 
+            },
             lo_, hi_
         );
     } else {
