@@ -471,16 +471,11 @@ struct r_vec {
     if (names_attr.is_null()) [[unlikely]] {
       abort("internal error: vector has no names");
     }
-    SEXP key = unwrap(name);
-    int n = names_attr.length();
-    const auto* RESTRICT p = names_attr.data();
-    for (int i = 0; i < n; ++i) {
-      if (p[i] == key) return r_int(i);
-    }
-    if (abort_on_missing) {
+    r_int64 out = names_attr.find_first(name);
+    if (abort_on_missing && out.is_na()) [[unlikely]] {
       abort("%s: There is no element named '%s'", __func__, name.c_str());
     }
-    return na<r_int>();
+    return internal::coerce_number<r_int>(out);
   }
 
   r_int name_index(const char* name, bool abort_on_missing = true) const {
@@ -853,6 +848,18 @@ struct r_vec {
       }
       return out;
     }
+  }
+
+  // Find first index of value.
+  // r_int64::na() is returned on no match.
+  r_int64 find_first(const T& val) const {
+    r_size_t n = length();
+    for (r_size_t i = 0; i < n; ++i) {
+      if (identical(view(i), val)) {
+        return r_int64(static_cast<int64_t>(i));
+      }
+    }
+    return r_int64::na();
   }
 
   // locations of value in vector
