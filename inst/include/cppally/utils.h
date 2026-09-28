@@ -40,11 +40,10 @@ inline constexpr void recycle_index(T& v, T size) noexcept {
 
 namespace internal {
 
-template <CppFloatType F>
-consteval F exp2(int n) noexcept {
-  F out = F(1);
+consteval double exp2(int n) noexcept {
+  double out = 1.0;
   while (n-- > 0){
-    out *= F(2);
+    out *= 2.0;
   }
   return out;
 }
@@ -78,11 +77,11 @@ constexpr bool numeric_can_be_cast_without_complete_loss(From x) noexcept {
   } else if constexpr (CppIntegerType<From> && CppFloatType<To>){
     // int -> float: magnitude always fits; only precision is lost (tolerated)
     return true;
-  } else if constexpr (CppIntegerType<To>){
+  } else if constexpr (CppIntegerType<To> && CppFloatType<From>){
     // Float -> integer: fractions truncate toward zero, out-of-range is complete loss
     // Open upper bound: 2^digits is exact in From whereas To's max may round up
-    constexpr From hi = exp2<From>(std::numeric_limits<To>::digits);
-    return (std::is_signed_v<To> ? x >= -hi : x > From(-1)) && x < hi; // also rejects Inf/NaN
+    constexpr From hi = exp2(std::numeric_limits<To>::digits);
+    return (std::is_signed_v<To> ? x >= -hi : x > -1.0) && x < hi; // also rejects Inf/NaN
   } else {
     constexpr From to_max = static_cast<From>(upper);
     constexpr From inf = std::numeric_limits<From>::infinity();

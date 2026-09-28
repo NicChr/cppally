@@ -258,7 +258,7 @@ inline uint64_t get_hash_map_reserve_size(const U *px, uint64_t data_size) {
         using data_t = typename T::data_type;
 
         // Just a guess (nothing informing this)
-        if (data_size < static_cast<uint64_t>(internal::exp2<double>(16))){
+        if (data_size < static_cast<uint64_t>(internal::exp2(16))){
             return data_size / 4;
         }
 
@@ -348,7 +348,7 @@ inline uint64_t get_hash_map_reserve_size(const U *px, uint64_t data_size) {
 // }
 
 // // Don't sample below this data size threshold
-// inline constexpr uint64_t cardinality_sampling_threshold = static_cast<uint64_t>(internal::exp2<double>(16));
+// inline constexpr uint64_t cardinality_sampling_threshold = static_cast<uint64_t>(internal::exp2(16));
 
 // template <RVector T, typename U>
 // inline uint64_t get_cardinality_estimate(const U *px, uint64_t data_size) {
