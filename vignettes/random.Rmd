@@ -137,8 +137,8 @@ r_vector<r_dbl> r_normal_deviates(int n){
 ',
   random_index = '
 [[cppally::register]]
-int random_index(int a, int b){
-  return random_stream().index(a, b);
+r_int random_index(int a, int b){
+  return as<r_int>(random_stream().index(a, b));
 }
 '
 )
