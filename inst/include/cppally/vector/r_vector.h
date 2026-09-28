@@ -311,6 +311,18 @@ struct r_vec {
   requires (RVector<V> && internal::r_typeof<V> != internal::r_typeof<r_vec<T>>)
   r_vec(const V&) = delete;
 
+  template <RVal U>
+  void copy_attrs_from(const r_vec<U>& source) {
+    
+    maybe_ensure_exclusive();
+
+    safe[SHALLOW_DUPLICATE_ATTRIB](*this, source);
+    invalidate_names_cache();
+
+    if (auto sp = internal::levels_cache().try_lookup(*this)) [[unlikely]] {
+      sp->invalidate();
+    }
+  }
 
   // data is copied but attributes are shallow copied, matching Rf_shallow_duplicate.
   r_vec<T> copy() const {
