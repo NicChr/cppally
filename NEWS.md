@@ -2,6 +2,9 @@
 
 ## Breaking changes
 
+- `r_size_t` is now always `int64_t` on 64-bit platforms and so does not 
+always align with R's `R_xlen_t`.
+
 - Sequences no longer abort on overflow, but instead silently return `NA`.
 
 - Removed `r_vec::subset` and `r_factors::subset` as they didn't thematically 
