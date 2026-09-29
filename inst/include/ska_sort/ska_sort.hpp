@@ -674,16 +674,6 @@ template<typename T>
 struct RadixSorter<const T &&> : RadixSorter<T>
 {
 };
-// these structs serve two purposes
-// 1. they serve as illustration for how to implement the to_radix_sort_key function
-// 2. they help produce better error messages. with these overloads you get the
-//    error message "no matching function for call to to_radix_sort(your_type)"
-//    without these examples, you'd get the error message "to_radix_sort_key was
-//    not declared in this scope" which is a much less useful error message
-struct ExampleStructA { int i; };
-struct ExampleStructB { float f; };
-inline int to_radix_sort_key(ExampleStructA a) { return a.i; }
-inline float to_radix_sort_key(ExampleStructB b) { return b.f; }
 template<typename T, typename Enable = void>
 struct FallbackRadixSorter : RadixSorter<decltype(to_radix_sort_key(std::declval<T>()))>
 {
@@ -1420,13 +1410,13 @@ struct IdentityFunctor
 }
 
 template<typename It, typename ExtractKey>
-static void ska_sort(It begin, It end, ExtractKey && extract_key)
+inline void ska_sort(It begin, It end, ExtractKey && extract_key)
 {
     detail::inplace_radix_sort<128, 1024>(begin, end, extract_key);
 }
 
 template<typename It>
-static void ska_sort(It begin, It end)
+inline void ska_sort(It begin, It end)
 {
     ska_sort(begin, end, detail::IdentityFunctor());
 }
