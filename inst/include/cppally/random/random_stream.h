@@ -2,7 +2,6 @@
 #define CPPALLY_RANDOM_STREAM_H
 
 #include <cppally/r_setup.h>
-#include <cppally/r_sexp/protect.h> // for abort
 #include <cppally/utils.h> // for exp2
 #include <R_ext/Random.h>
 #include <Xoshiro-cpp/XoshiroCpp.hpp> // xoshiro256++ (Ryo Suzuki, MIT)
