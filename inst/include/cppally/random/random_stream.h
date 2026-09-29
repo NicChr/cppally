@@ -57,9 +57,11 @@ struct rng_guard {
 // Using R's seed, we create a new seed.
 // This, in combination with `draw_from_r` ensures we can run reproducible code from R.
 inline uint64_t draw_seed() {
-  uint64_t hi = static_cast<uint64_t>(unif_rand() * exp2(32));
-  uint64_t lo = static_cast<uint64_t>(unif_rand() * exp2(32));
-  return (hi << 32) ^ lo;
+  return unwind_protect([]{
+    uint64_t hi = static_cast<uint64_t>(unif_rand() * exp2(32));
+    uint64_t lo = static_cast<uint64_t>(unif_rand() * exp2(32));
+    return (hi << 32) ^ lo;
+  });
 }
 
 }
