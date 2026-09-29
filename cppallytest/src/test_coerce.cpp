@@ -112,11 +112,7 @@ void test_to_uint(){
     expect_identical(as<unsigned int>(r_dbl(3)), 3u);
     expect_identical(as<unsigned int>(r_true), 1u);
 
-    // unsigned int has no NA representation; NA maps to 0
-    expect_identical(as<unsigned int>(na<r_int>()), 0u);
-    expect_identical(as<unsigned int>(na<r_int64>()), 0u);
-    expect_identical(as<unsigned int>(na<r_dbl>()), 0u);
-    expect_identical(as<unsigned int>(na<r_lgl>()), 0u);
+    // unsigned int has no NA representation; NA aborts (see test_coerce_na_to_uint)
 }
 
 // -> r_size_t
@@ -272,6 +268,13 @@ void test_coerce_edge(){
     expect_identical(as<r_dbl>(r_dbl(R_PosInf)), r_dbl(R_PosInf));
     expect_identical(as<r_dbl>(r_dbl(R_NegInf)), r_dbl(R_NegInf));
     expect_identical(as<r_dbl>(r_dbl(R_NaN)),    r_dbl(R_NaN));
+
+    // float can hold NaN, so NA/NaN pass through the fallback as NaN rather than aborting
+    expect_identical(std::isnan(as<float>(na<r_dbl>())), true);
+    expect_identical(std::isnan(as<float>(r_dbl(R_NaN))), true);
+
+    // uint64_t maps to r_dbl; values above INT64_MAX are still in range
+    expect_identical(as<uint64_t>(r_dbl(9223372036854775808.0)), uint64_t(9223372036854775808ULL));
 }
 
 // Each loses information from a non-NA source, which scalar_coerce rejects via abort().
@@ -300,3 +303,21 @@ void test_coerce_int_min_to_int(){ as<r_int>(r_int64(std::numeric_limits<int>::m
 
 [[cppally::register]]
 void test_coerce_int64_min_to_int64(){ as<r_int64>(r_dbl(-9223372036854775808.0)); }
+
+// C++ integer targets with no NA and no constructible conversion abort in as<>'s fallback
+// on NA or complete loss (previously UB for negative/NaN doubles into unsigned types)
+
+[[cppally::register]]
+void test_coerce_na_to_uint(){ as<unsigned int>(na<r_int>()); }
+
+[[cppally::register]]
+void test_coerce_na_to_uint64(){ as<uint64_t>(na<r_dbl>()); }
+
+[[cppally::register]]
+void test_coerce_neg_to_uint64(){ as<uint64_t>(r_int64(-10)); }
+
+[[cppally::register]]
+void test_coerce_dbl_to_uint_overflow(){ as<unsigned int>(r_dbl(5e9)); }
+
+[[cppally::register]]
+void test_coerce_dbl_to_float_overflow(){ as<float>(r_dbl(1e300)); }

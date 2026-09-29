@@ -48,4 +48,11 @@ test_that("Coercion", {
   expect_error(test_coerce_int_min_to_int())
   expect_error(test_coerce_int64_min_to_int64())
 
+  # C++ targets without NA: NA or complete loss aborts in as<>'s fallback
+  expect_error(test_coerce_na_to_uint())
+  expect_error(test_coerce_na_to_uint64())
+  expect_error(test_coerce_neg_to_uint64())
+  expect_error(test_coerce_dbl_to_uint_overflow())
+  expect_error(test_coerce_dbl_to_float_overflow())
+
 })

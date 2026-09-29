@@ -64,7 +64,7 @@ r_vec<r_int> test_rng_lemire_huge(uint64_t seed, r_size_t n) {
     int* p_out = out.data();
 
     for (r_size_t i = 0; i < n; ++i) {
-        uint64_t v = as<uint64_t>(rs.index(lo, hi)) - static_cast<uint64_t>(lo);
+        uint64_t v = static_cast<uint64_t>(unwrap(rs.index(lo, hi))) - static_cast<uint64_t>(lo);
         if (v >= range) {
             abort("index() returned a value outside [0, range)");
         }
