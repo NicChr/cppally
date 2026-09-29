@@ -19,7 +19,7 @@ namespace internal {
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2022 Martin Leitner-Ankerl <martin.ankerl@gmail.com>
-inline void mum(std::uint64_t* a, std::uint64_t* b) {
+inline void mum(std::uint64_t* a, std::uint64_t* b) noexcept {
 #if defined(__SIZEOF_INT128__)
   __uint128_t r = *a;
   r *= *b;
@@ -89,7 +89,7 @@ struct random_stream {
 
   random_stream() : random_stream(draw_from_r([]{ return internal::draw_seed(); })) {}
 
-  explicit random_stream(uint64_t seed) : seed_(seed), engine_(seed) {}
+  explicit random_stream(uint64_t seed) noexcept : seed_(seed), engine_(seed) {}
 
   // Not copyable as this could yield 2 generators that produce the same numbers while looking independent. 
   // split() is the way to branch.
@@ -101,16 +101,16 @@ struct random_stream {
   // Modelling std::uniform_random_bit_generator means random_stream can be handed
   // straight to any <random> distribution or algorithm - std::shuffle,
   // std::normal_distribution and so on
-  static constexpr result_type min() { return engine_type::min(); }
-  static constexpr result_type max() { return engine_type::max(); }
-  result_type operator()() { return engine_(); }
+  static constexpr result_type min() noexcept { return engine_type::min(); }
+  static constexpr result_type max() noexcept { return engine_type::max(); }
+  result_type operator()() noexcept { return engine_(); }
 
-  r_dbl unif() {
+  r_dbl unif() noexcept {
     // Top 53 bits scaled into [0, 1) - exact, bit-reproducible as is
     return r_dbl(static_cast<double>(engine_() >> 11) * 0x1.0p-53);
   }
   
-  r_dbl unif(double a, double b) {
+  r_dbl unif(double a, double b) noexcept {
     double u = unif(); 
     return r_dbl(std::fma(b, u, a * (1.0 - u)));
   }
@@ -118,7 +118,7 @@ struct random_stream {
   // Returns a random index in [a, b] : b > a
   // Lemire's divisionless method along with ankerl's portable 128bit multiply
   // makes this fast, portable, and hence reproducible.
-  r_int64 index(int64_t a, int64_t b) {
+  r_int64 index(int64_t a, int64_t b) noexcept {
 
     if (b < a) [[unlikely]] {
       return r_int64::na();
@@ -129,15 +129,15 @@ struct random_stream {
   }
 
   // The seed this stream started from. Log it to replay a run via random_stream(seed)
-  uint64_t seed() const { return seed_; }
+  uint64_t seed() const noexcept { return seed_; }
 
   // An independent child stream. R's RNG can't be touched from a worker
   // thread, so parallel work builds its streams up front by splitting
-  random_stream split() { return random_stream(engine_()); }
+  random_stream split() noexcept { return random_stream(engine_()); }
 
   // O(n) - there is no skip-ahead for an arbitrary n. xoshiro's jump() advances
   // by a fixed 2^128, which is a tool for splitting streams, not for this
-  void discard(uint64_t n) {
+  void discard(uint64_t n) noexcept {
     while (n-- > 0) {
       engine_();
     }
@@ -149,7 +149,7 @@ struct random_stream {
   // index()'s full-width case, where span + 1 wraps. Load-bearing: without it
   // mum() yields 0 and every full-width draw would return the lower bound.
   // Lemire's method, over ankerl's portable 128-bit multiply.
-  uint64_t bounded(uint64_t range) {
+  uint64_t bounded(uint64_t range) noexcept {
       if (range == 0) [[unlikely]] {
           return engine_();
       }
