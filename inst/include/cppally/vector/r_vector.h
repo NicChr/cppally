@@ -298,7 +298,7 @@ struct r_vec {
     return static_cast<bool>(m_ptr); 
   }
   // Deprecated - use `is_materialised()`
-  bool materialised() const noexcept {
+  [[deprecated("use `is_materialised()`")]] bool materialised() const noexcept {
     return static_cast<bool>(m_ptr); 
   }
 
