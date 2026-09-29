@@ -6,17 +6,14 @@
 #include <utility>
 #include <csetjmp>
 #include <cstdint> // For fixed-width int types
-#include <exception>
-
 
 namespace cppally {
 
-
 namespace internal {
 
-// A minimal unwind exception
-class unwind_exception : public std::exception {
-public:
+// Propagates an R unwind token through C++ frames.
+// Not a std::exception so that generic std::exception& catch handlers do not swallow it.
+struct unwind_exception {
     SEXP token;
     explicit unwind_exception(SEXP token_) : token(token_) {}
 };
