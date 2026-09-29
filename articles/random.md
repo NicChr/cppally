@@ -152,8 +152,8 @@ bounds (**inclusive** at both ends).
 ``` cpp
 
 [[cppally::register]]
-int random_index(int a, int b){
-  return random_stream().index(a, b);
+r_int random_index(int a, int b){
+  return as<r_int>(random_stream().index(a, b));
 }
 ```
 
@@ -199,9 +199,9 @@ mark(
 )
 #> # A tibble: 2 × 6
 #>   expression                           min   median `itr/sec` mem_alloc `gc/sec`
-#>   <bch:expr>                       <bch:t> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_sample_int_with_replace…   182µs 325.48µs     3045.     391KB    23.7 
-#> 2 base_sample_int_with_replacement   2.2ms   2.33ms      426.     391KB     2.03
+#>   <bch:expr>                      <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_sample_int_with_replac…  227.4µs 369.53µs     2687.     391KB    18.9 
+#> 2 base_sample_int_with_replaceme…   2.19ms   2.34ms      426.     391KB     4.14
 ```
 
 In this simple benchmark we achieve a large speed improvement over base
@@ -407,8 +407,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally      22.9ms   23.1ms      42.9    15.4MB     28.6
-#> 2 base_r       61.7ms   61.9ms      16.2    23.1MB     48.5
+#> 1 cppally        23ms   23.2ms      42.1    15.4MB     28.1
+#> 2 base_r       62.2ms   62.5ms      16.0    23.1MB     48.0
 ```
 
 The hand-tuned bootstrap mean naturally is faster.
@@ -423,8 +423,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression                      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>                 <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 boot_mean_cppally(x, 2000)  22.82ms  23.06ms      43.0    15.4MB     26.5
-#> 2 boot_mean(x, 2000)           4.35ms   4.36ms     229.     21.8KB      0
+#> 1 boot_mean_cppally(x, 2000)  23.12ms  23.29ms      42.7    15.4MB     26.3
+#> 2 boot_mean(x, 2000)           4.35ms   4.37ms     228.     21.8KB      0
 ```
 
 ### A flexible and fast bootstrapper
@@ -523,7 +523,7 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 boot_mean(x, 2000)    4.36ms   4.36ms      229.    15.7KB        0
+#> 1 boot_mean(x, 2000)    4.35ms   4.36ms      229.    15.7KB        0
 #> 2 boot_mean2(x, 2000)    4.7ms   4.72ms      211.    23.5KB        0
 ```
 
