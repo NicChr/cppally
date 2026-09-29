@@ -12,6 +12,7 @@
 #include <cppally/vector/vector_utils.h>
 #include <cppally/vector/vector_names.h>
 #include <cppally/r_function.h>
+#include <cppally/identical.h>
 #include <algorithm>
 #include <cstring>
 #include <utility>
@@ -20,8 +21,6 @@
 namespace cppally {
 
 // Forward declarations
-template <typename T, typename U>
-inline constexpr bool identical(const T& a, const U& b) noexcept(RScalar<T>);
 
 template <RVector T>
 inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_t n, r_size_t source_offset);
