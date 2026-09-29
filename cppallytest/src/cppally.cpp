@@ -714,6 +714,46 @@ extern "C" attribute_visible SEXP _cppallytest_test_coerce_int64_min_to_int64() 
   return R_NilValue;
   END_CPPALLY
 }
+// test_coerce.cpp
+void test_coerce_na_to_uint();
+extern "C" attribute_visible SEXP _cppallytest_test_coerce_na_to_uint() {
+  BEGIN_CPPALLY
+  ::test_coerce_na_to_uint();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_coerce_na_to_uint64();
+extern "C" attribute_visible SEXP _cppallytest_test_coerce_na_to_uint64() {
+  BEGIN_CPPALLY
+  ::test_coerce_na_to_uint64();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_coerce_neg_to_uint64();
+extern "C" attribute_visible SEXP _cppallytest_test_coerce_neg_to_uint64() {
+  BEGIN_CPPALLY
+  ::test_coerce_neg_to_uint64();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_coerce_dbl_to_uint_overflow();
+extern "C" attribute_visible SEXP _cppallytest_test_coerce_dbl_to_uint_overflow() {
+  BEGIN_CPPALLY
+  ::test_coerce_dbl_to_uint_overflow();
+  return R_NilValue;
+  END_CPPALLY
+}
+// test_coerce.cpp
+void test_coerce_dbl_to_float_overflow();
+extern "C" attribute_visible SEXP _cppallytest_test_coerce_dbl_to_float_overflow() {
+  BEGIN_CPPALLY
+  ::test_coerce_dbl_to_float_overflow();
+  return R_NilValue;
+  END_CPPALLY
+}
 // test_dates.cpp
 void test_date_accessors();
 extern "C" attribute_visible SEXP _cppallytest_test_date_accessors() {
@@ -1310,13 +1350,18 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_by_value",                     (DL_FUNC) &_cppallytest_test_by_value,                     1},
     {"_cppallytest_test_coerce",                       (DL_FUNC) &_cppallytest_test_coerce,                       2},
     {"_cppallytest_test_coerce1",                      (DL_FUNC) &_cppallytest_test_coerce1,                      1},
+    {"_cppallytest_test_coerce_dbl_to_float_overflow", (DL_FUNC) &_cppallytest_test_coerce_dbl_to_float_overflow, 0},
     {"_cppallytest_test_coerce_dbl_to_int64_overflow", (DL_FUNC) &_cppallytest_test_coerce_dbl_to_int64_overflow, 0},
     {"_cppallytest_test_coerce_dbl_to_int_overflow",   (DL_FUNC) &_cppallytest_test_coerce_dbl_to_int_overflow,   0},
+    {"_cppallytest_test_coerce_dbl_to_uint_overflow",  (DL_FUNC) &_cppallytest_test_coerce_dbl_to_uint_overflow,  0},
     {"_cppallytest_test_coerce_edge",                  (DL_FUNC) &_cppallytest_test_coerce_edge,                  0},
     {"_cppallytest_test_coerce_int64_min_to_int64",    (DL_FUNC) &_cppallytest_test_coerce_int64_min_to_int64,    0},
     {"_cppallytest_test_coerce_int64_to_int_overflow", (DL_FUNC) &_cppallytest_test_coerce_int64_to_int_overflow, 0},
     {"_cppallytest_test_coerce_int_min_to_int",        (DL_FUNC) &_cppallytest_test_coerce_int_min_to_int,        0},
+    {"_cppallytest_test_coerce_na_to_uint",            (DL_FUNC) &_cppallytest_test_coerce_na_to_uint,            0},
+    {"_cppallytest_test_coerce_na_to_uint64",          (DL_FUNC) &_cppallytest_test_coerce_na_to_uint64,          0},
     {"_cppallytest_test_coerce_neg_inf_to_int",        (DL_FUNC) &_cppallytest_test_coerce_neg_inf_to_int,        0},
+    {"_cppallytest_test_coerce_neg_to_uint64",         (DL_FUNC) &_cppallytest_test_coerce_neg_to_uint64,         0},
     {"_cppallytest_test_coerce_pos_inf_to_int",        (DL_FUNC) &_cppallytest_test_coerce_pos_inf_to_int,        0},
     {"_cppallytest_test_combine2",                     (DL_FUNC) &_cppallytest_test_combine2,                     2},
     {"_cppallytest_test_copy",                         (DL_FUNC) &_cppallytest_test_copy,                         1},

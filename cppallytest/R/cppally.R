@@ -304,6 +304,26 @@ test_coerce_int64_min_to_int64 <- function() {
   invisible(.Call(`_cppallytest_test_coerce_int64_min_to_int64`))
 }
 
+test_coerce_na_to_uint <- function() {
+  invisible(.Call(`_cppallytest_test_coerce_na_to_uint`))
+}
+
+test_coerce_na_to_uint64 <- function() {
+  invisible(.Call(`_cppallytest_test_coerce_na_to_uint64`))
+}
+
+test_coerce_neg_to_uint64 <- function() {
+  invisible(.Call(`_cppallytest_test_coerce_neg_to_uint64`))
+}
+
+test_coerce_dbl_to_uint_overflow <- function() {
+  invisible(.Call(`_cppallytest_test_coerce_dbl_to_uint_overflow`))
+}
+
+test_coerce_dbl_to_float_overflow <- function() {
+  invisible(.Call(`_cppallytest_test_coerce_dbl_to_float_overflow`))
+}
+
 test_date_accessors <- function() {
   invisible(.Call(`_cppallytest_test_date_accessors`))
 }
