@@ -135,14 +135,6 @@
 
 namespace cppally {
 
-#ifdef __SIZEOF_INT128__
-using int128_otherwise_64_t = __int128_t;
-inline constexpr bool int128_available = true;
-#else
-using int128_otherwise_64_t = int64_t;
-inline constexpr bool int128_available = false;
-#endif
-
 // r_size_t is same width as R_xlen_t, but uses int64_t instead of ptrdiff_t on 64-bit platforms
 #if SIZE_MAX > UINT32_MAX
 using r_size_t = int64_t;

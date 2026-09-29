@@ -129,8 +129,9 @@ inline r_int64 sum(const r_vec<r_int64>& x, bool na_rm){
     
     r_size_t n = x.length();
 
-    if constexpr (int128_available){
-        int128_otherwise_64_t out_ = 0;
+    #if defined(__SIZEOF_INT128__)
+
+        __int128_t out_ = 0;
         for (r_size_t i = 0; i < n; ++i){
             
             const r_int64 v = x.get(i);
@@ -152,14 +153,16 @@ inline r_int64 sum(const r_vec<r_int64>& x, bool na_rm){
 
         return r_int64(static_cast<int64_t>(out_));
 
-    } else {
+    #else
+
         r_int64 out(0);
         for (r_size_t i = 0; i < n; ++i){
             const r_int64 v = x.get(i);
             out = out + (na_rm && is_na(v) ? r_int64(0) : v);
         }
         return out;
-    }
+
+    #endif
 }
 
 template <RMathType T>
