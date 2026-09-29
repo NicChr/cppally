@@ -33,17 +33,16 @@
 
 #define BEGIN_CPPALLY                           \
   SEXP cppally_err_ = R_NilValue;               \
-  char cppally_buf_[CPPALLY_ERROR_BUFSIZE];     \
-  cppally_buf_[0] = '\0';                       \
+  const char* cppally_msg_ = nullptr;           \
   try {
 
 #define END_CPPALLY                                                                         \
   }                                                                                         \
   catch (cppally::internal::unwind_exception& e) { cppally_err_ = e.token; }                 \
-  catch (std::exception& e) { cppally::internal::copy_error(cppally_buf_, e.what()); }        \
-  catch (...) { cppally::internal::copy_error(cppally_buf_, "C++ error (unknown cause)"); }   \
-  if (cppally_buf_[0] != '\0') {                                                            \
-    Rf_errorcall(R_NilValue, "%s", cppally_buf_);                                           \
+  catch (std::exception& e) { cppally_msg_ = cppally::internal::copy_error(e.what()); }       \
+  catch (...) { cppally_msg_ = "C++ error (unknown cause)"; }                                \
+  if (cppally_msg_ != nullptr) {                                                            \
+    Rf_errorcall(R_NilValue, "%s", cppally_msg_);                                           \
   } else if (cppally_err_ != R_NilValue) {                                                  \
     R_ContinueUnwind(cppally_err_);                                                         \
   }                                                                                         \
@@ -54,9 +53,11 @@ namespace cppally {
 
 namespace internal {
 
-inline CPPALLY_NOINLINE void copy_error(char (&buf)[CPPALLY_ERROR_BUFSIZE], const char* msg) noexcept {
+inline CPPALLY_NOINLINE attribute_hidden const char* copy_error(const char* msg) noexcept {
+    static char buf[CPPALLY_ERROR_BUFSIZE];
     strncpy(buf, msg, CPPALLY_ERROR_BUFSIZE - 1);
     buf[CPPALLY_ERROR_BUFSIZE - 1] = '\0';
+    return buf;
 }
 
 
