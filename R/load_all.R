@@ -26,7 +26,9 @@ load_all <- function (path = ".", debug = FALSE, cppally_header = c("cppally.hpp
   if (isTRUE(compile)){
     pkgbuild::clean_dll(path = path)
   }
-  cpp_register(path = path, cppally_header = cppally_header)
+  if (!isFALSE(compile)){
+    cpp_register(path = path, cppally_header = cppally_header)
+  }
   if (is.na(compile)){
     pkgload::load_all(path = path, debug = debug, ...)
   } else {
