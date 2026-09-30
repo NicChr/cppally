@@ -4,6 +4,7 @@
 #include <cppally/r_sexp/r_sexp.h>
 #include <cppally/vector/vector_utils.h>
 #include <ankerl/unordered_dense.h>
+#include <R_ext/Visibility.h>
 #include <optional>
 #include <memory>
 #include <bit>
@@ -177,6 +178,7 @@ struct names_map {
     void invalidate() noexcept {
         names.reset();
         map.reset();
+        accessed = false;
     }
 
     private:
@@ -184,24 +186,25 @@ struct names_map {
     void lazy_build() const {
         if (map) return;
 
-        map = std::make_shared<sexp_index_table>();
+        auto built = std::make_shared<sexp_index_table>();
 
-        if (!names.has_value()) return;
-        SEXP nms = *names;
-        if (nms == R_NilValue) return;
+        SEXP nms = names.has_value() ? static_cast<SEXP>(*names) : R_NilValue;
+        r_size_t n = nms == R_NilValue ? 0 : Rf_xlength(nms);
 
-        r_size_t n = Rf_xlength(nms);
-        if (n == 0) return;
         if (n > std::numeric_limits<int>::max()) [[unlikely]] {
             abort("Long vector name hashing is not supported");
         }
 
-        const SEXP* p_names = safe[vector_ptr_ro<r_str>](nms);
-        map->reserve(static_cast<std::size_t>(n), p_names);
-        int n_ = static_cast<int>(n);
-        for (int i = 0; i < n_; ++i){
-            map->insert(i);
+        if (n > 0) {
+            const SEXP* p_names = safe[vector_ptr_ro<r_str>](nms);
+            built->reserve(static_cast<std::size_t>(n), p_names);
+            int n_ = static_cast<int>(n);
+            for (int i = 0; i < n_; ++i){
+                built->insert(i);
+            }
         }
+
+        map = std::move(built);
     }
 
     public:
@@ -271,8 +274,8 @@ struct cache_registry {
     }
 };
 
-inline cache_registry& name_cache()   { static cache_registry r; return r; }
-inline cache_registry& levels_cache() { static cache_registry r; return r; }
+inline attribute_hidden cache_registry& name_cache()   { static cache_registry r; return r; }
+inline attribute_hidden cache_registry& levels_cache() { static cache_registry r; return r; }
 
 }
 
