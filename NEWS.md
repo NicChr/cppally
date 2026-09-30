@@ -264,8 +264,6 @@ This should have no effect on code written with cppally, though it may slightly
 improve compilation time. R/C++ registered functions are now registered with the 
 R C API tag `attribute_hidden`. 
 
-- `r_vec<>` gains an `initializer_list` constructor.
-
 - Auto-generated C++ code for R function registration now uses a 
 tidier naming convention for generated lambda arguments in 
 registered template functions. 
@@ -275,6 +273,9 @@ compatibility consequences as it simply renames the auto-generated lambda
 argument names on re-registration.
 
 ## Other new features
+
+- `r_vec<>` gains two new `initializer_list` constructors, one for
+constructing unnamed vectors, and another for constructing named vectors.
 
 - New function `scalar_coerce`. Use this with 
 `allow_lossy = true` if you want to return `NA` instead of an error on 
