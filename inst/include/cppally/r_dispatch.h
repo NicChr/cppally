@@ -113,7 +113,7 @@ using as_r_vecs_t = typename as_r_vecs<Tuple>::type;
 // Every TU in a package MUST agree on these macros. The tables are vague-linkage
 // symbols, so two TUs disagreeing is an ODR violation the linker will not diagnose.
 // Setting them via PKG_CPPFLAGS guarantees agreement. Across shared libraries
-// disagreement is fine: see shared_type_table's Config and attribute_hidden below.
+// disagreement is fine: the config-dependent tables below are attribute_hidden.
 //
 // Unrelated to the visitor list in r_visit.h, which is a linear switch over a
 // different set of types and is deliberately not narrowed by these macros.
@@ -215,14 +215,16 @@ constexpr uint32_t code_of() {
 
 template <typename Tuple> struct codes_of_impl;
 template <typename... Ts>
-struct codes_of_impl<std::tuple<Ts...>> {
+struct attribute_hidden codes_of_impl<std::tuple<Ts...>> {
     static constexpr std::array<uint32_t, sizeof...(Ts)> value{ code_of<Ts>()... };
 };
 
 // A candidate set expressed as codes. Keyed on the tuple type, so two shared
-// libraries with different candidate sets get distinct specialisations
+// libraries with different candidate sets get distinct specialisations.
+// Hidden because the type key does not pin the codes themselves: libraries built
+// against cppally versions with different CPPALLY_TYPEOF codes would share one symbol
 template <typename Tuple>
-inline constexpr auto codes_of = codes_of_impl<Tuple>::value;
+attribute_hidden inline constexpr auto codes_of = codes_of_impl<Tuple>::value;
 
 
 // ── EXCLUDED TYPES ────────────────────────────────────────────────────────────
@@ -422,9 +424,11 @@ struct attribute_hidden per_functor_dispatch_table {
 // own dispatch_table, wrongly rejecting valid types, dispatching to the wrong
 // instantiation, or reading past the end of a smaller table. With Config in the name,
 // two configs share a symbol iff their tables are byte-identical, which is exactly
-// when sharing is harmless
+// when sharing is harmless.
+// Also hidden: Config does not pin the combo layout (extract_combo's digit order),
+// and sharing across libraries saves nothing - the win is sharing across Functors
 template <size_t NumTemplateParams, auto Config = codes_of<all_candidate_types>>
-struct shared_type_table {
+struct attribute_hidden shared_type_table {
     static constexpr size_t Total = static_pow(N_CANDIDATES, NumTemplateParams);
     static constexpr auto value = []<size_t... Is>(std::index_sequence<Is...>) {
         return std::array<std::array<uint32_t, NumTemplateParams>, sizeof...(Is)>{
