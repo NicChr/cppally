@@ -319,6 +319,10 @@ symbol for a missing argument.
 - New class `string_literal` to facilitate compile-time string literal NTTP 
 programming.
 
+- New relational operators between `r_str_view` and `std::string_view`, allowing
+for comparing cppally strings to string literals, like: `r_str("A") == "A"`. 
+`NA` strings return `NA`: `r_str::na() == "A"`.
+
 - R function `cpp_eval` gains a new argument, `cppally_header`, allowing one to 
 compile expressions using the optional light header "cppally_light.hpp".
 
