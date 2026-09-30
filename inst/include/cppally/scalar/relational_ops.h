@@ -14,6 +14,7 @@
 #include <cppally/scalar/scalars.h>
 #include <cppally/na.h>
 #include <cstring> // For strcmp
+#include <string_view>
 
 namespace cppally {
 
@@ -69,6 +70,45 @@ inline r_lgl operator>(const r_str& lhs, const r_str& rhs) noexcept {
 }
 inline r_lgl operator>=(const r_str& lhs, const r_str& rhs) noexcept {
   return static_cast<r_str_view>(lhs) >= static_cast<r_str_view>(rhs);
+}
+
+// r_str/C++ string operators
+
+inline r_lgl operator==(r_str_view lhs, std::string_view rhs) noexcept {
+  return lhs.is_na() ? r_lgl::na() : r_lgl(lhs.cpp_str() == rhs);
+}
+inline r_lgl operator==(std::string_view lhs, r_str_view rhs) noexcept {
+  return rhs.is_na() ? r_lgl::na() : r_lgl(rhs.cpp_str() == lhs);
+}
+inline r_lgl operator!=(r_str_view lhs, std::string_view rhs) noexcept {
+  return lhs.is_na() ? r_lgl::na() : r_lgl(lhs.cpp_str() != rhs);
+}
+inline r_lgl operator!=(std::string_view lhs, r_str_view rhs) noexcept {
+  return rhs.is_na() ? r_lgl::na() : r_lgl(rhs.cpp_str() != lhs);
+}
+inline r_lgl operator<(r_str_view lhs, std::string_view rhs) noexcept {
+  return lhs.is_na() ? r_lgl::na() : r_lgl(lhs.cpp_str() < rhs);
+}
+inline r_lgl operator<(std::string_view lhs, r_str_view rhs) noexcept {
+  return rhs.is_na() ? r_lgl::na() : r_lgl(lhs < rhs.cpp_str());
+}
+inline r_lgl operator<=(r_str_view lhs, std::string_view rhs) noexcept {
+  return lhs.is_na() ? r_lgl::na() : r_lgl(lhs.cpp_str() <= rhs);
+}
+inline r_lgl operator<=(std::string_view lhs, r_str_view rhs) noexcept {
+  return rhs.is_na() ? r_lgl::na() : r_lgl(lhs <= rhs.cpp_str());
+}
+inline r_lgl operator>(r_str_view lhs, std::string_view rhs) noexcept {
+  return lhs.is_na() ? r_lgl::na() : r_lgl(lhs.cpp_str() > rhs);
+}
+inline r_lgl operator>(std::string_view lhs, r_str_view rhs) noexcept {
+  return rhs.is_na() ? r_lgl::na() : r_lgl(lhs > rhs.cpp_str());
+}
+inline r_lgl operator>=(r_str_view lhs, std::string_view rhs) noexcept {
+  return lhs.is_na() ? r_lgl::na() : r_lgl(lhs.cpp_str() >= rhs);
+}
+inline r_lgl operator>=(std::string_view lhs, r_str_view rhs) noexcept {
+  return rhs.is_na() ? r_lgl::na() : r_lgl(lhs >= rhs.cpp_str());
 }
 
 template <RScalar T, RScalar U>
