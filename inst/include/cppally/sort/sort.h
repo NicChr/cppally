@@ -275,7 +275,7 @@ inline r_vec<r_int> order(const T& x) {
         auto* RESTRICT px = x.data();
         
         // Single Hash Map to assign group IDs and count frequencies
-        ankerl::unordered_dense::map<SEXP, uint32_t, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>> lookup;
+        ankerl::unordered_dense::map<SEXP, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>> lookup;
         auto n_uniques_guess = internal::get_hash_map_reserve_size<T>(px, n);
         lookup.reserve(n_uniques_guess);
         
@@ -300,7 +300,7 @@ inline r_vec<r_int> order(const T& x) {
                 counts[last_id]++;
             } 
             else {
-                auto [it, inserted] = lookup.try_emplace(str, uniques.size());
+                auto [it, inserted] = lookup.try_emplace(str, static_cast<int>(uniques.size()));
                 if (inserted) {
                     last_id = uniques.size();
                     uniques.push_back(str);

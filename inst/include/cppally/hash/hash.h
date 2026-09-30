@@ -264,7 +264,7 @@ inline uint64_t get_hash_map_reserve_size(const U *px, uint64_t data_size) {
 
         // Some adhoc benchmarks indicate that over-reserving for low cardinality data is faster when using ankerl::unordered_dense::map
         // For high cardinality, we cap it to the data size
-        return std::min(data_size, 2 * unique_count_estimate<U, uint32_t, r_hash_fn<data_t>, r_hash_eq<data_t>>(px, data_size));
+        return std::min(data_size, 2 * unique_count_estimate<U, int, r_hash_fn<data_t>, r_hash_eq<data_t>>(px, data_size));
     }
 }
 
