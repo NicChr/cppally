@@ -89,12 +89,12 @@ inline uint64_t r_hash_impl(r_str_view x) noexcept {
     
     // Scramble the bits
     // We use ankerl's built-in wyhash mixer. It's just a multiply + XOR.
-    return ankerl::unordered_dense::detail::wyhash::hash(ptr_val);
+    return ankerl::unordered_dense::detail::hash_int(ptr_val);
 };
 
 inline uint64_t r_hash_impl(r_sym x) noexcept {
     auto ptr_val = reinterpret_cast<uintptr_t>(unwrap(x));
-    return ankerl::unordered_dense::detail::wyhash::hash(ptr_val);
+    return ankerl::unordered_dense::detail::hash_int(ptr_val);
 };
 
 // Vector hashing
