@@ -73,18 +73,16 @@
 #else
 #    define ANKERL_UNORDERED_DENSE_NOINLINE __attribute__((noinline))
 #    define ANKERL_UNORDERED_DENSE_FORCEINLINE inline __attribute__((always_inline))
-#    define ANKERL_UNORDERED_DENSE_FLATTEN __attribute__((flatten))
+// LOCAL PATCH - flatten disabled
+#    define ANKERL_UNORDERED_DENSE_FLATTEN
 #endif
 
 // The insert's walk past the home group (#321), which only a key whose fingerprint class has
 // overflowed home takes. Each compiler gets the shape the other one loses with: inlined, clang
 // retires 8% more instructions building a map of large values; called, gcc takes 11% more cycles
 // per insert of a fresh key, whether or not the insert walks.
-#if defined(__clang__)
-#    define ANKERL_UNORDERED_DENSE_FIND_OR_PLACE_FAR ANKERL_UNORDERED_DENSE_NOINLINE
-#else
-#    define ANKERL_UNORDERED_DENSE_FIND_OR_PLACE_FAR ANKERL_UNORDERED_DENSE_FORCEINLINE
-#endif
+// LOCAL PATCH - out of line always
+#define ANKERL_UNORDERED_DENSE_FIND_OR_PLACE_FAR ANKERL_UNORDERED_DENSE_NOINLINE
 
 // Data prefetch hint, a no-op where there is nothing to spell it with. MSVC has no
 // __builtin_prefetch and used to get the no-op, which quietly cost it the one the probe issues for
