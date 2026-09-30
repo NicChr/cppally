@@ -38,7 +38,7 @@ struct r_str {
   r_str() : value{internal::lazy_str_impl<"">(), internal::view_tag{}} {}
 
   explicit r_str(r_sexp x) : value(std::move(x)) {
-    internal::check_valid_construction<r_str>(value);
+    internal::check_valid_construction<r_str>(unwrap(value));
   }
 
   // Explicit SEXP -> r_str
@@ -57,7 +57,7 @@ struct r_str {
   explicit r_str(r_str_view x);
 
   const char *c_str() const noexcept {
-    return CHAR(value);
+    return CHAR(unwrap(*this));
   }
 
   std::string_view cpp_str() const noexcept {
@@ -77,20 +77,20 @@ struct r_str {
   }
 
   int n_bytes() const noexcept {
-    return LENGTH(*this);
+    return LENGTH(unwrap(*this));
   }
 
   // Is string valid UTF-8? (ASCII is also valid UTF8)
   bool is_utf8() const noexcept {
-    return static_cast<bool>(Rf_charIsUTF8(*this));
+    return static_cast<bool>(Rf_charIsUTF8(unwrap(*this)));
   }
 
   bool is_ascii() const noexcept {
-    return static_cast<bool>(Rf_charIsASCII(*this));
+    return static_cast<bool>(Rf_charIsASCII(unwrap(*this)));
   }
 
   bool is_latin1() const noexcept {
-    return static_cast<bool>(Rf_charIsLatin1(*this));
+    return static_cast<bool>(Rf_charIsLatin1(unwrap(*this)));
   }
 
   // Convert to UTF-8 (ASCII is left alone)
@@ -122,12 +122,12 @@ struct r_str {
           // 0x80-0x9F: ISO-8859-1 (C1 controls) and CP1252 (€, smart quotes, dashes...) diverge,
           // and R may interpret CE_LATIN1 as CP1252 (R >= 3.5.0, notably Windows). Defer to R
           // so the platform-correct semantics are used rather than guessing.
-          return r_str(safe[Rf_translateCharUTF8](*this));
+          return r_str(safe[Rf_translateCharUTF8](unwrap(*this)));
         }
       }
       return r_str(internal::mk_char_utf8(out.data(), out.size()), internal::no_checks_tag{});
     }
-    return r_str(safe[Rf_translateCharUTF8](*this));
+    return r_str(safe[Rf_translateCharUTF8](unwrap(*this)));
   }
 
 };
@@ -178,20 +178,20 @@ struct r_str_view {
   }
 
   int n_bytes() const noexcept {
-    return LENGTH(*this);
+    return LENGTH(unwrap(*this));
   }
 
   // Is string valid UTF-8? (ASCII is also valid UTF8)
   bool is_utf8() const noexcept {
-    return static_cast<bool>(Rf_charIsUTF8(*this));
+    return static_cast<bool>(Rf_charIsUTF8(unwrap(*this)));
   }
 
   bool is_ascii() const noexcept {
-    return static_cast<bool>(Rf_charIsASCII(*this));
+    return static_cast<bool>(Rf_charIsASCII(unwrap(*this)));
   }
 
   bool is_latin1() const noexcept {
-    return static_cast<bool>(Rf_charIsLatin1(*this));
+    return static_cast<bool>(Rf_charIsLatin1(unwrap(*this)));
   }
 
 };
