@@ -194,10 +194,6 @@ concept RScalar = RNumericType<T> || RComplexType<T> || RStringType<T> || RRawTy
 template <typename T>
 concept RVal = RScalar<T> || is<T, r_sexp>;
 
-// Types that are OMP friendly (i.e. they can work safely with OMP simd, reductions and parallel clauses)
-template <typename T>
-concept RVectorisable = RScalar<T> && !RObject<T>;
-
 template <typename T>
 concept RFunction = is<T, r_function>;
 
@@ -461,6 +457,10 @@ struct base_scalar_type<T> {
 // Get the base RScalar
 template <typename T>
 using r_base_scalar_t = typename internal::base_scalar_type<std::remove_cvref_t<T>>::type;
+
+// Types that are OMP friendly (i.e. they can work safely with OMP simd, reductions and parallel clauses)
+template <typename T>
+concept RVectorisable = RScalar<T> && !is<unwrap_t<T>, SEXP>;
 
 // Rules for determining math type promotion in binary operators
 
