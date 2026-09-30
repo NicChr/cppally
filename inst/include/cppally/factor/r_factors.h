@@ -6,6 +6,7 @@
 #include <cppally/identical.h>
 #include <cppally/vector/vector_names.h>
 #include <cppally/attributes/attributes.h>
+#include <cppally/stats/range.h>
 
 namespace cppally {
 
@@ -123,25 +124,14 @@ struct r_factors {
   template <RStringType T>
   void validate_levels(const r_vec<r_int>& codes, const r_vec<T>& levels){
 
-    r_size_t n = codes.length();
-    // Max code
-    int max_code = unwrap(r_limits<r_int>::min());
-    const auto *p_codes = codes.data();
+    r_vec<r_int> rng = range(codes, /*na_rm = */ true);
+    r_int min_code = rng.get(0);
+    r_int max_code = rng.get(1);
 
-    OMP_SIMD_REDUCTION1(max:max_code)
-    for (r_size_t i = 0; i < n; ++i){
-        // No need to ignore NA for max() because NA is defined as lowest representable value
-        max_code = std::max(max_code, p_codes[i]);
-    }
+    r_lgl invalid_codes = min_code < 1 || levels.length() < max_code;
 
-    // If max is still the same value as when initialised, this either means the vector was full of NAs, or the max really is max int
-    // Either way, we check in this rare case
-    if (max_code == unwrap(r_limits<r_int>::min()) && (codes.na_count() == n)){
-        max_code = unwrap(na<r_int>());
-    }
-
-    if (levels.length() < max_code){
-      abort("Invalid factor levels");
+    if (invalid_codes.is_true()) [[unlikely]] {
+      abort("Invalid factor codes detected");
     }
   }
 
