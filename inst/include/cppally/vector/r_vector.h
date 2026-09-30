@@ -469,6 +469,7 @@ struct r_vec {
     }
 
     invalidate_names_cache();
+    // Re-get the attribute because we can't know if Rf_namesgets() copied the SEXP 
     cache_names(r_vec<r_str_view>(r_sexp(Rf_getAttrib(*this, symbol::names_sym)), internal::no_checks_tag{}));
   }
 
