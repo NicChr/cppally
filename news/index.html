@@ -44,7 +44,8 @@
 <h2 class="pkg-version" data-toc-text="development version" id="cppally-development-version">cppally (development version)<a class="anchor" aria-label="anchor" href="#cppally-development-version"></a></h2>
 <div class="section level3">
 <h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
-<ul><li><p>Sequences no longer abort on overflow, but instead silently return <code>NA</code>.</p></li>
+<ul><li><p><code>r_size_t</code> is now always <code>int64_t</code> on 64-bit platforms and so does not always align with R’s <code>R_xlen_t</code>.</p></li>
+<li><p>Sequences no longer abort on overflow, but instead silently return <code>NA</code>.</p></li>
 <li><p>Removed <code>r_vec::subset</code> and <code>r_factors::subset</code> as they didn’t thematically fit in with the rest of the members. The free <code>subset</code> function is still available.</p></li>
 <li><p>Renamed <code>common_length</code> to <code>list_common_length</code>. <code>common_length</code> now accepts variadic inputs.</p></li>
 <li><p>Relocated various headers to and from the sugar folder.</p></li>
