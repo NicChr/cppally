@@ -13,6 +13,7 @@
 #include <cppally/vector/vector_names.h>
 #include <cppally/r_function.h>
 #include <cppally/identical.h>
+#include <cppally/named_arg.h>
 #include <algorithm>
 #include <cstring>
 #include <utility>
@@ -259,6 +260,20 @@ struct r_vec {
     for (const auto& elem : elements) {
       set(i++, elem);
     }
+
+  }
+
+  explicit r_vec(std::initializer_list<internal::named_arg<T>> elements) : r_vec(static_cast<r_size_t>(elements.size())) {
+
+    r_vec<r_str> nms(static_cast<r_size_t>(elements.size()));
+    
+    r_size_t i = 0;
+    for (const auto& [name, val] : elements) {
+      set(i, val);
+      nms.set(i, r_str(name));
+      ++i;
+    }
+    set_names(nms);
 
   }
 
