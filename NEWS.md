@@ -222,6 +222,10 @@ error instead of an ambiguous constructor error.
 
 - Speed improvements to logical operators of `r_lgl`.
 
+- User-supplied `[[cppally::init]]` routines are now placed around 
+try/catch blocks to catch C++ exceptions 
+(or R errors which `cppally::abort()` converts into C++ exceptions).
+
 - Sorting speed has been improved for both character vectors 
 and numeric vectors. Sorting is faster for character vectors when there are 
 a relatively high proportion of unique strings. Sorting is also 
