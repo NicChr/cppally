@@ -291,7 +291,7 @@ inline r_vec<r_int> order(const T& x) {
         for (uint32_t i = 0; i < n; ++i) {
             SEXP str = px[i];
             
-            if (internal::ptrs_identical(str, na<r_str_view>())){
+            if (internal::ptrs_identical(str, unwrap(na<r_str_view>()))){
                 group_ids.push_back(uint32_t(-1));
             }
             // Linear Scan Cache - identical strings have identical pointers

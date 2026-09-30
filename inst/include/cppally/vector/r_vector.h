@@ -159,7 +159,7 @@ struct r_vec {
   // Initialise data (pointer) to:
   // const SEXP* (read-only) - If T is a type convertible to SEXP
   // unwrap_t<T>* - Otherwise
-  static constexpr bool is_write_barrier_protected = RObject<T>;
+  static constexpr bool is_write_barrier_protected = is<unwrap_t<T>, SEXP>;
   using ptr_t = std::conditional_t<is_write_barrier_protected, const SEXP*, unwrap_t<T>*>;
 #ifdef CPPALLY_PRESERVE_ALTREP
   // `mutable` so that lazy materialisation for ALTREP inputs can happen
@@ -266,7 +266,7 @@ struct r_vec {
   explicit r_vec(std::initializer_list<internal::named_arg<T>> elements) : r_vec(static_cast<r_size_t>(elements.size())) {
 
     r_vec<r_str> nms(static_cast<r_size_t>(elements.size()));
-    
+
     r_size_t i = 0;
     for (const auto& [name, val] : elements) {
       set(i, val);
@@ -577,9 +577,9 @@ struct r_vec {
     ensure_exclusive();
     #endif
     if constexpr (RStringType<T>){
-      SET_STRING_ELT(value, unwrap(index), val);
+      SET_STRING_ELT(value, unwrap(index), unwrap(val));
     } else if constexpr (is<T, r_sexp>){
-      SET_VECTOR_ELT(value, unwrap(index), val);
+      SET_VECTOR_ELT(value, unwrap(index), unwrap(val));
     } else {
       static_assert(!is_write_barrier_protected, "Can't write data directly here, data is R write-barrier protected");
       data()[unwrap(index)] = unwrap(val);

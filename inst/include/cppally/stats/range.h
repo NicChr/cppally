@@ -135,7 +135,7 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
         lo = hi = na<r_str_view>();
     }
 
-    return r_vec<T>( {T(lo, internal::view_tag{}), T(hi, internal::view_tag{})} );
+    return r_vec<T>( {T(unwrap(lo), internal::view_tag{}), T(unwrap(hi), internal::view_tag{})} );
 }
 
 // SIMD optimisation for integer types

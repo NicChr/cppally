@@ -13,8 +13,8 @@ T unique(const T& x) {
 
   using data_t = typename T::data_type;
 
-  const uint8_t zero(0);
-  const uint8_t one(1);
+  constexpr uint8_t zero(0);
+  constexpr uint8_t one(1);
 
   r_size_t n = x.length();
 
@@ -59,7 +59,7 @@ T unique(const T& x) {
     seen.reserve(cardinality_est);
 
     for (r_size_t i = 0; i < n; ++i) {
-      seen.try_emplace(x.view(i), zero);
+      seen.try_emplace(unwrap(x.view(i)), zero);
     }
 
     r_size_t n_unq = seen.size();
@@ -112,7 +112,7 @@ r_vec<r_lgl> duplicated(const T& x, bool all = false){
     seen.reserve(internal::get_hash_map_reserve_size<T>(x.data(), n));
 
     for (r_size_t i = 0; i < n; ++i) {
-      auto [it, inserted] = seen.try_emplace(x.view(i), i);
+      auto [it, inserted] = seen.try_emplace(unwrap(x.view(i)), i);
       if (!inserted) {
         out.set(i, r_true);
         if (all) {
@@ -139,8 +139,8 @@ inline r_size_t n_unique(const T& x) {
   using data_t = typename T::data_type;
 
   // Writing these in-line apparently prevents compiler-inlining, strange..
-  const uint8_t zero(0);
-  const uint8_t one(1);
+  constexpr uint8_t zero(0);
+  constexpr uint8_t one(1);
 
   r_size_t n = x.length();
 
@@ -167,7 +167,7 @@ inline r_size_t n_unique(const T& x) {
   seen.reserve(cardinality_est);
 
   for (r_size_t i = 0; i < n; ++i) {
-    seen.try_emplace(x.view(i), zero);
+    seen.try_emplace(unwrap(x.view(i)), zero);
   }
   return seen.size();
 }
