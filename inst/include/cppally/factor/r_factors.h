@@ -389,22 +389,14 @@ struct r_factors {
   r_factors remove(r_str_view val) const {
     if (is_na(val)){
       r_vec<r_int> fct_codes = value.remove(na<r_int>());
-      r_factors result(std::move(fct_codes), this->levels(), false);
-      ensure_levels_cached();
-      result.ensure_levels_cached();
-      result.cached_levels->map = this->cached_levels->map;
-      return result;
+      return r_factors(std::move(fct_codes), this->levels(), false);
     }
     r_int code = get_code(val);
     if (is_na(code)){
       return *this;
     }
     r_vec<r_int> fct_codes = value.remove(code);
-    r_factors result(std::move(fct_codes), this->levels(), false);
-    ensure_levels_cached();
-    result.ensure_levels_cached();
-    result.cached_levels->map = this->cached_levels->map;
-    return result;
+    return r_factors(std::move(fct_codes), this->levels(), false);
   }
 
 };
