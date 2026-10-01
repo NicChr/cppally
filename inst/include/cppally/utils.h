@@ -127,11 +127,11 @@ constexpr double floor2(double x) noexcept {
 }
 
 inline int calc_threads(r_size_t data_size){
-    if (OMP_IN_PARALLEL){
-      return 1;
-    }
-    return data_size >= CPPALLY_OMP_THRESHOLD ? get_threads() : 1;
+  if (data_size < CPPALLY_OMP_THRESHOLD){
+    return 1;
   }
+  return OMP_IN_PARALLEL ? 1 : get_threads();
+}
 
 }
 
