@@ -161,16 +161,17 @@ struct sexp_index_table {
     }
 };
 
-// Lazily-built hash over a STRSXP for O(1) name → index lookup.
-// `names` is the protected STRSXP; nullopt = not yet captured from the parent.
-// `map` is the hash table; null = not yet built from `names`.
-// `map` is a shared_ptr so sibling r_vec wrappers around the same SEXP
-// can share a single built table without copying.
+// Lazily built names map which contains the names STRSXP and its associated hash map, allowing O(1) name lookup.
+// `names_map` can be shared by multiple wrappers (siblings) around 1 SEXP.
+// Siblings can reach the names and map via a registry which is keyed on the SEXP.
+// `nullopt` for `names` means either not yet captured or invalidated.
+// `nullopt` for `map` means not yet built.
 struct names_map {
 
     std::optional<r_sexp> names;
-    mutable std::shared_ptr<sexp_index_table> map;
+    mutable std::optional<sexp_index_table> map;
 
+    SEXP owner = nullptr;
     bool accessed = false;
 
     names_map() = default;
@@ -184,9 +185,10 @@ struct names_map {
     private:
 
     void lazy_build() const {
+        
         if (map) return;
 
-        auto built = std::make_shared<sexp_index_table>();
+        sexp_index_table built;
 
         SEXP nms = names.has_value() ? static_cast<SEXP>(*names) : R_NilValue;
         r_size_t n = nms == R_NilValue ? 0 : Rf_xlength(nms);
@@ -197,10 +199,10 @@ struct names_map {
 
         if (n > 0) {
             const SEXP* p_names = safe[vector_ptr_ro<r_str>](nms);
-            built->reserve(static_cast<std::size_t>(n), p_names);
+            built.reserve(static_cast<std::size_t>(n), p_names);
             int n_ = static_cast<int>(n);
             for (int i = 0; i < n_; ++i){
-                built->insert(i);
+                built.insert(i);
             }
         }
 
@@ -257,6 +259,7 @@ struct cache_registry {
             if (auto sp = it->second.lock()) return sp;
         }
         auto sp = std::make_shared<names_map>();
+        sp->owner = s;
         it->second = sp;
         return sp;
     }
@@ -265,12 +268,6 @@ struct cache_registry {
         maybe_sweep();
         auto it = storage_.find(s);
         return it != storage_.end() ? it->second.lock() : nullptr;
-    }
-
-    // Bind `sp` to `s` directly — used when sharing an already-built cache
-    // across sibling wrappers
-    void store(SEXP s, std::shared_ptr<names_map> sp) {
-        storage_.insert_or_assign(s, std::move(sp));
     }
 };
 

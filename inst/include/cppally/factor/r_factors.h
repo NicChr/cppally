@@ -43,8 +43,9 @@ struct r_factors {
   requires requires(r_vec<r_int>& v, Args&&... args) {     \
       v.NAME(std::forward<Args>(args)...);                 \
   }                                                        \
-  decltype(auto) NAME(Args&&... args) {                    \
-      return value.NAME(std::forward<Args>(args)...);      \
+  void NAME(Args&&... args) {                              \
+      value.NAME(std::forward<Args>(args)...);             \
+      sync_levels_cache();                                 \
   }
 
   // For methods that return a factor
@@ -82,6 +83,14 @@ struct r_factors {
       return;
     }
     cache_levels(r_vec<r_str_view>(Rf_getAttrib(value, symbol::levels_sym)));
+  }
+
+  void sync_levels_cache() noexcept {
+    #ifdef CPPALLY_COPY_ON_MODIFY
+    if (cached_levels && cached_levels->owner != unwrap(value)) [[unlikely]] {
+      cached_levels.reset();
+    }
+    #endif
   }
 
   public:
@@ -228,7 +237,7 @@ struct r_factors {
     
     ensure_levels_cached();
 
-    if (cached_levels->accessed || cached_levels->map) {
+    if (cached_levels->accessed) {
       r_int out = cached_levels->find(val, /*offset = */ 1);
       return is_na(out) ? no_match : out;
     }
@@ -261,6 +270,7 @@ struct r_factors {
 
   void set_code(r_size_t index, r_int val) {
     value.set(index, val);
+    sync_levels_cache();
   }
 
   template <typename I>
@@ -287,6 +297,7 @@ struct r_factors {
   requires requires(const I& idx){ value.set(idx, r_int{}); }
   void set(const I& index, r_str_view val) {
     value.set(index, get_code(val));
+    sync_levels_cache();
   }
 
   // Re-express this factor's values against a new set of levels
@@ -338,7 +349,8 @@ struct r_factors {
   }
 
   void fill(r_size_t start, r_size_t n, r_str_view val){
-    return is_na(val) ? value.fill(start, n, na<r_int>()) : value.fill(start, n, get_code(val));
+    value.fill(start, n, is_na(val) ? na<r_int>() : get_code(val));
+    sync_levels_cache();
   }
 
   void fill(r_str_view val){
@@ -380,6 +392,7 @@ struct r_factors {
         value.set(idx, new_code);
       }
     }
+    sync_levels_cache();
   }
   
   void replace(r_str_view old_val, r_str_view new_val){
