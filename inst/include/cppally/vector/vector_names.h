@@ -5,6 +5,7 @@
 #include <cppally/vector/vector_utils.h>
 #include <ankerl/unordered_dense.h>
 #include <R_ext/Visibility.h>
+#include <limits>
 #include <optional>
 #include <memory>
 #include <bit>
@@ -36,10 +37,6 @@ inline std::uint64_t sexp_data_hash(SEXP p) noexcept {
 // array. Keys aren't stored — comparison goes back through names_ptr_, so
 // the table only needs a single int[] of ~1.5x n ints (half ankerl's
 // footprint, one fewer cache line touched per insert).
-//
-// names_ptr_ is unowned. The owner (names_map) keeps the SEXP alive via
-// r_sexp; rebind_to_storage covers the edge case where the array is
-// replaced but stored indices are still valid.
 struct sexp_index_table {
 
     // Slots store `index + 1`, so the value-initialised 0 means "empty".
@@ -94,12 +91,6 @@ struct sexp_index_table {
         size_ = 0;
         names_ptr_ = names_ptr;
     }
-
-    // Re-anchor the table to a new backing array. Use when the underlying
-    // names SEXP was replaced but stored indices are still valid — e.g.
-    // r_factors::append_level builds a strictly extended levels vector
-    // where every old index still points at the same CHARSXP.
-    void rebind_to_storage(const SEXP* names_ptr) noexcept { names_ptr_ = names_ptr; }
 
     // Walk the probe chain until we either find `key` or hit an empty slot.
     // The returned position is either the match (slot non-empty, holds `key`)
@@ -161,6 +152,8 @@ struct sexp_index_table {
     }
 };
 
+struct cache_registry;
+
 // Lazily built names map which contains the names STRSXP and its associated hash map, allowing O(1) name lookup.
 // `names_map` can be shared by multiple wrappers (siblings) around 1 SEXP.
 // Siblings can reach the names and map via a registry which is keyed on the SEXP.
@@ -171,10 +164,16 @@ struct names_map {
     std::optional<r_sexp> names;
     mutable std::optional<sexp_index_table> map;
 
-    SEXP owner = nullptr;
-    bool accessed = false;
+    SEXP owner = nullptr; // names_map owner
+    cache_registry* registry = nullptr; // Pointer to cache registry of names_map owners
+    bool accessed = false; // flag to keep track of first access (important since we cache on 2nd access)
 
     names_map() = default;
+    names_map(const names_map&) = delete;
+    names_map& operator=(const names_map&) = delete;
+
+    // Remove registry entry on destruction
+    ~names_map();
 
     void invalidate() noexcept {
         names.reset();
@@ -227,52 +226,47 @@ struct names_map {
 // around the same SEXP converge on the same names_map. A mutation through
 // any of them is visible to all.
 //
-// weak_ptr storage means the cache is removed when the last wrapper holding it
-// goes out of scope. Dead slots are reused on next lookup or swept periodically.
-//
 // NOT thread-safe — assumes wrapper construction outside OMP regions.
 struct cache_registry {
 
     private:
 
-    static constexpr std::size_t SWEEP_INTERVAL = 1024;
+    friend struct names_map;
 
     ankerl::unordered_dense::map<SEXP, std::weak_ptr<names_map>> storage_;
-    std::size_t counter_ = 0;
 
-    void maybe_sweep() noexcept {
-        // Equivalent to (++counter_ % SWEEP_INTERVAL) == 0 — power-of-two interval lets us use &
-        if ((++counter_ & (SWEEP_INTERVAL - 1)) == 0){
-            for (auto it = storage_.begin(); it != storage_.end(); ) {
-                if (it->second.expired()) it = storage_.erase(it);
-                else ++it;
-            }
-        }
+    void erase(SEXP s) noexcept {
+        storage_.erase(s);
     }
 
     public:
 
     std::shared_ptr<names_map> get_or_create(SEXP s) {
-        maybe_sweep();
         auto [it, inserted] = storage_.try_emplace(s);
         if (!inserted) {
             if (auto sp = it->second.lock()) return sp;
         }
         auto sp = std::make_shared<names_map>();
         sp->owner = s;
+        sp->registry = this;
         it->second = sp;
         return sp;
     }
 
     std::shared_ptr<names_map> try_lookup(SEXP s) noexcept {
-        maybe_sweep();
         auto it = storage_.find(s);
         return it != storage_.end() ? it->second.lock() : nullptr;
     }
 };
 
-inline attribute_hidden cache_registry& name_cache()   { static cache_registry r; return r; }
-inline attribute_hidden cache_registry& levels_cache() { static cache_registry r; return r; }
+inline names_map::~names_map() {
+    if (registry) {
+        registry->erase(owner);
+    }
+}
+
+inline attribute_hidden cache_registry& name_cache()   { static cache_registry& r = *new cache_registry; return r; }
+inline attribute_hidden cache_registry& levels_cache() { static cache_registry& r = *new cache_registry; return r; }
 
 }
 
