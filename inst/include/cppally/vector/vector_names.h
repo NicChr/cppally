@@ -27,15 +27,9 @@ namespace cppally {
 
 namespace internal {
 
-// Knuth multiplicative hash
-inline std::uint64_t sexp_data_hash(SEXP p) noexcept {
-    constexpr std::uint64_t phi = 0x9E3779B97F4A7C15ull;
-    return static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(p)) * phi;
-}
-
 // Open-addressing hash from SEXP keys to indices into an external names
-// array. Keys aren't stored — comparison goes back through names_ptr_, so
-// the table only needs a single int[] of ~1.5x n ints (half ankerl's
+// array. Keys aren't stored - comparison goes back through names_ptr_, so
+// the table only needs a single int[] of ~2-4x n ints (half ankerl's
 // footprint, one fewer cache line touched per insert).
 struct sexp_index_table {
 
@@ -63,16 +57,16 @@ struct sexp_index_table {
     const SEXP* names_ptr_ = nullptr;
     std::size_t capacity_ = 0;
     std::size_t mask_ = 0;
-    // Any value < 64 keeps hash_() well-defined before reserve/grow runs.
-    // It's overwritten the moment the table is sized.
     int shift_ = 63;
     std::size_t size_ = 0;
 
     std::size_t size() const noexcept { return size_; }
     bool empty() const noexcept { return size_ == 0; }
     
-    std::size_t hash_(SEXP p) const noexcept {
-        return static_cast<std::size_t>(sexp_data_hash(p) >> shift_);
+    // Knuth multiplicative hash - the top (64 - shift) bits represent slot index
+    static std::size_t slot_of(SEXP p, int shift) noexcept {
+        constexpr std::uint64_t phi = 0x9E3779B97F4A7C15ull;
+        return static_cast<std::size_t>((reinterpret_cast<std::uintptr_t>(p) * phi) >> shift);
     }
 
     void set_capacity(std::size_t cap) noexcept {
@@ -81,7 +75,7 @@ struct sexp_index_table {
         shift_ = 64 - std::countr_zero(cap);
     }
 
-    // Reserve room for at least n entries with ~33% headroom. Subsequent
+    // Reserve room for at least n entries with at least 100% headroom. Subsequent
     // appends past this threshold are handled by grow().
     void reserve(std::size_t n, const SEXP* names_ptr) {
         std::size_t target = 2 * (n + 1);
@@ -98,7 +92,7 @@ struct sexp_index_table {
     // slots_[pos]. Load factor ≤ 0.5 (enforced by insert) guarantees an
     // empty slot exists, so this always terminates.
     std::size_t probe_for(SEXP key) const noexcept {
-        std::size_t pos = hash_(key);
+        std::size_t pos = slot_of(key, shift_);
         while (slots_[pos] != EMPTY_SLOT) {
             if (names_ptr_[from_slot(slots_[pos])] == key) break;
             pos = next_probe(pos, mask_);
@@ -140,7 +134,7 @@ struct sexp_index_table {
             int slot = slots_[i];
             if (slot == EMPTY_SLOT) continue;
             SEXP key = names_ptr_[from_slot(slot)];
-            std::size_t pos = static_cast<std::size_t>(sexp_data_hash(key) >> new_shift);
+            std::size_t pos = slot_of(key, new_shift);
             while (new_slots[pos] != EMPTY_SLOT) {
                 pos = next_probe(pos, new_mask);
             }
