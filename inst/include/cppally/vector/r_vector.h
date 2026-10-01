@@ -176,7 +176,7 @@ struct r_vec {
   // The only way to violate this sync is via R C API calls which are absolutely not safe.
   // 3. Hashing is separate to caching and is only done on 2nd-lookup via `name_index()`
   // Any two r_vec wrappers around the same SEXP point to the same names_map via the registry
-  mutable std::shared_ptr<internal::names_map> cached_names;
+  mutable internal::names_map::ptr cached_names;
 
   void initialise_ptr(){
 #ifdef CPPALLY_PRESERVE_ALTREP
@@ -403,7 +403,7 @@ struct r_vec {
       cached_names->invalidate();
     } else if (auto sp = internal::name_cache().try_lookup(*this)) [[unlikely]] {
       // If a sibling has cached names, adopt then invalidate the cache for all siblings
-      cached_names = std::move(sp);
+      cached_names = internal::names_map::ptr(sp);
       cached_names->invalidate();
     }
   }

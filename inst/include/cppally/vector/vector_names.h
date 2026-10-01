@@ -8,6 +8,7 @@
 #include <limits>
 #include <optional>
 #include <memory>
+#include <utility>
 #include <bit>
 #include <cstdint>
 
@@ -177,6 +178,8 @@ struct names_map {
 
     private:
 
+    std::uint32_t refs = 0; // refcount
+
     void lazy_build() const {
         
         if (map) return;
@@ -214,6 +217,43 @@ struct names_map {
         }
         return r_int(idx + offset);
     }
+
+    // Non-atomic intrusive handle
+    struct ptr {
+
+        ptr() noexcept = default;
+        explicit ptr(names_map* p) noexcept : p_(p) { acquire(); }
+        ptr(const ptr& other) noexcept : p_(other.p_) { acquire(); }
+        ptr(ptr&& other) noexcept : p_(std::exchange(other.p_, nullptr)) {}
+
+        ptr& operator=(ptr other) noexcept {
+            std::swap(p_, other.p_);
+            return *this;
+        }
+
+        ~ptr() { release(p_); }
+
+        void reset() noexcept { release(std::exchange(p_, nullptr)); }
+
+        names_map* operator->() const noexcept { return p_; }
+        explicit operator bool() const noexcept { return p_ != nullptr; }
+
+        private:
+
+        names_map* p_ = nullptr;
+
+        void acquire() noexcept {
+            if (p_) {
+                ++p_->refs;
+            }
+        }
+
+        static void release(names_map* p) noexcept {
+            if (p && --p->refs == 0) {
+                delete p;
+            }
+        }
+    };
 };
 
 // Per-attribute cache registry: keyed by parent SEXP*, so any two wrappers
@@ -226,8 +266,8 @@ struct cache_registry {
     private:
 
     friend struct names_map;
-
-    ankerl::unordered_dense::map<SEXP, std::weak_ptr<names_map>> storage_;
+    
+    ankerl::unordered_dense::map<SEXP, names_map*> storage_;
 
     void erase(SEXP s) noexcept {
         storage_.erase(s);
@@ -235,19 +275,20 @@ struct cache_registry {
 
     public:
 
-    std::shared_ptr<names_map> get_or_create(SEXP s) {
-        auto [it, inserted] = storage_.try_emplace(s);
-        if (!inserted) {
-            if (auto sp = it->second.lock()) return sp;
+    // Find or insert in a single probe
+    names_map::ptr get_or_create(SEXP s) {
+        names_map*& entry = storage_[s];
+        // nullptr only if new
+        if (!entry) {
+            entry = new names_map(s, this);
         }
-        auto sp = std::make_shared<names_map>(s, this);
-        it->second = sp;
-        return sp;
+        return names_map::ptr(entry);
     }
 
-    std::shared_ptr<names_map> try_lookup(SEXP s) noexcept {
+    // Non-owning, for immediate use only
+    names_map* try_lookup(SEXP s) noexcept {
         auto it = storage_.find(s);
-        return it != storage_.end() ? it->second.lock() : nullptr;
+        return it != storage_.end() ? it->second : nullptr;
     }
 };
 

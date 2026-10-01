@@ -63,7 +63,7 @@ struct r_factors {
 
 
   // Shared cache for levels — see r_vec::cached_names for the design
-  mutable std::shared_ptr<internal::names_map> cached_levels;
+  mutable internal::names_map::ptr cached_levels;
 
   // Place names into cache (no hash map yet)
   void cache_levels(const r_vec<r_str_view>& lvls) const {
