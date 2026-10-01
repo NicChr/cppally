@@ -18,19 +18,8 @@ namespace cppally {
 
 struct r_sexp {
 
-  public:
-
   SEXP value = R_NilValue;
   using value_type = SEXP;
-
-  private:
-
-  // Refcounted protection token. nullptr means "view mode" (no protection).
-  // Copy construction bumps `ctl_->refs` instead of allocating a new cons cell,
-  // so passing r_sexp around by value is essentially free
-  internal::refcount::protect_cell* ctl_ = nullptr;
-
-  public:
 
   r_sexp() = default;
   explicit r_sexp(SEXP data) : value(data), ctl_(internal::refcount::insert(data)) {}
@@ -104,6 +93,14 @@ struct r_sexp {
   }
 
   r_str address() const;
+
+  private:
+
+  // Refcounted protection token. nullptr means "view mode" (no protection).
+  // Copy construction bumps `ctl_->refs` instead of allocating a new cons cell,
+  // so passing r_sexp around by value is essentially free
+  internal::refcount::protect_cell* ctl_ = nullptr;
+
 };
 
 
