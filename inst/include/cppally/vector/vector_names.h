@@ -168,7 +168,7 @@ struct names_map {
     cache_registry* registry = nullptr; // Pointer to cache registry of names_map owners
     bool accessed = false; // flag to keep track of first access (important since we cache on 2nd access)
 
-    names_map() = default;
+    names_map(SEXP owning_sexp, cache_registry* owning_registry) noexcept : owner(owning_sexp), registry(owning_registry) {}
     names_map(const names_map&) = delete;
     names_map& operator=(const names_map&) = delete;
 
@@ -246,9 +246,7 @@ struct cache_registry {
         if (!inserted) {
             if (auto sp = it->second.lock()) return sp;
         }
-        auto sp = std::make_shared<names_map>();
-        sp->owner = s;
-        sp->registry = this;
+        auto sp = std::make_shared<names_map>(s, this);
         it->second = sp;
         return sp;
     }
@@ -260,9 +258,7 @@ struct cache_registry {
 };
 
 inline names_map::~names_map() {
-    if (registry) {
-        registry->erase(owner);
-    }
+    registry->erase(owner);
 }
 
 inline attribute_hidden cache_registry& name_cache()   { static cache_registry& r = *new cache_registry; return r; }
