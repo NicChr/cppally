@@ -112,7 +112,7 @@ inline r_dbl quantile(const r_vec<r_dbl>& x, r_dbl p, bool na_rm = false){
     return r_dbl(internal::quantile_impl(v.data(), n - n_na, unwrap(p), false));
 }
 
-inline r_vec<r_dbl> quantile(r_vec<r_dbl>& x, const r_vec<r_dbl>& probs, bool na_rm = false){
+inline r_vec<r_dbl> quantile(const r_vec<r_dbl>& x, const r_vec<r_dbl>& probs, bool na_rm = false){
 
     const r_size_t n_probs = probs.length();
 
@@ -134,6 +134,7 @@ inline r_vec<r_dbl> quantile(r_vec<r_dbl>& x, const r_vec<r_dbl>& probs, bool na
 
     const r_size_t n = x.length();
     const r_size_t n_na = x.na_count();
+    const r_size_t n_ok = n - n_na;
 
     if ((n_na > 0 && !na_rm) || n_na == n){
         return out;
@@ -141,14 +142,19 @@ inline r_vec<r_dbl> quantile(r_vec<r_dbl>& x, const r_vec<r_dbl>& probs, bool na
 
     // If number of probs is small, it's faster to compute them (via nth_element())
 
-    if (n_probs < 25 && n_na == 0){
+    if (n_probs < 25){
         r_vec<r_dbl> x_copy = x.copy();
         double* x_data = x_copy.data();
+
+        // Move NAs to the end of the vector
+        if (n_na > 0){
+            std::partition(x_data, x_data + n, [](double v){ return !is_na(r_dbl(v)); });
+        }
 
         for (r_size_t i = 0; i < n_probs; ++i){
             const r_dbl p = probs.get(i);
             if (!is_na(p)){
-                out.set(i, r_dbl(internal::quantile_impl(x_data, n, unwrap(p), false)));
+                out.set(i, r_dbl(internal::quantile_impl(x_data, n_ok, unwrap(p), false)));
             }
         }
     } else {
@@ -163,9 +169,6 @@ inline r_vec<r_dbl> quantile(r_vec<r_dbl>& x, const r_vec<r_dbl>& probs, bool na
         }
 
         double* x_data = x.data();
-
-        // NAs are at the tail end of the vector if they exist
-        const r_size_t n_ok = n - n_na;
 
         for (r_size_t i = 0; i < n_probs; ++i){
             const r_dbl p = probs.get(i);
