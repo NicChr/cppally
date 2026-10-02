@@ -390,7 +390,7 @@ namespace internal {
 // In-place sort
 template <typename T>
 requires requires (const T& v, r_size_t i) { v.get(i);}
-void sort_in_place(T& x, r_vec<r_int>&& order){
+void sort_in_place(T& x, const r_vec<r_int>& order){
 
     int n = static_cast<int>(x.length());
 
@@ -398,24 +398,16 @@ void sort_in_place(T& x, r_vec<r_int>&& order){
         abort("`sort_in_place()`: `x` and `order` must have the same length");
     }
 
-    // Since we are overwriting order, ensure it is not overwriting user data
-    order.ensure_exclusive();
-    
-    // Apply the permutation to x via cycle-following: no extra buffer,
-    // o doubles as the visited marker (o[j] = j once that slot is final).
+    using data_t = typename std::remove_cvref_t<T>::data_type;
+    std::vector<unwrap_t<data_t>> buf;
+    buf.reserve(n);
     for (int i = 0; i < n; ++i){
-        if (unwrap(order.get(i)) == i) continue;
-    
-        int j = i;
-        auto temp = x.view(i);
-        while (unwrap(order.view(j)) != i){
-            int next = unwrap(order.view(j));
-            x.set(j, x.view(next));
-            order.set(j, j);
-            j = next;
-        }
-        x.set(j, temp);
-        order.set(j, j);
+        buf.push_back(unwrap(x.view(i)));
+    }
+
+    const int* RESTRICT o = order.data();
+    for (int i = 0; i < n; ++i){
+        x.set(i, internal::unsafe_reconstruct_view<data_t>(buf[o[i]]));
     }
 }
 
@@ -423,7 +415,7 @@ void sort_in_place(T& x, r_vec<r_int>&& order){
 // assuming x is already sorted by `order`, this restores x in its original order
 template <typename T>
 requires requires (const T& v, r_size_t i) { v.get(i);}
-void unsort_in_place(T& x, r_vec<r_int>&& order){
+void unsort_in_place(T& x, const r_vec<r_int>& order){
 
     int n = static_cast<int>(x.length());
 
@@ -431,23 +423,17 @@ void unsort_in_place(T& x, r_vec<r_int>&& order){
         abort("`unsort_in_place()`: `x` and `order` must have the same length");
     }
 
-    order.ensure_exclusive();
-
+    
+    using data_t = typename std::remove_cvref_t<T>::data_type;
+    std::vector<unwrap_t<data_t>> buf;
+    buf.reserve(n);
     for (int i = 0; i < n; ++i){
-        if (unwrap(order.get(i)) == i) continue;
+        buf.push_back(unwrap(x.view(i)));
+    }
 
-        auto temp = x.view(i);
-        int j = unwrap(order.get(i));
-        while (j != i){
-            auto displaced = x.view(j);
-            x.set(j, temp);
-            temp = displaced;
-            int next = unwrap(order.get(j));
-            order.set(j, j);
-            j = next;
-        }
-        x.set(i, temp);
-        order.set(i, i);
+    const int* RESTRICT o = order.data();
+    for (int i = 0; i < n; ++i){
+        x.set(o[i], internal::unsafe_reconstruct_view<data_t>(buf[i]));
     }
 }
 
