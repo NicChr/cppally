@@ -10,6 +10,14 @@ namespace cppally {
 
 namespace internal {
 
+// Assumes data has no NAs in first n elements.
+// Assumes n > 0
+// Assumes p is strictly in [0, 1]
+// If o is not nullptr, it overrides sorted. 
+//
+// ----- O(1) quantiles if data is already sorted or we know order permutation ---- 
+// Supply sorted = true if you know the data is already sorted.
+// Supply `o`, a permutation ordering that sorts the data.
 inline double quantile_impl(double* x_data, r_size_t n, double p, bool sorted, const int* o = nullptr){
 
     // m = 1 - p
