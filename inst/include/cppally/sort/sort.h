@@ -419,6 +419,38 @@ void sort_in_place(T& x, r_vec<r_int>&& order){
     }
 }
 
+// Inverse of sort_in_place
+// assuming x is already sorted by `order`, this restores x in its original order
+template <typename T>
+requires requires (const T& v, r_size_t i) { v.get(i);}
+void unsort_in_place(T& x, r_vec<r_int>&& order){
+
+    int n = static_cast<int>(x.length());
+
+    if (n != order.length()) [[unlikely]] {
+        abort("`unsort_in_place()`: `x` and `order` must have the same length");
+    }
+
+    order.ensure_exclusive();
+
+    for (int i = 0; i < n; ++i){
+        if (unwrap(order.get(i)) == i) continue;
+
+        auto temp = x.view(i);
+        int j = unwrap(order.get(i));
+        while (j != i){
+            auto displaced = x.view(j);
+            x.set(j, temp);
+            temp = displaced;
+            int next = unwrap(order.get(j));
+            order.set(j, j);
+            j = next;
+        }
+        x.set(i, temp);
+        order.set(i, i);
+    }
+}
+
 }
 
 template <typename T>
