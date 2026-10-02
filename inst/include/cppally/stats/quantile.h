@@ -18,7 +18,8 @@ namespace internal {
 // ----- O(1) quantiles if data is already sorted or we know order permutation ---- 
 // Supply sorted = true if you know the data is already sorted.
 // Supply `o`, a permutation ordering that sorts the data.
-inline double quantile_impl(double* x_data, r_size_t n, double p, bool sorted, const int* o = nullptr){
+template <CppNumber T>
+inline double quantile_impl(T* x_data, r_size_t n, double p, bool sorted, const int* o = nullptr){
 
     // m = 1 - p
     // np_m = np + m
@@ -50,7 +51,8 @@ inline double quantile_impl(double* x_data, r_size_t n, double p, bool sorted, c
     return (1.0 - gamma) * x_j + gamma * x_j1;
 }
 
-inline r_size_t sorted_na_count(const r_vec<r_dbl>& x){
+template <RNumber T>
+inline r_size_t sorted_na_count(const r_vec<T>& x){
     const r_size_t n = x.length();
     r_size_t i = n;
     while (i > 0 && is_na(x.get(i - 1))){
@@ -63,13 +65,15 @@ inline bool is_valid_prob(double p) noexcept {
     return p >= 0.0 && p <= 1.0;
 }
 
-inline void move_nas_to_end(double* RESTRICT data, r_size_t n) {
-    std::partition(data, data + n, [](double v){ return !is_na(r_dbl(v)); });
+template <CppNumber T>
+inline void move_nas_to_end(T* RESTRICT data, r_size_t n) {
+    std::partition(data, data + n, [](T v){ return !is_na(v); });
 }
 
 }
 
-inline r_dbl quantile(const r_vec<r_dbl>& x, r_dbl p, bool na_rm = false){
+template <RNumber T>
+inline r_dbl quantile(const r_vec<T>& x, r_dbl p, bool na_rm = false){
 
     if (!internal::is_valid_prob(p)) [[unlikely]] {
         abort("probability must be in [0, 1]");
@@ -92,8 +96,8 @@ inline r_dbl quantile(const r_vec<r_dbl>& x, r_dbl p, bool na_rm = false){
         return na<r_dbl>();
     }
 
-    const double* x_data = x.data();
-    std::vector<double> v(x_data, x_data + n);
+    const auto* x_data = x.data();
+    std::vector<unwrap_t<T>> v(x_data, x_data + n);
 
     if (n_na > 0){
         internal::move_nas_to_end(v.data(), n);
@@ -102,7 +106,8 @@ inline r_dbl quantile(const r_vec<r_dbl>& x, r_dbl p, bool na_rm = false){
     return r_dbl(internal::quantile_impl(v.data(), n - n_na, unwrap(p), false));
 }
 
-inline r_vec<r_dbl> quantile(const r_vec<r_dbl>& x, const r_vec<r_dbl>& probs, bool na_rm = false){
+template <RNumber T>
+inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool na_rm = false){
 
     const r_size_t n_probs = probs.length();
 
@@ -133,7 +138,7 @@ inline r_vec<r_dbl> quantile(const r_vec<r_dbl>& x, const r_vec<r_dbl>& probs, b
     bool sorted = is_sorted(x);
 
     if (sorted){
-        double* x_data = x.data();
+        auto* x_data = x.data();
         for (r_size_t i = 0; i < n_probs; ++i){
             const r_dbl p = probs.get(i);
             if (!is_na(p)){
@@ -144,7 +149,7 @@ inline r_vec<r_dbl> quantile(const r_vec<r_dbl>& x, const r_vec<r_dbl>& probs, b
         
         // If number of probs is small, it's faster to compute them (via nth_element())
 
-        std::vector<double> v(x.data(), x.data() + n);
+        std::vector<unwrap_t<T>> v(x.data(), x.data() + n);
 
         // Move NAs to the end of the vector
         if (n_na > 0){
@@ -163,7 +168,7 @@ inline r_vec<r_dbl> quantile(const r_vec<r_dbl>& x, const r_vec<r_dbl>& probs, b
     
         r_vec<r_int> o = order(x);
 
-        double* x_data = x.data();
+        auto* x_data = x.data();
         const int* o_data = o.data();
 
         for (r_size_t i = 0; i < n_probs; ++i){
