@@ -256,7 +256,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
 
     if (n_probs >= 25){
         // Method that computes order permutation and re-uses it for fast repeated quantile estimation
-        return quantile<Method>(x, probs, order(x), na_rm);
+        return quantile<Method>(x, probs, order(x), na_rm, false);
     }
 
     r_vec<r_dbl> out(n_probs, na<r_dbl>());
