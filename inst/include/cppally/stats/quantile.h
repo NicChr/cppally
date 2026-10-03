@@ -31,7 +31,11 @@ namespace internal {
 // Supply `o`, a permutation ordering that sorts the data.
 // Method corresponds to numpy.quantile and can be "weibull", "linear", or "median_unbiased". The R equivalents are type 6, 7, and 8 respectively.
 template <string_literal Method, CppNumber T>
-inline double quantile_impl(T* x_data, r_size_t n, double p, bool sorted, const int* o = nullptr){
+inline double quantile_impl(T* x_data, r_size_t n_not_na, double p, bool sorted, const int* o = nullptr){
+
+    if (n_not_na == 0){
+        return unwrap(na<r_dbl>());
+    }
 
     // m = a + p(1 - a - b)
     // np_m = np + m
@@ -46,8 +50,8 @@ inline double quantile_impl(T* x_data, r_size_t n, double p, bool sorted, const 
     constexpr double b = a;
     constexpr double fuzz = method == "linear" ? 0.0 : 4.0 * std::numeric_limits<double>::epsilon();
 
-    const double np_m = a + p * (n + 1.0 - a - b); // fractional position of quantile (of sorted data)
-    const r_size_t j = std::clamp(static_cast<r_size_t>(np_m * (1.0 + fuzz)), r_size_t(1), n); // integer position (index)
+    const double np_m = a + p * (n_not_na + 1.0 - a - b); // fractional position of quantile (of sorted data)
+    const r_size_t j = std::clamp(static_cast<r_size_t>(np_m * (1.0 + fuzz)), r_size_t(1), n_not_na); // integer position (index)
     double gamma = np_m - j; // fractional [0, 1) part of the quantile position - i.e. how far along the gap between the j-th order statistic and the j+1-th order statistic the quantile is
 
     if constexpr (fuzz > 0.0){
@@ -60,18 +64,18 @@ inline double quantile_impl(T* x_data, r_size_t n, double p, bool sorted, const 
     // elements to the left are <= x[j] (but likely unsorted) and elements to the right are >= x[j] (also likely unsorted)
 
     if (!sorted && !o){
-        std::nth_element(x_data, x_data + (j - 1), x_data + n);
+        std::nth_element(x_data, x_data + (j - 1), x_data + n_not_na);
     }
     const double x_j = x_data[o ? o[j - 1] : j - 1]; // The value of quantile index if data were sorted (j-th order statistic)
 
     // If gamma is 0 then the j-th order statistic is exactly the quantile
-    if (gamma <= 0.0 || j == n){
+    if (gamma <= 0.0 || j == n_not_na){
         return x_j;
     }
 
     // Since nth_element() guarantees elements to the right of x[j] are >= x[j]
     // x[j+1] is the min of that set such that x[j+1] >= x[j]
-    const double x_j1 = o ? x_data[o[j]] : (sorted ? x_data[j] : *std::min_element(x_data + j, x_data + n));
+    const double x_j1 = o ? x_data[o[j]] : (sorted ? x_data[j] : *std::min_element(x_data + j, x_data + n_not_na));
 
     // If it's a tie, return x[j]
     if (x_j1 == x_j){
@@ -103,9 +107,9 @@ inline void move_nas_to_end(T* RESTRICT data, r_size_t n) {
 }
 
 template <string_literal Method = "linear", RNumber T>
-inline r_dbl quantile(const r_vec<T>& x, r_dbl p, bool na_rm = false){
+inline r_dbl quantile(const r_vec<T>& x, r_dbl prob, bool na_rm = false){
 
-    if (!internal::is_valid_prob(p)) [[unlikely]] {
+    if (!internal::is_valid_prob(prob)) [[unlikely]] {
         abort("probability must be in [0, 1]");
     }
 
@@ -117,7 +121,7 @@ inline r_dbl quantile(const r_vec<T>& x, r_dbl p, bool na_rm = false){
         if ((n_na > 0 && !na_rm) || n_na == n){
             return na<r_dbl>();
         }
-        return r_dbl(internal::quantile_impl<Method>(x.data(), n - n_na, unwrap(p), true));
+        return r_dbl(internal::quantile_impl<Method>(x.data(), n - n_na, unwrap(prob), true));
     }
 
     const r_size_t n_na = x.na_count();
@@ -133,7 +137,7 @@ inline r_dbl quantile(const r_vec<T>& x, r_dbl p, bool na_rm = false){
         internal::move_nas_to_end(v.data(), n);
     }
 
-    return r_dbl(internal::quantile_impl<Method>(v.data(), n - n_na, unwrap(p), false));
+    return r_dbl(internal::quantile_impl<Method>(v.data(), n - n_na, unwrap(prob), false));
 }
 
 template <string_literal Method = "linear", RNumber T>
