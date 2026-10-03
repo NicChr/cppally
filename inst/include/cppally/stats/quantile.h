@@ -137,7 +137,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, r_vec<r_dbl> probs, const r_vec<
 
     // order permutation places NAs at end of vector, so just check the last
     if (!na_rm){
-        T last = x.get(n - 1);
+        T last = x.get(order.get(n - 1));
         if (is_na(last)){
             return r_vec<r_dbl>( {na<r_dbl>()} );
         }
