@@ -31,10 +31,10 @@ namespace internal {
 // Supply `o`, a permutation ordering that sorts the data.
 // Method corresponds to numpy.quantile and can be "weibull", "linear", or "median_unbiased". The R equivalents are type 6, 7, and 8 respectively.
 template <string_literal Method, CppNumber T>
-inline double quantile_impl(T* x_data, r_size_t n_not_na, double p, bool sorted, const int* o = nullptr){
+inline r_dbl quantile_impl(T* x_data, r_size_t n_not_na, double p, bool sorted, const int* o = nullptr){
 
     if (n_not_na == 0){
-        return unwrap(na<r_dbl>());
+        return na<r_dbl>();
     }
 
     // m = a + p(1 - a - b)
@@ -70,7 +70,7 @@ inline double quantile_impl(T* x_data, r_size_t n_not_na, double p, bool sorted,
 
     // If gamma is 0 then the j-th order statistic is exactly the quantile
     if (gamma <= 0.0 || j == n_not_na){
-        return x_j;
+        return r_dbl(x_j);
     }
 
     // Since nth_element() guarantees elements to the right of x[j] are >= x[j]
@@ -79,10 +79,10 @@ inline double quantile_impl(T* x_data, r_size_t n_not_na, double p, bool sorted,
 
     // If it's a tie, return x[j]
     if (x_j1 == x_j){
-        return x_j;
+        return r_dbl(x_j);
     }
     // Qi(p) = (1 − γ)x[j] + γx[j+1]
-    return (1.0 - gamma) * x_j + gamma * x_j1;
+    return r_dbl((1.0 - gamma) * x_j + gamma * x_j1);
 }
 
 template <RNumber T>
@@ -131,7 +131,7 @@ inline r_dbl quantile(const r_vec<T>& x, r_dbl prob, const r_vec<r_int>& order, 
     }
     
     r_size_t n_na = n - i;
-    return r_dbl(internal::quantile_impl<Method>(x.data(), n - n_na, unwrap(prob), false, order.data()));
+    return internal::quantile_impl<Method>(x.data(), n - n_na, unwrap(prob), false, order.data());
 }
 
 template <string_literal Method = "linear", RNumber T>
@@ -149,7 +149,7 @@ inline r_dbl quantile(const r_vec<T>& x, r_dbl prob, bool na_rm = false){
         if ((n_na > 0 && !na_rm) || n_na == n){
             return na<r_dbl>();
         }
-        return r_dbl(internal::quantile_impl<Method>(x.data(), n - n_na, unwrap(prob), true));
+        return internal::quantile_impl<Method>(x.data(), n - n_na, unwrap(prob), true);
     }
 
     const r_size_t n_na = x.na_count();
@@ -165,7 +165,7 @@ inline r_dbl quantile(const r_vec<T>& x, r_dbl prob, bool na_rm = false){
         internal::move_nas_to_end(v.data(), n);
     }
 
-    return r_dbl(internal::quantile_impl<Method>(v.data(), n - n_na, unwrap(prob), false));
+    return internal::quantile_impl<Method>(v.data(), n - n_na, unwrap(prob), false);
 }
 
 template <string_literal Method = "linear", RNumber T>
@@ -204,7 +204,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
         for (r_size_t i = 0; i < n_probs; ++i){
             const r_dbl p = probs.get(i);
             if (!is_na(p)){
-                out.set(i, r_dbl(internal::quantile_impl<Method>(x_data, n_ok, unwrap(p), true)));
+                out.set(i, internal::quantile_impl<Method>(x_data, n_ok, unwrap(p), true));
             }
         }
     } else if (n_probs < 25){
@@ -221,7 +221,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
         for (r_size_t i = 0; i < n_probs; ++i){
             const r_dbl p = probs.get(i);
             if (!is_na(p)){
-                out.set(i, r_dbl(internal::quantile_impl<Method>(v.data(), n_ok, unwrap(p), false)));
+                out.set(i, internal::quantile_impl<Method>(v.data(), n_ok, unwrap(p), false));
             }
         }
     } else {
@@ -236,7 +236,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
         for (r_size_t i = 0; i < n_probs; ++i){
             const r_dbl p = probs.get(i);
             if (!is_na(p)){
-                out.set(i, r_dbl(internal::quantile_impl<Method>(x_data, n_ok, unwrap(p), false, o_data)));
+                out.set(i, internal::quantile_impl<Method>(x_data, n_ok, unwrap(p), false, o_data));
             }
         }
     }
