@@ -193,29 +193,24 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const
         abort("`quantile()`: `x.length()` must equal `order.length()`");
     }
 
-    r_size_t n_na = 0;
-    int upper = static_cast<int>(n) - 1;
-
     if (check_order){
         bool bad_index = false;
         // Check the order permutation elements are valid and count NAs simultaneously 
         for (r_size_t i = 0; i < n; ++i){
             int idx = order.get(i);
-            n_na += is_na(x.get(i));
-    
-            bad_index = bad_index || idx < 0 || idx > upper;
+            bad_index |= static_cast<unsigned>(idx) >= static_cast<unsigned>(n);
         }
         if (bad_index) [[unlikely]] {
             abort("`quantile()`: Invalid permutation index, indices must be in [0, n)");
         }
-    } else {
-        // Count NAs but assuming they are at the end of sorted vector
-        r_size_t i = n;
-        while (i > 0 && is_na(x.get(unwrap(order.get(i - 1))))){
-            --i;
-        }
-        n_na = n - i;
     }
+
+    // Count NAs but assuming they are at the end of sorted vector
+    r_size_t i = n;
+    while (i > 0 && is_na(x.get(unwrap(order.get(i - 1))))){
+        --i;
+    }
+    r_size_t n_na = n - i;
 
     r_size_t n_ok = n - n_na;
     r_vec<r_dbl> out(n_probs, na<r_dbl>());
