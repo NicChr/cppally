@@ -9,6 +9,14 @@
 #include <cmath>
 #include <limits>
 
+// A C++ implementation of R's `stats::quantile.default`.
+// Supports quantile methods of type 6, 7, and 8.
+// There are two overloads, one that accepts a scalar prob and returns a scalar quantile, 
+// and the second accepts a vector of probs and returns a vector of quantiles.
+// 
+// License: MIT
+// Author: Nick Christofides
+
 namespace cppally {
 
 namespace internal {
