@@ -4,7 +4,10 @@
 #include <cppally/vector/r_vector.h>
 #include <cppally/sort/is_sorted.h>
 #include <cppally/sort/sort.h>
+#include <cppally/string/string_literal.h>
 #include <algorithm>
+#include <cmath>
+#include <limits>
 
 namespace cppally {
 
@@ -18,18 +21,32 @@ namespace internal {
 // ----- O(1) quantiles if data is already sorted or we know order permutation ---- 
 // Supply sorted = true if you know the data is already sorted.
 // Supply `o`, a permutation ordering that sorts the data.
-template <CppNumber T>
+// Method corresponds to numpy.quantile and can be "weibull", "linear", or "median_unbiased". The R equivalents are type 6, 7, and 8 respectively.
+template <string_literal Method, CppNumber T>
 inline double quantile_impl(T* x_data, r_size_t n, double p, bool sorted, const int* o = nullptr){
 
-    // m = 1 - p
+    // m = a + p(1 - a - b)
     // np_m = np + m
     // j = ⌊np_m⌋
     // gamma = np_m - j
 
-    const double m = 1.0 - p;
-    const double np_m = n * p + m; // fractional position of quantile (of sorted data)
-    const r_size_t j = std::clamp(static_cast<r_size_t>(np_m), r_size_t(1), n); // integer position (index)
-    const double gamma = np_m - j; // fractional [0, 1) part of the quantile position - i.e. how far along the gap between the j-th order statistic and the j+1-th order statistic the quantile is
+    constexpr std::string_view method = Method.view();
+    static_assert(method == "weibull" || method == "linear" || method == "median_unbiased", "Method must be one of 'weibull', 'linear' or 'median_unbiased'");
+
+    // Plotting position constants - see ?stats::quantile
+    constexpr double a = method == "weibull" ? 0.0 : (method == "linear" ? 1.0 : 1.0 / 3.0);
+    constexpr double b = a;
+    constexpr double fuzz = method == "linear" ? 0.0 : 4.0 * std::numeric_limits<double>::epsilon();
+
+    const double np_m = a + p * (n + 1.0 - a - b); // fractional position of quantile (of sorted data)
+    const r_size_t j = std::clamp(static_cast<r_size_t>(np_m * (1.0 + fuzz)), r_size_t(1), n); // integer position (index)
+    double gamma = np_m - j; // fractional [0, 1) part of the quantile position - i.e. how far along the gap between the j-th order statistic and the j+1-th order statistic the quantile is
+
+    if constexpr (fuzz > 0.0){
+        if (std::abs(gamma) < fuzz){
+            gamma = 0.0;
+        }
+    }
 
     // nth_element() partitions the data so that x[j] is the j-th order statistic.
     // elements to the left are <= x[j] (but likely unsorted) and elements to the right are >= x[j] (also likely unsorted)
@@ -47,6 +64,11 @@ inline double quantile_impl(T* x_data, r_size_t n, double p, bool sorted, const 
     // Since nth_element() guarantees elements to the right of x[j] are >= x[j]
     // x[j+1] is the min of that set such that x[j+1] >= x[j]
     const double x_j1 = o ? x_data[o[j]] : (sorted ? x_data[j] : *std::min_element(x_data + j, x_data + n));
+
+    // If it's a tie, return x[j]
+    if (x_j1 == x_j){
+        return x_j;
+    }
     // Qi(p) = (1 − γ)x[j] + γx[j+1]
     return (1.0 - gamma) * x_j + gamma * x_j1;
 }
@@ -72,7 +94,7 @@ inline void move_nas_to_end(T* RESTRICT data, r_size_t n) {
 
 }
 
-template <RNumber T>
+template <string_literal Method = "linear", RNumber T>
 inline r_dbl quantile(const r_vec<T>& x, r_dbl p, bool na_rm = false){
 
     if (!internal::is_valid_prob(p)) [[unlikely]] {
@@ -87,7 +109,7 @@ inline r_dbl quantile(const r_vec<T>& x, r_dbl p, bool na_rm = false){
         if ((n_na > 0 && !na_rm) || n_na == n){
             return na<r_dbl>();
         }
-        return r_dbl(internal::quantile_impl(x.data(), n - n_na, unwrap(p), true));
+        return r_dbl(internal::quantile_impl<Method>(x.data(), n - n_na, unwrap(p), true));
     }
 
     const r_size_t n_na = x.na_count();
@@ -103,10 +125,10 @@ inline r_dbl quantile(const r_vec<T>& x, r_dbl p, bool na_rm = false){
         internal::move_nas_to_end(v.data(), n);
     }
 
-    return r_dbl(internal::quantile_impl(v.data(), n - n_na, unwrap(p), false));
+    return r_dbl(internal::quantile_impl<Method>(v.data(), n - n_na, unwrap(p), false));
 }
 
-template <RNumber T>
+template <string_literal Method = "linear", RNumber T>
 inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool na_rm = false){
 
     const r_size_t n_probs = probs.length();
@@ -122,7 +144,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
         return r_vec<r_dbl>();
     }
     if (n_probs == 1){
-        return r_vec<r_dbl>(1, quantile(x, probs.get(0), na_rm));
+        return r_vec<r_dbl>(1, quantile<Method>(x, probs.get(0), na_rm));
     }
 
     r_vec<r_dbl> out(n_probs, na<r_dbl>());
@@ -142,7 +164,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
         for (r_size_t i = 0; i < n_probs; ++i){
             const r_dbl p = probs.get(i);
             if (!is_na(p)){
-                out.set(i, r_dbl(internal::quantile_impl(x_data, n_ok, unwrap(p), true)));
+                out.set(i, r_dbl(internal::quantile_impl<Method>(x_data, n_ok, unwrap(p), true)));
             }
         }
     } else if (n_probs < 25){
@@ -159,7 +181,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
         for (r_size_t i = 0; i < n_probs; ++i){
             const r_dbl p = probs.get(i);
             if (!is_na(p)){
-                out.set(i, r_dbl(internal::quantile_impl(v.data(), n_ok, unwrap(p), false)));
+                out.set(i, r_dbl(internal::quantile_impl<Method>(v.data(), n_ok, unwrap(p), false)));
             }
         }
     } else {
@@ -174,7 +196,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
         for (r_size_t i = 0; i < n_probs; ++i){
             const r_dbl p = probs.get(i);
             if (!is_na(p)){
-                out.set(i, r_dbl(internal::quantile_impl(x_data, n_ok, unwrap(p), false, o_data)));
+                out.set(i, r_dbl(internal::quantile_impl<Method>(x_data, n_ok, unwrap(p), false, o_data)));
             }
         }
     }
