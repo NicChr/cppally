@@ -106,6 +106,34 @@ inline void move_nas_to_end(T* RESTRICT data, r_size_t n) {
 
 }
 
+// Use this overload if you have already generated an order permutation vector using `cppally::order()`
+// This is O(n) for n NAs as the number of NAs present need to be counted
+template <string_literal Method = "linear", RNumber T>
+inline r_dbl quantile(const r_vec<T>& x, r_dbl prob, const r_vec<r_int>& order, bool na_rm = false){
+    r_size_t n = x.length();
+
+    if (n == 0){
+        return na<r_dbl>();
+    }
+
+    // order permutation places NAs at end of vector, so just check the last
+    if (!na_rm){
+        T last = x.get(n - 1);
+        if (is_na(last)){
+            return na<r_dbl>();
+        }
+    }
+
+    // Count NAs (they should all be at the end of the vector after traversing via `order`)
+    r_size_t i = n;
+    while (i > 0 && is_na(x.get(unwrap(order.get(i - 1))))){
+        --i;
+    }
+    
+    r_size_t n_na = n - i;
+    return r_dbl(internal::quantile_impl<Method>(x.data(), n - n_na, unwrap(prob), false, order.data()));
+}
+
 template <string_literal Method = "linear", RNumber T>
 inline r_dbl quantile(const r_vec<T>& x, r_dbl prob, bool na_rm = false){
 
