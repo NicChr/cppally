@@ -49,7 +49,7 @@ inline r_dbl quantile_impl(T* x_data, r_size_t n_not_na, double p, bool sorted, 
     // gamma = np_m - j
 
     constexpr std::string_view method = Method.view();
-    static_assert(method == "weibull" || method == "linear" || method == "median_unbiased", "Method must be one of 'weibull', 'linear' or 'median_unbiased'");
+    static_assert(method == "weibull" || method == "linear" || method == "median_unbiased", "Quantile method must be: 'weibull', 'linear' (the default) or 'median_unbiased'");
 
     const bool order_exists = o;
 
