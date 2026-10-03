@@ -129,6 +129,11 @@ template <string_literal Method = "linear", RNumber T>
 inline r_vec<r_dbl> quantile(const r_vec<T>& x, r_vec<r_dbl> probs, const r_vec<r_int>& order, bool na_rm = false, bool check_order = true){
     
     r_size_t n = x.length();
+
+    if (n == 0){
+        return r_vec<r_dbl>();
+    }
+
     r_size_t n_probs = probs.length();
     internal::check_all_valid_probs(probs);
 
@@ -216,6 +221,12 @@ inline r_dbl quantile(const r_vec<T>& x, r_dbl prob, bool na_rm = false){
 template <string_literal Method = "linear", RNumber T>
 inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool na_rm = false){
 
+    const r_size_t n = x.length();
+
+    if (n == 0){
+        return r_vec<r_dbl>();
+    }
+
     const r_size_t n_probs = probs.length();
     internal::check_all_valid_probs(probs);
 
@@ -232,8 +243,6 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
     }
 
     r_vec<r_dbl> out(n_probs, na<r_dbl>());
-
-    const r_size_t n = x.length();
     const r_size_t n_na = x.na_count();
     const r_size_t n_ok = n - n_na;
 
