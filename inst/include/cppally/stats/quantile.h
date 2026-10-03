@@ -5,6 +5,8 @@
 #include <cppally/sort/is_sorted.h>
 #include <cppally/sort/sort.h>
 #include <cppally/string/string_literal.h>
+#include <cppally/named_arg.h>
+#include <cstdio>  // For snprintf
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -28,8 +30,7 @@ namespace cppally {
 namespace internal {
 
 // Assumes data has no NAs in first n elements.
-// Assumes n > 0
-// Assumes p is strictly in [0, 1]
+// Assumes p is in [0, 1]
 // If o is not nullptr, it overrides sorted. 
 //
 // ----- O(1) quantiles if data is already sorted or we know order permutation ---- 
@@ -37,7 +38,7 @@ namespace internal {
 // Supply `o`, a permutation ordering vector that sorts the data.
 // Method corresponds to numpy.quantile and can be "weibull", "linear", or "median_unbiased". The R equivalents are type 6, 7, and 8 respectively.
 template <string_literal Method, CppNumber T>
-inline r_dbl quantile_impl(T* x_data, r_size_t n_not_na, double p, bool sorted, const r_vec<r_int>* o = nullptr){
+inline r_dbl do_quantile(T* x_data, r_size_t n_not_na, double p, bool sorted, const r_vec<r_int>* o = nullptr){
 
     if (n_not_na == 0){
         return na<r_dbl>();
@@ -107,13 +108,16 @@ inline bool is_valid_prob(double p) noexcept {
     return p >= 0.0 && p <= 1.0;
 }
 
+inline void check_valid_prob(double p) {
+    if (!is_valid_prob(p)) [[unlikely]] {
+        abort("probability must be in [0, 1]");
+    }
+}
+
 inline void check_all_valid_probs(const r_vec<r_dbl>& probs){
-    r_size_t n_probs = probs.length();
+    const r_size_t n_probs = probs.length();
     for (r_size_t i = 0; i < n_probs; ++i){
-        const r_dbl p = probs.get(i);
-        if (!internal::is_valid_prob(p)) [[unlikely]] {
-            abort("probability must be in [0, 1]");
-        }
+        check_valid_prob(probs.get(i));
     }
 }
 
@@ -122,19 +126,65 @@ inline void move_nas_to_end(T* RESTRICT data, r_size_t n) {
     std::partition(data, data + n, [](T v){ return !is_na(v); });
 }
 
+inline r_vec<r_str> quantile_names(const r_vec<r_dbl>& probs){
+
+    r_size_t n_probs = probs.length();
+    r_vec<r_str> out(n_probs);
+
+    for (r_size_t i = 0; i < n_probs; ++i){
+        r_dbl prob = probs.get(i);
+        check_valid_prob(prob);
+
+        char buffer[16];
+        // To match R we use 7 significant digits to format the percentages
+        std::snprintf(buffer, sizeof(buffer), "%.7g%%", unwrap(prob) * 100.0);
+        r_str quantile_name = r_str(static_cast<const char*>(buffer));
+        out.set(i, quantile_name);
+    }
+    return out;
+}
+
+}
+
+template <string_literal Method = "linear", RNumber T>
+inline r_dbl quantile(const r_vec<T>& x, r_dbl prob, bool na_rm = false){
+
+    internal::check_valid_prob(prob);
+
+    const r_size_t n = x.length();
+
+    if (is_sorted(x)){
+        // NAs are at the tail end of the vector if they exist
+        const r_size_t n_na = internal::sorted_na_count(x);
+        if ((n_na > 0 && !na_rm) || n_na == n){
+            return na<r_dbl>();
+        }
+        return internal::do_quantile<Method>(x.data(), n - n_na, unwrap(prob), true);
+    }
+
+    const r_size_t n_na = x.na_count();
+
+    if (n_na > 0 && !na_rm){
+        return na<r_dbl>();
+    }
+
+    const auto* x_data = x.data();
+    std::vector<unwrap_t<T>> v(x_data, x_data + n);
+
+    if (n_na > 0){
+        internal::move_nas_to_end(v.data(), n);
+    }
+
+    return internal::do_quantile<Method>(v.data(), n - n_na, unwrap(prob), false);
 }
 
 // Use this overload if you have already generated an order permutation vector using `cppally::order()`
 // Time complexity is ~ O(N + n_probs) if check_order = true and O(N Nas + n_probs) 
 // otherwise because NAs need to be counted but are assumed to be at the end of the sorted vector
 template <string_literal Method = "linear", RNumber T>
-inline r_vec<r_dbl> quantile(const r_vec<T>& x, r_vec<r_dbl> probs, const r_vec<r_int>& order, bool na_rm = false, bool check_order = true){
+inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_int>& order, bool na_rm = false, bool check_order = true){
     
     r_size_t n = x.length();
-
-    if (n == 0){
-        return r_vec<r_dbl>();
-    }
 
     r_size_t n_probs = probs.length();
     internal::check_all_valid_probs(probs);
@@ -167,55 +217,24 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, r_vec<r_dbl> probs, const r_vec<
         n_na = n - i;
     }
 
-    // order permutation places NAs at end of vector, so just check the last
+    r_size_t n_ok = n - n_na;
+    r_vec<r_dbl> out(n_probs, na<r_dbl>());
+    // if (names){
+    //     out.set_names(internal::quantile_names(probs));
+    // }
+
     if (!na_rm && n_na > 0){
-        return r_vec<r_dbl>(n_probs, na<r_dbl>());
+        return out;
     }
 
-    r_size_t n_ok = n - n_na;
-    r_vec<r_dbl> out(n_probs);
     auto* x_data = x.data();
 
     for (r_size_t i = 0; i < n_probs; ++i){
         r_dbl prob = probs.get(i);
-        r_dbl q = internal::quantile_impl<Method>(x_data, n_ok, unwrap(prob), false, &order);
+        r_dbl q = internal::do_quantile<Method>(x_data, n_ok, unwrap(prob), false, &order);
         out.set(i, q);
     }
     return out;
-}
-
-template <string_literal Method = "linear", RNumber T>
-inline r_dbl quantile(const r_vec<T>& x, r_dbl prob, bool na_rm = false){
-
-    if (!internal::is_valid_prob(prob)) [[unlikely]] {
-        abort("probability must be in [0, 1]");
-    }
-
-    const r_size_t n = x.length();
-
-    if (is_sorted(x)){
-        // NAs are at the tail end of the vector if they exist
-        const r_size_t n_na = internal::sorted_na_count(x);
-        if ((n_na > 0 && !na_rm) || n_na == n){
-            return na<r_dbl>();
-        }
-        return internal::quantile_impl<Method>(x.data(), n - n_na, unwrap(prob), true);
-    }
-
-    const r_size_t n_na = x.na_count();
-
-    if (n_na > 0 && !na_rm){
-        return na<r_dbl>();
-    }
-
-    const auto* x_data = x.data();
-    std::vector<unwrap_t<T>> v(x_data, x_data + n);
-
-    if (n_na > 0){
-        internal::move_nas_to_end(v.data(), n);
-    }
-
-    return internal::quantile_impl<Method>(v.data(), n - n_na, unwrap(prob), false);
 }
 
 template <string_literal Method = "linear", RNumber T>
@@ -223,18 +242,16 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
 
     const r_size_t n = x.length();
 
-    if (n == 0){
-        return r_vec<r_dbl>();
-    }
-
     const r_size_t n_probs = probs.length();
     internal::check_all_valid_probs(probs);
 
-    if (n_probs == 0){
-        return r_vec<r_dbl>();
-    }
     if (n_probs == 1){
-        return r_vec<r_dbl>(1, quantile<Method>(x, probs.get(0), na_rm));
+        r_dbl q = quantile<Method>(x, probs.get(0), na_rm);
+        r_vec<r_dbl> out( {q} );
+        // if (names){
+        //     out.set_names(internal::quantile_names(probs));
+        // }
+        return out;
     }
 
     if (n_probs >= 25){
@@ -243,6 +260,9 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
     }
 
     r_vec<r_dbl> out(n_probs, na<r_dbl>());
+    // if (names){
+    //     out.set_names(internal::quantile_names(probs));
+    // }
     const r_size_t n_na = x.na_count();
     const r_size_t n_ok = n - n_na;
 
@@ -257,7 +277,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
         for (r_size_t i = 0; i < n_probs; ++i){
             const r_dbl p = probs.get(i);
             if (!is_na(p)){
-                out.set(i, internal::quantile_impl<Method>(x_data, n_ok, unwrap(p), true));
+                out.set(i, internal::do_quantile<Method>(x_data, n_ok, unwrap(p), true));
             }
         }
     } else {
@@ -274,7 +294,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
         for (r_size_t i = 0; i < n_probs; ++i){
             const r_dbl p = probs.get(i);
             if (!is_na(p)){
-                out.set(i, internal::quantile_impl<Method>(v.data(), n_ok, unwrap(p), false));
+                out.set(i, internal::do_quantile<Method>(v.data(), n_ok, unwrap(p), false));
             }
         }
     }
