@@ -123,38 +123,53 @@ inline void move_nas_to_end(T* RESTRICT data, r_size_t n) {
 }
 
 // Use this overload if you have already generated an order permutation vector using `cppally::order()`
-// This is O(n) for n NAs as the number of NAs present need to be counted
+// Time complexity is ~ O(N + n_probs) if check_order = true and O(N Nas + n_probs) 
+// otherwise because NAs need to be counted but are assumed to be at the end of the sorted vector
 template <string_literal Method = "linear", RNumber T>
-inline r_vec<r_dbl> quantile(const r_vec<T>& x, r_vec<r_dbl> probs, const r_vec<r_int>& order, bool na_rm = false){
+inline r_vec<r_dbl> quantile(const r_vec<T>& x, r_vec<r_dbl> probs, const r_vec<r_int>& order, bool na_rm = false, bool check_order = true){
     
     r_size_t n = x.length();
     r_size_t n_probs = probs.length();
     internal::check_all_valid_probs(probs);
 
-    if (n == 0){
-        return r_vec<r_dbl>();
+    if (order.length() != n) [[unlikely]] {
+        abort("`quantile()`: `x.length()` must equal `order.length()`");
+    }
+
+    r_size_t n_na = 0;
+    int upper = static_cast<int>(n) - 1;
+
+    auto* o_data = order.data();
+
+    if (check_order){
+        bool bad_index = false;
+        // Check the order permutation elements are valid and count NAs simultaneously 
+        for (r_size_t i = 0; i < n; ++i){
+            int idx = o_data[i];
+            n_na += is_na(x.get(i));
+    
+            bad_index = bad_index || idx < 0 || idx > upper;
+        }
+        if (bad_index) [[unlikely]] {
+            abort("`quantile()`: Invalid permutation index, indices must be in [0, n)");
+        }
+    } else {
+        // Count NAs but assuming they are at the end of sorted vector
+        r_size_t i = n;
+        while (i > 0 && is_na(x.get(o_data[i - 1]))){
+            --i;
+        }
+        n_na = n - i;
     }
 
     // order permutation places NAs at end of vector, so just check the last
-    if (!na_rm){
-        T last = x.get(order.get(n - 1));
-        if (is_na(last)){
-            return r_vec<r_dbl>( {na<r_dbl>()} );
-        }
+    if (!na_rm && n_na > 0){
+        return r_vec<r_dbl>(n_probs, na<r_dbl>());
     }
 
-    // Count NAs (they should all be at the end of the vector after traversing via `order`)
-    r_size_t i = n;
-    while (i > 0 && is_na(x.get(unwrap(order.get(i - 1))))){
-        --i;
-    }
-    
-    r_size_t n_na = n - i;
     r_size_t n_ok = n - n_na;
-
     r_vec<r_dbl> out(n_probs);
     auto* x_data = x.data();
-    auto* o_data = order.data();
 
     for (r_size_t i = 0; i < n_probs; ++i){
         r_dbl prob = probs.get(i);
@@ -213,7 +228,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
 
     if (n_probs >= 25){
         // Method that computes order permutation and re-uses it for fast repeated quantile estimation
-        return quantile(x, probs, order(x), na_rm);
+        return quantile<Method>(x, probs, order(x), na_rm);
     }
 
     r_vec<r_dbl> out(n_probs, na<r_dbl>());
