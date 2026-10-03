@@ -34,10 +34,10 @@ namespace internal {
 //
 // ----- O(1) quantiles if data is already sorted or we know order permutation ---- 
 // Supply sorted = true if you know the data is already sorted.
-// Supply `o`, a permutation ordering that sorts the data.
+// Supply `o`, a permutation ordering vector that sorts the data.
 // Method corresponds to numpy.quantile and can be "weibull", "linear", or "median_unbiased". The R equivalents are type 6, 7, and 8 respectively.
 template <string_literal Method, CppNumber T>
-inline r_dbl quantile_impl(T* x_data, r_size_t n_not_na, double p, bool sorted, const int* o = nullptr){
+inline r_dbl quantile_impl(T* x_data, r_size_t n_not_na, double p, bool sorted, const r_vec<r_int>* o = nullptr){
 
     if (n_not_na == 0){
         return na<r_dbl>();
@@ -50,6 +50,8 @@ inline r_dbl quantile_impl(T* x_data, r_size_t n_not_na, double p, bool sorted, 
 
     constexpr std::string_view method = Method.view();
     static_assert(method == "weibull" || method == "linear" || method == "median_unbiased", "Method must be one of 'weibull', 'linear' or 'median_unbiased'");
+
+    const bool order_exists = o;
 
     // Plotting position constants - see ?stats::quantile
     constexpr double a = method == "weibull" ? 0.0 : (method == "linear" ? 1.0 : 1.0 / 3.0);
@@ -69,10 +71,10 @@ inline r_dbl quantile_impl(T* x_data, r_size_t n_not_na, double p, bool sorted, 
     // nth_element() partitions the data so that x[j] is the j-th order statistic.
     // elements to the left are <= x[j] (but likely unsorted) and elements to the right are >= x[j] (also likely unsorted)
 
-    if (!sorted && !o){
+    if (!sorted && !order_exists){ // No need to partition if order permutation is supplied 
         std::nth_element(x_data, x_data + (j - 1), x_data + n_not_na);
     }
-    const double x_j = x_data[o ? o[j - 1] : j - 1]; // The value of quantile index if data were sorted (j-th order statistic)
+    const double x_j = x_data[order_exists ? unwrap(o->get(j - 1)) : j - 1]; // The value of quantile index if data were sorted (j-th order statistic)
 
     // If gamma is 0 then the j-th order statistic is exactly the quantile
     if (gamma <= 0.0 || j == n_not_na){
@@ -81,7 +83,7 @@ inline r_dbl quantile_impl(T* x_data, r_size_t n_not_na, double p, bool sorted, 
 
     // Since nth_element() guarantees elements to the right of x[j] are >= x[j]
     // x[j+1] is the min of that set such that x[j+1] >= x[j]
-    const double x_j1 = o ? x_data[o[j]] : (sorted ? x_data[j] : *std::min_element(x_data + j, x_data + n_not_na));
+    const double x_j1 = order_exists ? x_data[unwrap(o->get(j))] : (sorted ? x_data[j] : *std::min_element(x_data + j, x_data + n_not_na));
 
     // If it's a tie, return x[j]
     if (x_j1 == x_j){
@@ -144,13 +146,11 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, r_vec<r_dbl> probs, const r_vec<
     r_size_t n_na = 0;
     int upper = static_cast<int>(n) - 1;
 
-    auto* o_data = order.data();
-
     if (check_order){
         bool bad_index = false;
         // Check the order permutation elements are valid and count NAs simultaneously 
         for (r_size_t i = 0; i < n; ++i){
-            int idx = o_data[i];
+            int idx = order.get(i);
             n_na += is_na(x.get(i));
     
             bad_index = bad_index || idx < 0 || idx > upper;
@@ -161,7 +161,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, r_vec<r_dbl> probs, const r_vec<
     } else {
         // Count NAs but assuming they are at the end of sorted vector
         r_size_t i = n;
-        while (i > 0 && is_na(x.get(o_data[i - 1]))){
+        while (i > 0 && is_na(x.get(unwrap(order.get(i - 1))))){
             --i;
         }
         n_na = n - i;
@@ -178,7 +178,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, r_vec<r_dbl> probs, const r_vec<
 
     for (r_size_t i = 0; i < n_probs; ++i){
         r_dbl prob = probs.get(i);
-        r_dbl q = internal::quantile_impl<Method>(x_data, n_ok, unwrap(prob), false, o_data);
+        r_dbl q = internal::quantile_impl<Method>(x_data, n_ok, unwrap(prob), false, &order);
         out.set(i, q);
     }
     return out;
