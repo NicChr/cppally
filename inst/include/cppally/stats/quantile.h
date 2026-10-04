@@ -100,10 +100,28 @@ inline void check_all_valid_probs(const r_vec<r_dbl>& probs){
     }
 }
 
-template <CppNumber T>
-inline void move_nas_to_end(T* RESTRICT data, r_size_t n) {
-    std::partition(data, data + n, [](T v){ return !is_na(v); });
+// Filter out NAs, copying the non-NAs into a std::vector
+template <RNumber T>
+inline std::vector<unwrap_t<T>> filter_out_na(const r_vec<T>& x, r_size_t n_na){
+    const auto* x_data = x.data();
+    r_size_t n = x.length();
+
+    if (n_na == 0){
+        return std::vector<unwrap_t<T>>(x_data, x_data + n);
+    }
+    
+    std::vector<unwrap_t<T>> out;
+    out.reserve(n - n_na);
+
+    for (r_size_t i = 0; i < n; ++i){
+        if (!is_na(x_data[i])){
+            out.push_back(x_data[i]);
+        }
+    }
+
+    return out;
 }
+
 // ----- O(1) quantiles ----
 // Assumptions:
 // data is sorted or can be sorted by o*
@@ -314,12 +332,7 @@ inline r_dbl quantile(const r_vec<T>& x, double prob, bool na_rm = false){
         return na<r_dbl>();
     }
 
-    const auto* x_data = x.data();
-    std::vector<unwrap_t<T>> v(x_data, x_data + n);
-
-    if (n_na > 0){
-        internal::quantile_impl::move_nas_to_end(v.data(), n);
-    }
+    std::vector<unwrap_t<T>> v = internal::quantile_impl::filter_out_na(x, n_na);
 
     const double p = unwrap(prob);
     double q;
@@ -383,12 +396,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
 
         const r_size_t n_ok = n - n_na;
 
-        std::vector<unwrap_t<T>> v(x.data(), x.data() + n);
-
-        // Move NAs to the end of the vector
-        if (n_na > 0){
-            internal::quantile_impl::move_nas_to_end(v.data(), n);
-        }
+        std::vector<unwrap_t<T>> v = internal::quantile_impl::filter_out_na(x, n_na);
 
         internal::quantile_impl::do_quantiles<Method>(v.data(), n_ok, probs.data(), n_probs, out.data());
     } else {
