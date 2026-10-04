@@ -350,6 +350,8 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
         return out;
     }
 
+    constexpr int order_method_threshold = RIntegerType<T> ? 5 : 25;
+
     if (is_sorted(x)){
 
         const r_size_t n_na = internal::quantile_impl::sorted_na_count(x);
@@ -365,7 +367,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
             const r_dbl p = probs.get(i);
             out.set(i, internal::quantile_impl::do_quantile<Method>(x_data, n_ok, unwrap(p)));
         }
-    } else if (n_probs < 25) {
+    } else if (n_probs < order_method_threshold) {
 
         // Use multi-partitioning via nth_elements()
 
