@@ -236,41 +236,6 @@ inline r_vec<r_str> quantile_names(const r_vec<r_dbl>& probs){
 
 }
 
-template <string_literal Method = "linear", RNumber T>
-inline r_dbl quantile(const r_vec<T>& x, double prob, bool na_rm = false){
-
-    internal::quantile_impl::check_valid_prob(prob);
-
-    const r_size_t n = x.length();
-
-    if (is_sorted(x)){
-        // NAs are at the tail end of the vector if they exist
-        const r_size_t n_na = internal::quantile_impl::sorted_na_count(x);
-        if ((n_na > 0 && !na_rm) || n_na == n){
-            return na<r_dbl>();
-        }
-        return internal::quantile_impl::do_quantile<Method>(x.data(), n - n_na, unwrap(prob));
-    }
-
-    const r_size_t n_na = x.na_count();
-
-    if (n_na > 0 && !na_rm){
-        return na<r_dbl>();
-    }
-
-    const auto* x_data = x.data();
-    std::vector<unwrap_t<T>> v(x_data, x_data + n);
-
-    if (n_na > 0){
-        internal::quantile_impl::move_nas_to_end(v.data(), n);
-    }
-
-    const double p = unwrap(prob);
-    double q;
-    internal::quantile_impl::do_quantiles<Method>(v.data(), n - n_na, &p, 1, &q);
-    return r_dbl(q);
-}
-
 // Use this overload if you have already generated an order permutation vector using `cppally::order()`
 template <string_literal Method = "linear", RNumber T>
 inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_int>& order, bool na_rm = false, bool names = true, bool check_order = true){
@@ -324,6 +289,45 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const
 }
 
 template <string_literal Method = "linear", RNumber T>
+inline r_dbl quantile(const r_vec<T>& x, double prob, bool na_rm = false){
+
+    internal::quantile_impl::check_valid_prob(prob);
+
+    const r_size_t n = x.length();
+
+    if (is_sorted(x)){
+        // NAs are at the tail end of the vector if they exist
+        const r_size_t n_na = internal::quantile_impl::sorted_na_count(x);
+        if ((n_na > 0 && !na_rm) || n_na == n){
+            return na<r_dbl>();
+        }
+        return internal::quantile_impl::do_quantile<Method>(x.data(), n - n_na, unwrap(prob));
+    }
+
+    if constexpr (RIntegerNumber<T>){
+        return quantile<Method>(x, r_vec<r_dbl>( {r_dbl(prob)} ), order(x), na_rm, /*names = */ false, /*check_order = */ false).get(0);
+    }
+
+    const r_size_t n_na = x.na_count();
+
+    if (n_na > 0 && !na_rm){
+        return na<r_dbl>();
+    }
+
+    const auto* x_data = x.data();
+    std::vector<unwrap_t<T>> v(x_data, x_data + n);
+
+    if (n_na > 0){
+        internal::quantile_impl::move_nas_to_end(v.data(), n);
+    }
+
+    const double p = unwrap(prob);
+    double q;
+    internal::quantile_impl::do_quantiles<Method>(v.data(), n - n_na, &p, 1, &q);
+    return r_dbl(q);
+}
+
+template <string_literal Method = "linear", RNumber T>
 inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool na_rm = false, bool names = true){
 
     const r_size_t n = x.length();
@@ -349,7 +353,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
     }
 
     // integer-based `order()` is very fast, so lower threshold for that
-    constexpr int order_method_threshold = RIntegerType<T> ? 5 : 25;
+    constexpr int order_method_threshold = RIntegerType<T> ? 2 : 25;
 
     if (is_sorted(x)){
 
