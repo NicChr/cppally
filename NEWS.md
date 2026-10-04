@@ -274,6 +274,9 @@ argument names on re-registration.
 
 ## Other new features
 
+- New highly efficient stats function `cppally::quantile()`, 
+a C++ implementation of R's `stats:::quantile.default`.
+
 - `r_vec<>` gains two new `initializer_list` constructors, one for
 constructing unnamed vectors, and another for constructing named vectors.
 
