@@ -246,6 +246,10 @@ giving a fractional answer that is slightly less than 1 month.
 
 - Speed improvements to logical operators of `r_lgl`.
 
+- User-supplied `[[cppally::init]]` routines are now placed around
+  try/catch blocks to catch C++ exceptions (or R errors which
+  `cppally::abort()` converts into C++ exceptions).
+
 - Sorting speed has been improved for both character vectors and numeric
   vectors. Sorting is faster for character vectors when there are a
   relatively high proportion of unique strings. Sorting is also
@@ -289,8 +293,6 @@ giving a fractional answer that is slightly less than 1 month.
   R/C++ registered functions are now registered with the R C API tag
   `attribute_hidden`.
 
-- `r_vec<>` gains an `initializer_list` constructor.
-
 - Auto-generated C++ code for R function registration now uses a tidier
   naming convention for generated lambda arguments in registered
   template functions. Previously “\_internal” was appended to each arg.
@@ -300,6 +302,14 @@ giving a fractional answer that is slightly less than 1 month.
   names on re-registration.
 
 ### Other new features
+
+- New highly efficient stats function
+  [`cppally::quantile()`](https://rdrr.io/r/stats/quantile.html), a C++
+  implementation of R’s `stats:::quantile.default`.
+
+- `r_vec<>` gains two new `initializer_list` constructors, one for
+  constructing unnamed vectors, and another for constructing named
+  vectors.
 
 - New function `scalar_coerce`. Use this with `allow_lossy = true` if
   you want to return `NA` instead of an error on a completely lossy
@@ -343,6 +353,10 @@ giving a fractional answer that is slightly less than 1 month.
 
 - New class `string_literal` to facilitate compile-time string literal
   NTTP programming.
+
+- New relational operators between `r_str_view` and `std::string_view`,
+  allowing for comparing cppally strings to string literals, like:
+  `r_str("A") == "A"`. `NA` strings return `NA`: `r_str::na() == "A"`.
 
 - R function `cpp_eval` gains a new argument, `cppally_header`, allowing
   one to compile expressions using the optional light header
