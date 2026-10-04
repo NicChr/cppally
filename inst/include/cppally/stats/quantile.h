@@ -179,8 +179,6 @@ inline r_dbl quantile(const r_vec<T>& x, r_dbl prob, bool na_rm = false){
 }
 
 // Use this overload if you have already generated an order permutation vector using `cppally::order()`
-// Time complexity is ~ O(N + n_probs) if check_order = true and O(N Nas + n_probs) 
-// otherwise because NAs need to be counted but are assumed to be at the end of the sorted vector
 template <string_literal Method = "linear", RNumber T>
 inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_int>& order, bool na_rm = false, bool check_order = true){
     
@@ -195,7 +193,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const
 
     if (check_order){
         bool bad_index = false;
-        // Check the order permutation elements are valid and count NAs simultaneously 
+        // Check the order permutation elements are valid
         for (r_size_t i = 0; i < n; ++i){
             int idx = order.get(i);
             bad_index |= static_cast<unsigned>(idx) >= static_cast<unsigned>(n);
@@ -249,25 +247,26 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
         return out;
     }
 
-    if (n_probs >= 25){
-        // Method that computes order permutation and re-uses it for fast repeated quantile estimation
-        return quantile<Method>(x, probs, order(x), na_rm, false);
-    }
-
     r_vec<r_dbl> out(n_probs, na<r_dbl>());
-    // if (names){
-    //     out.set_names(internal::quantile_names(probs));
-    // }
-    const r_size_t n_na = x.na_count();
-    const r_size_t n_ok = n - n_na;
 
-    if ((n_na > 0 && !na_rm) || n_na == n){
+    if (n_probs == 0){
         return out;
     }
 
-    bool sorted = is_sorted(x);
+    // if (names){
+    //     out.set_names(internal::quantile_names(probs));
+    // }
 
-    if (sorted){
+    if (is_sorted(x)){
+
+        const r_size_t n_na = internal::sorted_na_count(x);
+
+        if ((n_na > 0 && !na_rm) || n_na == n){
+            return out;
+        }
+
+        const r_size_t n_ok = n - n_na;
+
         auto* x_data = x.data();
         for (r_size_t i = 0; i < n_probs; ++i){
             const r_dbl p = probs.get(i);
@@ -275,9 +274,16 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
                 out.set(i, internal::do_quantile<Method>(x_data, n_ok, unwrap(p), true));
             }
         }
-    } else {
-        
+    } else if (n_probs < 25) {
         // If number of probs is small, it's faster to compute them (via nth_element())
+
+        const r_size_t n_na = x.na_count();
+    
+        if ((n_na > 0 && !na_rm) || n_na == n){
+            return out;
+        }
+
+        const r_size_t n_ok = n - n_na;
 
         std::vector<unwrap_t<T>> v(x.data(), x.data() + n);
 
@@ -292,6 +298,9 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
                 out.set(i, internal::do_quantile<Method>(v.data(), n_ok, unwrap(p), false));
             }
         }
+    } else {
+        // Method that computes order permutation and re-uses it for fast repeated quantile estimation
+        return quantile<Method>(x, probs, order(x), na_rm, false);
     }
     return out;
 }
