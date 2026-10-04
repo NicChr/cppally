@@ -29,20 +29,16 @@ namespace cppally {
 
 namespace internal {
 
-// Assumes data has no NAs in first n elements.
-// Assumes p is in [0, 1]
-// If o is not nullptr, it overrides sorted. 
-//
-// ----- O(1) quantiles if data is already sorted or we know order permutation ---- 
-// Supply sorted = true if you know the data is already sorted.
-// Supply `o`, a permutation ordering vector that sorts the data.
-// Method corresponds to numpy.quantile and can be "weibull", "linear", or "median_unbiased". The R equivalents are type 6, 7, and 8 respectively.
-template <string_literal Method, CppNumber T>
-inline r_dbl do_quantile(T* x_data, r_size_t n_not_na, double p, bool sorted, const r_vec<r_int>* o = nullptr){
+namespace quantile_impl {
 
-    if (n_not_na == 0){
-        return na<r_dbl>();
-    }
+struct quantile_position {
+    r_size_t j; // 1-indexed
+    double gamma;
+};
+
+// Assumes n_not_na > 0
+template <string_literal Method>
+inline quantile_position get_quantile_position(r_size_t n_not_na, double p) noexcept {
 
     // m = a + p(1 - a - b)
     // np_m = np + m
@@ -51,8 +47,6 @@ inline r_dbl do_quantile(T* x_data, r_size_t n_not_na, double p, bool sorted, co
 
     constexpr std::string_view method = Method.view();
     static_assert(method == "weibull" || method == "linear" || method == "median_unbiased", "Quantile method must be: 'weibull', 'linear' (the default) or 'median_unbiased'");
-
-    const bool order_exists = o;
 
     // Plotting position constants - see ?stats::quantile
     constexpr double a = method == "weibull" ? 0.0 : (method == "linear" ? 1.0 : 1.0 / 3.0);
@@ -68,32 +62,19 @@ inline r_dbl do_quantile(T* x_data, r_size_t n_not_na, double p, bool sorted, co
             gamma = 0.0;
         }
     }
-
-    // nth_element() partitions the data so that x[j] is the j-th order statistic.
-    // elements to the left are <= x[j] (but likely unsorted) and elements to the right are >= x[j] (also likely unsorted)
-
-    if (!sorted && !order_exists){ // No need to partition if order permutation is supplied 
-        std::nth_element(x_data, x_data + (j - 1), x_data + n_not_na);
-    }
-    const double x_j = x_data[order_exists ? unwrap(o->get(j - 1)) : j - 1]; // The value of quantile index if data were sorted (j-th order statistic)
-
-    // If gamma is 0 then the j-th order statistic is exactly the quantile
-    if (gamma <= 0.0 || j == n_not_na){
-        return r_dbl(x_j);
-    }
-
-    // Since nth_element() guarantees elements to the right of x[j] are >= x[j]
-    // x[j+1] is the min of that set such that x[j+1] >= x[j]
-    const double x_j1 = order_exists ? x_data[unwrap(o->get(j))] : (sorted ? x_data[j] : *std::min_element(x_data + j, x_data + n_not_na));
-
-    // If it's a tie, return x[j]
-    if (x_j1 == x_j){
-        return r_dbl(x_j);
-    }
-    // Qi(p) = (1 − γ)x[j] + γx[j+1]
-    return r_dbl((1.0 - gamma) * x_j + gamma * x_j1);
+    return {j, gamma};
 }
 
+inline double interpolate_quantile(double x_j, double x_j1, double gamma) noexcept {
+    // If it's a tie, return x[j]
+    if (x_j1 == x_j){
+        return x_j;
+    }
+    // Qi(p) = (1 − γ)x[j] + γx[j+1]
+    return (1.0 - gamma) * x_j + gamma * x_j1;
+}
+
+// Count of NAs assuming x is sorted such that NAs are bundled at the tail end
 template <RNumber T>
 inline r_size_t sorted_na_count(const r_vec<T>& x){
     const r_size_t n = x.length();
@@ -126,6 +107,44 @@ inline void move_nas_to_end(T* RESTRICT data, r_size_t n) {
     std::partition(data, data + n, [](T v){ return !is_na(v); });
 }
 
+// Assumes data has no NAs in first n elements.
+// Assumes p is in [0, 1]
+// If o is not nullptr, it overrides sorted. 
+//
+// ----- O(1) quantiles if data is already sorted or we know order permutation ---- 
+// Supply sorted = true if you know the data is already sorted.
+// Supply `o`, a permutation ordering vector that sorts the data.
+// Method corresponds to numpy.quantile and can be "weibull", "linear", or "median_unbiased". The R equivalents are type 6, 7, and 8 respectively.
+template <string_literal Method, CppNumber T>
+inline r_dbl do_quantile(T* x_data, r_size_t n_not_na, double p, bool sorted, const r_vec<r_int>* o = nullptr){
+
+    if (n_not_na == 0){
+        return na<r_dbl>();
+    }
+
+    const bool order_exists = o;
+
+    const auto [j, gamma] = get_quantile_position<Method>(n_not_na, p);
+
+    // nth_element() partitions the data so that x[j] is the j-th order statistic.
+    // elements to the left are <= x[j] (but likely unsorted) and elements to the right are >= x[j] (also likely unsorted)
+
+    if (!sorted && !order_exists){ // No need to partition if order permutation is supplied 
+        std::nth_element(x_data, x_data + (j - 1), x_data + n_not_na);
+    }
+    const double x_j = x_data[order_exists ? unwrap(o->get(j - 1)) : j - 1]; // The value of quantile index if data were sorted (j-th order statistic)
+
+    // If gamma is 0 then the j-th order statistic is exactly the quantile
+    if (gamma <= 0.0 || j == n_not_na){
+        return r_dbl(x_j);
+    }
+
+    // Since nth_element() guarantees elements to the right of x[j] are >= x[j]
+    // x[j+1] is the min of that set such that x[j+1] >= x[j]
+    const double x_j1 = order_exists ? x_data[unwrap(o->get(j))] : (sorted ? x_data[j] : *std::min_element(x_data + j, x_data + n_not_na));
+    return r_dbl(interpolate_quantile(x_j, x_j1, gamma));
+}
+
 inline r_vec<r_str> quantile_names(const r_vec<r_dbl>& probs){
 
     r_size_t n_probs = probs.length();
@@ -144,22 +163,24 @@ inline r_vec<r_str> quantile_names(const r_vec<r_dbl>& probs){
     return out;
 }
 
+} // quantile_impl namespace
+
 }
 
 template <string_literal Method = "linear", RNumber T>
 inline r_dbl quantile(const r_vec<T>& x, r_dbl prob, bool na_rm = false){
 
-    internal::check_valid_prob(prob);
+    internal::quantile_impl::check_valid_prob(prob);
 
     const r_size_t n = x.length();
 
     if (is_sorted(x)){
         // NAs are at the tail end of the vector if they exist
-        const r_size_t n_na = internal::sorted_na_count(x);
+        const r_size_t n_na = internal::quantile_impl::sorted_na_count(x);
         if ((n_na > 0 && !na_rm) || n_na == n){
             return na<r_dbl>();
         }
-        return internal::do_quantile<Method>(x.data(), n - n_na, unwrap(prob), true);
+        return internal::quantile_impl::do_quantile<Method>(x.data(), n - n_na, unwrap(prob), true);
     }
 
     const r_size_t n_na = x.na_count();
@@ -172,10 +193,10 @@ inline r_dbl quantile(const r_vec<T>& x, r_dbl prob, bool na_rm = false){
     std::vector<unwrap_t<T>> v(x_data, x_data + n);
 
     if (n_na > 0){
-        internal::move_nas_to_end(v.data(), n);
+        internal::quantile_impl::move_nas_to_end(v.data(), n);
     }
 
-    return internal::do_quantile<Method>(v.data(), n - n_na, unwrap(prob), false);
+    return internal::quantile_impl::do_quantile<Method>(v.data(), n - n_na, unwrap(prob), false);
 }
 
 // Use this overload if you have already generated an order permutation vector using `cppally::order()`
@@ -185,7 +206,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const
     r_size_t n = x.length();
 
     r_size_t n_probs = probs.length();
-    internal::check_all_valid_probs(probs);
+    internal::quantile_impl::check_all_valid_probs(probs);
 
     if (order.length() != n) [[unlikely]] {
         abort("`quantile()`: `x.length()` must equal `order.length()`");
@@ -213,7 +234,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const
     r_size_t n_ok = n - n_na;
     r_vec<r_dbl> out(n_probs, na<r_dbl>());
     // if (names){
-    //     out.set_names(internal::quantile_names(probs));
+    //     out.set_names(internal::quantile_impl::quantile_names(probs));
     // }
 
     if (!na_rm && n_na > 0){
@@ -224,7 +245,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const
 
     for (r_size_t i = 0; i < n_probs; ++i){
         r_dbl prob = probs.get(i);
-        r_dbl q = internal::do_quantile<Method>(x_data, n_ok, unwrap(prob), false, &order);
+        r_dbl q = internal::quantile_impl::do_quantile<Method>(x_data, n_ok, unwrap(prob), false, &order);
         out.set(i, q);
     }
     return out;
@@ -236,13 +257,13 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
     const r_size_t n = x.length();
 
     const r_size_t n_probs = probs.length();
-    internal::check_all_valid_probs(probs);
+    internal::quantile_impl::check_all_valid_probs(probs);
 
     if (n_probs == 1){
         r_dbl q = quantile<Method>(x, probs.get(0), na_rm);
         r_vec<r_dbl> out( {q} );
         // if (names){
-        //     out.set_names(internal::quantile_names(probs));
+        //     out.set_names(internal::quantile_impl::quantile_names(probs));
         // }
         return out;
     }
@@ -254,12 +275,12 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
     }
 
     // if (names){
-    //     out.set_names(internal::quantile_names(probs));
+    //     out.set_names(internal::quantile_impl::quantile_names(probs));
     // }
 
     if (is_sorted(x)){
 
-        const r_size_t n_na = internal::sorted_na_count(x);
+        const r_size_t n_na = internal::quantile_impl::sorted_na_count(x);
 
         if ((n_na > 0 && !na_rm) || n_na == n){
             return out;
@@ -271,7 +292,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
         for (r_size_t i = 0; i < n_probs; ++i){
             const r_dbl p = probs.get(i);
             if (!is_na(p)){
-                out.set(i, internal::do_quantile<Method>(x_data, n_ok, unwrap(p), true));
+                out.set(i, internal::quantile_impl::do_quantile<Method>(x_data, n_ok, unwrap(p), true));
             }
         }
     } else if (n_probs < 25) {
@@ -289,13 +310,13 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
 
         // Move NAs to the end of the vector
         if (n_na > 0){
-            internal::move_nas_to_end(v.data(), n);
+            internal::quantile_impl::move_nas_to_end(v.data(), n);
         }
 
         for (r_size_t i = 0; i < n_probs; ++i){
             const r_dbl p = probs.get(i);
             if (!is_na(p)){
-                out.set(i, internal::do_quantile<Method>(v.data(), n_ok, unwrap(p), false));
+                out.set(i, internal::quantile_impl::do_quantile<Method>(v.data(), n_ok, unwrap(p), false));
             }
         }
     } else {
