@@ -241,7 +241,7 @@ inline r_vec<r_str> quantile_names(const r_vec<r_dbl>& probs){
 }
 
 template <string_literal Method = "linear", RNumber T>
-inline r_dbl quantile(const r_vec<T>& x, r_dbl prob, bool na_rm = false){
+inline r_dbl quantile(const r_vec<T>& x, double prob, bool na_rm = false){
 
     internal::quantile_impl::check_valid_prob(prob);
 
