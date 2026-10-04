@@ -145,7 +145,7 @@ inline void nth_elements(T* x_data, const r_size_t begin, const r_size_t end, co
 
     // Pivot on the last target that is <= the middle of the range (or the first target if none)
     const r_size_t middle = begin + ( (end - begin) / 2 );
-    const r_size_t pivot_idx = std::max((std::upper_bound(targets, targets + n_targets, middle) - targets) - 1, r_size_t(0));
+    const r_size_t pivot_idx = std::max<r_size_t>((std::upper_bound(targets, targets + n_targets, middle) - targets) - 1, 0);
     const r_size_t pivot = targets[pivot_idx];
 
     // Partition data so that x[pivot] such that:
