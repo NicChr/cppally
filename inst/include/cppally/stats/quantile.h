@@ -175,18 +175,14 @@ inline void nth_elements(T* x_data, const r_size_t begin, const r_size_t end, co
 template <string_literal Method, CppNumber T>
 inline void do_quantiles(T* x_data, r_size_t n_not_na, const double* probs, const r_size_t n_probs, double* out){
 
-    // Two vectors: 
-    // quantile_positions holds the original quantile positions in the requested order with possible duplicates
     // targets holds the de-duplicated and sorted quantile position indices necessary for nth_elements()
-    std::vector<quantile_position> quantile_positions(n_probs);
     std::vector<r_size_t> targets(n_probs);
 
     for (r_size_t i = 0; i < n_probs; ++i){
-        quantile_positions[i] = get_quantile_position<Method>(n_not_na, probs[i]);
-        targets[i] = quantile_positions[i].j - 1;
+        targets[i] = get_quantile_position<Method>(n_not_na, probs[i]).j - 1;
     }
     // Sort and de-duplicate the quantile positions
-    // The quantiles will be returned in the user-requested order regardless because we kept the original positions
+    // The quantiles will be returned in the user-requested order regardless because the main loop walks along `probs`
     std::sort(targets.begin(), targets.end());
     targets.erase(std::unique(targets.begin(), targets.end()), targets.end());
 
@@ -194,7 +190,7 @@ inline void do_quantiles(T* x_data, r_size_t n_not_na, const double* probs, cons
     nth_elements(x_data, r_size_t(0), n_not_na, targets.data(), static_cast<r_size_t>(targets.size()));
 
     for (r_size_t i = 0; i < n_probs; ++i){
-        const auto [j, gamma] = quantile_positions[i]; // quantile position i (and associated gamma)
+        const auto [j, gamma] = get_quantile_position<Method>(n_not_na, probs[i]); // quantile position i (and associated gamma)
         const double x_j = x_data[j - 1]; // j-th order statistic
 
         // If gamma is 0 then the j-th order statistic is exactly the quantile
