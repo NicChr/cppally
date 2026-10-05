@@ -22,10 +22,27 @@ void check_groups_span_data(const T& x, const groups& g){
     }
 }
 
-inline void sort_group_order_by_size(std::vector<int>& group_order, const int* p_bounds){
-    std::sort(group_order.begin(), group_order.end(), [p_bounds](int a, int b){
-        return p_bounds[a] < p_bounds[b];
-    });
+// Group IDs in order of group size (ascending)
+inline std::vector<int> group_order_by_size(const int* p_counts, int ng){
+
+    std::vector<int> group_order(ng);
+
+    int max_size = 0;
+    for (int j = 0; j < ng; ++j) max_size = std::max(max_size, p_counts[j]);
+
+    std::vector<int> offsets(static_cast<std::size_t>(max_size) + 1, 0);
+    for (int j = 0; j < ng; ++j) ++offsets[p_counts[j]];
+    
+    int total = 0;
+    for (int& offset : offsets){
+        int size_count = offset;
+        offset = total;
+        total += size_count;
+    }
+    for (int j = 0; j < ng; ++j){
+        group_order[offsets[p_counts[j]]++] = j;
+    }
+    return group_order;
 }
 
 template <bool SeedFromFirst, RVal T, typename Acc, typename F>
@@ -187,12 +204,7 @@ auto apply_by_group(const T& x, const groups& g, F fn) {
     // We end up reusing the buffer frequently
     // and in low cardinality situations (where length(unique(g)) is small), there aren't many
     // allocations anyway.
-    std::vector<int> group_order;
-    group_order.reserve(ng);
-    for (int j = 0; j < ng; ++j){
-        group_order.push_back(j);
-    }
-    internal::sort_group_order_by_size(group_order, p_bounds);
+    std::vector<int> group_order = internal::group_order_by_size(p_bounds, ng);
 
     // Overwrite the group counts into group "ends" (the start indices of the next group)
     for (int j = 1; j < ng; ++j){
