@@ -246,18 +246,8 @@ struct r_factors {
 
     // First lookup: linear scan over the levels STRSXP.
     r_vec<r_str_view> levels_attr = levels();
-    if (levels_attr.is_null()) [[unlikely]] {
-      return no_match;
-    }
-    r_size_t n = levels_attr.length();
-    auto key = unwrap(val);
-    const auto* RESTRICT p = levels_attr.data();
-    for (r_size_t i = 0; i < n; ++i) {
-      if (p[i] == key){
-        return r_int(static_cast<int>(i) + 1);
-      }
-    }
-    return no_match;
+    r_int out = internal::coerce_number<r_int>(levels_attr.find_first(val)) + r_int(1);
+    return is_na(out) ? no_match : out;
   }
 
   r_int get_code(const char* val, r_int no_match = na<r_int>()) const {
