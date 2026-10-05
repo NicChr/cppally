@@ -432,15 +432,19 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
         out.set_names(internal::quantile_impl::quantile_names(probs));
     }
 
-    const r_vec<r_int> o = order(x);
+    r_vec<r_int> o = order(x);
+
+    const auto* x_data = x.data();
+    const double* w_data = weights.data();
+    int* o_data = o.data();
 
     // NAs are at the tail end after sorting x using order vector above
     // Ignore all values (including NAs) with zero-weight
     r_size_t n_ok = n;
     bool weighted_na = false;
-    while (n_ok > 0 && is_na(x.get(unwrap(o.get(n_ok - 1))))){
-        r_dbl w_na = weights.get(unwrap(o.get(n_ok - 1)));
-        weighted_na |= is_na(w_na) || unwrap(w_na) != 0.0;
+    while (n_ok > 0 && is_na(x_data[o_data[n_ok - 1]])){
+        double w_na = w_data[o_data[n_ok - 1]];
+        weighted_na |= is_na(w_na) || w_na != 0.0;
         --n_ok;
     }
 
@@ -448,17 +452,14 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
         return out;
     }
 
-    const auto* x_data = x.data();
-    const double* w_data = weights.data();
-    std::vector<unwrap_t<T>> x_sorted;
     std::vector<double> cumulative_weights;
-    x_sorted.reserve(n_ok);
     cumulative_weights.reserve(n_ok);
     double total_w = 0.0;
+    r_size_t n_pos = 0; // Number of values (non-NA) with weight > 0
 
     for (r_size_t i = 0; i < n_ok; ++i){
-        
-        int idx = unwrap(o.get(i));
+
+        int idx = o_data[i];
         double w_i = w_data[idx];
 
         if (is_na(w_i) || w_i < 0.0 || r_dbl(w_i).is_infinite()) [[unlikely]] {
@@ -468,11 +469,10 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
             continue;
         }
         total_w += w_i;
-        x_sorted.push_back(x_data[idx]);
+        // Keep indices with weight > 0 at the front
+        o_data[n_pos++] = idx;
         cumulative_weights.push_back(total_w);
     }
-
-    r_size_t n_pos = static_cast<r_size_t>(x_sorted.size());
 
     // All weights are zero
     if (n_pos == 0){
@@ -494,13 +494,13 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
         }
 
         const auto [j, gamma] = internal::quantile_impl::get_quantile_position<Method>(n_pos, p, &np_w);
-        double x_j = x_sorted[j - 1];
+        double x_j = x_data[o_data[j - 1]];
 
         // If gamma is 0 then the j-th order statistic is exactly the quantile
         if (gamma == 0.0){
             out.set(i, r_dbl(x_j));
         } else {
-            out.set(i, r_dbl(internal::quantile_impl::interpolate_quantile(x_j, x_sorted[j], gamma)));
+            out.set(i, r_dbl(internal::quantile_impl::interpolate_quantile(x_j, x_data[o_data[j]], gamma)));
         }
     }
     return out;
