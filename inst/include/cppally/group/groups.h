@@ -7,6 +7,7 @@
 #include <cppally/coerce.h>
 #include <cppally/hash/hash.h>
 #include <cppally/group/dense_int_map.h>
+#include <cppally/sort/counting_order.h>
 #include <cppally/random/random_stream.h>
 #include <cppally/identical.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
@@ -84,23 +85,6 @@ inline int run_end(const int* RESTRICT p, int i, int n) noexcept {
         }
     }
     return lo;
-}
-
-// Counting sort: 
-// positions [0, n) ordered by keys in [0, n_keys)
-inline void counting_order(const int* RESTRICT p_keys, int n, int n_keys, int* RESTRICT p_out){
-
-    std::vector<uint32_t> offsets(static_cast<std::size_t>(n_keys), uint32_t(0));
-    for (int i = 0; i < n; ++i) ++offsets[p_keys[i]];
-
-    uint32_t total = 0;
-    for (uint32_t& offset : offsets){
-        uint32_t key_count = offset;
-        offset = total;
-        total += key_count;
-    }
-
-    for (int i = 0; i < n; ++i) p_out[offsets[p_keys[i]]++] = i;
 }
 
 }
@@ -241,10 +225,13 @@ struct groups {
           return out;
   
       } else {
-          r_size_t n = ids.length();
+          int n = ids.length();
           r_vec<r_int> out(n);
-          // Count sort
-          internal::counting_order(ids.data(), n, n_groups, out.data());
+          const int* RESTRICT p_ids = ids.data();
+          internal::counting_order(
+              [p_ids](int i){ return static_cast<uint32_t>(p_ids[i]); },
+              n, static_cast<uint32_t>(n_groups), out.data()
+          );
           return out;
       }
   }

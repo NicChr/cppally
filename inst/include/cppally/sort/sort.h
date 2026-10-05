@@ -16,6 +16,7 @@
 #include <cppally/hash/hash.h>
 #include <cppally/stats/range.h> // For range
 #include <cppally/sort/is_sorted.h>
+#include <cppally/sort/counting_order.h>
 #include <cstdint> // For uint32_t and similar
 #include <cstring> // For strcmp
 #include <vector> // For C++ vectors
@@ -202,36 +203,18 @@ inline r_vec<r_int> order(const T& x) {
     // Use counting sort for small range
     if (int_count_usable) {
 
-        std::vector<uint32_t> counts(range_size, 0);
-
-        // First pass: count occurrences (ignore NAs)
-        for (uint32_t i = 0; i < n; ++i) {
-            base_t v = p_x[i];
-            if (!is_na(v)) {
-                counts[static_cast<std::size_t>(v - lo)]++;
-            }
-        }
-
-        // Prefix sum: counts[i] becomes the starting position for value i
-        uint32_t total = 0;
-        for (std::size_t i = 0; i < range_size; ++i) {
-            uint32_t old_count = counts[i];
-            counts[i] = total;
-            total += old_count;
-        }
-
-        // Write indices in sorted order (stable)
         r_vec<r_int> out(static_cast<r_size_t>(n));
-        int* RESTRICT p_out = out.data();
-        for (uint32_t i = 0; i < n; ++i) {
-            base_t v = p_x[i];
-            if (is_na(v)) {
-                // Append NAs at end (preserving input order)
-                p_out[total++] = static_cast<int>(i);
-            } else {
-                p_out[counts[static_cast<std::size_t>(v - lo)]++] = static_cast<int>(i);
-            }
-        }
+
+        // NAs are placed in the last bucket last bucket to ensure they are at the end of the input order
+        uint32_t na_key = static_cast<uint32_t>(range_size);
+
+        internal::counting_order(
+            [p_x, lo, na_key](int i){
+                base_t v = p_x[i];
+                return is_na(v) ? na_key : static_cast<uint32_t>(v - lo);
+            },
+            static_cast<int>(n), na_key + 1, out.data()
+        );
         return out;
     }
 
