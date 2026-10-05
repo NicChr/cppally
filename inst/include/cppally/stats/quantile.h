@@ -413,8 +413,8 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
     return out;
 }
 
-// Matthew Kay's method
-// Zero-weight values are dropped as values with zero weights are treated as not-applicable.
+// Weighted quantile using relative weights using Matthew Kay's method.
+// Important: Zero-weight values are dropped as values with zero weights are treated as not 'important'.
 template <string_literal Method = "linear", RNumber T>
 inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_dbl>& weights, bool na_rm = false, bool names = true){
 
