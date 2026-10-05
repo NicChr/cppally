@@ -106,6 +106,24 @@ inline void check_all_valid_probs(const r_vec<r_dbl>& probs){
     }
 }
 
+inline void check_order(r_size_t n, const r_vec<r_int>& order){
+    
+    if (order.length() != n) [[unlikely]] {
+        abort("length of vector must equal `order.length()`");
+    }
+    
+    bool bad_index = false;
+
+    // Check the order permutation elements are valid
+    for (r_size_t i = 0; i < n; ++i){
+        int idx = order.get(i);
+        bad_index |= static_cast<unsigned>(idx) >= static_cast<unsigned>(n);
+    }
+    if (bad_index) [[unlikely]] {
+        abort("Invalid permutation index, indices must be in [0, n)");
+    }
+}
+
 // Filter out NAs, copying the non-NAs into a std::vector
 template <RNumber T>
 inline std::vector<unwrap_t<T>> filter_out_na(const r_vec<T>& x, r_size_t n_na){
@@ -268,20 +286,8 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const
     r_size_t n_probs = probs.length();
     internal::quantile_impl::check_all_valid_probs(probs);
 
-    if (order.length() != n) [[unlikely]] {
-        abort("`quantile()`: `x.length()` must equal `order.length()`");
-    }
-
     if (check_order){
-        bool bad_index = false;
-        // Check the order permutation elements are valid
-        for (r_size_t i = 0; i < n; ++i){
-            int idx = order.get(i);
-            bad_index |= static_cast<unsigned>(idx) >= static_cast<unsigned>(n);
-        }
-        if (bad_index) [[unlikely]] {
-            abort("`quantile()`: Invalid permutation index, indices must be in [0, n)");
-        }
+        internal::quantile_impl::check_order(n, order);
     }
 
     // Count NAs but assuming they are at the end of sorted vector
@@ -414,10 +420,14 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
     return out;
 }
 
+namespace internal {
+
+namespace quantile_impl {
+
 // Weighted quantile using relative weights (Matthew Kay's method).
 // Important: Zero-weight values are dropped as values with zero weights are treated as absent or non-contributory.
-template <string_literal Method = "linear", RNumber T>
-inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_dbl>& weights, bool na_rm = false, bool names = true){
+template <string_literal Method, RNumber T>
+inline r_vec<r_dbl> weighted_quantile_impl(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_dbl>& weights, int* RESTRICT o, bool na_rm, bool names){
 
     r_size_t n = x.length();
     r_size_t n_probs = probs.length();
@@ -433,18 +443,15 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
         out.set_names(internal::quantile_impl::quantile_names(probs));
     }
 
-    r_vec<r_int> o = order(x);
-
     const auto* x_data = x.data();
     const double* weights_data = weights.data();
-    int* order_data = o.data();
 
-    // NAs are at the tail end after sorting x using order vector above
+    // NAs are at the tail end of sorted x
     // Ignore all values (including NAs) with zero-weight
     r_size_t n_ok = n;
     bool weighted_na = false;
-    while (n_ok > 0 && is_na(x_data[order_data[n_ok - 1]])){
-        double weight_of_na_value = weights_data[order_data[n_ok - 1]];
+    while (n_ok > 0 && is_na(x_data[o[n_ok - 1]])){
+        double weight_of_na_value = weights_data[o[n_ok - 1]];
         weighted_na |= is_na(weight_of_na_value) || weight_of_na_value != 0.0;
         --n_ok;
     }
@@ -460,7 +467,7 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
 
     for (r_size_t i = 0; i < n_ok; ++i){
 
-        int idx = order_data[i];
+        int idx = o[i];
         double weight = weights_data[idx];
 
         if (is_na(weight) || weight < 0.0 || r_dbl(weight).is_infinite()) [[unlikely]] {
@@ -471,7 +478,7 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
         }
         total_weight += weight;
         // Keep indices with weight > 0 at the front
-        order_data[n_valid_weights++] = idx;
+        o[n_valid_weights++] = idx;
         cumulative_weights.push_back(total_weight);
     }
 
@@ -505,14 +512,34 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
 
         // Get quantile position (position of j-th order statistic and gamma)
         const auto [j, gamma] = internal::quantile_impl::get_quantile_position<Method>(n_valid_weights, p, &np_w);
-        double x_j = x_data[order_data[j - 1]]; // j-th order statistic
+        double x_j = x_data[o[j - 1]]; // j-th order statistic
 
         // If gamma is 0 then the j-th order statistic is exactly the quantile
         // Otherwise interpolate between j-th and j+1-th order statistics using gamma
-        r_dbl q = r_dbl(gamma == 0.0 ? x_j : internal::quantile_impl::interpolate_quantile(x_j, x_data[order_data[j]], gamma));
+        r_dbl q = r_dbl(gamma == 0.0 ? x_j : internal::quantile_impl::interpolate_quantile(x_j, x_data[o[j]], gamma));
         out.set(i, q);
     }
     return out;
+}
+
+}
+
+}
+
+template <string_literal Method = "linear", RNumber T>
+inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_dbl>& weights, bool na_rm = false, bool names = true){
+    r_vec<r_int> o = order(x);
+    return internal::quantile_impl::weighted_quantile_impl<Method>(x, probs, weights, o.data(), na_rm, names);
+}
+
+template <string_literal Method = "linear", RNumber T>
+inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_dbl>& weights, const r_vec<r_int>& order, bool na_rm = false, bool names = true){
+    
+    internal::quantile_impl::check_order(x.length(), order);
+
+    // weighted_quantile_impl overrides order data, so pass a copy
+    std::vector<int> o(order.data(), order.data() + order.length());
+    return internal::quantile_impl::weighted_quantile_impl<Method>(x, probs, weights, o.data(), na_rm, names);
 }
 
 }
