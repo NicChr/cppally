@@ -456,7 +456,7 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
     std::vector<double> cumulative_weights;
     cumulative_weights.reserve(n_ok);
     double total_weight = 0.0;
-    r_size_t n_pos = 0; // Number of values (non-NA) with weight > 0
+    r_size_t n_valid_weights = 0; // Number of values (non-NA) with weight > 0
 
     for (r_size_t i = 0; i < n_ok; ++i){
 
@@ -471,12 +471,12 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
         }
         total_weight += weight;
         // Keep indices with weight > 0 at the front
-        order_data[n_pos++] = idx;
+        order_data[n_valid_weights++] = idx;
         cumulative_weights.push_back(total_weight);
     }
 
     // All weights are zero
-    if (n_pos == 0){
+    if (n_valid_weights == 0){
         return out;
     }
 
@@ -496,15 +496,15 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
 
         // Kay's effective position, equal to n * p when all weights are 1
         double np_w = static_cast<double>(k);
-        
-        if (k < n_pos){
+
+        if (k < n_valid_weights){
             double prev_w = k > 0 ? cumulative_weights[k - 1] : 0.0;
             // How far the target is into the next value
             np_w += (target - prev_w) / (cumulative_weights[k] - prev_w);
         }
 
         // Get quantile position (position of j-th order statistic and gamma)
-        const auto [j, gamma] = internal::quantile_impl::get_quantile_position<Method>(n_pos, p, &np_w);
+        const auto [j, gamma] = internal::quantile_impl::get_quantile_position<Method>(n_valid_weights, p, &np_w);
         double x_j = x_data[order_data[j - 1]]; // j-th order statistic
 
         // If gamma is 0 then the j-th order statistic is exactly the quantile
