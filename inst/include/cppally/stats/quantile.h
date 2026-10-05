@@ -5,7 +5,6 @@
 #include <cppally/sort/is_sorted.h>
 #include <cppally/sort/sort.h>
 #include <cppally/string/string_literal.h>
-#include <cppally/named_arg.h>
 #include <cstdio>  // For snprintf
 #include <algorithm>
 #include <cmath>
@@ -22,7 +21,7 @@
 // calculate the full order permutation (if n probs >= some threshold). In the vast majority of cases, the first two 
 // overloads are adequate performance-wise.
 //
-// Weighted quantiles are calculated using Matthew Kay's method: github.com/mjskay/uncertainty-examples/blob/master/weighted-quantiles.html
+// Weighted quantiles are calculated using Matthew Kay's method: github.com/mjskay/uncertainty-examples/blob/master/weighted-quantiles.Rmd
 //
 // License: MIT
 // Author: Nick Christofides
@@ -39,7 +38,7 @@ struct quantile_position {
 };
 
 // Assumes n_not_na > 0
-// np_w is the weighted effective position from weighted_quantile() - if supplied then n_not_na is ignored.
+// np_w is the weighted effective position from weighted_quantile() - if supplied then n_not_na is only used for bounding index of j-th order statistic
 template <string_literal Method>
 inline quantile_position get_quantile_position(r_size_t n_not_na, double p, const double* np_w = nullptr) noexcept {
 
@@ -79,11 +78,14 @@ inline double interpolate_quantile(double x_j, double x_j1, double gamma) noexce
 // Count of NAs assuming x is sorted such that NAs are bundled at the tail end
 template <RNumber T>
 inline r_size_t sorted_na_count(const r_vec<T>& x){
+
     const r_size_t n = x.length();
     r_size_t i = n;
+    
     while (i > 0 && is_na(x.get(i - 1))){
         --i;
     }
+
     return n - i;
 }
 
@@ -283,13 +285,12 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const
     }
 
     // Count NAs but assuming they are at the end of sorted vector
-    r_size_t i = n;
-    while (i > 0 && is_na(x.get(unwrap(order.get(i - 1))))){
-        --i;
+    r_size_t n_ok = n;
+    while (n_ok > 0 && is_na(x.get(unwrap(order.get(n_ok - 1))))){
+        --n_ok;
     }
-    r_size_t n_na = n - i;
 
-    r_size_t n_ok = n - n_na;
+    r_size_t n_na = n - n_ok;
     r_vec<r_dbl> out(n_probs, na<r_dbl>());
 
     if (names){
@@ -413,8 +414,8 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool 
     return out;
 }
 
-// Weighted quantile using relative weights using Matthew Kay's method.
-// Important: Zero-weight values are dropped as values with zero weights are treated as not 'important'.
+// Weighted quantile using relative weights (Matthew Kay's method).
+// Important: Zero-weight values are dropped as values with zero weights are treated as absent or non-contributory.
 template <string_literal Method = "linear", RNumber T>
 inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_dbl>& weights, bool na_rm = false, bool names = true){
 
@@ -435,16 +436,16 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
     r_vec<r_int> o = order(x);
 
     const auto* x_data = x.data();
-    const double* w_data = weights.data();
-    int* o_data = o.data();
+    const double* weights_data = weights.data();
+    int* order_data = o.data();
 
     // NAs are at the tail end after sorting x using order vector above
     // Ignore all values (including NAs) with zero-weight
     r_size_t n_ok = n;
     bool weighted_na = false;
-    while (n_ok > 0 && is_na(x_data[o_data[n_ok - 1]])){
-        double w_na = w_data[o_data[n_ok - 1]];
-        weighted_na |= is_na(w_na) || w_na != 0.0;
+    while (n_ok > 0 && is_na(x_data[order_data[n_ok - 1]])){
+        double weight_of_na_value = weights_data[order_data[n_ok - 1]];
+        weighted_na |= is_na(weight_of_na_value) || weight_of_na_value != 0.0;
         --n_ok;
     }
 
@@ -454,24 +455,24 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
 
     std::vector<double> cumulative_weights;
     cumulative_weights.reserve(n_ok);
-    double total_w = 0.0;
+    double total_weight = 0.0;
     r_size_t n_pos = 0; // Number of values (non-NA) with weight > 0
 
     for (r_size_t i = 0; i < n_ok; ++i){
 
-        int idx = o_data[i];
-        double w_i = w_data[idx];
+        int idx = order_data[i];
+        double weight = weights_data[idx];
 
-        if (is_na(w_i) || w_i < 0.0 || r_dbl(w_i).is_infinite()) [[unlikely]] {
+        if (is_na(weight) || weight < 0.0 || r_dbl(weight).is_infinite()) [[unlikely]] {
             abort("`weighted_quantile()`: weights must be non-negative and finite");
         }
-        if (w_i == 0.0){
+        if (weight == 0.0){
             continue;
         }
-        total_w += w_i;
+        total_weight += weight;
         // Keep indices with weight > 0 at the front
-        o_data[n_pos++] = idx;
-        cumulative_weights.push_back(total_w);
+        order_data[n_pos++] = idx;
+        cumulative_weights.push_back(total_weight);
     }
 
     // All weights are zero
@@ -479,29 +480,37 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
         return out;
     }
 
+    // Core weighted quantile calculation
     for (r_size_t i = 0; i < n_probs; ++i){
+        
         double p = unwrap(probs.get(i));
-        double target = p * total_w;
+
+        // target is how much weight the quantile should have below it
+        double target = p * total_weight;
+
+        // Iterator to the first cumulative weight > target
+        auto first_above_target = std::upper_bound(cumulative_weights.begin(), cumulative_weights.end(), target);
 
         // Number of values whose cumulative weight is <= target
-        r_size_t k = std::upper_bound(cumulative_weights.begin(), cumulative_weights.end(), target) - cumulative_weights.begin();
+        r_size_t k = first_above_target - cumulative_weights.begin();
 
         // Kay's effective position, equal to n * p when all weights are 1
         double np_w = static_cast<double>(k);
+        
         if (k < n_pos){
             double prev_w = k > 0 ? cumulative_weights[k - 1] : 0.0;
+            // How far the target is into the next value
             np_w += (target - prev_w) / (cumulative_weights[k] - prev_w);
         }
 
+        // Get quantile position (position of j-th order statistic and gamma)
         const auto [j, gamma] = internal::quantile_impl::get_quantile_position<Method>(n_pos, p, &np_w);
-        double x_j = x_data[o_data[j - 1]];
+        double x_j = x_data[order_data[j - 1]]; // j-th order statistic
 
         // If gamma is 0 then the j-th order statistic is exactly the quantile
-        if (gamma == 0.0){
-            out.set(i, r_dbl(x_j));
-        } else {
-            out.set(i, r_dbl(internal::quantile_impl::interpolate_quantile(x_j, x_data[o_data[j]], gamma)));
-        }
+        // Otherwise interpolate between j-th and j+1-th order statistics using gamma
+        r_dbl q = r_dbl(gamma == 0.0 ? x_j : internal::quantile_impl::interpolate_quantile(x_j, x_data[order_data[j]], gamma));
+        out.set(i, q);
     }
     return out;
 }
