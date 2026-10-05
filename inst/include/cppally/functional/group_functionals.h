@@ -171,9 +171,7 @@ auto apply_by_group(const T& x, const groups& g, F fn) {
 
     // If N groups is 1, just call the function on all the data
     if (ng == 1){
-        r_vec<ret_t> out(1);
-        out.set(0, fn(x));
-        return out;
+        return r_vec<ret_t>( {fn(x)} );
     }
 
     // One buffer, two phases: group sizes for the sort below, then scanned in
