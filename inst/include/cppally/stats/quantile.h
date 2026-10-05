@@ -483,7 +483,7 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
     // Core weighted quantile calculation
     for (r_size_t i = 0; i < n_probs; ++i){
         
-        double p = unwrap(probs.get(i));
+        double p = probs.get(i);
 
         // target is how much weight the quantile should have below it
         double target = p * total_weight;
@@ -498,9 +498,9 @@ inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& pro
         double np_w = static_cast<double>(k);
 
         if (k < n_valid_weights){
-            double prev_w = k > 0 ? cumulative_weights[k - 1] : 0.0;
+            double prev_cumulative_weight = k > 0 ? cumulative_weights[k - 1] : 0.0;
             // How far the target is into the next value
-            np_w += (target - prev_w) / (cumulative_weights[k] - prev_w);
+            np_w += (target - prev_cumulative_weight) / (cumulative_weights[k] - prev_cumulative_weight);
         }
 
         // Get quantile position (position of j-th order statistic and gamma)
