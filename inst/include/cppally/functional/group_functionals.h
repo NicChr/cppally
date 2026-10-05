@@ -25,23 +25,11 @@ void check_groups_span_data(const T& x, const groups& g){
 // Group IDs in order of group size (ascending)
 inline std::vector<int> group_order_by_size(const int* p_counts, int ng){
 
-    std::vector<int> group_order(ng);
-
     int max_size = 0;
     for (int j = 0; j < ng; ++j) max_size = std::max(max_size, p_counts[j]);
 
-    std::vector<int> offsets(static_cast<std::size_t>(max_size) + 1, 0);
-    for (int j = 0; j < ng; ++j) ++offsets[p_counts[j]];
-    
-    int total = 0;
-    for (int& offset : offsets){
-        int size_count = offset;
-        offset = total;
-        total += size_count;
-    }
-    for (int j = 0; j < ng; ++j){
-        group_order[offsets[p_counts[j]]++] = j;
-    }
+    std::vector<int> group_order(ng);
+    internal::counting_order(p_counts, ng, max_size + 1, group_order.data());
     return group_order;
 }
 

@@ -86,6 +86,23 @@ inline int run_end(const int* RESTRICT p, int i, int n) noexcept {
     return lo;
 }
 
+// Counting sort: 
+// positions [0, n) ordered by keys in [0, n_keys)
+inline void counting_order(const int* RESTRICT p_keys, int n, int n_keys, int* RESTRICT p_out){
+
+    std::vector<uint32_t> offsets(static_cast<std::size_t>(n_keys), uint32_t(0));
+    for (int i = 0; i < n; ++i) ++offsets[p_keys[i]];
+
+    uint32_t total = 0;
+    for (uint32_t& offset : offsets){
+        uint32_t key_count = offset;
+        offset = total;
+        total += key_count;
+    }
+
+    for (int i = 0; i < n; ++i) p_out[offsets[p_keys[i]]++] = i;
+}
+
 }
 
 // A class for storing group information.
@@ -224,36 +241,10 @@ struct groups {
           return out;
   
       } else {
-          
+          r_size_t n = ids.length();
+          r_vec<r_int> out(n);
           // Count sort
-  
-          // No need to use order() because we can write a faster custom method due to 
-          // the fact that group IDs have no NAs, and we know the range upfront (range = n_groups)
-  
-          std::vector<uint32_t> counts(n_groups, uint32_t(0));
-          uint32_t n = ids.length();
-  
-          auto* RESTRICT p_x = ids.data();
-  
-          // Count occurrences
-          for (uint32_t i = 0; i < n; ++i) counts[p_x[i]]++;
-  
-          // Prefix sum: counts[i] becomes the starting position for value i
-          uint32_t total = 0;
-          for (int i = 0; i < n_groups; ++i) {
-              uint32_t old_count = counts[i];
-              counts[i] = total;
-              total += old_count;
-          }
-  
-          // Write indices in sorted order
-          
-          r_vec<r_int> out(static_cast<r_size_t>(n));
-          int* RESTRICT p_out = out.data();
-  
-          for (uint32_t i = 0; i < n; ++i) {
-              p_out[counts[p_x[i]]++] = static_cast<int>(i);
-          }
+          internal::counting_order(ids.data(), n, n_groups, out.data());
           return out;
       }
   }
