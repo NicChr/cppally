@@ -30,7 +30,7 @@ inline std::vector<int> group_order_by_size(const int* p_counts, int ng){
 
     std::vector<int> group_order(ng);
     internal::counting_order(
-        [p_counts](int j){ return static_cast<uint32_t>(p_counts[j]); },
+        [p_counts](int j) noexcept { return static_cast<uint32_t>(p_counts[j]); },
         ng, static_cast<uint32_t>(max_size) + 1, group_order.data()
     );
     return group_order;

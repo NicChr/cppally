@@ -209,7 +209,7 @@ inline r_vec<r_int> order(const T& x) {
         uint32_t na_key = static_cast<uint32_t>(range_size);
 
         internal::counting_order(
-            [p_x, lo, na_key](int i){
+            [p_x, lo, na_key](int i) noexcept {
                 base_t v = p_x[i];
                 return is_na(v) ? na_key : static_cast<uint32_t>(v - lo);
             },

@@ -229,7 +229,7 @@ struct groups {
           r_vec<r_int> out(n);
           const int* RESTRICT p_ids = ids.data();
           internal::counting_order(
-              [p_ids](int i){ return static_cast<uint32_t>(p_ids[i]); },
+              [p_ids](int i) noexcept { return static_cast<uint32_t>(p_ids[i]); },
               n, static_cast<uint32_t>(n_groups), out.data()
           );
           return out;
