@@ -179,7 +179,15 @@ auto apply_by_group(const T& x, const groups& g, F fn) {
     // ends alone gives both bounds - group j spans [ends[j - 1], ends[j]),
     // and group 0 starts at 0
     r_vec<r_int> group_bounds = g.counts();
-    group_bounds.ensure_exclusive(); // counts() may be cached, so ensure data is safe to overwrite
+    std::vector<int> bounds_copy;
+    int* p_bounds = nullptr;
+
+    if (group_bounds.is_exclusive()){
+        p_bounds = group_bounds.data();
+    } else {
+        bounds_copy.assign(group_bounds.data(), group_bounds.data() + ng);
+        p_bounds = bounds_copy.data();
+    }
 
     // Group locations sorted by group size
     // Sort by group size so that we can reuse the same buffer and avoid R vector allocations
@@ -189,9 +197,8 @@ auto apply_by_group(const T& x, const groups& g, F fn) {
     // We end up reusing the buffer frequently
     // and in low cardinality situations (where length(unique(g)) is small), there aren't many
     // allocations anyway.
-    std::vector<int> group_order = internal::group_order_by_size(group_bounds.data(), ng);
+    std::vector<int> group_order = internal::group_order_by_size(p_bounds, ng);
 
-    int* RESTRICT p_bounds = group_bounds.data();
     // Overwrite the group counts into group "ends" (the start indices of the next group)
     for (int j = 1; j < ng; ++j){
         p_bounds[j] += p_bounds[j - 1];
