@@ -1124,12 +1124,6 @@ inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_
     auto* p_target = target.data();
     const auto* p_source = source.data();
     std::memmove(p_target + target_offset, p_source + source_offset, n * sizeof(*p_target));
-  } else if constexpr (RStringType<data_t>){
-
-    // Cast const SEXP* to SEXP* and write directly
-    auto* p_target = const_cast<unwrap_t<data_t>*>(target.data());
-    const auto* p_source = source.data();
-    std::memmove(p_target + target_offset, p_source + source_offset, n * sizeof(*p_target));
   } else {
     for (r_size_t i = 0; i < n; ++i) {
       target.set(target_offset + i, source.view(source_offset + i));
