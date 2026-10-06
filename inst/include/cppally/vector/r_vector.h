@@ -364,7 +364,20 @@ struct r_vec {
     if (is_null()) return *this;
     r_size_t n = length();
     r_vec<T> new_vec(n);
+
+    #if defined(CPPALLY_PRESERVE_ALTREP)
     r_copy_n(new_vec, *this, 0, n);
+    #else
+    // Special case - use memcpy for CHARSXP
+    // Should be safe because every copied element was allocated before new_vec
+    using primitive_t = unwrap_t<T>;
+      if constexpr (RStringType<T>){
+        std::memcpy(const_cast<primitive_t*>(new_vec.data()), data(), n * sizeof(primitive_t)); 
+      } else {
+        r_copy_n(new_vec, *this, 0, n);
+      }
+    #endif
+
     safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
     return new_vec;
   }
