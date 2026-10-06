@@ -49,6 +49,8 @@ using namespace cppally;
 
 ```{r, include=FALSE}
 
+set.seed(42)
+
 ggplot2::theme_set(ggplot2::theme_grey())
 
 # Helpers to compile all examples in debug mode
@@ -263,7 +265,6 @@ r_vector<r_dbl> cpp_sqrt(r_vector<r_dbl> x){
 }
 ', 
 cpp_ops = '
-
 template <RNumber T>
 [[cppally::register]]
 r_vector<T> cpp_add(r_vector<T> x, r_vector<T> y, r_vector<T> z){
@@ -274,7 +275,66 @@ template <RNumber T>
 r_vector<T> cpp_multiply(r_vector<T> x, r_vector<T> y, r_vector<T> z){
   return x * y * z;
 }
+',
+grouped_sum = '
+[[cppally::register]]
+r_vector<r_dbl> grouped_sum(r_vector<r_dbl> x, r_vector<r_str> g){
+  
+    groups grps = make_groups(g);
+  
+    r_vector<r_dbl> sums = apply_by_group(
+      x, /*groups = */ grps,
+      [](const r_vector<r_dbl>& chunk){
+          return sum(chunk, /*na_rm = */ true);
+      });
+
+      // Add group names
+
+      r_vector<r_str> grp_nms = group_names(g, grps);
+      sums.set_names(grp_nms);
+
+      return sums;
+}
+',
+grouped_mean_and_median = '
+
+// Helper to add group names, which are the unique values of group_data 
+// so that each result is associated with its group name
+r_vector<r_dbl> add_group_names(r_vector<r_dbl>& result, r_vector<r_str> group_data, groups g){
+    r_vector<r_str> nms = group_names(group_data, g);
+    result.set_names(nms);
+    return result;
+}
+
+[[cppally::register]]
+r_vector<r_dbl> grouped_mean(r_vector<r_dbl> x, r_vector<r_str> g){
+  
+    groups grps = make_groups(g);
+  
+    r_vector<r_dbl> means = apply_by_group(
+      x, grps,
+      [](const r_vector<r_dbl>& chunk){
+          return mean(chunk, /*na_rm = */ true);
+      });
+
+      return add_group_names(means, g, grps);
+}
+
+[[cppally::register]]
+r_vector<r_dbl> grouped_median(r_vector<r_dbl> x, r_vector<r_str> g){
+  
+    groups grps = make_groups(g);
+  
+    r_vector<r_dbl> medians = apply_by_group(
+      x, grps,
+      [](const r_vector<r_dbl>& chunk){
+          return quantile(chunk, 0.5, /*na_rm = */ true);
+      });
+
+      return add_group_names(medians, g, grps);
+}
 '
+  
 )
 
 
@@ -421,8 +481,7 @@ There are 2 core pmap functionals, with 9 variants in total.
 
 - `pmap_parallel_simd_with_index` - Like `pmap_with_index` but executed using multiple threads and under OpenMP SIMD instructions
 
-- `pmap_with_shift` - A convenient wrapper around `pmap` to work with lagged values. Positional helpers `lag(k)`, `lead(k)`, `curr()` must be used to access lagged values. `lag_exists()` and `lead_exists()` can be used to test for out-of-bounds indexing. Out-of-bounds indexing returns `NA` by default, though this default can be 
-changed in `lag()` and `lead()`.
+- `pmap_with_shift` - A convenient wrapper around `pmap` to work with lagged values. Positional helpers `lag(k)`, `lead(k)`, `curr()` must be used to access lagged values. `lag_exists()` and `lead_exists()` can be used to test for out-of-bounds indexing. Out-of-bounds indexing returns `NA` by default, though this default can be changed in `lag()` and `lead()`.
 
 #### Multi-threading safety
 
@@ -490,8 +549,7 @@ cpp_lag(1:10, k = -2)
 cpp_lag(1:10, k = -3)
 ```
 
-`pmap_with_shift` has five helpers: `lag()`, `lead()`, `curr()`, `lag_exists()`, and
-`lead_exists()`. These are designed to assist in performing efficient lagged operations in a vectorised context, while maintaining readability.
+`pmap_with_shift` has five helpers: `lag()`, `lead()`, `curr()`, `lag_exists()`, and `lead_exists()`. These are designed to assist in performing efficient lagged operations in a vectorised context, while maintaining readability.
 
 **Example:** Lagged differencing
 
@@ -506,8 +564,7 @@ cpp_diff(seq(10, 100, by = 5))
 
 ### In-place functionals
 
-To perform in-place transformations, use `r_vector::apply` as `pmap` always allocates a fresh vector and therefore cannot do in-place modification. `apply` comes in the same flavours as `pmap` - `apply_simd`, `apply_parallel`, `apply_parallel_simd`, 
-and the `_with_index` variants.
+To perform in-place transformations, use `r_vector::apply` as `pmap` always allocates a fresh vector and therefore cannot do in-place modification. `apply` comes in the same flavours as `pmap` - `apply_simd`, `apply_parallel`, `apply_parallel_simd`, and the `_with_index` variants.
 
 ```{r, echo=FALSE, comment="", results='asis'}
 as_cpp_chunk(examples[["cpp_in_place_abs"]])
@@ -544,8 +601,7 @@ cpp_in_place_lag(x, k = 1)
 
 **Example:** Vectorised square-root
 
-cppally provides a scalar version of `sqrt()`, which can be easily vectorised with 
-`pmap`.
+cppally provides a scalar version of `sqrt()`, which can be easily vectorised with `pmap`.
 
 ```{r, echo=FALSE, comment="", results='asis'}
 as_cpp_chunk(benchmark_examples[["cpp_sqrt"]])
@@ -553,18 +609,15 @@ as_cpp_chunk(benchmark_examples[["cpp_sqrt"]])
 
 Here we are using `pmap_parallel_simd`, a variant of `pmap` that applies the supplied transformation under multiple threads and under an OpenMP SIMD directive. SIMD (single-instruction-multiple-data) is when the machine performs the same operation on multiple data points instead of one data point at time.
 
-Let's benchmark this against `base::sqrt()`, but first let's use 4 threads 
-for the rest of the examples in this vignette.
-
+Let's benchmark this against `base::sqrt()`, but first let's use 4 threads for the rest of the examples in this vignette.
 
 ```{r, echo=FALSE, comment="", results='asis'}
 as_cpp_chunk(benchmark_examples[["cpp_set_threads"]])
 ```
 
 ```{r}
-cpp_set_threads(4) # Set 4 threads for the rest of the vignette
+cpp_set_threads(4) # Set 4 threads for the rest of the examples
 ```
-
 
 ```{r}
 x <- rnorm(5e05, mean = 50)
@@ -579,21 +632,17 @@ x <- rnorm(5e05, mean = 50)
   labs(title = "R vs C++ vectorised square-root")
 ```
 
-For more math functions, see `cppally/math/math.h`, a header containing a rich set of 
-cppally math functions.
+For more math functions, see `cppally/math/math.h`, a header containing a rich set of cppally math functions.
 
-cppally also provides quite a few vectorised operators out-of-the-box.
-The vectorised operators currently defined:
+cppally also provides quite a few vectorised operators out-of-the-box. The vectorised operators currently defined:
 
 binary: `+,-,*,/,+=,-=,*=,/=,==,<=,<,>=,>,|,&`
 
 unary: `!,-`
 
-When it comes to arithmetic operations, both cppally and R are heavily optimised to use in-place modification where possible. This greatly improves performance when multiple 
-arithmetic operations are chained one after the other. 
+When it comes to arithmetic operations, both cppally and R are heavily optimised to use in-place modification where possible. This greatly improves performance when multiple arithmetic operations are chained one after the other.
 
-Since R is heavily optimised in this case, any performance gains cppally 
-makes over R are likely to come from using multiple threads.
+Since R is heavily optimised in this case, any performance gains cppally makes over R are likely to come from using multiple threads.
 
 ```{r, echo=FALSE, comment="", results='asis'}
 as_cpp_chunk(benchmark_examples[["cpp_ops"]])
@@ -626,10 +675,98 @@ results |>
   
 ```
 
-From the results we can see that integer operations are faster with cppally. 
-This is partly due to multiple threads being used, but also because cppally 
-integer arithmetic is carefully written to be SIMD-friendly. It propagates 
-`NA` values and also returns `NA` on integer-overflow, so it is just as
-safe as R. The difference is that the arithmetic is written to be as branchless 
-as possible, allowing SIMD instructions to be executed. You can see the internal 
-implementation in `scalar/arithmetic_ops.h`.
+From the results we can see that integer operations are faster with cppally. This is partly due to multiple threads being used, but also because cppally integer arithmetic is carefully written to be SIMD-friendly. It propagates `NA` values and also returns `NA` on integer-overflow, so it is just as safe as R. The difference is that the arithmetic is written to be as branchless as possible, allowing SIMD instructions to be executed. You can see the internal implementation in `scalar/arithmetic_ops.h`.
+
+### Grouped operations
+
+In modern analyses it has become more common to see grouped operations. Packages like 'dplyr' (via `group_by()`) and 'data.table' (via `by` keyword) natively support applying R functions by group.
+
+#### Applying a C++ function by group
+
+cppally provides a similar group-by-and-apply functionality, but instead of supplying an R function, we use a C++ function.
+
+`apply_by_group()` is a C++ functional that accepts 
+a vector `x` of data, groups `g`, and a vector-based function `fn` which is applied 
+to `x` on a group-by-group basis using `g`.
+
+To produce the groups, use `make_groups()`, a function that converts a 
+vector into group IDs and other group metadata, wrapped in a C++ class `groups`.
+
+**Example:** By-group sums
+
+```{r, echo=FALSE, comment="", results='asis'}
+as_cpp_chunk(benchmark_examples[["grouped_sum"]])
+```
+
+For comparison, a base R split-and-apply equivalent
+
+```{r}
+r_grouped_apply <- function(x, g, fn){
+  vapply(split(x, factor(g, levels = unique(g))), fn, 0)
+}
+```
+
+C++ vs base R benchmarks
+
+```{r}
+cpp_set_threads(1) # Run these benchmarks use single thread
+x <- rnorm(10^5)
+
+# 3 groups
+g <- sample(c("a", "b", "c"), 10^5, replace = TRUE)
+(
+  mark(
+  base_grouped_sum = r_grouped_apply(x, g, sum),
+  cppally_grouped_sum = grouped_sum(x, g)
+) |> 
+    autoplot(type = "violin")
+) + 
+  labs(title = "R vs C++ sum by group (3 groups)")
+
+# 1e04 groups
+g <- as.character(sample.int(10^4, 10^5, replace = TRUE))
+(
+  mark(
+  base_grouped_sum = r_grouped_apply(x, g, sum),
+  cppally_grouped_sum = grouped_sum(x, g)
+) |> 
+    autoplot(type = "violin")
+) + 
+  labs(title = "R vs C++ sum by group (10k groups)")
+```
+
+`base::sum()` is a primitive, which means it calls C code directly, hence it
+should provide a good baseline for what can be achieved with a base R
+split-and-apply method.
+
+For the sake of completeness, let's also compare against non-primitives such as `mean()` and `median()`.
+
+```{r, echo=FALSE, comment="", results='asis'}
+as_cpp_chunk(benchmark_examples[["grouped_mean_and_median"]])
+```
+
+```{r}
+(
+mark(
+  base_grouped_mean = r_grouped_apply(x, g, mean),
+  cppally_grouped_mean = grouped_mean(x, g)
+) |> 
+  autoplot(type = "violin")
+) + 
+  labs(title = "R vs C++ mean by group (10k groups)")
+
+(
+mark(
+  base_grouped_median = r_grouped_apply(x, g, median),
+  cppally_grouped_median = grouped_median(x, g)
+) |> 
+    autoplot(type = "violin")
+) + 
+  labs(title = "R vs C++ median by group (10k groups)")
+```
+
+As we move from simpler functions like `mean()` to more complex ones like 
+`median()`, we see that the calculation over many groups starts to become 
+quite slow. While the C++ version also sees a slowdown, it is less so, and 
+is acceptable given the size of data and number of groups.
+
