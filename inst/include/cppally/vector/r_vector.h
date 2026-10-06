@@ -372,7 +372,7 @@ struct r_vec {
     // Should be safe because every copied element was allocated before new_vec
     using primitive_t = unwrap_t<T>;
       if constexpr (RStringType<T>){
-        std::memcpy(const_cast<primitive_t*>(new_vec.data()), data(), n * sizeof(primitive_t)); 
+        std::memmove(const_cast<primitive_t*>(new_vec.data()), data(), n * sizeof(primitive_t)); 
       } else {
         r_copy_n(new_vec, *this, 0, n);
       }
