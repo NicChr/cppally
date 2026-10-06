@@ -566,7 +566,7 @@ void cpp_set_threads(int n){
 
 ``` r
 
-cpp_set_threads(4) # Set 4 threads for the rest of the vignette
+cpp_set_threads(4) # Set 4 threads for the rest of the examples
 ```
 
 ``` r
@@ -604,7 +604,6 @@ Since R is heavily optimised in this case, any performance gains cppally
 makes over R are likely to come from using multiple threads.
 
 ``` cpp
-
 
 template <RNumber T>
 [[cppally::register]]
@@ -655,6 +654,182 @@ integer-overflow, so it is just as safe as R. The difference is that the
 arithmetic is written to be as branchless as possible, allowing SIMD
 instructions to be executed. You can see the internal implementation in
 `scalar/arithmetic_ops.h`.
+
+### Grouped operations
+
+In modern analyses it has become more common to see grouped operations.
+Packages like ‘dplyr’ (via `group_by()`) and ‘data.table’ (via `by`
+keyword) natively support applying R functions by group.
+
+#### Applying a C++ function by group
+
+cppally provides a similar group-by-and-apply functionality, but instead
+of supplying an R function, we use a C++ function.
+
+`apply_by_group()` is a C++ functional that accepts a vector `x` of
+data, groups `g`, and a vector-based function `fn` which is applied to
+`x` on a group-by-group basis using `g`.
+
+To produce the groups, use `make_groups()`, a function that converts a
+vector into group IDs and other group metadata, wrapped in a C++ class
+`groups`.
+
+**Example:** By-group sums
+
+``` cpp
+
+[[cppally::register]]
+r_vector<r_dbl> grouped_sum(r_vector<r_dbl> x, r_vector<r_str> g){
+  
+    groups grps = make_groups(g);
+  
+    r_vector<r_dbl> sums = apply_by_group(
+      x, /*groups = */ grps,
+      [](const r_vector<r_dbl>& chunk){
+          return sum(chunk, /*na_rm = */ true);
+      });
+
+      // Add group names
+
+      r_vector<r_str> grp_nms = group_names(g, grps);
+      sums.set_names(grp_nms);
+
+      return sums;
+}
+```
+
+For comparison, a base R split-and-apply equivalent
+
+``` r
+
+r_grouped_apply <- function(x, g, fn){
+  vapply(split(x, factor(g, levels = unique(g))), fn, 0)
+}
+```
+
+C++ vs base R benchmarks
+
+``` r
+
+cpp_set_threads(1) # Run these benchmarks use single thread
+x <- rnorm(10^5)
+
+# 3 groups
+g <- sample(c("a", "b", "c"), 10^5, replace = TRUE)
+(
+  mark(
+  base_grouped_sum = r_grouped_apply(x, g, sum),
+  cppally_grouped_sum = grouped_sum(x, g)
+) |> 
+    autoplot(type = "violin")
+) + 
+  labs(title = "R vs C++ sum by group (3 groups)")
+```
+
+![](functionals_files/figure-html/unnamed-chunk-42-1.png)
+
+``` r
+
+
+# 1e04 groups
+g <- as.character(sample.int(10^4, 10^5, replace = TRUE))
+(
+  mark(
+  base_grouped_sum = r_grouped_apply(x, g, sum),
+  cppally_grouped_sum = grouped_sum(x, g)
+) |> 
+    autoplot(type = "violin")
+) + 
+  labs(title = "R vs C++ sum by group (10k groups)")
+```
+
+![](functionals_files/figure-html/unnamed-chunk-42-2.png)
+
+[`base::sum()`](https://rdrr.io/r/base/sum.html) is a primitive, which
+means it calls C code directly, hence it should provide a good baseline
+for what can be achieved with a base R split-and-apply method.
+
+For the sake of completeness, let’s also compare against non-primitives
+such as [`mean()`](https://rdrr.io/r/base/mean.html) and
+[`median()`](https://rdrr.io/r/stats/median.html).
+
+``` cpp
+
+
+// Helper to add group names, which are the unique values of group_data 
+// so that each result is associated with its group name
+r_vector<r_dbl> add_group_names(r_vector<r_dbl>& result, r_vector<r_str> group_data, groups g){
+    r_vector<r_str> nms = group_names(group_data, g);
+    result.set_names(nms);
+    return result;
+}
+
+[[cppally::register]]
+r_vector<r_dbl> grouped_mean(r_vector<r_dbl> x, r_vector<r_str> g){
+  
+    groups grps = make_groups(g);
+  
+    r_vector<r_dbl> means = apply_by_group(
+      x, grps,
+      [](const r_vector<r_dbl>& chunk){
+          return mean(chunk, /*na_rm = */ true);
+      });
+
+      return add_group_names(means, g, grps);
+}
+
+[[cppally::register]]
+r_vector<r_dbl> grouped_median(r_vector<r_dbl> x, r_vector<r_str> g){
+  
+    groups grps = make_groups(g);
+  
+    r_vector<r_dbl> medians = apply_by_group(
+      x, grps,
+      [](const r_vector<r_dbl>& chunk){
+          return quantile(chunk, 0.5, /*na_rm = */ true);
+      });
+
+      return add_group_names(medians, g, grps);
+}
+```
+
+``` r
+
+(
+mark(
+  base_grouped_mean = r_grouped_apply(x, g, mean),
+  cppally_grouped_mean = grouped_mean(x, g)
+) |> 
+  autoplot(type = "violin")
+) + 
+  labs(title = "R vs C++ mean by group (10k groups)")
+```
+
+![](functionals_files/figure-html/unnamed-chunk-44-1.png)
+
+``` r
+
+
+(
+mark(
+  base_grouped_median = r_grouped_apply(x, g, median),
+  cppally_grouped_median = grouped_median(x, g)
+) |> 
+    autoplot(type = "violin")
+) + 
+  labs(title = "R vs C++ median by group (10k groups)")
+#> Warning: Some expressions had a GC in every iteration; so filtering is
+#> disabled.
+```
+
+![](functionals_files/figure-html/unnamed-chunk-44-2.png)
+
+As we move from simpler functions like
+[`mean()`](https://rdrr.io/r/base/mean.html) to more complex ones like
+[`median()`](https://rdrr.io/r/stats/median.html), we see that the
+calculation over many groups starts to become quite slow. While the C++
+version also sees a slowdown, it is less so, and is acceptable given the
+size of data and number of groups.
 
 [^1]: Vectorising in the R sense, not the SIMD
     (single-instruction-multiple-data) sense. In R, vectorising
