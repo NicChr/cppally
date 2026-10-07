@@ -16,11 +16,11 @@ namespace internal {
 template <RNumericSubscript V = r_int, RNumericSubscript U>
 r_vec<V> exclude_locs(const r_vec<U>& exclude, r_size_t xn) {
 
-  if (xn < 0){
+  if (xn < 0) [[unlikely]] {
     abort("`xn` must be >= 0");
   }
   if constexpr (is<V, r_int>){
-    if (xn > unwrap(r_limits<r_int>::max())){
+    if (xn > unwrap(r_limits<r_int>::max())) [[unlikely]] {
      abort("`xn > r_limits<r_int>::max()`, please use `exclude_locs<r_int64>`");
    }
  }
@@ -75,7 +75,7 @@ r_vec<V> clean_locs(const r_vec<U>& locs, const T& x){
     // static_assert(!is<V, r_int64>, "Cannot perform named-subsetting on long vectors");
     static_assert(!is<T, r_df>, "Named-subsetting of r_df is unsupported, use `r_df.select()`");
 
-    if (x.names().is_null()){
+    if (x.names().is_null()) [[unlikely]] {
       abort("Cannot subset on the names of an unnamed vector");
     }
 
