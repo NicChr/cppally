@@ -101,42 +101,21 @@ inline r_vec<r_int> order_radix(std::vector<key_index<key_t>>& pairs) {
     return out;
 }
 
-}
-
-// 0-indexed ordering permutation vector that represents in sequential order, 
-// the indices of `x` elements that need to be chosen to return a sorted `x`
-template <RSortableVector T>
-inline r_vec<r_int> order(const T& x) {
-
-    using data_t = typename T::data_type;
-    using base_t = unwrap_t<data_t>;
-
-    uint32_t n = x.length();
-    
-    if (n < 200){
-        return internal::order_cmp(x);
-    }
-
-    if constexpr (RNumericType<data_t>) {
+template <CppNumber T>
+inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, T hi) {
 
     // ----------------------------------------------------------------------
     // Integers or whole numbers with relatively small range optimisation
     // ----------------------------------------------------------------------
 
-    auto rng = range(x, true);
-    auto min_val = rng.get(0), max_val = rng.get(1);
-
     // Range is NA only when every value is NA -> sequential indices
-    if (is_na(min_val) || is_na(max_val)) {
+    if (is_na(lo) || is_na(hi)) {
         r_vec<r_int> out(static_cast<r_size_t>(n));
         out.iota();
         return out;
     }
 
-    base_t lo = unwrap(min_val);
-    base_t hi = unwrap(max_val);
-
-    using unsigned_t = decltype(ska_sort::detail::to_unsigned_or_bool(std::declval<base_t>()));
+    using unsigned_t = decltype(ska_sort::detail::to_unsigned_or_bool(std::declval<T>()));
 
     // counts costs O(range) to zero and prefix-sum whatever n is, and is probed
     // once per element in both the count and scatter passes, so cap it in bytes
@@ -161,28 +140,26 @@ inline r_vec<r_int> order(const T& x) {
     bool int_count_usable = false;
     bool narrow = false;
 
-    const auto* RESTRICT p_x = x.data();
-
-    if constexpr (CppIntegerType<base_t>){
+    if constexpr (CppIntegerType<T>){
         uint64_t span = static_cast<uint64_t>(hi) - static_cast<uint64_t>(lo);
         int_count_usable = span < range_cap;
         if (int_count_usable) {
             range_size = static_cast<std::size_t>(span) + 1;
-        } else if constexpr (sizeof(base_t) > sizeof(int)) {
+        } else if constexpr (sizeof(T) > sizeof(int)) {
             narrow = span < NARROW_LIMIT;
         }
-    } else if constexpr (CppFloatType<base_t>) {
+    } else if constexpr (CppFloatType<T>) {
         double span = static_cast<double>(hi) - static_cast<double>(lo);
         // whole = every value is an exact whole-number offset from lo
         bool whole = span >= 0.0 && span < static_cast<double>(NARROW_LIMIT);
         if (whole) {
-            constexpr base_t EXACT_LIMIT =
-                static_cast<base_t>(uint64_t(1) << (std::numeric_limits<base_t>::digits - 1)) * 2;
+            constexpr T EXACT_LIMIT =
+                static_cast<T>(uint64_t(1) << (std::numeric_limits<T>::digits - 1)) * 2;
             if (lo < -EXACT_LIMIT || hi > EXACT_LIMIT) {
                 whole = false;
             } else {
                 for (uint32_t i = 0; i < n; ++i) {
-                    base_t v = p_x[i];
+                    T v = p_x[i];
                     if (!is_na(v) && !internal::numeric_cast_is_lossless<int>(v - lo)) {
                         whole = false;
                         break;
@@ -210,7 +187,7 @@ inline r_vec<r_int> order(const T& x) {
 
         internal::counting_order(
             [p_x, lo, na_key](int i) noexcept {
-                base_t v = p_x[i];
+                T v = p_x[i];
                 return is_na(v) ? na_key : static_cast<uint32_t>(v - lo);
             },
             static_cast<int>(n), na_key + 1, out.data()
@@ -223,7 +200,7 @@ inline r_vec<r_int> order(const T& x) {
     if (narrow) {
         std::vector<internal::key_index<uint32_t>> pairs(n);
         for (uint32_t i = 0; i < n; ++i) {
-            base_t v = p_x[i];
+            T v = p_x[i];
             uint32_t key = is_na(v)
                 ? std::numeric_limits<uint32_t>::max()
                 : static_cast<uint32_t>(v - lo);
@@ -238,22 +215,49 @@ inline r_vec<r_int> order(const T& x) {
         if (is_na(p_x[i])) {
             key = std::numeric_limits<unsigned_t>::max();
         } else {
-            base_t v = p_x[i] + base_t(0); // To normalise -0.0 into 0.0, preserving tie order
+            T v = p_x[i] + T(0); // To normalise -0.0 into 0.0, preserving tie order
             key = ska_sort::detail::to_unsigned_or_bool(v);
-            if constexpr (RIntegerType<data_t> && (unwrap(na<data_t>()) == std::numeric_limits<base_t>::min())){
+            if constexpr (CppIntegerType<T> && is<T, unwrap_t<as_r_scalar_t<T>>> && (unwrap(na<as_r_scalar_t<T>>()) == std::numeric_limits<T>::min())){
                 key -= 1u; // keep max real value below the NA sentinel
             }
         }
         pairs[i] = { key, i };
     }
     return internal::order_radix(pairs);
+
+}
+
+}
+
+// 0-indexed ordering permutation vector that represents in sequential order, 
+// the indices of `x` elements that need to be chosen to return a sorted `x`
+template <RSortableVector T>
+inline r_vec<r_int> order(const T& x) {
+
+    using data_t = typename T::data_type;
+
+    uint32_t n = x.length();
+    
+    if (n < 200){
+        return internal::order_cmp(x);
     }
 
-    // ----------------------------------------------------------------------
-    // Strings
-    // ---------------------------------------------------------------------- 
+    if constexpr (RNumericType<data_t>) {
 
-    else if constexpr (RStringType<data_t>) {
+        // ----------------------------------------------------------------------
+        // Numeric data
+        // ----------------------------------------------------------------------
+    
+        T rng = range(x, true);
+        auto min_val = rng.get(0), max_val = rng.get(1);
+    
+        return internal::order_numeric_data(x.data(), n, unwrap(min_val), unwrap(max_val));
+
+    } else if constexpr (RStringType<data_t>) {
+
+        // ----------------------------------------------------------------------
+        // Strings
+        // ---------------------------------------------------------------------- 
     
         r_vec<r_int> out(n);
         auto* RESTRICT px = x.data();
