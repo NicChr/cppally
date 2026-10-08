@@ -323,12 +323,20 @@ inline groups make_unordered_groups(const T& x) {
 
       lookup.reserve(hash_map_reserve_guess);
 
+      int prev_id = -1;
       for (r_size_t i = 0; i < n; ++i) {
+
+        // Skip consecutive values that are the same (and avoid hash lookup)
+        if (i > 0 && internal::r_hash_eq<data_t>()(p_x[i], p_x[i - 1])) {
+            p_id[i] = prev_id;
+            continue;
+        }
         auto [id, inserted] = lookup.try_emplace(p_x[i], next_id);
         if (inserted) {
             ++next_id;
         }
-        p_id[i] = id->second;
+        prev_id = id->second;
+        p_id[i] = prev_id;
       }
 
     }
