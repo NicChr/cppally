@@ -198,6 +198,32 @@ struct groups {
             i = end;
         }
 
+    } else if (n_groups <= 2048){
+
+        // When N groups is small and group IDs are repeated, it is better to use multiple histograms
+        // 4 histograms of size N groups each
+        std::vector<int> histograms(4 * static_cast<std::size_t>(n_groups), 0);
+        int* RESTRICT hist1 = histograms.data();
+        int* RESTRICT hist2 = hist1 + n_groups;
+        int* RESTRICT hist3 = hist2 + n_groups;
+        int* RESTRICT hist4 = hist3 + n_groups;
+
+        // Round down n to multiple of 4
+        int n4 = n - (n % 4);
+        for (int i = 0; i < n4; i += 4){
+            hist1[p_ids[i]]++;
+            hist2[p_ids[i + 1]]++;
+            hist3[p_ids[i + 2]]++;
+            hist4[p_ids[i + 3]]++;
+        }
+        for (int i = n4; i < n; ++i){
+            hist1[p_ids[i]]++;
+        }
+        // Final group count equals the group counts of each histogram
+        for (int g = 0; g < n_groups; ++g){
+            p_out[g] = hist1[g] + hist2[g] + hist3[g] + hist4[g];
+        }
+
     } else {
         for (int i = 0; i < n; ++i){
             p_out[p_ids[i]]++;
