@@ -131,24 +131,18 @@ struct groups {
       }
 
       const int* RESTRICT p_ids = ids.data();
+      int* RESTRICT p_out = out.data();
   
-      // Sorted ids make each group one contiguous run whose first row is the
-      // group start. Only jump from run to run when the average run is long
-      // enough to be worth skipping; below that the branchless scan wins
+      // If group IDs are sorted, we can use a gallop search.
+      // This works by skipping steps, with each step doubling in size.
+      // Once we overshoot, use a binary search to find the start index.
       if (sorted && n / n_groups >= internal::min_gallop_run){
-  
-          out.fill(na<r_int>());
-          int* RESTRICT p_out = out.data();
-  
           int i = 0;
-  
           while (i < n){
               p_out[p_ids[i]] = i;
               i = internal::run_end(p_ids, i, n);
           }
       } else {
-
-        int* RESTRICT p_out = out.data();
 
         if (ordered){
             // Last index (in reverse order) for each group is the start index
