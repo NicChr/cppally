@@ -66,6 +66,9 @@
 - Fixed a bug where calling `set_attr()` on `r_df` or `r_factors` would
   produce a compiler error.
 
+- Fixed a rare bug where copying `r_str` elements with `r_copy_n()`
+  would let `CHARSXP` objects be prematurely garbage-collected.
+
 ### r_function
 
 - New class `r_function` to safely call R functions from C++.
