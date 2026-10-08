@@ -166,9 +166,8 @@ struct groups {
             int* RESTRICT p_out = out.data();
             int target_id = 0;
             for (int i = 0; i < n && target_id < n_groups; ++i){
-                if (p_ids[i] == target_id){
-                    p_out[target_id++] = i;
-                }
+                p_out[target_id] = i;
+                target_id += (p_ids[i] == target_id);
               }
         }
   
