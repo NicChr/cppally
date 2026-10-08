@@ -148,20 +148,14 @@ struct groups {
           }
       } else {
 
-        if (ordered){
-            // Initialise with largest int
-            // so that for each group we take the min(out[i], i)
-            // After passing through all data, this should reduce to the first location for each group
-            out.fill(r_limits<r_int>::max());
-            int* RESTRICT p_out = out.data();
-    
-            for (int i = 0; i < n; ++i){
-                int curr_group = p_ids[i];
-                p_out[curr_group] = std::min(p_out[curr_group], i);
-              }
-        } else {
+        int* RESTRICT p_out = out.data();
 
-            int* RESTRICT p_out = out.data();
+        if (ordered){
+            // Last index (in reverse order) for each group is the start index
+            for (int i = n - 1; i >= 0; --i){
+                p_out[p_ids[i]] = i;
+            }
+        } else {
             int target_id = 0;
             for (int i = 0; i < n && target_id < n_groups; ++i){
                 p_out[target_id] = i;
