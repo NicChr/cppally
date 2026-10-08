@@ -160,7 +160,7 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
             } else {
                 for (uint32_t i = 0; i < n; ++i) {
                     T v = p_x[i];
-                    if (!is_na(v) && !internal::numeric_cast_is_lossless<int>(v - lo)) {
+                    if (!is_na(v) && !numeric_cast_is_lossless<int>(v - lo)) {
                         whole = false;
                         break;
                     }
@@ -185,7 +185,7 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
         // NAs are placed in the last bucket last bucket to ensure they are at the end of the input order
         uint32_t na_key = static_cast<uint32_t>(range_size);
 
-        internal::counting_order(
+        counting_order(
             [p_x, lo, na_key](int i) noexcept {
                 T v = p_x[i];
                 return is_na(v) ? na_key : static_cast<uint32_t>(v - lo);
@@ -198,7 +198,7 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
     // Narrow window: keys are the uint32 offsets from lo (only reachable for
     // 64-bit base types)
     if (narrow) {
-        std::vector<internal::key_index<uint32_t>> pairs(n);
+        std::vector<key_index<uint32_t>> pairs(n);
         for (uint32_t i = 0; i < n; ++i) {
             T v = p_x[i];
             uint32_t key = is_na(v)
@@ -206,10 +206,10 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
                 : static_cast<uint32_t>(v - lo);
             pairs[i] = { key, i };
         }
-        return internal::order_radix(pairs);
+        return order_radix(pairs);
     }
 
-    std::vector<internal::key_index<unsigned_t>> pairs(n);
+    std::vector<key_index<unsigned_t>> pairs(n);
     for (uint32_t i = 0; i < n; ++i) {
         unsigned_t key;
         if (is_na(p_x[i])) {
@@ -223,7 +223,7 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
         }
         pairs[i] = { key, i };
     }
-    return internal::order_radix(pairs);
+    return order_radix(pairs);
 
 }
 

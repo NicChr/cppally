@@ -129,6 +129,8 @@ struct groups {
       if (n_groups == 0){
           return out;
       }
+
+      const int* RESTRICT p_ids = ids.data();
   
       // Sorted ids make each group one contiguous run whose first row is the
       // group start. Only jump from run to run when the average run is long
@@ -136,8 +138,6 @@ struct groups {
       if (sorted && n / n_groups >= internal::min_gallop_run){
   
           out.fill(na<r_int>());
-  
-          const int* RESTRICT p_ids = ids.data();
           int* RESTRICT p_out = out.data();
   
           int i = 0;
@@ -147,8 +147,6 @@ struct groups {
               i = internal::run_end(p_ids, i, n);
           }
       } else {
-
-        const int* RESTRICT p_ids = ids.data();
 
         if (ordered){
             // Initialise with largest int
@@ -170,19 +168,6 @@ struct groups {
                 target_id += (p_ids[i] == target_id);
               }
         }
-  
-
-  
-          //   for (int i = 0; i < n_groups; ++i){
-          //     if (p_out[i] == unwrap(r_limits<r_int>::max())) [[unlikely]] {
-          //         p_out[i] = unwrap(na<r_int>()); // This can happen with unused factor levels for example
-          //     }
-          //   }
-  
-          // This will set groups with no start locations to 0
-          // (e.g. undropped factor levels)
-          // If uncommenting the below line, make sure to remove RESTRICT keyword from pointers above
-          // out.replace(0, n_groups, fill_value, 0);
       }
   
     return out;
