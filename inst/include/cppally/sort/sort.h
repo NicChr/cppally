@@ -104,127 +104,91 @@ inline r_vec<r_int> order_radix(std::vector<key_index<key_t>>& pairs) {
 template <CppNumber T>
 inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, T hi) {
 
-    // ----------------------------------------------------------------------
-    // Integers or whole numbers with relatively small range optimisation
-    // ----------------------------------------------------------------------
-
-    // Range is NA only when every value is NA -> sequential indices
+    // All NA means order is [0, n)
     if (is_na(lo) || is_na(hi)) {
         r_vec<r_int> out(static_cast<r_size_t>(n));
         out.iota();
         return out;
     }
 
-    using unsigned_t = decltype(ska_sort::detail::to_unsigned_or_bool(std::declval<T>()));
+    using radix_key_t = decltype(ska_sort::detail::to_unsigned_or_bool(std::declval<T>()));
+    constexpr bool wide_key = sizeof(radix_key_t) > sizeof(int);
+    constexpr uint32_t NA_KEY32 = std::numeric_limits<uint32_t>::max();
 
-    // counts costs O(range) to zero and prefix-sum whatever n is, and is probed
-    // once per element in both the count and scatter passes, so cap it in bytes
-    // as well as relative to n. 64-bit keys take the wider ratio: their radix
-    // fallback pairs into 16 bytes rather than 8, and when stable sorts on
-    // key+index rather than the key alone.
-    constexpr uint64_t MAX_COUNTS_BYTES = 32ull << 20;
-    constexpr uint64_t MAX_RANGE = std::min<uint64_t>(
-        MAX_COUNTS_BYTES / sizeof(uint32_t),
-        std::numeric_limits<int>::max()
-    ); // integer branch computes v - lo in int
-    constexpr uint64_t RANGE_RATIO = sizeof(unsigned_t) > sizeof(int) ? 16 : 4;
-    const uint64_t range_cap = std::min(MAX_RANGE, static_cast<uint64_t>(n) * RANGE_RATIO);
+    // ---- Can every value be keyed as a whole-number uint32 offset from lo? ----
 
-    // 64-bit types whose values are whole-number offsets from lo spanning less
-    // than a uint32 window can radix-sort on uint32 keys through the cheap
-    // 32-bit path instead of the 64-bit composite. The strict limit keeps the
-    // max real key below UINT32_MAX, which is reserved for the NA sentinel
-    constexpr uint64_t NARROW_LIMIT = std::numeric_limits<uint32_t>::max();
+    uint64_t span = 0;
+    bool offsets_fit = false;
 
-    std::size_t range_size = 0;
-    bool int_count_usable = false;
-    bool narrow = false;
-
-    if constexpr (CppIntegerType<T>){
-        uint64_t span = static_cast<uint64_t>(hi) - static_cast<uint64_t>(lo);
-        int_count_usable = span < range_cap;
-        if (int_count_usable) {
-            range_size = static_cast<std::size_t>(span) + 1;
-        } else if constexpr (sizeof(T) > sizeof(int)) {
-            narrow = span < NARROW_LIMIT;
-        }
+    if constexpr (CppIntegerType<T>) {
+        span = static_cast<uint64_t>(hi) - static_cast<uint64_t>(lo);
+        offsets_fit = span < NA_KEY32;
     } else if constexpr (CppFloatType<T>) {
-        double span = static_cast<double>(hi) - static_cast<double>(lo);
-        // whole = every value is an exact whole-number offset from lo
-        bool whole = span >= 0.0 && span < static_cast<double>(NARROW_LIMIT);
-        if (whole) {
-            constexpr T EXACT_LIMIT =
-                static_cast<T>(uint64_t(1) << (std::numeric_limits<T>::digits - 1)) * 2;
-            if (lo < -EXACT_LIMIT || hi > EXACT_LIMIT) {
-                whole = false;
-            } else {
-                for (uint32_t i = 0; i < n; ++i) {
-                    T v = p_x[i];
-                    if (!is_na(v) && !numeric_cast_is_lossless<int>(v - lo)) {
-                        whole = false;
-                        break;
-                    }
-                }
-            }
+        // Above 2^digits, not every whole number is representable
+        constexpr T EXACT_LIMIT = static_cast<T>(uint64_t(1) << (std::numeric_limits<T>::digits - 1)) * 2;
+        double dspan = static_cast<double>(hi) - static_cast<double>(lo);
+        offsets_fit = dspan >= 0.0 && dspan < NA_KEY32 && lo >= -EXACT_LIMIT && hi <= EXACT_LIMIT;
+        for (uint32_t i = 0; offsets_fit && i < n; ++i) {
+            offsets_fit = is_na(p_x[i]) || numeric_cast_is_lossless<int>(p_x[i] - lo);
         }
-        
-        int_count_usable = whole && span < static_cast<double>(range_cap);
-
-        if (int_count_usable) {
-            range_size = static_cast<std::size_t>(span) + 1; // span is whole here
-        } else {
-            narrow = whole;
+        if (offsets_fit) {
+            span = static_cast<uint64_t>(dspan);
         }
     }
 
-    // Use counting sort for small range
-    if (int_count_usable) {
+    // ---- Counting sort: small span, offsets index straight into counts ----
 
+    // Counts capped at 32MB, int-sized offsets, and a multiple of n
+    constexpr uint64_t MAX_COUNTS = std::min<uint64_t>((32ull << 20) / sizeof(uint32_t), std::numeric_limits<int>::max());
+    constexpr uint64_t COUNTS_PER_ELEMENT = wide_key ? 16 : 4;
+    const uint64_t counts_cap = std::min(MAX_COUNTS, static_cast<uint64_t>(n) * COUNTS_PER_ELEMENT);
+
+    if (offsets_fit && span < counts_cap) {
+        uint32_t na_key = static_cast<uint32_t>(span) + 1; // NAs go in the bucket after the last offset
         r_vec<r_int> out(static_cast<r_size_t>(n));
-
-        // NAs are placed in the last bucket last bucket to ensure they are at the end of the input order
-        uint32_t na_key = static_cast<uint32_t>(range_size);
-
         counting_order(
             [p_x, lo, na_key](int i) noexcept {
                 T v = p_x[i];
-                return is_na(v) ? na_key : static_cast<uint32_t>(v - lo);
+                uint32_t key = is_na(v) ? na_key : static_cast<uint32_t>(v - lo);
+                return key;
             },
             static_cast<int>(n), na_key + 1, out.data()
         );
         return out;
     }
 
-    // Narrow window: keys are the uint32 offsets from lo (only reachable for
-    // 64-bit base types)
-    if (narrow) {
+    // ---- Narrow radix: uint32 offset keys instead of the full-width key ----
+
+    if (offsets_fit && (wide_key || CppFloatType<T>)) {
         std::vector<key_index<uint32_t>> pairs(n);
         for (uint32_t i = 0; i < n; ++i) {
             T v = p_x[i];
-            uint32_t key = is_na(v)
-                ? std::numeric_limits<uint32_t>::max()
-                : static_cast<uint32_t>(v - lo);
-            pairs[i] = { key, i };
+            uint32_t narrow_key = is_na(v) ? NA_KEY32 : static_cast<uint32_t>(v - lo);
+            pairs[i] = { narrow_key, i };
         }
         return order_radix(pairs);
     }
 
-    std::vector<key_index<unsigned_t>> pairs(n);
+    // ---- Full-width radix ----
+
+    // NA owns the type minimum, so shifting real keys down by 1 keeps the max below the NA key
+    constexpr bool shift_below_na = CppIntegerType<T> && is<T, unwrap_t<as_r_scalar_t<T>>> &&
+        unwrap(na<as_r_scalar_t<T>>()) == std::numeric_limits<T>::min();
+    constexpr radix_key_t NA_KEY = std::numeric_limits<radix_key_t>::max();
+
+    std::vector<key_index<radix_key_t>> pairs(n);
     for (uint32_t i = 0; i < n; ++i) {
-        unsigned_t key;
-        if (is_na(p_x[i])) {
-            key = std::numeric_limits<unsigned_t>::max();
-        } else {
-            T v = p_x[i] + T(0); // To normalise -0.0 into 0.0, preserving tie order
-            key = ska_sort::detail::to_unsigned_or_bool(v);
-            if constexpr (CppIntegerType<T> && is<T, unwrap_t<as_r_scalar_t<T>>> && (unwrap(na<as_r_scalar_t<T>>()) == std::numeric_limits<T>::min())){
-                key -= 1u; // keep max real value below the NA sentinel
+        radix_key_t radix_key = NA_KEY;
+        if (!is_na(p_x[i])) {
+            T v = p_x[i] + T(0); // + 0 normalises -0.0 to 0.0
+            radix_key = ska_sort::detail::to_unsigned_or_bool(v);
+            if constexpr (shift_below_na) {
+                radix_key -= 1u;
             }
         }
-        pairs[i] = { key, i };
+        pairs[i] = { radix_key, i };
     }
     return order_radix(pairs);
-
 }
 
 }
