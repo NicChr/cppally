@@ -147,19 +147,32 @@ struct groups {
               i = internal::run_end(p_ids, i, n);
           }
       } else {
+
+        const int* RESTRICT p_ids = ids.data();
+
+        if (ordered){
+            // Initialise with largest int
+            // so that for each group we take the min(out[i], i)
+            // After passing through all data, this should reduce to the first location for each group
+            out.fill(r_limits<r_int>::max());
+            int* RESTRICT p_out = out.data();
+    
+            for (int i = 0; i < n; ++i){
+                int curr_group = p_ids[i];
+                p_out[curr_group] = std::min(p_out[curr_group], i);
+              }
+        } else {
+
+            int* RESTRICT p_out = out.data();
+            int target_id = 0;
+            for (int i = 0; i < n && target_id < n_groups; ++i){
+                if (p_ids[i] == target_id){
+                    p_out[target_id++] = i;
+                }
+              }
+        }
   
-          // Initialise with largest int
-          // so that for each group we take the min(out[i], i)
-          // After passing through all data, this should reduce to the first location for each group
-          out.fill(r_limits<r_int>::max());
-  
-          const int* RESTRICT p_ids = ids.data();
-          int* RESTRICT p_out = out.data();
-  
-          for (int i = 0; i < n; ++i){
-              int curr_group = p_ids[i];
-              p_out[curr_group] = std::min(p_out[curr_group], i);
-            }
+
   
           //   for (int i = 0; i < n_groups; ++i){
           //     if (p_out[i] == unwrap(r_limits<r_int>::max())) [[unlikely]] {
