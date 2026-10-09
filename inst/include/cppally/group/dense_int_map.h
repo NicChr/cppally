@@ -56,7 +56,7 @@ inline bool use_int_table(uint64_t range_span, r_size_t n) {
 // what gets stored, the `empty_value` sentinel, and `find_or`'s `not_found`. Callers wanting
 // 64-bit values over 32-bit keys (e.g. `match<r_int64>` on an int haystack) specify `Val` explicitly.
 //
-// NA is an ordinary key (it gets a side slot).
+// NA is an ordinary key (it gets the table's last slot).
 // The table needs one value to mark unoccupied slots, so `empty_value` must be a value the
 // caller never stores (-1 when storing 0-indexed positions/ids, 0 when storing presence flags).
 // Note `not_found` may legitimately be NA - it is returned, never stored, so it does not
@@ -69,14 +69,14 @@ bool run_dense_int_map(Key min_val, Key max_val, Val empty_value, F&& body) {
 
     uint64_t range_span = static_cast<uint64_t>(max_val) - static_cast<uint64_t>(min_val);
 
-    // Table maps (key - min_val) -> Val, NA keys get a side slot
-    std::vector<Val> table(range_span + 1, empty_value);
-    Val na_slot = empty_value;
+    // Table maps (key - min_val) -> Val, NA keys get the extra last slot
+    size_t na_idx = static_cast<size_t>(range_span) + 1;
+    std::vector<Val> table(na_idx + 1, empty_value);
     Val* RESTRICT p_table = table.data();
 
-    // na_slot is the only capture that must be by reference (mutable shared state).
-    auto try_emplace = [&na_slot, p_table, min_val, empty_value](Key key, Val v) -> std::pair<Val, bool> {
-        Val& slot = is_na(key) ? na_slot : p_table[static_cast<size_t>(key - min_val)];
+    // NA is selected before `key - min_val` is evaluated, which would overflow for NA
+    auto try_emplace = [p_table, min_val, na_idx, empty_value](Key key, Val v) -> std::pair<Val, bool> {
+        Val& slot = p_table[is_na(key) ? na_idx : static_cast<size_t>(key - min_val)];
         if (slot == empty_value) {
             slot = v;
             return {v, true};
@@ -84,14 +84,11 @@ bool run_dense_int_map(Key min_val, Key max_val, Val empty_value, F&& body) {
         return {slot, false};
     };
 
-    auto find_or = [&na_slot, p_table, min_val, max_val, empty_value](Key key, Val not_found) -> Val {
-        if (is_na(key)) {
-            return na_slot == empty_value ? not_found : na_slot;
-        }
-        if (key < min_val || key > max_val) {
+    auto find_or = [p_table, min_val, max_val, na_idx, empty_value](Key key, Val not_found) -> Val {
+        if (!is_na(key) && (key < min_val || key > max_val)) {
             return not_found;
         }
-        Val slot = p_table[static_cast<size_t>(key - min_val)];
+        Val slot = p_table[is_na(key) ? na_idx : static_cast<size_t>(key - min_val)];
         return slot == empty_value ? not_found : slot;
     };
 
