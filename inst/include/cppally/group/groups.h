@@ -130,13 +130,15 @@ struct groups {
           return out;
       }
 
+      int avg_group_size = n / n_groups;
+
       const int* RESTRICT p_ids = ids.data();
       int* RESTRICT p_out = out.data();
   
       // If group IDs are sorted, we can use a gallop search.
       // This works by skipping steps, with each step doubling in size.
       // Once we overshoot, use a binary search to find the start index.
-      if (sorted && n / n_groups >= internal::min_gallop_run){
+      if (sorted && avg_group_size >= internal::min_gallop_run){
           int i = 0;
           while (i < n){
               p_out[p_ids[i]] = i;
@@ -172,11 +174,13 @@ struct groups {
         return out;
     }
 
+    int avg_group_size = n / n_groups;
+
     const int* RESTRICT p_ids = ids.data();
     int* RESTRICT p_out = out.data();
 
     // Sorted ids make each group one contiguous run, so its count is the run length.
-    if (sorted && n / n_groups >= internal::min_gallop_run){
+    if (sorted && avg_group_size >= internal::min_gallop_run){
 
         int i = 0;
 
@@ -186,30 +190,25 @@ struct groups {
             i = end;
         }
 
-    } else if (n_groups <= 2048){
+    } else if (n_groups <= 2048 && avg_group_size >= 16){
 
         // When N groups is small and group IDs are repeated, it is better to use multiple histograms
         // 4 histograms of size N groups each
-        std::vector<int> histograms(4 * static_cast<std::size_t>(n_groups), 0);
-        int* RESTRICT hist1 = histograms.data();
-        int* RESTRICT hist2 = hist1 + n_groups;
-        int* RESTRICT hist3 = hist2 + n_groups;
-        int* RESTRICT hist4 = hist3 + n_groups;
+        uint32_t ng = static_cast<uint32_t>(n_groups);
+        std::vector<uint32_t> histograms(4 * static_cast<std::size_t>(ng), uint32_t(0));
+        internal::count_over_histograms(
+            [p_ids](int i) noexcept { return static_cast<uint32_t>(p_ids[i]); },
+            n, ng, histograms.data()
+        );
 
-        // Round down n to multiple of 4
-        int n4 = n - (n % 4);
-        for (int i = 0; i < n4; i += 4){
-            hist1[p_ids[i]]++;
-            hist2[p_ids[i + 1]]++;
-            hist3[p_ids[i + 2]]++;
-            hist4[p_ids[i + 3]]++;
-        }
-        for (int i = n4; i < n; ++i){
-            hist1[p_ids[i]]++;
-        }
+        const uint32_t* RESTRICT hist1 = histograms.data();
+        const uint32_t* RESTRICT hist2 = hist1 + ng;
+        const uint32_t* RESTRICT hist3 = hist2 + ng;
+        const uint32_t* RESTRICT hist4 = hist3 + ng;
+
         // Final group count equals the group counts of each histogram
-        for (int g = 0; g < n_groups; ++g){
-            p_out[g] = hist1[g] + hist2[g] + hist3[g] + hist4[g];
+        for (uint32_t g = 0; g < ng; ++g){
+            p_out[g] = static_cast<int>(hist1[g] + hist2[g] + hist3[g] + hist4[g]);
         }
 
     } else {
