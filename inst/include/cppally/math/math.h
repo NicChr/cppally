@@ -354,6 +354,54 @@ inline r_int lcm(r_lgl x, r_lgl y, r_lgl tol = r_limits<r_lgl>::tolerance()) noe
   return lcm(r_int(unwrap(x)), r_int(unwrap(y)), r_int(unwrap(tol)));
 }
 
+template <RMathType T>
+r_dbl sin(T x){
+  return r_dbl(std::sin(internal::coerce_number<r_dbl>(x)));
+}
+template <RMathType T>
+r_dbl cos(T x){
+  return r_dbl(std::cos(internal::coerce_number<r_dbl>(x)));
+}
+
+template <RMathType T>
+r_dbl tan(T x){
+  return r_dbl(std::tan(internal::coerce_number<r_dbl>(x)));
+}
+
+template <RMathType T>
+r_dbl asin(T x){
+  return r_dbl(std::asin(internal::coerce_number<r_dbl>(x)));
+}
+
+template <RMathType T>
+r_dbl acos(T x){
+  return r_dbl(std::acos(internal::coerce_number<r_dbl>(x)));
+}
+
+template <RMathType T>
+r_dbl atan(T x){
+  return r_dbl(std::atan(internal::coerce_number<r_dbl>(x)));
+}
+
+template <RMathType T>
+r_dbl atan2(T x){
+  return r_dbl(std::atan2(internal::coerce_number<r_dbl>(x)));
+}
+
+template <RMathType T>
+r_dbl sinh(T x){
+  return r_dbl(std::sinh(internal::coerce_number<r_dbl>(x)));
+}
+
+template <RMathType T>
+r_dbl cosh(T x){
+  return r_dbl(std::cosh(internal::coerce_number<r_dbl>(x)));
+}
+
+template <RMathType T>
+r_dbl tanh(T x){
+  return r_dbl(std::tanh(internal::coerce_number<r_dbl>(x)));
+}
 
 }
 
