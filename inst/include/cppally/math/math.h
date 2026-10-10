@@ -157,16 +157,6 @@ r_dbl pow(T x, U y){
 }
 
 template <RMathType T>
-r_dbl log10(T x){
-  return r_dbl(std::log10(unwrap(internal::coerce_number<r_dbl>(x))));
-}
-
-template <RMathType T>
-r_dbl log2(T x){
-  return r_dbl(std::log2(unwrap(internal::coerce_number<r_dbl>(x))));
-}
-
-template <RMathType T>
 r_dbl exp(T x){
   return r_dbl(std::exp(internal::coerce_number<r_dbl>(x)));
 }
@@ -179,6 +169,21 @@ r_dbl log(T x, U base){
 template <RMathType T>
 r_dbl log(T x){
   return r_dbl(std::log(internal::coerce_number<r_dbl>(x)));
+}
+
+template <RMathType T>
+r_dbl log10(T x){
+  return r_dbl(std::log10(unwrap(internal::coerce_number<r_dbl>(x))));
+}
+
+template <RMathType T>
+r_dbl log2(T x){
+  return r_dbl(std::log2(unwrap(internal::coerce_number<r_dbl>(x))));
+}
+
+template <RMathType T>
+r_dbl log1p(T x){
+  return r_dbl(std::log1p(unwrap(internal::coerce_number<r_dbl>(x))));
 }
 
 template <MathType T, MathType U>
