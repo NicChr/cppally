@@ -162,6 +162,11 @@ r_dbl log10(T x){
 }
 
 template <RMathType T>
+r_dbl log2(T x){
+  return r_dbl(std::log2(unwrap(internal::coerce_number<r_dbl>(x))));
+}
+
+template <RMathType T>
 r_dbl exp(T x){
   return r_dbl(std::exp(internal::coerce_number<r_dbl>(x)));
 }
