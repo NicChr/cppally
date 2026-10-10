@@ -80,7 +80,10 @@ template <typename T>
 concept RIntegerType = RLogicalType<T> || RShortIntegerType<T> || RLongIntegerType<T>;
 
 template <typename T>
-concept CppIntegerType = std::is_integral_v<std::remove_cvref_t<T>>;
+concept CppIntegerNumber = std::is_integral_v<std::remove_cvref_t<T>> && !is<T, bool> && !CppCharType<T>;
+
+template <typename T>
+concept CppIntegerType = CppLogicalType<T> || CppCharType<T> || CppIntegerNumber<T>;
 
 template <typename T>
 concept IntegerType = RIntegerType<T> || CppIntegerType<T>;
@@ -98,16 +101,13 @@ template <typename T>
 concept RIntegerNumber = RShortIntegerType<T> || RLongIntegerType<T>;
 
 template <typename T>
-concept CppIntegerNumber = std::is_integral_v<std::remove_cvref_t<T>> && !is<T, bool> && !CppCharType<T>;
-
-template <typename T>
 concept IntegerNumber = RIntegerNumber<T> || CppIntegerNumber<T>;
 
 template <typename T>
 concept RNumber = RIntegerNumber<T> || RFloatType<T>;
 
 template <typename T>
-concept CppNumber = std::is_arithmetic_v<std::remove_cvref_t<T>> && !is<T, bool> && !CppCharType<T>;
+concept CppNumber = CppIntegerNumber<T> || CppFloatType<T>;
 
 template <typename T>
 concept Number = RNumber<T> || CppNumber<T>;
@@ -147,7 +147,7 @@ template <typename T>
 concept RMathType = RLogicalType<T> || RNumber<T>;
 
 template <typename T>
-concept CppMathType = std::is_arithmetic_v<std::remove_cvref_t<T>>;
+concept CppMathType = CppLogicalType<T> || CppCharType<T> || CppNumber<T>;
 
 template <typename T>
 concept MathType = RMathType<T> || CppMathType<T>;
