@@ -247,6 +247,7 @@ struct groups {
 
 namespace internal {
 
+// Make groups from cppally::order(x)
 template <RSortableType T>
 inline groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
     r_size_t n = x.length();
@@ -258,19 +259,22 @@ inline groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
     if (n == 0) return groups(r_vec<r_int>(), 0, true, true);
     
     r_vec<r_int> group_ids(n);
+    int* RESTRICT p_group_ids = group_ids.data();
+
+    int first_idx = unwrap(o.get(0));
+    p_group_ids[first_idx] =  0;
 
     int current_group = 0;
-
-    group_ids.set(unwrap(o.get(0)), r_int(0));
+    T prev_value = x.view(first_idx);
 
     for (r_size_t i = 1; i < n; ++i) {
-        int idx_curr = unwrap(o.get(i));
-        int idx_prev = unwrap(o.get(i - 1));
+        int curr_idx = unwrap(o.get(i));
+        T curr_value = x.view(curr_idx);
 
-        if (!identical(x.view(idx_curr), x.view(idx_prev))) {
-            current_group++;
-        }
-        group_ids.set(idx_curr, r_int(current_group));
+        current_group += !identical(curr_value, prev_value);
+        p_group_ids[curr_idx] = current_group;
+
+        prev_value = std::move(curr_value);
     }
 
     int n_groups = current_group + 1;
