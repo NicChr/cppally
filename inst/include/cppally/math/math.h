@@ -161,6 +161,11 @@ r_dbl exp(T x){
   return r_dbl(std::exp(internal::coerce_number<r_dbl>(x)));
 }
 
+template <RMathType T>
+r_dbl expm1(T x){
+  return r_dbl(std::expm1(internal::coerce_number<r_dbl>(x)));
+}
+
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>)
 r_dbl log(T x, U base){
@@ -173,17 +178,17 @@ r_dbl log(T x){
 
 template <RMathType T>
 r_dbl log10(T x){
-  return r_dbl(std::log10(unwrap(internal::coerce_number<r_dbl>(x))));
+  return r_dbl(std::log10(internal::coerce_number<r_dbl>(x)));
 }
 
 template <RMathType T>
 r_dbl log2(T x){
-  return r_dbl(std::log2(unwrap(internal::coerce_number<r_dbl>(x))));
+  return r_dbl(std::log2(internal::coerce_number<r_dbl>(x)));
 }
 
 template <RMathType T>
 r_dbl log1p(T x){
-  return r_dbl(std::log1p(unwrap(internal::coerce_number<r_dbl>(x))));
+  return r_dbl(std::log1p(internal::coerce_number<r_dbl>(x)));
 }
 
 template <MathType T, MathType U>
