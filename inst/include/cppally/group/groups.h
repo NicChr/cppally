@@ -30,54 +30,62 @@ inline constexpr int min_gallop = 32;
 // to run; below it the branchless scan wins. Break-even measured in (10, 100)
 inline constexpr int min_gallop_run = 64;
 
-// End of the run starting at `i`: the smallest j > i with p[j] != p[i], or `n`
+// End of the run starting at `start`: the smallest j > start with p[j] != p[start], or `n`
 // when the run reaches the end. Requires non-decreasing `p`.
 // Cost scales with the run being skipped, not with `n`
 
-// 1. Scan linearly from `i` over the first `min_gallop` data points
-// 2. If the run is longer than that, gallop by doubling the probe distance from `i` until we overshoot the run end
+// 1. Scan linearly from `start` over the first `min_gallop` data points
+// 2. If the run is longer than that, gallop by doubling the probe distance from `start` until we overshoot the run end
 // 3. Binary search the bracket left behind: from just past the last probe still inside the run, up to the probe that overshot
-inline int run_end(const int* RESTRICT p, int i, int n) noexcept {
+inline int run_end(const int* RESTRICT p, int start, int n) noexcept {
 
-    int curr = p[i];
+    int curr = p[start];
+    int span = n - start;
 
     // Short runs are the common case and stream well: scan them directly.
-    // Written via `n - i` to avoid overflowing `i + min_gallop`
-    int linear_end = n - i > min_gallop ? i + min_gallop : n;
+    // Written via `span` to avoid overflowing `start + min_gallop`
+    int linear_end = span > min_gallop ? start + min_gallop : n;
 
-    // Linear-search in-case short-runs are common because in that scenario this is faster
-    // By doing this we also warm up the min gallop size
-    for (int j = i + 1; j < linear_end; ++j){
+    // ----- Linear search first few elements -----
+    // Also warms up starting gallop size
+    for (int j = start + 1; j < linear_end; ++j){
+        // If value != curr, then we have reached the end of the current run
         if (p[j] != curr){
             return j;
         }
     }
 
+    // Linear scan didn't find run end and we're at the end of the data, run end is `n`
     if (linear_end == n){
         return n;
     }
 
-    // Long run: gallop to bracket its end. Sampling suffices because `p` is
-    // non-decreasing, so p[hi] == curr pins all of [i, hi] to `curr`
-    int lo = linear_end;      // run end is at or past `lo`
+    // ----- Doubling steps -----
+    // Safe to skip indices since `p` is in ascending order.
+    // p[hi] == curr implies all [start, hi] is `curr`
+    int lo = linear_end;   // run end is at or past `lo`
     int hi = lo;           // next probe
-    int step = min_gallop; // always `hi - i`
+    int step = min_gallop; // always `hi - start`
 
     while (hi < n && p[hi] == curr){
         lo = hi + 1;
         // Double the probe distance, clamped so `hi` cannot pass `n`
-        step = step < ((n - i) >> 1) ? step << 1 : n - i;
-        hi = i + step;
+        step = step < (span >> 1) ? step << 1 : span;
+        hi = start + step;
     }
 
-    // Binary search: the run end is now in [lo, hi]
+    // ----- Binary search -----
+    // run end is in [lo, hi]. 
+    // Halve range until lo == hi == run end
     while (lo < hi){
 
         int mid = lo + ((hi - lo) >> 1);
 
         if (p[mid] == curr){
+            // [lo, hi] -> [mid + 1, hi] --> mid = (mid + 1 + hi) / 2
             lo = mid + 1;
         } else {
+            // [lo, hi] -> [lo, mid] --> mid = (lo + mid) / 2
             hi = mid;
         }
     }
