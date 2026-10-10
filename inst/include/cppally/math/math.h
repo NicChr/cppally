@@ -99,7 +99,7 @@ inline constexpr r_int abs(r_lgl x) noexcept {
   return abs(r_int(unwrap(x)));
 }
 
-template <RNumber T>
+template <RMathType T>
 constexpr T floor(T x) noexcept {
   return is_na(x) ? x : T{internal::floor2(unwrap(x))};
 }
@@ -108,7 +108,7 @@ constexpr auto floor(T x) noexcept {
   return +x;
 }
 
-template <RNumber T>
+template <RMathType T>
 constexpr T ceiling(T x) noexcept {
   return is_na(x) ? x : T{std::ceil(unwrap(x))};
 }
@@ -117,7 +117,7 @@ constexpr auto ceiling(T x) noexcept {
   return +x;
 }
 
-template <RNumber T>
+template <RMathType T>
 constexpr T trunc(T x) noexcept {
   return is_na(x) ? x : T{std::trunc(unwrap(x))};
 }
@@ -197,7 +197,7 @@ r_dbl round(T x, U digits){
   }
 }
 
-template <RNumber T>
+template <RMathType T>
 T round(T x){
   if (is_na(x)){
     return x;
