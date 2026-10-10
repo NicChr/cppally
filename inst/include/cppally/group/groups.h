@@ -204,7 +204,7 @@ struct groups {
         // 4 histograms of size N groups each
         uint32_t ng = static_cast<uint32_t>(n_groups);
         std::vector<uint32_t> histograms(4 * static_cast<std::size_t>(ng), uint32_t(0));
-        internal::count_over_histograms(
+        internal::sort::count_over_histograms(
             [p_ids](int i) noexcept { return static_cast<uint32_t>(p_ids[i]); },
             n, ng, histograms.data()
         );
@@ -243,7 +243,7 @@ struct groups {
           int n = ids.length();
           r_vec<r_int> out(n);
           const int* RESTRICT p_ids = ids.data();
-          internal::counting_order(
+          internal::sort::counting_order(
               [p_ids](int i) noexcept { return static_cast<uint32_t>(p_ids[i]); },
               n, static_cast<uint32_t>(n_groups), out.data()
           );

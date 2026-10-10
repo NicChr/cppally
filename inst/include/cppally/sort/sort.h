@@ -29,6 +29,8 @@ namespace cppally {
 
 namespace internal {
 
+namespace sort {
+
 // general order vector that sorts `x`
 // NAs are ordered last
 // Internal function to be used for low overhead sorting small vectors
@@ -60,7 +62,7 @@ struct key_of {
     key_t operator()(const key_index<key_t>& k) const noexcept { return k.key; }
 };
 
-// One shared (key, index) ska_sort instantiation per key type, used by order_radix and string sorting
+// Sort key-index pairs
 template <typename key_t>
 inline void sort_key_index(key_index<key_t>* first, key_index<key_t>* last) {
     ska_sort::ska_sort(first, last, [](const key_index<key_t>& k) { return std::make_pair(k.key, k.index); });
@@ -302,131 +304,6 @@ inline void order_strings_direct(const r_str_view* strs, uint32_t n, int* RESTRI
     }
 }
 
-}
-
-// 0-indexed ordering permutation vector that represents in sequential order, 
-// the indices of `x` elements that need to be chosen to return a sorted `x`
-template <RSortableVector T>
-inline r_vec<r_int> order(const T& x) {
-
-    using data_t = typename T::data_type;
-
-    uint32_t n = x.length();
-    
-    if (n < 200){
-        return internal::order_cmp(x);
-    }
-
-    if constexpr (RNumericType<data_t>) {
-
-        // ----------------------------------------------------------------------
-        // Numeric data
-        // ----------------------------------------------------------------------
-    
-        T rng = range(x, true);
-        auto min_val = rng.get(0), max_val = rng.get(1);
-    
-        return internal::order_numeric_data(x.data(), n, unwrap(min_val), unwrap(max_val));
-
-    } else if constexpr (RStringType<data_t>) {
-
-        // ----------------------------------------------------------------------
-        // Strings
-        // ---------------------------------------------------------------------- 
-    
-        r_vec<r_int> out(n);
-        auto* RESTRICT px = x.data();
-
-        uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>>(px, n);
-        // High cardinality -> direct sort
-        if (estimate >= n / 2) {
-            static_assert(sizeof(r_str_view) == sizeof(SEXP) && std::is_standard_layout_v<r_str_view> && std::is_trivially_copyable_v<r_str_view>);
-            internal::order_strings_direct(reinterpret_cast<const r_str_view*>(px), n, out.data());
-            return out;
-        }
-        // Low cardinality -> sort uniques
-        auto n_uniques_guess = internal::get_hash_map_reserve_size<T>(px, n);
-
-        // Single Hash Map to assign group IDs and count frequencies
-        ankerl::unordered_dense::map<SEXP, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>> lookup;
-        lookup.reserve(n_uniques_guess);
-        
-        std::vector<r_str_view> uniques;
-        uniques.reserve(n_uniques_guess);
-        std::vector<uint32_t> counts;
-        counts.reserve(n_uniques_guess);
-        std::vector<uint32_t> group_ids; // Caches the ID for each element
-        group_ids.reserve(n);
-        
-        uint32_t last_id = uint32_t(-1);
-        
-        for (uint32_t i = 0; i < n; ++i) {
-            r_str_view str = r_str_view(px[i], internal::no_checks_tag{});
-            
-            if (str.is_na()){
-                group_ids.push_back(uint32_t(-1));
-            }
-            // Linear Scan Cache - identical strings have identical pointers
-            else if (i > 0 && unwrap(str) == px[i - 1]) { 
-                group_ids.push_back(last_id);
-                counts[last_id]++;
-            } 
-            else {
-                auto [it, inserted] = lookup.try_emplace(str, static_cast<int>(uniques.size()));
-                if (inserted) {
-                    last_id = uniques.size();
-                    uniques.push_back(str);
-                    counts.push_back(1);
-                } else {
-                    last_id = it->second;
-                    counts[last_id]++;
-                }
-                group_ids.push_back(last_id);
-            }
-        }
-
-        uint32_t n_uniques = uniques.size();
-        // Sort the unique group IDs by string content
-        std::vector<uint32_t> sorted_ids = internal::sort_unique_strings(uniques);
-
-        // Prefix Sums: calculate the starting write offset for each group
-        std::vector<uint32_t> offsets(n_uniques + 1);
-        uint32_t current_offset = 0;
-
-        for (uint32_t id : sorted_ids) {
-            offsets[id] = current_offset;
-            current_offset += counts[id];
-        }
-
-        offsets[n_uniques] = current_offset; // NA bucket after all real groups
-    
-        // Distribute indices (Counting Sort)
-        int* RESTRICT p_out = out.data();
-        for (uint32_t i = 0; i < n; ++i) {
-            p_out[offsets[std::min(group_ids[i], n_uniques)]++] = i;
-        }
-        
-        return out;
-    } else {
-        return internal::order_cmp(x);
-    }
-}
-
-inline r_vec<r_int> order(const r_factors& x) {
-    return order(x.value);
-}
-
-template <typename T>
-requires (requires (const T&x) { order(x); })
-[[deprecated("order(): preserve_ties is ignored")]]
-inline r_vec<r_int> order(const T& x, bool) {
-    return order(x);
-}
-
-// Sorting
-
-namespace internal {
-
 // In-place sort
 template <typename T>
 requires requires (const T& v, r_size_t i) { v.get(i);}
@@ -479,6 +356,129 @@ void unsort_in_place(T& x, const r_vec<r_int>& order){
 
 }
 
+}
+
+// 0-indexed ordering permutation vector that represents in sequential order, 
+// the indices of `x` elements that need to be chosen to return a sorted `x`
+template <RSortableVector T>
+inline r_vec<r_int> order(const T& x) {
+
+    using data_t = typename T::data_type;
+
+    uint32_t n = x.length();
+    
+    if (n < 200){
+        return internal::sort::order_cmp(x);
+    }
+
+    if constexpr (RNumericType<data_t>) {
+
+        // ----------------------------------------------------------------------
+        // Numeric data
+        // ----------------------------------------------------------------------
+    
+        T rng = range(x, true);
+        auto min_val = rng.get(0), max_val = rng.get(1);
+    
+        return internal::sort::order_numeric_data(x.data(), n, unwrap(min_val), unwrap(max_val));
+
+    } else if constexpr (RStringType<data_t>) {
+
+        // ----------------------------------------------------------------------
+        // Strings
+        // ---------------------------------------------------------------------- 
+    
+        r_vec<r_int> out(n);
+        auto* RESTRICT px = x.data();
+
+        uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>>(px, n);
+        // High cardinality -> direct sort
+        if (estimate >= n / 2) {
+            static_assert(sizeof(r_str_view) == sizeof(SEXP) && std::is_standard_layout_v<r_str_view> && std::is_trivially_copyable_v<r_str_view>);
+            internal::sort::order_strings_direct(reinterpret_cast<const r_str_view*>(px), n, out.data());
+            return out;
+        }
+        // Low cardinality -> sort uniques
+        auto n_uniques_guess = internal::get_hash_map_reserve_size<T>(px, n);
+
+        // Single Hash Map to assign group IDs and count frequencies
+        ankerl::unordered_dense::map<SEXP, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>> lookup;
+        lookup.reserve(n_uniques_guess);
+        
+        std::vector<r_str_view> uniques;
+        uniques.reserve(n_uniques_guess);
+        std::vector<uint32_t> counts;
+        counts.reserve(n_uniques_guess);
+        std::vector<uint32_t> group_ids; // Caches the ID for each element
+        group_ids.reserve(n);
+        
+        uint32_t last_id = uint32_t(-1);
+        
+        for (uint32_t i = 0; i < n; ++i) {
+            r_str_view str = r_str_view(px[i], internal::no_checks_tag{});
+            
+            if (str.is_na()){
+                group_ids.push_back(uint32_t(-1));
+            }
+            // Linear Scan Cache - identical strings have identical pointers
+            else if (i > 0 && unwrap(str) == px[i - 1]) { 
+                group_ids.push_back(last_id);
+                counts[last_id]++;
+            } 
+            else {
+                auto [it, inserted] = lookup.try_emplace(str, static_cast<int>(uniques.size()));
+                if (inserted) {
+                    last_id = uniques.size();
+                    uniques.push_back(str);
+                    counts.push_back(1);
+                } else {
+                    last_id = it->second;
+                    counts[last_id]++;
+                }
+                group_ids.push_back(last_id);
+            }
+        }
+
+        uint32_t n_uniques = uniques.size();
+        // Sort the unique group IDs by string content
+        std::vector<uint32_t> sorted_ids = internal::sort::sort_unique_strings(uniques);
+
+        // Prefix Sums: calculate the starting write offset for each group
+        std::vector<uint32_t> offsets(n_uniques + 1);
+        uint32_t current_offset = 0;
+
+        for (uint32_t id : sorted_ids) {
+            offsets[id] = current_offset;
+            current_offset += counts[id];
+        }
+
+        offsets[n_uniques] = current_offset; // NA bucket after all real groups
+    
+        // Distribute indices (Counting Sort)
+        int* RESTRICT p_out = out.data();
+        for (uint32_t i = 0; i < n; ++i) {
+            p_out[offsets[std::min(group_ids[i], n_uniques)]++] = i;
+        }
+        
+        return out;
+    } else {
+        return internal::sort::order_cmp(x);
+    }
+}
+
+inline r_vec<r_int> order(const r_factors& x) {
+    return order(x.value);
+}
+
+template <typename T>
+requires (requires (const T&x) { order(x); })
+[[deprecated("order(): preserve_ties is ignored")]]
+inline r_vec<r_int> order(const T& x, bool) {
+    return order(x);
+}
+
+// Sorting
+
 template <typename T>
 requires requires (T&& v, r_size_t i) { order(v); v.get(i);}
 std::remove_cvref_t<T> sort(T&& x){
@@ -497,7 +497,7 @@ std::remove_cvref_t<T> sort(T&& x){
 
     if constexpr (std::is_same_v<T, std::remove_cvref_t<T>>){
         if (x.is_exclusive()){
-            internal::sort_in_place(x, std::move(o));
+            internal::sort::sort_in_place(x, std::move(o));
             return std::move(x);
         }
     }

@@ -9,6 +9,8 @@ namespace cppally {
 
 namespace internal {
 
+namespace sort {
+
 // Counts key(i) over [0, n) into 4 histograms, each of size n_keys (except for the 4th block which can be 1-3 elements longer).
 // Blocks are non-overlapping, contiguous, and their ranges are: [0, n1), [n1, n2), [n2, n3), [n3, n).
 // n1 = n / 4, n2 = n1 * 2, n3 = n1 * 3.
@@ -96,6 +98,8 @@ inline void counting_order(KeyFn key, int n, uint32_t n_keys, int* RESTRICT out)
     for (int i = 0; i < n; ++i){
         out[offsets[key(i)]++] = i;
     }
+}
+
 }
 
 }
