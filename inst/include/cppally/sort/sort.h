@@ -62,6 +62,12 @@ struct key_of {
     key_t operator()(const key_index<key_t>& k) const noexcept { return k.key; }
 };
 
+// One shared (key, index) ska_sort instantiation per key type, used by order_radix and string sorting
+template <typename key_t>
+inline void sort_key_index(key_index<key_t>* first, key_index<key_t>* last) {
+    ska_sort::ska_sort(first, last, [](const key_index<key_t>& k) { return std::make_pair(k.key, k.index); });
+}
+
 // Radix sort of pre-materialised (key, index) pairs. Keys are co-located with
 // the index so every pass is a sequential scan - no per-pass gather through
 // the permutation index. NAs must already be mapped to the max key value.
@@ -72,7 +78,7 @@ inline r_vec<r_int> order_radix(std::vector<key_index<key_t>>& pairs) {
 
     // Where the sorted result ends up; usually `pairs`, but ska_sort_copy may
     // leave it in the scratch buffer.
-    const key_index<key_t>* RESTRICT src = pairs.data();
+    key_index<key_t>* RESTRICT src = pairs.data();
     std::vector<key_index<key_t>> buffer;
 
     if constexpr (sizeof(key_t) == sizeof(int)) {
@@ -80,15 +86,14 @@ inline r_vec<r_int> order_radix(std::vector<key_index<key_t>>& pairs) {
         // case sorts on the bare key (~4 flat passes) instead of widening to a
         // (key, index) pair.
         buffer.resize(n);
-        bool in_buffer = ska_sort::ska_sort_copy(pairs.begin(), pairs.end(), buffer.begin(), key_of{});
+        bool in_buffer = ska_sort::ska_sort_copy(src, src + n, buffer.data(), key_of{});
         if (in_buffer) {
             src = buffer.data();
         }
     } else {
         // 64-bit key: ska_sort_copy degrades to unstable in-place at this width,
         // so stability still needs the (key, index) composite.
-        ska_sort::ska_sort(pairs.begin(), pairs.end(),
-        [](const key_index<key_t>& k) { return std::make_pair(k.key, k.index); });
+        sort_key_index(src, src + n);
     }
 
     r_vec<r_int> out(static_cast<r_size_t>(n));
@@ -191,6 +196,82 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
     return order_radix(pairs);
 }
 
+// Pack 8 bytes of string into uint64_t (pad zeros at the end)
+inline uint64_t string_radix_key(const char* s, uint32_t depth) noexcept {
+    s += depth;
+    uint64_t k = 0;
+    for (int b = 0; b < 8 && s[b]; ++b) {
+        k |= static_cast<uint64_t>(static_cast<unsigned char>(s[b])) << (56 - 8 * b);
+    }
+    return k;
+}
+
+// Fills ids [0, n - 1] based on order of unique strings.
+// C-locale is used for order.
+inline void sort_unique_strings(const std::vector<r_str_view>& uniques, uint32_t* ids) {
+
+    uint32_t n = uniques.size();
+
+    if (n < 256) {
+        std::iota(ids, ids + n, 0u);
+        std::sort(ids, ids + n, [&uniques](uint32_t a, uint32_t b) {
+            return std::strcmp(uniques[a].c_str(), uniques[b].c_str()) < 0;
+        });
+        return;
+    }
+
+    // Build radix keys on first 8 bytes
+    std::vector<key_index<uint64_t>> keys(n);
+    for (uint32_t id = 0; id < n; ++id) {
+        keys[id] = { string_radix_key(uniques[id].c_str(), 0), id };
+    }
+
+    // Ties are re-keyed 8 bytes deeper
+    struct run {
+        uint32_t begin;
+        uint32_t end;
+        uint32_t depth; 
+    };
+
+    std::vector<run> runs = { {0, n, 0} };
+
+    while (!runs.empty()) {
+        run r = runs.back();
+        runs.pop_back();
+
+        key_index<uint64_t>* first = keys.data() + r.begin;
+        key_index<uint64_t>* last = keys.data() + r.end;
+
+        if (r.depth > 0) {
+            for (auto* p = first; p != last; ++p) {
+                p->key = string_radix_key(uniques[p->index].c_str(), r.depth);
+            }
+        }
+
+        // A shared prefix leaves the whole run on one window, nothing to sort at this depth
+        bool all_equal = std::all_of(first, last, [w = first->key](const key_index<uint64_t>& k) { return k.key == w; });
+        if (!all_equal) {
+            sort_key_index(first, last);
+        }
+
+        for (uint32_t j = r.begin; j < r.end;) {
+            uint32_t k = j + 1;
+            while (k < r.end && keys[k].key == keys[j].key) {
+                ++k;
+            }
+            // Non-zero last byte means the strings continue past this window
+            if (k - j > 1 && (keys[j].key & 0xff) != 0) {
+                runs.push_back({j, k, r.depth + 8});
+            }
+            j = k;
+        }
+    }
+
+    for (uint32_t j = 0; j < n; ++j) {
+        ids[j] = keys[j].index;
+    }
+}
+
 }
 
 // 0-indexed ordering permutation vector that represents in sequential order, 
@@ -231,7 +312,7 @@ inline r_vec<r_int> order(const T& x) {
         auto n_uniques_guess = internal::get_hash_map_reserve_size<T>(px, n);
         lookup.reserve(n_uniques_guess);
         
-        std::vector<SEXP> uniques;
+        std::vector<r_str_view> uniques;
         uniques.reserve(n_uniques_guess);
         std::vector<uint32_t> counts;
         counts.reserve(n_uniques_guess);
@@ -241,13 +322,13 @@ inline r_vec<r_int> order(const T& x) {
         uint32_t last_id = uint32_t(-1);
         
         for (uint32_t i = 0; i < n; ++i) {
-            SEXP str = px[i];
+            r_str_view str = r_str_view(px[i], internal::no_checks_tag{});
             
-            if (internal::ptrs_identical(str, unwrap(na<r_str_view>()))){
+            if (str.is_na()){
                 group_ids.push_back(uint32_t(-1));
             }
             // Linear Scan Cache - identical strings have identical pointers
-            else if (i > 0 && str == px[i - 1]) { 
+            else if (i > 0 && unwrap(str) == px[i - 1]) { 
                 group_ids.push_back(last_id);
                 counts[last_id]++;
             } 
@@ -266,55 +347,25 @@ inline r_vec<r_int> order(const T& x) {
         }
 
         uint32_t n_uniques = uniques.size();
-
-        // Sort the unique group IDs by string content (C-locale byte order)
+        // Sort the unique group IDs by string content
         std::vector<uint32_t> sorted_ids(n_uniques);
-        std::iota(sorted_ids.begin(), sorted_ids.end(), 0u);
-
-        // Low cardinality: strcmp sort is already trivial, and building keys would
-        // be pure overhead. High cardinality: pack the first 8 bytes of each unique
-        // big-endian so a plain uint64 compare reproduces strcmp's unsigned byte
-        // order, letting most comparisons skip the strcmp call (strcmp breaks ties).
-        std::vector<uint64_t> prefix;
-        if (n_uniques >= 256) {
-            prefix.resize(n_uniques);
-            for (uint32_t id = 0; id < n_uniques; ++id) {
-                const char* s = CHAR(uniques[id]);
-                uint64_t k = 0;
-                for (int b = 0; b < 8 && s[b]; ++b) {
-                    k |= static_cast<uint64_t>(static_cast<unsigned char>(s[b])) << (56 - 8 * b);
-                }
-                prefix[id] = k;
-            }
-        }
-
-        const uint64_t* pref = prefix.empty() ? nullptr : prefix.data();
-        std::sort(sorted_ids.begin(), sorted_ids.end(), [&, pref](uint32_t a, uint32_t b) {
-            if (pref && pref[a] != pref[b]) { return pref[a] < pref[b]; }
-            return std::strcmp(CHAR(uniques[a]), CHAR(uniques[b])) < 0;
-        });
+        internal::sort_unique_strings(uniques, sorted_ids.data());
 
         // Prefix Sums: calculate the starting write offset for each group
-        std::vector<uint32_t> offsets(n_uniques);
+        std::vector<uint32_t> offsets(n_uniques + 1);
         uint32_t current_offset = 0;
 
         for (uint32_t id : sorted_ids) {
             offsets[id] = current_offset;
             current_offset += counts[id];
         }
-        
-        uint32_t na_offset = current_offset; // NAs go at the very end
-        
+
+        offsets[n_uniques] = current_offset; // NA bucket after all real groups
+    
         // Distribute indices (Counting Sort)
         int* RESTRICT p_out = out.data();
-
         for (uint32_t i = 0; i < n; ++i) {
-            uint32_t id = group_ids[i];
-            if (id == uint32_t(-1)) {
-                p_out[na_offset++] = i;
-            } else {
-                p_out[offsets[id]++] = i;
-            }
+            p_out[offsets[std::min(group_ids[i], n_uniques)]++] = i;
         }
         
         return out;
