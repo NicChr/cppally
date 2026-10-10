@@ -44,25 +44,29 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack, U no_match = n
     return out;
   }
 
-  auto* RESTRICT p_needles = needles.data();
-  auto* RESTRICT p_haystack = haystack.data();
-  auto* RESTRICT p_out = out.data();
-
   // Try the dense int table first (small-range int haystack)
   if constexpr (is<U, r_int>) {
-    bool done = internal::try_dense_int_map(haystack, -1, [&, p_needles, p_haystack, p_out](auto&& try_emplace, auto&& find_or) {
+    bool done = internal::try_dense_int_map(haystack, -1, [&](auto&& try_emplace, auto&& find_or) {
+
+      auto* RESTRICT pneedles = needles.data();
+      auto* RESTRICT phaystack = haystack.data();
+      auto* RESTRICT pout = out.data();
 
       // Build table: first occurrence wins
       for (r_size_t i = 0; i < n_haystack; ++i) {
-        try_emplace(p_haystack[i], static_cast<int>(i));
+        try_emplace(phaystack[i], static_cast<int>(i));
       }
       // Match needles (NA needles match the first NA in the haystack)
       for (r_size_t i = 0; i < n_needles; ++i) {
-        p_out[i] = find_or(p_needles[i], unwrap(no_match));
+        pout[i] = find_or(pneedles[i], unwrap(no_match));
       }
     });
     if (done) return out;
   }
+
+  auto* RESTRICT p_needles = needles.data();
+  auto* RESTRICT p_haystack = haystack.data();
+  auto* RESTRICT p_out = out.data();
 
   // Build hash table
   ankerl::unordered_dense::map<key_t, int_t, internal::r_hash_fn<T>, internal::r_hash_eq<T>> lookup;

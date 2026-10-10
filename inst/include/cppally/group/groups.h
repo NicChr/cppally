@@ -289,25 +289,29 @@ inline groups make_unordered_groups(const T& x) {
     r_vec<r_int> group_ids(n);
     int n_groups;
 
-    auto* RESTRICT p_x = x.data();
-    auto* RESTRICT p_id = group_ids.data();
-
     // Try the dense int table first (For int storage with small range)
     // An all-NA vector falls through to the hash map, which handles NA keys
 
     int next_id = 0;
 
-    bool done = internal::try_dense_int_map(x, -1, [&, p_x, p_id](auto&& try_emplace, auto&&) {
+    bool done = internal::try_dense_int_map(x, -1, [&](auto&& try_emplace, auto&&) {
+        
+        auto* RESTRICT px = x.data();
+        auto* RESTRICT pid = group_ids.data();
+
         for (r_size_t i = 0; i < n; ++i) {
-            auto [id, inserted] = try_emplace(p_x[i], next_id);
+            auto [id, inserted] = try_emplace(px[i], next_id);
             // Branch instead of `next_id += inserted` so the common (found) path
             // carries no dependency between iterations
             if (inserted) {
                 ++next_id;
             }
-            p_id[i] = id;
+            pid[i] = id;
         }
     });
+
+    auto* RESTRICT p_x = x.data();
+    auto* RESTRICT p_id = group_ids.data();
 
     if (!done) {
 
