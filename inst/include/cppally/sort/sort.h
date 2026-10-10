@@ -18,9 +18,7 @@
 #include <cppally/sort/is_sorted.h>
 #include <cppally/sort/counting_order.h>
 #include <cstdint> // For uint32_t and similar
-#include <cstring> // For strcmp
 #include <vector> // For C++ vectors
-#include <numeric>
 #include <limits>
 #include <cmath>
 #include <algorithm> // For std::min
@@ -206,24 +204,14 @@ inline uint64_t string_radix_key(const char* s, uint32_t depth) noexcept {
     return k;
 }
 
-// Fills ids [0, n - 1] based on order of unique strings.
-// C-locale is used for order.
-inline void sort_unique_strings(const std::vector<r_str_view>& uniques, uint32_t* ids) {
+// Sorts radix key-index pairs, caller has to have built radix key from string (first 8 bytes only)
+// Index is used for ties to keep sort stable
+inline void sort_string_keys(const r_str_view* strs, std::vector<key_index<uint64_t>>& keys) {
 
-    uint32_t n = uniques.size();
+    uint32_t n = keys.size();
 
-    if (n < 256) {
-        std::iota(ids, ids + n, 0u);
-        std::sort(ids, ids + n, [&uniques](uint32_t a, uint32_t b) {
-            return std::strcmp(uniques[a].c_str(), uniques[b].c_str()) < 0;
-        });
+    if (n < 2) {
         return;
-    }
-
-    // Build radix keys on first 8 bytes
-    std::vector<key_index<uint64_t>> keys(n);
-    for (uint32_t id = 0; id < n; ++id) {
-        keys[id] = { string_radix_key(uniques[id].c_str(), 0), id };
     }
 
     // Ties are re-keyed 8 bytes deeper
@@ -244,7 +232,7 @@ inline void sort_unique_strings(const std::vector<r_str_view>& uniques, uint32_t
 
         if (r.depth > 0) {
             for (auto* p = first; p != last; ++p) {
-                p->key = string_radix_key(uniques[p->index].c_str(), r.depth);
+                p->key = string_radix_key(strs[p->index].c_str(), r.depth);
             }
         }
 
@@ -266,9 +254,51 @@ inline void sort_unique_strings(const std::vector<r_str_view>& uniques, uint32_t
             j = k;
         }
     }
+}
+
+// Ids [0, n - 1] of the unique strings, in C-locale order
+inline std::vector<uint32_t> sort_unique_strings(const std::vector<r_str_view>& uniques) {
+
+    uint32_t n = uniques.size();
+    std::vector<uint32_t> ids(n);
+
+    std::vector<key_index<uint64_t>> keys(n);
+    for (uint32_t id = 0; id < n; ++id) {
+        keys[id] = { string_radix_key(uniques[id].c_str(), 0), id };
+    }
+
+    sort_string_keys(uniques.data(), keys);
 
     for (uint32_t j = 0; j < n; ++j) {
         ids[j] = keys[j].index;
+    }
+    return ids;
+}
+
+// High-cardinality string vector: skip deduplication and scatter
+inline void order_strings_direct(const r_str_view* strs, uint32_t n, int* RESTRICT p_out) {
+
+    std::vector<key_index<uint64_t>> keys;
+    keys.reserve(n);
+    for (uint32_t i = 0; i < n; ++i) {
+        if (!strs[i].is_na()) {
+            keys.push_back({ string_radix_key(strs[i].c_str(), 0), i });
+        }
+    }
+
+    sort_string_keys(strs, keys);
+
+    uint32_t n_real = keys.size();
+    for (uint32_t j = 0; j < n_real; ++j) {
+        p_out[j] = static_cast<int>(keys[j].index);
+    }
+
+    // NAs last, in element order
+    uint32_t j = n_real;
+    for (uint32_t i = 0; i < n && j < n; ++i) {
+        if (strs[i].is_na()) {
+            p_out[j++] = static_cast<int>(i);
+        }
     }
 }
 
@@ -306,10 +336,19 @@ inline r_vec<r_int> order(const T& x) {
     
         r_vec<r_int> out(n);
         auto* RESTRICT px = x.data();
-        
+
+        uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>>(px, n);
+        // High cardinality -> direct sort
+        if (estimate >= n / 2) {
+            static_assert(sizeof(r_str_view) == sizeof(SEXP) && std::is_standard_layout_v<r_str_view> && std::is_trivially_copyable_v<r_str_view>);
+            internal::order_strings_direct(reinterpret_cast<const r_str_view*>(px), n, out.data());
+            return out;
+        }
+        // Low cardinality -> sort uniques
+        auto n_uniques_guess = internal::get_hash_map_reserve_size<T>(px, n);
+
         // Single Hash Map to assign group IDs and count frequencies
         ankerl::unordered_dense::map<SEXP, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>> lookup;
-        auto n_uniques_guess = internal::get_hash_map_reserve_size<T>(px, n);
         lookup.reserve(n_uniques_guess);
         
         std::vector<r_str_view> uniques;
@@ -348,8 +387,7 @@ inline r_vec<r_int> order(const T& x) {
 
         uint32_t n_uniques = uniques.size();
         // Sort the unique group IDs by string content
-        std::vector<uint32_t> sorted_ids(n_uniques);
-        internal::sort_unique_strings(uniques, sorted_ids.data());
+        std::vector<uint32_t> sorted_ids = internal::sort_unique_strings(uniques);
 
         // Prefix Sums: calculate the starting write offset for each group
         std::vector<uint32_t> offsets(n_uniques + 1);
