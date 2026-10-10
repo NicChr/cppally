@@ -23,9 +23,10 @@ void check_groups_span_data(const T& x, const groups& g){
 }
 
 // Group IDs in order of group size (ascending)
-inline std::vector<int> group_order_by_size(const int* p_counts, int ng){
+inline std::vector<int> group_order_by_size(const int* RESTRICT p_counts, int ng){
 
     int max_size = 0;
+    OMP_SIMD_REDUCTION1(max:max_size)
     for (int j = 0; j < ng; ++j) max_size = std::max(max_size, p_counts[j]);
 
     std::vector<int> group_order(ng);
