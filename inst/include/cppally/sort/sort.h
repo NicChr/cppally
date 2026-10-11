@@ -99,9 +99,9 @@ inline uint8_t byte_of(key_t k, int b) noexcept {
 // Stable multi-threaded LSD radix sort, one byte per pass, permuting `idx` along with `keys`.
 // Elements are split into contiguous chunks, with each chunk owning its own histograms,
 // so every chunk scatters into output slots no other chunk writes to.
-// Note: `keep_keys` = true leaves `keys` alone, otherwise overwrites them.
+// Both keys and idx are sorted in-place (based on keys)
 template <typename key_t>
-inline void radix_sort(key_t* keys, int* idx, uint32_t n, bool keep_keys) {
+inline void radix_sort(key_t* keys, int* idx, uint32_t n) {
 
     static_assert(std::is_unsigned_v<key_t>, "radix keys must be unsigned");
 
@@ -240,21 +240,19 @@ inline void radix_sort(key_t* keys, int* idx, uint32_t n, bool keep_keys) {
         const int* sorted_idx = i_src;
         for_each_chunk(n, n_chunks, [&](int, uint32_t start, uint32_t end) noexcept {
             std::copy(sorted_idx + start, sorted_idx + end, idx + start);
-            if (keep_keys) {
-                std::copy(sorted_keys + start, sorted_keys + end, keys + start);
-            }
+            std::copy(sorted_keys + start, sorted_keys + end, keys + start); // Sorted keys back into keys
         });
     }
 }
 
 // Using keys, return order permutation [0, n - 1]
 // NAs must be mapped to max key.
-// Note: `keys` data is overwritten.
+// Note: `keys` become sorted in-place
 template <typename key_t>
 inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
     r_vec<r_int> out(static_cast<r_size_t>(n));
     out.iota();
-    radix_sort(keys, out.data(), n, false);
+    radix_sort(keys, out.data(), n);
     return out;
 }
 
@@ -426,7 +424,7 @@ inline void sort_string_keys(const r_str_view* strs, uint64_t* keys, int* idx, u
         // A shared prefix leaves the whole run on one window, nothing to sort at this depth
         bool all_equal = std::all_of(run_keys, run_keys + run_n, [w = run_keys[0]](uint64_t k) { return k == w; });
         if (!all_equal) {
-            radix_sort(run_keys, run_idx, run_n, true);
+            radix_sort(run_keys, run_idx, run_n);
         }
 
         for (uint32_t j = r.begin; j < r.end;) {
