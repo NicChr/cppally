@@ -5,11 +5,9 @@
 // All sorting is implemented by sorting NA values last (like `order(..., na.last = TRUE)`)
 // ska_sort is used for radix sorting strings. Copyright Malte Skarupke 2016.
 // Small vectors are sorted using a comparison sort via std::stable_sort.
-// Large vectors of integers or doubles with no fractional part use a counting sort when the
-// range is relatively small. 
-// 64-bit types (int64, dates, date-times) with a wider range that still fits
-// a uint32 offset radix-sort on that narrower key instead of the full 64-bit key. Everything
-// else falls back to a full-width stable LSD radix sort.
+// Large vectors of integers or doubles with no fractional part use a counting sort when the range is relatively small. 
+// Wider ranges that still fit a uint32 offset (int, int64, whole number doubles): radix-sort on that narrower key instead of the full 64-bit key.
+// Everything else falls back to a full-width stable multi-threaded LSD radix sort.
 // Strings are sorted by radix sorting unique strings (if cardinality is low enough) and then re-ordering.
 
 #include <cppally/vector/r_vector.h>
@@ -276,17 +274,18 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
 
     // ---- Narrow radix: uint32 offset keys instead of the full-width key ----
 
-    if (offsets_fit && (wide_key || CppFloatType<T>)) {
+    if (offsets_fit) {
+        using offset_t = typename std::conditional_t<CppIntegerNumber<T>, std::make_unsigned<T>, std::type_identity<T>>::type;
         std::unique_ptr<uint32_t[]> keys(new uint32_t[n]);
         uint32_t* p_keys = keys.get();
         for_each_chunk(n, calc_threads(n), [&](int, uint32_t start, uint32_t end) noexcept {
             const T* RESTRICT chunk_x = p_x;
             uint32_t* RESTRICT chunk_keys = p_keys;
-            const T chunk_lo = lo;
+            const offset_t chunk_lo = lo;
             OMP_SIMD
             for (uint32_t i = start; i < end; ++i) {
                 const T v = chunk_x[i];
-                chunk_keys[i] = is_na(v) ? NA_KEY32 : static_cast<uint32_t>(v - chunk_lo);
+                chunk_keys[i] = is_na(v) ? NA_KEY32 : static_cast<uint32_t>(static_cast<offset_t>(v) - chunk_lo);
             }
         });
         return order_radix(p_keys, n);
