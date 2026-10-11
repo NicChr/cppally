@@ -77,6 +77,7 @@ inline groups make_groups(const T& x, bool ordered) {
                 // ordered group IDs** = {1, 1, 3, 0, 3, 2}
                 r_vec<r_int> ids = g.ids;
                 int* RESTRICT p_id = ids.data();
+                OMP_PARALLEL_FOR_SIMD(internal::calc_threads(n))
                 for (r_size_t i = 0; i < n; ++i) {
                     p_id[i] = rank[p_id[i]];
                 }
