@@ -132,14 +132,14 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
         // Above 2^digits, not every whole number is representable
         constexpr T EXACT_LIMIT = static_cast<T>(uint64_t(1) << (std::numeric_limits<T>::digits - 1)) * 2;
         double dspan = static_cast<double>(hi) - static_cast<double>(lo);
-        offsets_fit = dspan >= 0.0 && dspan < NA_KEY32 && lo >= -EXACT_LIMIT && hi <= EXACT_LIMIT;
+        offsets_fit = dspan < NA_KEY32 && lo >= -EXACT_LIMIT && hi <= EXACT_LIMIT;
 
         for (uint32_t i = 0; offsets_fit && i < n; ++i) {
             const T v = p_x[i];
             const double offset = v - lo;
             offsets_fit = is_na(v) || static_cast<double>(static_cast<int64_t>(offset)) == offset;
         }
-        
+
         if (offsets_fit) {
             span = static_cast<uint64_t>(dspan);
         }
@@ -344,7 +344,6 @@ void unsort_in_place(T& x, const r_vec<r_int>& order){
         abort("`unsort_in_place()`: `x` and `order` must have the same length");
     }
 
-    
     using data_t = typename std::remove_cvref_t<T>::data_type;
     std::vector<unwrap_t<data_t>> buf;
     buf.reserve(n);
