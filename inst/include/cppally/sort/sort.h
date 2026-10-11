@@ -133,9 +133,13 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
         constexpr T EXACT_LIMIT = static_cast<T>(uint64_t(1) << (std::numeric_limits<T>::digits - 1)) * 2;
         double dspan = static_cast<double>(hi) - static_cast<double>(lo);
         offsets_fit = dspan >= 0.0 && dspan < NA_KEY32 && lo >= -EXACT_LIMIT && hi <= EXACT_LIMIT;
+
         for (uint32_t i = 0; offsets_fit && i < n; ++i) {
-            offsets_fit = is_na(p_x[i]) || numeric_cast_is_lossless<int>(p_x[i] - lo);
+            const T v = p_x[i];
+            const double offset = v - lo;
+            offsets_fit = is_na(v) || static_cast<double>(static_cast<int64_t>(offset)) == offset;
         }
+        
         if (offsets_fit) {
             span = static_cast<uint64_t>(dspan);
         }
