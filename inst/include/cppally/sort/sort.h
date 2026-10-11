@@ -3,7 +3,6 @@
 
 // ------- Hybrid sorting for R vectors -------
 // All sorting is implemented by sorting NA values last (like `order(..., na.last = TRUE)`)
-// ska_sort's key mapping turns numbers into unsigned radix keys. Copyright Malte Skarupke 2016.
 // Small vectors are sorted using a comparison sort via std::stable_sort.
 // Large vectors of integers or doubles with no fractional part use a counting sort when the range is relatively small. 
 // Wider ranges that still fit a uint32 offset (int, int64, whole number doubles): radix-sort on that narrower key instead of the full 64-bit key.
@@ -23,7 +22,6 @@
 #include <algorithm> // For std::min
 #include <bit> // For std::bit_cast
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
-#include <ska_sort/ska_sort.hpp> // For to_unsigned_or_bool
 
 namespace cppally {
 
