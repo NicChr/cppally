@@ -206,7 +206,7 @@ struct groups {
         std::vector<uint32_t> histograms(4 * static_cast<std::size_t>(ng), uint32_t(0));
         internal::sort::count_over_histograms(
             [p_ids](int i) noexcept { return static_cast<uint32_t>(p_ids[i]); },
-            n, ng, histograms.data()
+            0, n, ng, histograms.data()
         );
 
         const uint32_t* RESTRICT hist1 = histograms.data();
