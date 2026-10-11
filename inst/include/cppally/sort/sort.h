@@ -3,13 +3,13 @@
 
 // ------- Hybrid sorting for R vectors -------
 // All sorting is implemented by sorting NA values last (like `order(..., na.last = TRUE)`)
-// ska_sort is used for radix sorting. Copyright Malte Skarupke 2016.
+// ska_sort is used for radix sorting strings. Copyright Malte Skarupke 2016.
 // Small vectors are sorted using a comparison sort via std::stable_sort.
 // Large vectors of integers or doubles with no fractional part use a counting sort when the
 // range is relatively small. 
 // 64-bit types (int64, dates, date-times) with a wider range that still fits
 // a uint32 offset radix-sort on that narrower key instead of the full 64-bit key. Everything
-// else falls back to a full-width ska_sort.
+// else falls back to a full-width stable LSD radix sort.
 // Strings are sorted by radix sorting unique strings (if cardinality is low enough) and then re-ordering.
 
 #include <cppally/vector/r_vector.h>
@@ -17,6 +17,7 @@
 #include <cppally/stats/range.h> // For range
 #include <cppally/sort/is_sorted.h>
 #include <cppally/sort/counting_order.h>
+#include <array>
 #include <cstdint> // For uint32_t and similar
 #include <vector> // For C++ vectors
 #include <limits>
@@ -57,54 +58,131 @@ struct key_index {
     uint32_t index;
 };
 
-struct key_of {
-    template <typename key_t>
-    key_t operator()(const key_index<key_t>& k) const noexcept { return k.key; }
-};
-
 // Sort key-index pairs
 template <typename key_t>
 inline void sort_key_index(key_index<key_t>* first, key_index<key_t>* last) {
     ska_sort::ska_sort(first, last, [](const key_index<key_t>& k) { return std::make_pair(k.key, k.index); });
 }
 
-// Radix sort of pre-materialised (key, index) pairs. Keys are co-located with
-// the index so every pass is a sequential scan - no per-pass gather through
-// the permutation index. NAs must already be mapped to the max key value.
+// Stable LSD radix sort, one byte per pass, returning the original positions in key order.
+// NAs must be mapped to max key. `keys` is used as scratch space and overwritten.
 template <typename key_t>
-inline r_vec<r_int> order_radix(std::vector<key_index<key_t>>& pairs) {
+inline r_vec<r_int> order_radix(std::vector<key_t>& keys) {
 
-    uint32_t n = static_cast<uint32_t>(pairs.size());
+    static_assert(std::is_unsigned_v<key_t>, "radix keys must be unsigned");
 
-    // Where the sorted result ends up; usually `pairs`, but ska_sort_copy may
-    // leave it in the scratch buffer.
-    key_index<key_t>* RESTRICT src = pairs.data();
-    std::vector<key_index<key_t>> buffer;
-
-    if constexpr (sizeof(key_t) == sizeof(int)) {
-        // 32-bit key: LSD ska_sort_copy is stable by construction, so the stable
-        // case sorts on the bare key (~4 flat passes) instead of widening to a
-        // (key, index) pair.
-        buffer.resize(n);
-        bool in_buffer = ska_sort::ska_sort_copy(src, src + n, buffer.data(), key_of{});
-        if (in_buffer) {
-            src = buffer.data();
-        }
-    } else {
-        // 64-bit key: ska_sort_copy degrades to unstable in-place at this width,
-        // so stability still needs the (key, index) composite.
-        sort_key_index(src, src + n);
-    }
+    uint32_t n = static_cast<uint32_t>(keys.size());
+    constexpr int n_bytes = sizeof(key_t);
 
     r_vec<r_int> out(static_cast<r_size_t>(n));
     int* RESTRICT p_out = out.data();
 
-    OMP_PARALLEL_FOR_SIMD(calc_threads(n))
+    if (n == 0) {
+        return out;
+    }
+
+    // Each byte is a base-256 digit of the key, with byte 0 being least significant.
+    // Count how many keys have each digit (0-255) at each byte position
+    std::array<std::array<uint32_t, 256>, n_bytes> offsets{};
+    const key_t* RESTRICT p_keys = keys.data();
     for (uint32_t i = 0; i < n; ++i) {
-        p_out[i] = static_cast<int>(src[i].index);
+        const key_t k = p_keys[i];
+        for (int b = 0; b < n_bytes; ++b) {
+            // Shift byte to lowest position and keep 8 bits
+            const uint8_t byte = static_cast<uint8_t>(k >> (8 * b));
+            ++offsets[b][byte];
+        }
+    }
+
+    int passes[n_bytes];
+    int n_passes = 0;
+    for (int b = 0; b < n_bytes; ++b) {
+        std::array<uint32_t, 256>& byte_offsets = offsets[b];
+        // If key 0's bucket holds all n keys, every key shares the same value at this byte
+        const uint8_t first_byte = static_cast<uint8_t>(p_keys[0] >> (8 * b));
+        const bool constant_byte = byte_offsets[first_byte] == n;
+        // Avoid pass for bytes that are shared by every key, because it can't change the order
+        if (constant_byte) {
+            continue;
+        }
+        // Turn counts into each bucket's first output slot (running total of smaller buckets)
+        uint32_t total = 0;
+        for (int d = 0; d < 256; ++d) {
+            const uint32_t count = byte_offsets[d];
+            byte_offsets[d] = total;
+            total += count;
+        }
+        passes[n_passes++] = b;
+    }
+
+    // Original positions 0, ..., n - 1, which move with their keys
+    out.iota();
+
+    std::vector<key_t> keys_buf(n);
+    std::vector<int> idx_buf(n);
+
+    key_t* k_src = keys.data();
+    key_t* k_dst = keys_buf.data();
+    int* i_src = p_out;
+    int* i_dst = idx_buf.data();
+
+    // Stable counting sort per byte, least significant first. 
+    // Keys with same byte keep their order from previous iteration, which already sorted them by less significant bytes
+    for (int p = 0; p < n_passes; ++p) {
+        const int b = passes[p];
+        const int shift = 8 * b;
+        uint32_t* RESTRICT next_slot = offsets[b].data();
+        for (uint32_t i = 0; i < n; ++i) {
+            const key_t k = k_src[i];
+            const uint8_t byte = static_cast<uint8_t>(k >> shift);
+            const uint32_t pos = next_slot[byte]++;
+            k_dst[pos] = k;
+            i_dst[pos] = i_src[i];
+        }
+        // Current output becomes next iteration's input
+        std::swap(k_src, k_dst);
+        std::swap(i_src, i_dst);
+    }
+
+    // Each iteration flips between out and idx_buf
+    // after an odd number of passes, the result is in idx_buf
+    if (i_src != p_out) {
+        std::copy(i_src, i_src + n, p_out);
     }
     return out;
 }
+
+// struct key_of {
+//     template <typename key_t>
+//     key_t operator()(const key_index<key_t>& k) const noexcept { return k.key; }
+// };
+
+// Stable LSD radix sort using ska_sort internals
+// template <typename key_t>
+// inline r_vec<r_int> order_radix(std::vector<key_index<key_t>>& pairs) {
+
+//     uint32_t n = static_cast<uint32_t>(pairs.size());
+
+//     // Where the sorted result ends up; usually `pairs`, but the LSD sort may
+//     // leave it in the scratch buffer.
+//     key_index<key_t>* RESTRICT src = pairs.data();
+//     std::vector<key_index<key_t>> buffer(n);
+
+//     // Use LSD copy sort as it's stable by default.
+//     bool in_buffer = ska_sort::detail::RadixSorter<key_t>::sort(src, src + n, buffer.data(), key_of{});
+//     if (in_buffer) {
+//         src = buffer.data();
+//     }
+
+//     r_vec<r_int> out(static_cast<r_size_t>(n));
+//     int* RESTRICT p_out = out.data();
+
+//     OMP_PARALLEL_FOR_SIMD(calc_threads(n))
+//     for (uint32_t i = 0; i < n; ++i) {
+//         p_out[i] = static_cast<int>(src[i].index);
+//     }
+//     return out;
+// }
 
 template <CppNumber T>
 inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, T hi) {
@@ -169,13 +247,12 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
     // ---- Narrow radix: uint32 offset keys instead of the full-width key ----
 
     if (offsets_fit && (wide_key || CppFloatType<T>)) {
-        std::vector<key_index<uint32_t>> pairs(n);
+        std::vector<uint32_t> keys(n);
         for (uint32_t i = 0; i < n; ++i) {
             T v = p_x[i];
-            uint32_t narrow_key = is_na(v) ? NA_KEY32 : static_cast<uint32_t>(v - lo);
-            pairs[i] = { narrow_key, i };
+            keys[i] = is_na(v) ? NA_KEY32 : static_cast<uint32_t>(v - lo);
         }
-        return order_radix(pairs);
+        return order_radix(keys);
     }
 
     // ---- Full-width radix ----
@@ -185,7 +262,7 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
         unwrap(na<as_r_scalar_t<T>>()) == std::numeric_limits<T>::min();
     constexpr radix_key_t NA_KEY = std::numeric_limits<radix_key_t>::max();
 
-    std::vector<key_index<radix_key_t>> pairs(n);
+    std::vector<radix_key_t> keys(n);
     for (uint32_t i = 0; i < n; ++i) {
         radix_key_t radix_key = NA_KEY;
         if (!is_na(p_x[i])) {
@@ -195,9 +272,9 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
                 radix_key -= 1u;
             }
         }
-        pairs[i] = { radix_key, i };
+        keys[i] = radix_key;
     }
-    return order_radix(pairs);
+    return order_radix(keys);
 }
 
 // Pack 8 bytes of string into uint64_t (pad zeros at the end)
