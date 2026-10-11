@@ -17,7 +17,6 @@
 #include <cppally/stats/range.h> // For range
 #include <cppally/sort/is_sorted.h>
 #include <cppally/sort/counting_order.h>
-#include <array>
 #include <cstdint> // For uint32_t and similar
 #include <vector> // For C++ vectors
 #include <limits>
@@ -95,7 +94,6 @@ inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
     int n_chunks = calc_threads(n);
 
     r_vec<r_int> out(static_cast<r_size_t>(n));
-    int* p_out = out.data();
 
     if (n == 0) {
         return out;
@@ -146,6 +144,7 @@ inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
 
     // Original positions 0, ..., n - 1, which move with their keys
     out.iota();
+    int* p_out = out.data();
 
     key_t* k_src = keys;
     key_t* k_dst = keys_buf.get();
@@ -214,38 +213,6 @@ inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
     }
     return out;
 }
-
-// struct key_of {
-//     template <typename key_t>
-//     key_t operator()(const key_index<key_t>& k) const noexcept { return k.key; }
-// };
-
-// Stable LSD radix sort using ska_sort internals
-// template <typename key_t>
-// inline r_vec<r_int> order_radix(std::vector<key_index<key_t>>& pairs) {
-
-//     uint32_t n = static_cast<uint32_t>(pairs.size());
-
-//     // Where the sorted result ends up; usually `pairs`, but the LSD sort may
-//     // leave it in the scratch buffer.
-//     key_index<key_t>* RESTRICT src = pairs.data();
-//     std::vector<key_index<key_t>> buffer(n);
-
-//     // Use LSD copy sort as it's stable by default.
-//     bool in_buffer = ska_sort::detail::RadixSorter<key_t>::sort(src, src + n, buffer.data(), key_of{});
-//     if (in_buffer) {
-//         src = buffer.data();
-//     }
-
-//     r_vec<r_int> out(static_cast<r_size_t>(n));
-//     int* RESTRICT p_out = out.data();
-
-//     OMP_PARALLEL_FOR_SIMD(calc_threads(n))
-//     for (uint32_t i = 0; i < n; ++i) {
-//         p_out[i] = static_cast<int>(src[i].index);
-//     }
-//     return out;
-// }
 
 template <CppNumber T>
 inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, T hi) {
