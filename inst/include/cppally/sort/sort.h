@@ -9,6 +9,12 @@
 // Everything else falls back to a full-width stable multi-threaded LSD radix sort.
 // Strings are sorted by radix sorting unique strings (if cardinality is low enough) and then re-ordering.
 
+// References:
+// - Parallel LSD (per-chunk histograms, prefix sum, scatter): Zagha & Blelloch (1991) doi.org/10.1145/125826.126164
+// - One-pass histograms and skipping shared bytes: Terdiman, "Radix Sort Revisited" (codercorner.com/RadixSortRevisited.htm, see section "Reducing the complexity")
+// - Order-preserving float keys (to_radix_key): Adapted from ska_sort's to_unsigned_or_bool (Malte Skarupke, Boost Software License 1.0)
+// - Insertion sort for small vectors radix sort: inspired by R's iinsert in src/main/radixsort.c
+
 #include <cppally/vector/r_vector.h>
 #include <cppally/hash/hash.h>
 #include <cppally/stats/range.h> // For range
