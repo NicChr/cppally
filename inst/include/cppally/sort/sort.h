@@ -10,7 +10,7 @@
 // 64-bit types (int64, dates, date-times) with a wider range that still fits
 // a uint32 offset radix-sort on that narrower key instead of the full 64-bit key. Everything
 // else falls back to a full-width ska_sort.
-// Strings are sorted by first de-duplicating (getting unique) strings, and then using a counting sort.
+// Strings are sorted by radix sorting unique strings (if cardinality is low enough) and then re-ordering.
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/hash/hash.h>
