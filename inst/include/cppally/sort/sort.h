@@ -3,7 +3,7 @@
 
 // ------- Hybrid sorting for R vectors -------
 // All sorting is implemented by sorting NA values last (like `order(..., na.last = TRUE)`)
-// ska_sort is used for radix sorting strings. Copyright Malte Skarupke 2016.
+// ska_sort's key mapping turns numbers into unsigned radix keys. Copyright Malte Skarupke 2016.
 // Small vectors are sorted using a comparison sort via std::stable_sort.
 // Large vectors of integers or doubles with no fractional part use a counting sort when the range is relatively small. 
 // Wider ranges that still fit a uint32 offset (int, int64, whole number doubles): radix-sort on that narrower key instead of the full 64-bit key.
@@ -22,7 +22,7 @@
 #include <cmath>
 #include <algorithm> // For std::min
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
-#include <ska_sort/ska_sort.hpp> // For radix sorting via ska_sort
+#include <ska_sort/ska_sort.hpp> // For to_unsigned_or_bool
 
 namespace cppally {
 
@@ -50,18 +50,6 @@ r_vec<r_int> order_cmp(const T& x) {
     return pv;
 }
 
-template <typename key_t>
-struct key_index {
-    key_t key;
-    uint32_t index;
-};
-
-// Sort key-index pairs
-template <typename key_t>
-inline void sort_key_index(key_index<key_t>* first, key_index<key_t>* last) {
-    ska_sort::ska_sort(first, last, [](const key_index<key_t>& k) { return std::make_pair(k.key, k.index); });
-}
-
 // Runs body(c, start, end) over n_chunks of contiguous ranges of [0, n).
 template <typename F>
 inline void for_each_chunk(uint32_t n, int n_chunks, F&& body) {
@@ -78,24 +66,39 @@ inline void for_each_chunk(uint32_t n, int n_chunks, F&& body) {
     }
 }
 
-// Stable multi-threaded LSD radix sort, one byte per pass, returning the original positions in key order.
+// Insertion sort of of idx by keys (for small vectors).
+template <typename key_t>
+inline void insertion_sort(key_t* keys, int* idx, uint32_t n) {
+    for (uint32_t i = 1; i < n; ++i) {
+        const key_t k = keys[i];
+        const int id = idx[i];
+        uint32_t j = i;
+        for (; j > 0 && keys[j - 1] > k; --j) {
+            keys[j] = keys[j - 1];
+            idx[j] = idx[j - 1];
+        }
+        keys[j] = k;
+        idx[j] = id;
+    }
+}
+
+// Stable multi-threaded LSD radix sort, one byte per pass, permuting `idx` along with `keys`.
 // Elements are split into contiguous chunks, with each chunk owning its own histograms,
 // so every chunk scatters into output slots no other chunk writes to.
-// NAs must be mapped to max key.
-// Note: `keys` data is overwritten.
+// Note: `keep_keys` = true leaves `keys` alone, otherwise overwrites them.
 template <typename key_t>
-inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
+inline void radix_sort(key_t* keys, int* idx, uint32_t n, bool keep_keys) {
 
     static_assert(std::is_unsigned_v<key_t>, "radix keys must be unsigned");
 
+    // Use insertion sort for small vectors
+    if (n < 200) {
+        insertion_sort(keys, idx, n);
+        return;
+    }
+
     constexpr int n_bytes = sizeof(key_t);
     int n_chunks = calc_threads(n);
-
-    r_vec<r_int> out(static_cast<r_size_t>(n));
-
-    if (n == 0) {
-        return out;
-    }
 
     // Each chunk's histograms
     constexpr std::size_t gap = 1024 / sizeof(uint32_t); // 1KB gap to avoid false sharing
@@ -140,13 +143,9 @@ inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
         }
     }
 
-    // Original positions 0, ..., n - 1, which move with their keys
-    out.iota();
-    int* p_out = out.data();
-
     key_t* k_src = keys;
     key_t* k_dst = keys_buf.get();
-    int* i_src = p_out;
+    int* i_src = idx;
     int* i_dst = idx_buf.get();
 
     // Stable counting sort per byte, least significant first.
@@ -201,14 +200,28 @@ inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
         std::swap(i_src, i_dst);
     }
 
-    // Each iteration flips between out and idx_buf
-    // after an odd number of passes, the result is in idx_buf
-    if (i_src != p_out) {
-        const int* result = i_src;
+    // Each iteration flips between the inputs and the buffers,
+    // after an odd number of passes, the result is in the buffers
+    if (i_src != idx) {
+        const key_t* sorted_keys = k_src;
+        const int* sorted_idx = i_src;
         for_each_chunk(n, n_chunks, [&](int, uint32_t start, uint32_t end) noexcept {
-            std::copy(result + start, result + end, p_out + start);
+            std::copy(sorted_idx + start, sorted_idx + end, idx + start);
+            if (keep_keys) {
+                std::copy(sorted_keys + start, sorted_keys + end, keys + start);
+            }
         });
     }
+}
+
+// Using keys, return order permutation [0, n - 1]
+// NAs must be mapped to max key.
+// Note: `keys` data is overwritten.
+template <typename key_t>
+inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
+    r_vec<r_int> out(static_cast<r_size_t>(n));
+    out.iota();
+    radix_sort(keys, out.data(), n, false);
     return out;
 }
 
@@ -329,11 +342,8 @@ inline uint64_t string_radix_key(const char* s, uint32_t depth) noexcept {
     return k;
 }
 
-// Sorts radix key-index pairs, caller has to have built radix key from string (first 8 bytes only)
-// Index is used for ties to keep sort stable
-inline void sort_string_keys(const r_str_view* strs, std::vector<key_index<uint64_t>>& keys) {
-
-    uint32_t n = keys.size();
+// Stable sort of string keys and their indices into `strs`, caller has to have built the keys (first 8 bytes only)
+inline void sort_string_keys(const r_str_view* strs, uint64_t* keys, int* idx, uint32_t n) {
 
     if (n < 2) {
         return;
@@ -352,28 +362,29 @@ inline void sort_string_keys(const r_str_view* strs, std::vector<key_index<uint6
         run r = runs.back();
         runs.pop_back();
 
-        key_index<uint64_t>* first = keys.data() + r.begin;
-        key_index<uint64_t>* last = keys.data() + r.end;
+        uint64_t* run_keys = keys + r.begin;
+        int* run_idx = idx + r.begin;
+        uint32_t run_n = r.end - r.begin;
 
         if (r.depth > 0) {
-            for (auto* p = first; p != last; ++p) {
-                p->key = string_radix_key(strs[p->index].c_str(), r.depth);
+            for (uint32_t j = 0; j < run_n; ++j) {
+                run_keys[j] = string_radix_key(strs[run_idx[j]].c_str(), r.depth);
             }
         }
 
         // A shared prefix leaves the whole run on one window, nothing to sort at this depth
-        bool all_equal = std::all_of(first, last, [w = first->key](const key_index<uint64_t>& k) { return k.key == w; });
+        bool all_equal = std::all_of(run_keys, run_keys + run_n, [w = run_keys[0]](uint64_t k) { return k == w; });
         if (!all_equal) {
-            sort_key_index(first, last);
+            radix_sort(run_keys, run_idx, run_n, true);
         }
 
         for (uint32_t j = r.begin; j < r.end;) {
             uint32_t k = j + 1;
-            while (k < r.end && keys[k].key == keys[j].key) {
+            while (k < r.end && keys[k] == keys[j]) {
                 ++k;
             }
             // Non-zero last byte means the strings continue past this window
-            if (k - j > 1 && (keys[j].key & 0xff) != 0) {
+            if (k - j > 1 && (keys[j] & 0xff) != 0) {
                 runs.push_back({j, k, r.depth + 8});
             }
             j = k;
@@ -382,41 +393,35 @@ inline void sort_string_keys(const r_str_view* strs, std::vector<key_index<uint6
 }
 
 // Ids [0, n - 1] of the unique strings, in C-locale order
-inline std::vector<uint32_t> sort_unique_strings(const std::vector<r_str_view>& uniques) {
+inline std::vector<int> sort_unique_strings(const std::vector<r_str_view>& uniques) {
 
     uint32_t n = uniques.size();
-    std::vector<uint32_t> ids(n);
+    std::vector<int> ids(n);
+    std::unique_ptr<uint64_t[]> keys(new uint64_t[n]);
 
-    std::vector<key_index<uint64_t>> keys(n);
     for (uint32_t id = 0; id < n; ++id) {
-        keys[id] = { string_radix_key(uniques[id].c_str(), 0), id };
+        keys[id] = string_radix_key(uniques[id].c_str(), 0);
+        ids[id] = static_cast<int>(id);
     }
 
-    sort_string_keys(uniques.data(), keys);
-
-    for (uint32_t j = 0; j < n; ++j) {
-        ids[j] = keys[j].index;
-    }
+    sort_string_keys(uniques.data(), keys.get(), ids.data(), n);
     return ids;
 }
 
 // High-cardinality string vector: skip deduplication and scatter
 inline void order_strings_direct(const r_str_view* strs, uint32_t n, int* RESTRICT p_out) {
 
-    std::vector<key_index<uint64_t>> keys;
-    keys.reserve(n);
+    // Non-NA strings are sorted in place at the front of p_out
+    std::unique_ptr<uint64_t[]> keys(new uint64_t[n]);
+    uint32_t n_real = 0;
     for (uint32_t i = 0; i < n; ++i) {
         if (!strs[i].is_na()) {
-            keys.push_back({ string_radix_key(strs[i].c_str(), 0), i });
+            keys[n_real] = string_radix_key(strs[i].c_str(), 0);
+            p_out[n_real++] = static_cast<int>(i);
         }
     }
 
-    sort_string_keys(strs, keys);
-
-    uint32_t n_real = keys.size();
-    for (uint32_t j = 0; j < n_real; ++j) {
-        p_out[j] = static_cast<int>(keys[j].index);
-    }
+    sort_string_keys(strs, keys.get(), p_out, n_real);
 
     // NAs last, in element order
     uint32_t j = n_real;
@@ -563,13 +568,13 @@ inline r_vec<r_int> order(const T& x) {
 
         uint32_t n_uniques = uniques.size();
         // Sort the unique group IDs by string content
-        std::vector<uint32_t> sorted_ids = internal::sort::sort_unique_strings(uniques);
+        std::vector<int> sorted_ids = internal::sort::sort_unique_strings(uniques);
 
         // Prefix Sums: calculate the starting write offset for each group
         std::vector<uint32_t> offsets(n_uniques + 1);
         uint32_t current_offset = 0;
 
-        for (uint32_t id : sorted_ids) {
+        for (int id : sorted_ids) {
             offsets[id] = current_offset;
             current_offset += counts[id];
         }
