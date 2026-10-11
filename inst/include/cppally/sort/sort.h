@@ -21,6 +21,7 @@
 #include <cstdint> // For uint32_t and similar
 #include <vector> // For C++ vectors
 #include <limits>
+#include <memory> // For std::unique_ptr
 #include <cmath>
 #include <algorithm> // For std::min
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
@@ -64,81 +65,140 @@ inline void sort_key_index(key_index<key_t>* first, key_index<key_t>* last) {
     ska_sort::ska_sort(first, last, [](const key_index<key_t>& k) { return std::make_pair(k.key, k.index); });
 }
 
-// Stable LSD radix sort, one byte per pass, returning the original positions in key order.
-// NAs must be mapped to max key. `keys` is used as scratch space and overwritten.
+// Runs body(c, start, end) over n_chunks of contiguous ranges of [0, n).
+template <typename F>
+inline void for_each_chunk(uint32_t n, int n_chunks, F&& body) {
+    static_assert(noexcept(body(0, 0u, 0u)), "chunk bodies may run inside an OMP region and must not throw");
+    if (n_chunks > 1) {
+        OMP_PARALLEL_FOR(n_chunks)
+        for (int c = 0; c < n_chunks; ++c) {
+            const uint32_t start = static_cast<uint32_t>(static_cast<uint64_t>(n) * c / n_chunks);
+            const uint32_t end = static_cast<uint32_t>(static_cast<uint64_t>(n) * (c + 1) / n_chunks);
+            body(c, start, end);
+        }
+    } else {
+        body(0, 0u, n);
+    }
+}
+
+// Stable multi-threaded LSD radix sort, one byte per pass, returning the original positions in key order.
+// Elements are split into contiguous chunks, with each chunk owning its own histograms,
+// so every chunk scatters into output slots no other chunk writes to.
+// NAs must be mapped to max key.
+// Note: `keys` data is overwritten.
 template <typename key_t>
-inline r_vec<r_int> order_radix(std::vector<key_t>& keys) {
+inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
 
     static_assert(std::is_unsigned_v<key_t>, "radix keys must be unsigned");
 
-    uint32_t n = static_cast<uint32_t>(keys.size());
     constexpr int n_bytes = sizeof(key_t);
+    int n_chunks = calc_threads(n);
 
     r_vec<r_int> out(static_cast<r_size_t>(n));
-    int* RESTRICT p_out = out.data();
+    int* p_out = out.data();
 
     if (n == 0) {
         return out;
     }
 
+    // Each chunk's histograms
+    constexpr std::size_t gap = 1024 / sizeof(uint32_t); // 1KB gap to avoid false sharing
+    constexpr std::size_t stride = n_bytes * 256 + gap;
+    std::vector<uint32_t> histograms(static_cast<std::size_t>(n_chunks) * stride);
+    std::unique_ptr<key_t[]> keys_buf(new key_t[n]);
+    std::unique_ptr<int[]> idx_buf(new int[n]);
+
+    // Chunk c's histogram of byte b
+    uint32_t* p_hists = histograms.data();
+    auto hist_of = [p_hists](int c, int b) noexcept {
+        return p_hists + static_cast<std::size_t>(c) * stride + b * 256;
+    };
+
     // Each byte is a base-256 digit of the key, with byte 0 being least significant.
     // Count how many keys have each digit (0-255) at each byte position
-    std::array<std::array<uint32_t, 256>, n_bytes> offsets{};
-    const key_t* RESTRICT p_keys = keys.data();
-    for (uint32_t i = 0; i < n; ++i) {
-        const key_t k = p_keys[i];
-        for (int b = 0; b < n_bytes; ++b) {
-            // Shift byte to lowest position and keep 8 bits
-            const uint8_t byte = static_cast<uint8_t>(k >> (8 * b));
-            ++offsets[b][byte];
+    for_each_chunk(n, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
+        uint32_t* RESTRICT hist = hist_of(c, 0);
+        const key_t* RESTRICT chunk_keys = keys;
+        for (uint32_t i = start; i < end; ++i) {
+            const key_t k = chunk_keys[i];
+            for (int b = 0; b < n_bytes; ++b) {
+                // Shift byte to lowest position and keep 8 bits
+                const uint8_t byte = static_cast<uint8_t>(k >> (8 * b));
+                ++hist[b * 256 + byte];
+            }
         }
-    }
+    });
 
+    // Avoid pass for bytes that are shared by every key, because it can't change the order.
+    // If key 0's digit is held by all n keys, every key shares the same value at this byte
     int passes[n_bytes];
     int n_passes = 0;
     for (int b = 0; b < n_bytes; ++b) {
-        std::array<uint32_t, 256>& byte_offsets = offsets[b];
-        // If key 0's bucket holds all n keys, every key shares the same value at this byte
-        const uint8_t first_byte = static_cast<uint8_t>(p_keys[0] >> (8 * b));
-        const bool constant_byte = byte_offsets[first_byte] == n;
-        // Avoid pass for bytes that are shared by every key, because it can't change the order
-        if (constant_byte) {
-            continue;
+        const uint8_t first_byte = static_cast<uint8_t>(keys[0] >> (8 * b));
+        uint32_t first_byte_count = 0;
+        for (int c = 0; c < n_chunks; ++c) {
+            first_byte_count += hist_of(c, b)[first_byte];
         }
-        // Turn counts into each bucket's first output slot (running total of smaller buckets)
-        uint32_t total = 0;
-        for (int d = 0; d < 256; ++d) {
-            const uint32_t count = byte_offsets[d];
-            byte_offsets[d] = total;
-            total += count;
+        if (first_byte_count != n) {
+            passes[n_passes++] = b;
         }
-        passes[n_passes++] = b;
     }
 
     // Original positions 0, ..., n - 1, which move with their keys
     out.iota();
 
-    std::vector<key_t> keys_buf(n);
-    std::vector<int> idx_buf(n);
-
-    key_t* k_src = keys.data();
-    key_t* k_dst = keys_buf.data();
+    key_t* k_src = keys;
+    key_t* k_dst = keys_buf.get();
     int* i_src = p_out;
-    int* i_dst = idx_buf.data();
+    int* i_dst = idx_buf.get();
 
-    // Stable counting sort per byte, least significant first. 
+    // Stable counting sort per byte, least significant first.
     // Keys with same byte keep their order from previous iteration, which already sorted them by less significant bytes
     for (int p = 0; p < n_passes; ++p) {
         const int b = passes[p];
-        const int shift = 8 * b;
-        uint32_t* RESTRICT next_slot = offsets[b].data();
-        for (uint32_t i = 0; i < n; ++i) {
-            const key_t k = k_src[i];
-            const uint8_t byte = static_cast<uint8_t>(k >> shift);
-            const uint32_t pos = next_slot[byte]++;
-            k_dst[pos] = k;
-            i_dst[pos] = i_src[i];
+
+        // Chunk counts depend on element order, so later passes re-count.
+        // A single chunk's counts are the totals (unchanging).
+        if (p > 0 && n_chunks > 1) {
+            for_each_chunk(n, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
+                uint32_t* RESTRICT hist = hist_of(c, b);
+                const key_t* RESTRICT chunk_keys = k_src;
+                const int shift = 8 * b;
+                std::fill(hist, hist + 256, 0u);
+                for (uint32_t i = start; i < end; ++i) {
+                    ++hist[static_cast<uint8_t>(chunk_keys[i] >> shift)];
+                }
+            });
         }
+
+        // Counts -> buckets' first output slot.
+        // Digits outer, chunks inner: chunk c's keys with digit d land after chunk c - 1's
+        uint32_t total = 0;
+        for (int d = 0; d < 256; ++d) {
+            for (int c = 0; c < n_chunks; ++c) {
+                uint32_t& slot = hist_of(c, b)[d];
+                const uint32_t count = slot;
+                slot = total;
+                total += count;
+            }
+        }
+
+        for_each_chunk(n, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
+            uint32_t* RESTRICT next_slot = hist_of(c, b);
+            const key_t* RESTRICT chunk_k_src = k_src;
+            key_t* RESTRICT chunk_k_dst = k_dst;
+            const int* RESTRICT chunk_i_src = i_src;
+            int* RESTRICT chunk_i_dst = i_dst;
+            const int shift = 8 * b;
+            for (uint32_t i = start; i < end; ++i) {
+                const key_t k = chunk_k_src[i];
+                const uint8_t byte = static_cast<uint8_t>(k >> shift);
+                const uint32_t pos = next_slot[byte]++;
+                chunk_k_dst[pos] = k;
+                chunk_i_dst[pos] = chunk_i_src[i];
+            }
+        });
+
         // Current output becomes next iteration's input
         std::swap(k_src, k_dst);
         std::swap(i_src, i_dst);
@@ -147,7 +207,10 @@ inline r_vec<r_int> order_radix(std::vector<key_t>& keys) {
     // Each iteration flips between out and idx_buf
     // after an odd number of passes, the result is in idx_buf
     if (i_src != p_out) {
-        std::copy(i_src, i_src + n, p_out);
+        const int* result = i_src;
+        for_each_chunk(n, n_chunks, [&](int, uint32_t start, uint32_t end) noexcept {
+            std::copy(result + start, result + end, p_out + start);
+        });
     }
     return out;
 }
@@ -247,12 +310,19 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
     // ---- Narrow radix: uint32 offset keys instead of the full-width key ----
 
     if (offsets_fit && (wide_key || CppFloatType<T>)) {
-        std::vector<uint32_t> keys(n);
-        for (uint32_t i = 0; i < n; ++i) {
-            T v = p_x[i];
-            keys[i] = is_na(v) ? NA_KEY32 : static_cast<uint32_t>(v - lo);
-        }
-        return order_radix(keys);
+        std::unique_ptr<uint32_t[]> keys(new uint32_t[n]);
+        uint32_t* p_keys = keys.get();
+        for_each_chunk(n, calc_threads(n), [&](int, uint32_t start, uint32_t end) noexcept {
+            const T* RESTRICT chunk_x = p_x;
+            uint32_t* RESTRICT chunk_keys = p_keys;
+            const T chunk_lo = lo;
+            OMP_SIMD
+            for (uint32_t i = start; i < end; ++i) {
+                const T v = chunk_x[i];
+                chunk_keys[i] = is_na(v) ? NA_KEY32 : static_cast<uint32_t>(v - chunk_lo);
+            }
+        });
+        return order_radix(p_keys, n);
     }
 
     // ---- Full-width radix ----
@@ -262,19 +332,25 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
         unwrap(na<as_r_scalar_t<T>>()) == std::numeric_limits<T>::min();
     constexpr radix_key_t NA_KEY = std::numeric_limits<radix_key_t>::max();
 
-    std::vector<radix_key_t> keys(n);
-    for (uint32_t i = 0; i < n; ++i) {
-        radix_key_t radix_key = NA_KEY;
-        if (!is_na(p_x[i])) {
-            T v = p_x[i] + T(0); // + 0 normalises -0.0 to 0.0
-            radix_key = ska_sort::detail::to_unsigned_or_bool(v);
-            if constexpr (shift_below_na) {
-                radix_key -= 1u;
+    std::unique_ptr<radix_key_t[]> keys(new radix_key_t[n]);
+    radix_key_t* p_keys = keys.get();
+    for_each_chunk(n, calc_threads(n), [&](int, uint32_t start, uint32_t end) noexcept {
+        const T* RESTRICT chunk_x = p_x;
+        radix_key_t* RESTRICT chunk_keys = p_keys;
+        OMP_SIMD
+        for (uint32_t i = start; i < end; ++i) {
+            radix_key_t radix_key = NA_KEY;
+            if (!is_na(chunk_x[i])) {
+                T v = chunk_x[i] + T(0); // + 0 normalises -0.0 to 0.0
+                radix_key = ska_sort::detail::to_unsigned_or_bool(v);
+                if constexpr (shift_below_na) {
+                    radix_key -= 1u;
+                }
             }
+            chunk_keys[i] = radix_key;
         }
-        keys[i] = radix_key;
-    }
-    return order_radix(keys);
+    });
+    return order_radix(p_keys, n);
 }
 
 // Pack 8 bytes of string into uint64_t (pad zeros at the end)
