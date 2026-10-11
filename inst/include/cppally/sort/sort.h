@@ -286,7 +286,6 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
     }
 
     using radix_key_t = decltype(to_radix_key(std::declval<T>()));
-    constexpr bool wide_key = sizeof(radix_key_t) > sizeof(int);
     constexpr uint32_t NA_KEY32 = std::numeric_limits<uint32_t>::max();
 
     // ---- Can every value be keyed as a whole-number uint32 offset from lo? ----
@@ -316,9 +315,9 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
 
     // ---- Counting sort: small span, offsets index straight into counts ----
 
-    // Counts capped at 32MB, int-sized offsets, and a multiple of n
-    constexpr uint64_t MAX_COUNTS = std::min<uint64_t>((32ull << 20) / sizeof(uint32_t), std::numeric_limits<int>::max());
-    constexpr uint64_t COUNTS_PER_ELEMENT = wide_key ? 16 : 4;
+    // Counts capped at 32MB and a multiple of n
+    constexpr uint64_t MAX_COUNTS = (32ull << 20) / sizeof(uint32_t);
+    constexpr uint64_t COUNTS_PER_ELEMENT = 4;
     const uint64_t counts_cap = std::min(MAX_COUNTS, static_cast<uint64_t>(n) * COUNTS_PER_ELEMENT);
 
     if (offsets_fit && span < counts_cap) {
