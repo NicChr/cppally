@@ -13,7 +13,7 @@
 // - Parallel LSD (per-chunk histograms, prefix sum, scatter): Zagha & Blelloch (1991) doi.org/10.1145/125826.126164
 // - One-pass histograms and skipping shared bytes: Terdiman, "Radix Sort Revisited" (codercorner.com/RadixSortRevisited.htm, see section "Reducing the complexity")
 // - Order-preserving float keys (to_radix_key): Adapted from ska_sort's to_unsigned_or_bool (Malte Skarupke, Boost Software License 1.0)
-// - Insertion sort for small vectors radix sort: inspired by R's iinsert in src/main/radixsort.c
+// - Insertion sort for small radix sort inputs: inspired by R's iinsert in src/main/radixsort.c
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/hash/hash.h>
@@ -55,6 +55,24 @@ r_vec<r_int> order_cmp(const T& x) {
     return pv;
 }
 
+// Insertion sort of idx by keys (for small inputs).
+template <typename key_t>
+inline void insertion_sort(key_t* keys, int* idx, uint32_t n) {
+    for (uint32_t i = 1; i < n; ++i) {
+
+        key_t k = keys[i];
+        int id = idx[i];
+        uint32_t j = i;
+
+        for (; j > 0 && keys[j - 1] > k; --j) {
+            keys[j] = keys[j - 1];
+            idx[j] = idx[j - 1];
+        }
+        keys[j] = k;
+        idx[j] = id;
+    }
+}
+
 // Runs body(c, start, end) over n_chunks of contiguous ranges of [0, n).
 template <typename F>
 inline void for_each_chunk(uint32_t n, int n_chunks, F&& body) {
@@ -71,20 +89,11 @@ inline void for_each_chunk(uint32_t n, int n_chunks, F&& body) {
     }
 }
 
-// Insertion sort of of idx by keys (for small vectors).
+// Byte b of key k as a base-256 digit
+// R equivalent: (k %/% 256^b) %% 256
 template <typename key_t>
-inline void insertion_sort(key_t* keys, int* idx, uint32_t n) {
-    for (uint32_t i = 1; i < n; ++i) {
-        const key_t k = keys[i];
-        const int id = idx[i];
-        uint32_t j = i;
-        for (; j > 0 && keys[j - 1] > k; --j) {
-            keys[j] = keys[j - 1];
-            idx[j] = idx[j - 1];
-        }
-        keys[j] = k;
-        idx[j] = id;
-    }
+inline uint8_t byte_of(key_t k, int b) noexcept {
+    return static_cast<uint8_t>(k >> (8 * b)); // shift byte to lowest position and keep 8 bits
 }
 
 // Stable multi-threaded LSD radix sort, one byte per pass, permuting `idx` along with `keys`.
@@ -107,8 +116,21 @@ inline void radix_sort(key_t* keys, int* idx, uint32_t n, bool keep_keys) {
 
     // Each chunk's histograms
     constexpr std::size_t gap = 1024 / sizeof(uint32_t); // 1KB gap to avoid false sharing
+    // The gap avoids false sharing by keeping counters on separate cache lines
     constexpr std::size_t stride = n_bytes * 256 + gap;
-    std::vector<uint32_t> histograms(static_cast<std::size_t>(n_chunks) * stride);
+    
+    // Single vector containing all histograms
+    // Each thread gets its own histogram (chunk)
+    // Each histogram is composed of counts of each digit AND the gap as described above
+    // E.g if key_t is uint32_t, then n_bytes is 4,
+    // assuming 4 threads:
+    // histogram0 (chunk0) = {byte0[256], byte1[256], byte2[256], byte3[256], gap[256]}
+    // ...
+    // histogram3 (chunk3) = ----------------------------------------------------------
+    //
+    // So for byte0[256], it holds counts for byte 0 (number of keys that have digit 0, 1, ..., 255)
+    // And similarly for byte1[256], etc..
+    std::vector<uint32_t> histograms(static_cast<std::size_t>(n_chunks) * stride); // Counts initialised to 0
     std::unique_ptr<key_t[]> keys_buf(new key_t[n]);
     std::unique_ptr<int[]> idx_buf(new int[n]);
 
@@ -118,6 +140,8 @@ inline void radix_sort(key_t* keys, int* idx, uint32_t n, bool keep_keys) {
         return p_hists + static_cast<std::size_t>(c) * stride + b * 256;
     };
 
+    // ----- Fill up histogram counts -----
+
     // Each byte is a base-256 digit of the key, with byte 0 being least significant.
     // Count how many keys have each digit (0-255) at each byte position
     for_each_chunk(n, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
@@ -126,19 +150,23 @@ inline void radix_sort(key_t* keys, int* idx, uint32_t n, bool keep_keys) {
         for (uint32_t i = start; i < end; ++i) {
             const key_t k = chunk_keys[i];
             for (int b = 0; b < n_bytes; ++b) {
-                // Shift byte to lowest position and keep 8 bits
-                const uint8_t byte = static_cast<uint8_t>(k >> (8 * b));
-                ++hist[b * 256 + byte];
+                ++hist[b * 256 + byte_of(k, b)];
             }
         }
     });
 
+    // ----- Terdiman's suggestion for reducing radix sort complexity -----
+    // Terdiman, "Radix Sort Revisited" (codercorner.com/RadixSortRevisited.htm)
+    // Do all keys share the same digit at byte `b`?
+
     // Avoid pass for bytes that are shared by every key, because it can't change the order.
-    // If key 0's digit is held by all n keys, every key shares the same value at this byte
+    // If the first key's digit at byte `b` is held by all `n` keys, every key shares the same value at this byte
+    // We can check this quickly by checking the count of byte `b` for that digit and check if it equals n keys.
+    // For example: keys = {1, 10, 20} all fit in byte 0, so bytes 1-3 are 0 for each key and only byte 0 is sorted
     int passes[n_bytes];
     int n_passes = 0;
     for (int b = 0; b < n_bytes; ++b) {
-        const uint8_t first_byte = static_cast<uint8_t>(keys[0] >> (8 * b));
+        const uint8_t first_byte = byte_of(keys[0], b);
         uint32_t first_byte_count = 0;
         for (int c = 0; c < n_chunks; ++c) {
             first_byte_count += hist_of(c, b)[first_byte];
@@ -153,7 +181,8 @@ inline void radix_sort(key_t* keys, int* idx, uint32_t n, bool keep_keys) {
     int* i_src = idx;
     int* i_dst = idx_buf.get();
 
-    // Stable counting sort per byte, least significant first.
+    // ----- Counting sort per byte -----
+    // Starting from least significant digit.
     // Keys with same byte keep their order from previous iteration, which already sorted them by less significant bytes
     for (int p = 0; p < n_passes; ++p) {
         const int b = passes[p];
@@ -164,10 +193,10 @@ inline void radix_sort(key_t* keys, int* idx, uint32_t n, bool keep_keys) {
             for_each_chunk(n, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
                 uint32_t* RESTRICT hist = hist_of(c, b);
                 const key_t* RESTRICT chunk_keys = k_src;
-                const int shift = 8 * b;
+                const int chunk_b = b; // Local copy, so the loop doesn't reload b through the closure
                 std::fill(hist, hist + 256, 0u);
                 for (uint32_t i = start; i < end; ++i) {
-                    ++hist[static_cast<uint8_t>(chunk_keys[i] >> shift)];
+                    ++hist[byte_of(chunk_keys[i], chunk_b)];
                 }
             });
         }
@@ -190,11 +219,10 @@ inline void radix_sort(key_t* keys, int* idx, uint32_t n, bool keep_keys) {
             key_t* RESTRICT chunk_k_dst = k_dst;
             const int* RESTRICT chunk_i_src = i_src;
             int* RESTRICT chunk_i_dst = i_dst;
-            const int shift = 8 * b;
+            const int chunk_b = b;
             for (uint32_t i = start; i < end; ++i) {
                 const key_t k = chunk_k_src[i];
-                const uint8_t byte = static_cast<uint8_t>(k >> shift);
-                const uint32_t pos = next_slot[byte]++;
+                const uint32_t pos = next_slot[byte_of(k, chunk_b)]++;
                 chunk_k_dst[pos] = k;
                 chunk_i_dst[pos] = chunk_i_src[i];
             }
