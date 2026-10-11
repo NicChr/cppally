@@ -56,7 +56,7 @@ r_vec<r_int> order_cmp(const T& x) {
 }
 
 // Insertion sort of idx by keys (for small inputs).
-template <typename key_t>
+template <std::unsigned_integral key_t>
 inline void insertion_sort(key_t* keys, int* idx, uint32_t n) {
     for (uint32_t i = 1; i < n; ++i) {
 
@@ -91,7 +91,7 @@ inline void for_each_chunk(uint32_t n, int n_chunks, F&& body) {
 
 // Byte b of key k as a base-256 digit
 // R equivalent: (k %/% 256^b) %% 256
-template <typename key_t>
+template <std::unsigned_integral key_t>
 inline uint8_t byte_of(key_t k, int b) noexcept {
     return static_cast<uint8_t>(k >> (8 * b)); // shift byte to lowest position and keep 8 bits
 }
@@ -101,10 +101,8 @@ inline uint8_t byte_of(key_t k, int b) noexcept {
 // so every chunk scatters into output slots no other chunk writes to.
 // Both keys and idx are sorted in-place (based on keys)
 // struct {key, index} would be cleaner but slower for 64-bit keys due to padding
-template <typename key_t>
+template <std::unsigned_integral key_t>
 inline void radix_sort(key_t* keys, int* idx, uint32_t n) {
-
-    static_assert(std::is_unsigned_v<key_t>, "radix keys must be unsigned");
 
     // Use insertion sort for small vectors
     if (n < 200) {
@@ -249,7 +247,7 @@ inline void radix_sort(key_t* keys, int* idx, uint32_t n) {
 // Using keys, return order permutation [0, n - 1]
 // NAs must be mapped to max key.
 // Note: `keys` become sorted in-place
-template <typename key_t>
+template <std::unsigned_integral key_t>
 inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
     r_vec<r_int> out(static_cast<r_size_t>(n));
     out.iota();
@@ -260,18 +258,20 @@ inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
 // Maps a number to an unsigned key with the same ordering
 template <typename T>
 inline auto to_radix_key(T x) noexcept {
-    if constexpr (std::is_floating_point_v<T>) {
+    if constexpr (std::floating_point<T>) {
         using key_t = std::conditional_t<sizeof(T) == 8, uint64_t, uint32_t>;
         constexpr int sign_shift = 8 * sizeof(T) - 1;
         const key_t u = std::bit_cast<key_t>(x);
         // All ones for negatives (flips every bit, reversing their order), else just the sign bit
         const key_t mask = -(u >> sign_shift);
         return static_cast<key_t>(u ^ (mask | (key_t(1) << sign_shift)));
-    } else if constexpr (std::is_signed_v<T>) {
+    } else if constexpr (std::signed_integral<T>) {
         using key_t = std::make_unsigned_t<T>;
         return static_cast<key_t>(static_cast<key_t>(x) ^ (key_t(1) << (8 * sizeof(T) - 1)));
-    } else {
+    } else if constexpr (std::unsigned_integral<T>) {
         return x;
+    } else {
+        static_assert(always_false<T>, "Don't know how to convert this type to a radix key");
     }
 }
 
