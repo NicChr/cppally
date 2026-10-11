@@ -100,6 +100,7 @@ inline uint8_t byte_of(key_t k, int b) noexcept {
 // Elements are split into contiguous chunks, with each chunk owning its own histograms,
 // so every chunk scatters into output slots no other chunk writes to.
 // Both keys and idx are sorted in-place (based on keys)
+// struct {key, index} would be cleaner but slower for 64-bit keys due to padding
 template <typename key_t>
 inline void radix_sort(key_t* keys, int* idx, uint32_t n) {
 
