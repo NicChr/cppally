@@ -21,6 +21,7 @@
 #include <memory> // For std::unique_ptr
 #include <cmath>
 #include <algorithm> // For std::min
+#include <bit> // For std::bit_cast
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 #include <ska_sort/ska_sort.hpp> // For to_unsigned_or_bool
 
@@ -225,6 +226,24 @@ inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
     return out;
 }
 
+// Maps a number to an unsigned key with the same ordering
+template <typename T>
+inline auto to_radix_key(T x) noexcept {
+    if constexpr (std::is_floating_point_v<T>) {
+        using key_t = std::conditional_t<sizeof(T) == 8, uint64_t, uint32_t>;
+        constexpr int sign_shift = 8 * sizeof(T) - 1;
+        const key_t u = std::bit_cast<key_t>(x);
+        // All ones for negatives (flips every bit, reversing their order), else just the sign bit
+        const key_t mask = -(u >> sign_shift);
+        return static_cast<key_t>(u ^ (mask | (key_t(1) << sign_shift)));
+    } else if constexpr (std::is_signed_v<T>) {
+        using key_t = std::make_unsigned_t<T>;
+        return static_cast<key_t>(static_cast<key_t>(x) ^ (key_t(1) << (8 * sizeof(T) - 1)));
+    } else {
+        return x;
+    }
+}
+
 template <CppNumber T>
 inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, T hi) {
 
@@ -235,7 +254,7 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
         return out;
     }
 
-    using radix_key_t = decltype(ska_sort::detail::to_unsigned_or_bool(std::declval<T>()));
+    using radix_key_t = decltype(to_radix_key(std::declval<T>()));
     constexpr bool wide_key = sizeof(radix_key_t) > sizeof(int);
     constexpr uint32_t NA_KEY32 = std::numeric_limits<uint32_t>::max();
 
@@ -321,7 +340,7 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
             radix_key_t radix_key = NA_KEY;
             if (!is_na(chunk_x[i])) {
                 T v = chunk_x[i] + T(0); // + 0 normalises -0.0 to 0.0
-                radix_key = ska_sort::detail::to_unsigned_or_bool(v);
+                radix_key = to_radix_key(v);
                 if constexpr (shift_below_na) {
                     radix_key -= 1u;
                 }
