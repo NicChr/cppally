@@ -49,23 +49,32 @@ inline groups make_groups(const T& x, bool ordered) {
             // This ratio of 1/4 is based on real measurements across a variety of data and data types
             if (cardinality_estimate < (static_cast<uint64_t>(n) / 4)){
 
+                // Using example data** = {B, B, D, A, D, C}
+                // group IDs** = {0, 0, 1, 2, 1, 3} (in order of first appearance)
+
                 groups g = make_groups(x, /*ordered = */ false);
                 int n_groups = g.n_groups;
 
+                // start locations** = {0, 2, 3, 5}
                 r_vec<r_int> starts = g.starts(); // Group start indices
                 
+                // uniques** = {B, D, A, C}
                 T uniques(n_groups);
                 for (int k = 0; k < n_groups; ++k) {
                     uniques.set(k, x.view(unwrap(starts.get(k))));
                 }
+
+                // order** = {2, 0, 3, 1}
                 r_vec<r_int> o = order(uniques);
                 const int* RESTRICT p_o = o.data();
-                
+
+                // ranks** = {1, 3, 0, 2}
                 std::vector<int> rank(n_groups);
                 for (int k = 0; k < n_groups; ++k) {
                     rank[p_o[k]] = k;
                 }
-
+                
+                // ordered group IDs** = {1, 1, 3, 0, 3, 2}
                 r_vec<r_int> ids = g.ids;
                 int* RESTRICT p_id = ids.data();
                 for (r_size_t i = 0; i < n; ++i) {
