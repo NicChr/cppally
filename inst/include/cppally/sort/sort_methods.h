@@ -7,7 +7,7 @@
 #include <cppally/unique/unique.h>
 #include <cppally/group/groups.h>
 #include <cppally/scalar/r_limits.h>
-#include <vector>
+#include <memory> // For std::unique_ptr
 
 namespace cppally {
 
@@ -69,17 +69,27 @@ inline groups make_groups(const T& x, bool ordered) {
                 const int* RESTRICT p_o = o.data();
 
                 // ranks** = {1, 3, 0, 2}
-                std::vector<int> rank(n_groups);
+                std::unique_ptr<int[]> rank(new int[n_groups]);
+                int* RESTRICT p_rank = rank.get();
                 for (int k = 0; k < n_groups; ++k) {
-                    rank[p_o[k]] = k;
+                    p_rank[p_o[k]] = k;
                 }
                 
                 // ordered group IDs** = {1, 1, 3, 0, 3, 2}
                 r_vec<r_int> ids = g.ids;
                 int* RESTRICT p_id = ids.data();
-                OMP_PARALLEL_FOR_SIMD(internal::calc_threads(n))
-                for (r_size_t i = 0; i < n; ++i) {
-                    p_id[i] = rank[p_id[i]];
+                
+                int n_threads = internal::calc_threads(n);
+                if (n_threads > 1){
+                    OMP_PARALLEL_FOR_SIMD(n_threads)
+                    for (r_size_t i = 0; i < n; ++i) {
+                        p_id[i] = p_rank[p_id[i]];
+                    }
+                } else {
+                    OMP_SIMD
+                    for (r_size_t i = 0; i < n; ++i) {
+                        p_id[i] = p_rank[p_id[i]];
+                    }
                 }
                 return groups(ids, n_groups, /*ordered=*/ true);
             } else {
