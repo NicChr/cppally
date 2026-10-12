@@ -301,13 +301,6 @@ inline auto to_radix_key(T x) noexcept {
 template <CppNumber T>
 inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, T hi) {
 
-    // All NA means order is [0, n)
-    if (is_na(lo) || is_na(hi)) {
-        r_vec<r_int> out(static_cast<r_size_t>(n));
-        out.iota();
-        return out;
-    }
-
     using radix_key_t = decltype(to_radix_key(std::declval<T>()));
     constexpr uint32_t NA_KEY32 = std::numeric_limits<uint32_t>::max();
 
@@ -578,6 +571,13 @@ inline r_vec<r_int> order(const T& x) {
     
         T rng = range(x, true);
         auto min_val = rng.get(0), max_val = rng.get(1);
+
+        // All NA means order is [0, n)
+        if (is_na(min_val) || is_na(max_val)) {
+            r_vec<r_int> out(static_cast<r_size_t>(n));
+            out.iota();
+            return out;
+        }
     
         return internal::sort::order_numeric_data(x.data(), n, unwrap(min_val), unwrap(max_val));
 
