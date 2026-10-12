@@ -242,7 +242,9 @@ inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
 // Maps a number to an unsigned key with the same ordering
 template <typename T>
 inline auto to_radix_key(T x) noexcept {
-    if constexpr (std::floating_point<T>) {
+    if constexpr (std::unsigned_integral<T>) {
+        return x;
+    } else if constexpr (std::floating_point<T>) {
 
         // Adapted from ska_sort's:
         // std::uint64_t to_unsigned_or_bool(double f){
@@ -281,8 +283,6 @@ inline auto to_radix_key(T x) noexcept {
         // Same equation as in floating-point branch with mask = 0
         // Two's complement ensures negatives will order correctly, so only flip the sign bit
         return static_cast<key_t>(u ^ (key_t(1) << sign_shift));
-    } else if constexpr (std::unsigned_integral<T>) {
-        return x;
     } else {
         static_assert(always_false<T>, "Don't know how to convert this type to a radix key");
     }
