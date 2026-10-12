@@ -20,6 +20,7 @@
 #include <cppally/stats/range.h> // For range
 #include <cppally/sort/is_sorted.h>
 #include <cppally/sort/counting_order.h>
+#include <cppally/group/groups.h>
 #include <cstdint> // For uint32_t and similar
 #include <vector> // For C++ vectors
 #include <limits>
@@ -27,7 +28,6 @@
 #include <cmath>
 #include <algorithm> // For std::min
 #include <bit> // For std::bit_cast
-#include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
 
 namespace cppally {
 
@@ -457,23 +457,7 @@ inline void sort_string_keys(const r_str_view* strs, uint64_t* keys, int* idx, u
     }
 }
 
-// Ids [0, n - 1] of the unique strings, in C-locale order
-inline std::vector<int> sort_unique_strings(const std::vector<r_str_view>& uniques) {
-
-    uint32_t n = uniques.size();
-    std::vector<int> ids(n);
-    std::unique_ptr<uint64_t[]> keys(new uint64_t[n]);
-
-    for (uint32_t id = 0; id < n; ++id) {
-        keys[id] = string_radix_key(uniques[id].c_str(), 0);
-        ids[id] = static_cast<int>(id);
-    }
-
-    sort_string_keys(uniques.data(), keys.get(), ids.data(), n);
-    return ids;
-}
-
-// High-cardinality string vector: skip deduplication and scatter
+// Order strings by radix sort, NAs last
 inline void order_strings_direct(const r_str_view* strs, uint32_t n, int* RESTRICT p_out) {
 
     // Non-NA strings are sorted in place at the front of p_out
@@ -495,6 +479,50 @@ inline void order_strings_direct(const r_str_view* strs, uint32_t n, int* RESTRI
             p_out[j++] = static_cast<int>(i);
         }
     }
+}
+
+inline r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
+
+    uint32_t n = x.length();
+    r_vec<r_int> out(n);
+
+    static_assert(sizeof(r_str_view) == sizeof(SEXP) && std::is_standard_layout_v<r_str_view> && std::is_trivially_copyable_v<r_str_view>);
+    uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<r_str>, internal::r_hash_eq<r_str>>(x.data(), n);
+
+    const r_str_view* strs = reinterpret_cast<const r_str_view*>(x.data());
+    
+    // High cardinality -> direct sort
+    if (estimate >= n / 2) {
+        internal::sort::order_strings_direct(strs, n, out.data());
+        return out;
+    }
+
+    // Low cardinality -> sort unique strings (NA last), then counting sort by group rank
+    groups g = make_groups(x);
+    uint32_t n_groups = static_cast<uint32_t>(g.n_groups);
+    r_vec<r_int> starts = g.starts();
+    const int* RESTRICT p_starts = starts.data();
+    const int* RESTRICT p_ids = g.ids.data();
+
+    std::vector<r_str_view> unique_strs;
+    unique_strs.reserve(n_groups);
+    for (uint32_t k = 0; k < n_groups; ++k) {
+        unique_strs.push_back(strs[p_starts[k]]);
+    }
+    std::unique_ptr<int[]> sorted_ids(new int[n_groups]);
+    internal::sort::order_strings_direct(unique_strs.data(), n_groups, sorted_ids.get());
+
+    std::unique_ptr<uint32_t[]> rank(new uint32_t[n_groups]);
+    uint32_t* RESTRICT p_rank = rank.get();
+    for (uint32_t r = 0; r < n_groups; ++r) {
+        p_rank[sorted_ids[r]] = r;
+    }
+
+    internal::sort::counting_order(
+        [p_ids, p_rank](int i) noexcept { return p_rank[p_ids[i]]; },
+        static_cast<int>(n), n_groups, out.data()
+    );
+    return out;
 }
 
 // In-place sort
@@ -556,7 +584,6 @@ template <RSortableVector T>
 inline r_vec<r_int> order(const T& x) {
 
     using data_t = typename T::data_type;
-
     uint32_t n = x.length();
     
     if (n < 200){
@@ -586,81 +613,8 @@ inline r_vec<r_int> order(const T& x) {
         // ----------------------------------------------------------------------
         // Strings
         // ---------------------------------------------------------------------- 
-    
-        r_vec<r_int> out(n);
 
-        uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>>(x.data(), n);
-        // High cardinality -> direct sort
-        if (estimate >= n / 2) {
-            static_assert(sizeof(r_str_view) == sizeof(SEXP) && std::is_standard_layout_v<r_str_view> && std::is_trivially_copyable_v<r_str_view>);
-            internal::sort::order_strings_direct(reinterpret_cast<const r_str_view*>(x.data()), n, out.data());
-            return out;
-        }
-        auto* RESTRICT px = x.data();
-        // Low cardinality -> sort uniques
-        auto n_uniques_guess = internal::get_hash_map_reserve_size<T>(px, n);
-
-        // Single Hash Map to assign group IDs and count frequencies
-        ankerl::unordered_dense::map<SEXP, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>> lookup;
-        lookup.reserve(n_uniques_guess);
-        
-        std::vector<r_str_view> uniques;
-        uniques.reserve(n_uniques_guess);
-        std::vector<uint32_t> counts;
-        counts.reserve(n_uniques_guess);
-        std::vector<uint32_t> group_ids; // Caches the ID for each element
-        group_ids.reserve(n);
-        
-        uint32_t last_id = uint32_t(-1);
-        
-        for (uint32_t i = 0; i < n; ++i) {
-
-            r_str_view str = r_str_view(px[i], internal::no_checks_tag{}); // no_checks_tag avoids validating SEXP type
-            
-            if (str.is_na()){
-                group_ids.push_back(uint32_t(-1));
-            }
-            // Linear Scan Cache - identical strings have identical pointers
-            else if (i > 0 && unwrap(str) == px[i - 1]) { 
-                group_ids.push_back(last_id);
-                counts[last_id]++;
-            } 
-            else {
-                auto [it, inserted] = lookup.try_emplace(str, static_cast<int>(uniques.size()));
-                if (inserted) {
-                    last_id = uniques.size();
-                    uniques.push_back(str);
-                    counts.push_back(1);
-                } else {
-                    last_id = it->second;
-                    counts[last_id]++;
-                }
-                group_ids.push_back(last_id);
-            }
-        }
-
-        uint32_t n_uniques = uniques.size();
-        // Sort the unique group IDs by string content
-        std::vector<int> sorted_ids = internal::sort::sort_unique_strings(uniques);
-
-        // Prefix Sums: calculate the starting write offset for each group
-        std::vector<uint32_t> offsets(n_uniques + 1);
-        uint32_t current_offset = 0;
-
-        for (int id : sorted_ids) {
-            offsets[id] = current_offset;
-            current_offset += counts[id];
-        }
-
-        offsets[n_uniques] = current_offset; // NA bucket after all real groups
-    
-        // Distribute indices (Counting Sort)
-        int* RESTRICT p_out = out.data();
-        for (uint32_t i = 0; i < n; ++i) {
-            p_out[offsets[std::min(group_ids[i], n_uniques)]++] = i;
-        }
-        
-        return out;
+        return internal::sort::order_string_data(r_vec<r_str>(x));
     } else {
         return internal::sort::order_cmp(x);
     }
