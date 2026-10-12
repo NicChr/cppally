@@ -242,6 +242,18 @@ r_vec<r_int> test_group_counts(T x, bool order){
   return make_groups(x, order).counts();
 }
 
+template <RVector T>
+[[cppally::register]]
+r_vec<r_int> test_group_starts(T x, bool order){
+  return make_groups(x, order).starts() + 1;
+}
+
+template <RVector T>
+[[cppally::register]]
+r_vec<r_int> test_group_order(T x, bool order){
+  return make_groups(x, order).order() + 1;
+}
+
 template <RVal T>
 [[cppally::register]]
 auto test_match(r_vec<T> x, r_vec<T> y){
