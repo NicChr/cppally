@@ -243,15 +243,44 @@ inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
 template <typename T>
 inline auto to_radix_key(T x) noexcept {
     if constexpr (std::floating_point<T>) {
+
+        // Adapted from ska_sort's:
+        // std::uint64_t to_unsigned_or_bool(double f){
+        //     union { double d; uint64_t u; } as_union = { f };
+        //     uint64_t sign_bit = -int64_t(as_union.u >> 63);
+        //     return as_union.u ^ (sign_bit | 0x8000000000000000);
+        // }
+        
         using key_t = std::conditional_t<sizeof(T) == 8, uint64_t, uint32_t>;
-        constexpr int sign_shift = 8 * sizeof(T) - 1;
         const key_t u = std::bit_cast<key_t>(x);
-        // All ones for negatives (flips every bit, reversing their order), else just the sign bit
+
+        constexpr int sign_shift = 8 * sizeof(T) - 1; // Position of sign bit
+
+        // (u >> sign_shift) - shift by sign_shift places to the right so that only sign bit survives, e.g. 0000....1 if x < 0, otherwise, 00000...0
+        // negating the result then converts the 0000....1 into all ones: 111111, and leaves 0000...0 as all zeroes: 0000...0
         const key_t mask = -(u >> sign_shift);
+        // (1 << sign_shift) shifts by sign_shift places to the left this time - gives 1000...0
+        // the bitwise or (mask | 1000...0) - returns 1111...1 if x < 0, otherwise 1000...0
+        // the (u ^ result) flips the bits of u for every 1 in result. So for x < 0, all bits are flipped, otherwise only top bit is flipped
+        // So for x < 0, we always end up with 0XXX...X, otherwise, 1XXX...X
+        // We flip bits so that it reverses the order of negatives, so that negatives with larger size are ordered before smaller ones
+        // Rationale: we want negatives to sort first, so their top bit is now 0, which is less than 1, so the unsigned result of negatives sort before non-negatives
         return static_cast<key_t>(u ^ (mask | (key_t(1) << sign_shift)));
     } else if constexpr (std::signed_integral<T>) {
+        
+        // Adapted from ska_sort's:
+        // unsigned int to_unsigned_or_bool(int i){
+        //     return static_cast<unsigned int>(i) + static_cast<unsigned int>(1 << (sizeof(int) * 8 - 1));
+        // }
+
         using key_t = std::make_unsigned_t<T>;
-        return static_cast<key_t>(static_cast<key_t>(x) ^ (key_t(1) << (8 * sizeof(T) - 1)));
+        const key_t u = static_cast<key_t>(x);
+
+        constexpr int sign_shift = 8 * sizeof(T) - 1;
+
+        // Same equation as in floating-point branch with mask = 0
+        // Two's complement ensures negatives will order correctly, so only flip the sign bit
+        return static_cast<key_t>(u ^ (key_t(1) << sign_shift));
     } else if constexpr (std::unsigned_integral<T>) {
         return x;
     } else {
