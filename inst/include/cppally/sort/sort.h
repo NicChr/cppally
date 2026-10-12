@@ -57,19 +57,29 @@ r_vec<r_int> order_cmp(const T& x) {
 
 // Insertion sort of idx by keys (for small inputs).
 template <std::unsigned_integral key_t>
-inline void insertion_sort(key_t* keys, int* idx, uint32_t n) {
+inline void insertion_sort(key_t* RESTRICT keys, int* RESTRICT idx, uint32_t n) noexcept {
     for (uint32_t i = 1; i < n; ++i) {
 
-        key_t k = keys[i];
-        int id = idx[i];
-        uint32_t j = i;
+        key_t curr_key = keys[i];
+        key_t prev_key = keys[i - 1];
+        int curr_index = idx[i];
+        int prev_index = idx[i - 1];
 
-        for (; j > 0 && keys[j - 1] > k; --j) {
-            keys[j] = keys[j - 1];
-            idx[j] = idx[j - 1];
+        uint32_t j = i;
+        while (prev_key > curr_key){
+            // Shift previous key and index up one slot
+            keys[j] = prev_key;
+            idx[j] = prev_index;
+
+            if (--j == 0){
+                break;
+            }
+            prev_key = keys[j - 1];
+            prev_index = idx[j - 1];
         }
-        keys[j] = k;
-        idx[j] = id;
+        // j is now the slot such that prev_key <= curr_key (or j == 0)
+        keys[j] = curr_key;
+        idx[j] = curr_index;
     }
 }
 
