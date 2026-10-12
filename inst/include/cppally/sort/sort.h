@@ -588,15 +588,15 @@ inline r_vec<r_int> order(const T& x) {
         // ---------------------------------------------------------------------- 
     
         r_vec<r_int> out(n);
-        auto* RESTRICT px = x.data();
 
-        uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>>(px, n);
+        uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>>(x.data(), n);
         // High cardinality -> direct sort
         if (estimate >= n / 2) {
             static_assert(sizeof(r_str_view) == sizeof(SEXP) && std::is_standard_layout_v<r_str_view> && std::is_trivially_copyable_v<r_str_view>);
-            internal::sort::order_strings_direct(reinterpret_cast<const r_str_view*>(px), n, out.data());
+            internal::sort::order_strings_direct(reinterpret_cast<const r_str_view*>(x.data()), n, out.data());
             return out;
         }
+        auto* RESTRICT px = x.data();
         // Low cardinality -> sort uniques
         auto n_uniques_guess = internal::get_hash_map_reserve_size<T>(px, n);
 
@@ -614,7 +614,8 @@ inline r_vec<r_int> order(const T& x) {
         uint32_t last_id = uint32_t(-1);
         
         for (uint32_t i = 0; i < n; ++i) {
-            r_str_view str = r_str_view(px[i], internal::no_checks_tag{});
+
+            r_str_view str = r_str_view(px[i], internal::no_checks_tag{}); // no_checks_tag avoids validating SEXP type
             
             if (str.is_na()){
                 group_ids.push_back(uint32_t(-1));
