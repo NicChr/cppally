@@ -500,14 +500,13 @@ inline r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
     // Low cardinality -> sort unique strings (NA last), then counting sort by group rank
     groups g = make_groups(x);
     uint32_t n_groups = static_cast<uint32_t>(g.n_groups);
-    r_vec<r_int> starts = g.starts();
-    const int* RESTRICT p_starts = starts.data();
     const int* RESTRICT p_ids = g.ids.data();
 
-    std::vector<r_str_view> unique_strs;
-    unique_strs.reserve(n_groups);
-    for (uint32_t k = 0; k < n_groups; ++k) {
-        unique_strs.push_back(strs[p_starts[k]]);
+    std::vector<r_str_view> unique_strs(n_groups);
+    uint32_t target_id = 0;
+    for (uint32_t i = 0; i < n && target_id < n_groups; ++i){
+        unique_strs[target_id] = strs[i];
+        target_id += (static_cast<uint32_t>(p_ids[i]) == target_id);
     }
     std::unique_ptr<int[]> sorted_ids(new int[n_groups]);
     internal::sort::order_strings_direct(unique_strs.data(), n_groups, sorted_ids.get());
