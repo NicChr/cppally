@@ -435,6 +435,28 @@ extern "C" attribute_visible SEXP _cppallytest_test_group_counts(SEXP x, SEXP or
   END_CPPALLY
 }
 // test.h
+extern "C" attribute_visible SEXP _cppallytest_test_group_starts(SEXP x, SEXP order) {
+  BEGIN_CPPALLY
+  return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_sexp, SEXP order_sexp) -> decltype(cpp_to_r(::test_group_starts(std::declval<T>(), std::declval<bool>()))) {
+        return cpp_to_r(::test_group_starts(r_to_cpp<T>(x_sexp), r_to_cpp<bool>(order_sexp)));
+    },
+    x, order
+  );
+  END_CPPALLY
+}
+// test.h
+extern "C" attribute_visible SEXP _cppallytest_test_group_order(SEXP x, SEXP order) {
+  BEGIN_CPPALLY
+  return dispatch_template_impl<1, 2, std::array<int, 2>{0, -1}>(
+    []<typename T>(SEXP x_sexp, SEXP order_sexp) -> decltype(cpp_to_r(::test_group_order(std::declval<T>(), std::declval<bool>()))) {
+        return cpp_to_r(::test_group_order(r_to_cpp<T>(x_sexp), r_to_cpp<bool>(order_sexp)));
+    },
+    x, order
+  );
+  END_CPPALLY
+}
+// test.h
 extern "C" attribute_visible SEXP _cppallytest_test_match(SEXP x, SEXP y) {
   BEGIN_CPPALLY
   return dispatch_template_impl<1, 2, std::array<int, 2>{0, 0}>(
@@ -1384,6 +1406,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_find",                         (DL_FUNC) &_cppallytest_test_find,                         2},
     {"_cppallytest_test_group_counts",                 (DL_FUNC) &_cppallytest_test_group_counts,                 2},
     {"_cppallytest_test_group_id",                     (DL_FUNC) &_cppallytest_test_group_id,                     2},
+    {"_cppallytest_test_group_order",                  (DL_FUNC) &_cppallytest_test_group_order,                  2},
+    {"_cppallytest_test_group_starts",                 (DL_FUNC) &_cppallytest_test_group_starts,                 2},
     {"_cppallytest_test_identical",                    (DL_FUNC) &_cppallytest_test_identical,                    2},
     {"_cppallytest_test_identity",                     (DL_FUNC) &_cppallytest_test_identity,                     1},
     {"_cppallytest_test_list_to_scalars",              (DL_FUNC) &_cppallytest_test_list_to_scalars,              1},
