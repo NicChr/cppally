@@ -489,7 +489,7 @@ inline r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
     const r_str_view* strs = reinterpret_cast<const r_str_view*>(x.data());
     
     // High cardinality -> direct sort
-    if (estimate >= n / 2) {
+    if (estimate >= n / 4) {
         internal::sort::order_strings(strs, n, out.data());
         return out;
     }
