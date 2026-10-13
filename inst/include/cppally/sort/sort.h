@@ -408,7 +408,7 @@ inline uint64_t string_radix_key(const char* s, uint32_t depth) noexcept {
 }
 
 // Stable sort of string keys and their indices into `strs`, caller has to have built the keys (first 8 bytes only)
-inline void sort_string_keys(const r_str_view* strs, uint64_t* keys, int* idx, uint32_t n) {
+inline void string_radix_sort(const r_str_view* strs, uint64_t* RESTRICT keys, int* RESTRICT idx, uint32_t n) {
 
     if (n < 2) {
         return;
@@ -470,7 +470,6 @@ inline void order_strings_direct(const r_str_view* strs, uint32_t n, int* RESTRI
         }
     }
 
-    sort_string_keys(strs, keys.get(), p_out, n_real);
 
     // NAs last, in element order
     uint32_t j = n_real;
@@ -479,6 +478,7 @@ inline void order_strings_direct(const r_str_view* strs, uint32_t n, int* RESTRI
             p_out[j++] = static_cast<int>(i);
         }
     }
+    string_radix_sort(strs, keys.get(), p_out, n_real);
 }
 
 inline r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
