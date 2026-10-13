@@ -96,7 +96,7 @@ inline uint8_t byte_of(key_t k, int b) noexcept {
 // Both keys and idx are sorted in-place (based on keys)
 // struct {key, index} would be cleaner but slower for 64-bit keys due to padding
 template <std::unsigned_integral key_t>
-inline void radix_sort(key_t* keys, int* idx, uint32_t n) {
+inline CPPALLY_NOINLINE void radix_sort(key_t* keys, int* idx, uint32_t n) {
 
     // Use insertion sort for small vectors
     if (n < 200) {
@@ -299,7 +299,7 @@ inline auto to_radix_key(T x) noexcept {
 }
 
 template <CppNumber T>
-inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, T hi) {
+inline CPPALLY_NOINLINE r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, T hi) {
 
     using radix_key_t = decltype(to_radix_key(std::declval<T>()));
     constexpr uint32_t NA_KEY32 = std::numeric_limits<uint32_t>::max();
@@ -407,7 +407,7 @@ inline uint64_t string_radix_key(const char* s, uint32_t depth) noexcept {
 }
 
 // Stable sort of string keys and their indices into `strs`, caller has to have built the keys (first 8 bytes only)
-inline void string_radix_sort(const r_str_view* strs, uint64_t* RESTRICT keys, int* RESTRICT idx, uint32_t n) {
+inline CPPALLY_NOINLINE void string_radix_sort(const r_str_view* strs, uint64_t* RESTRICT keys, int* RESTRICT idx, uint32_t n) {
 
     if (n < 2) {
         return;
@@ -457,7 +457,7 @@ inline void string_radix_sort(const r_str_view* strs, uint64_t* RESTRICT keys, i
 }
 
 // Order strings by radix sort, NAs last
-inline void order_strings(const r_str_view* strs, uint32_t n, int* RESTRICT p_out) {
+inline CPPALLY_NOINLINE void order_strings(const r_str_view* strs, uint32_t n, int* RESTRICT p_out) {
 
     // ----- Build keys -----
     // Non-NA strings go to the front, NAs in the back
@@ -477,7 +477,7 @@ inline void order_strings(const r_str_view* strs, uint32_t n, int* RESTRICT p_ou
     string_radix_sort(strs, keys.get(), p_out, n_real);
 }
 
-inline r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
+inline CPPALLY_NOINLINE r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
 
     uint32_t n = x.length();
     r_vec<r_int> out(n);
