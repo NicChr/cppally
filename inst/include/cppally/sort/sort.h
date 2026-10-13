@@ -460,24 +460,21 @@ inline void string_radix_sort(const r_str_view* strs, uint64_t* RESTRICT keys, i
 // Order strings by radix sort, NAs last
 inline void order_strings(const r_str_view* strs, uint32_t n, int* RESTRICT p_out) {
 
-    // Non-NA strings are sorted in place at the front of p_out
+    // ----- Build keys -----
+    // Non-NA strings go to the front, NAs in the back
     std::unique_ptr<uint64_t[]> keys(new uint64_t[n]);
-    uint32_t n_real = 0;
+    uint32_t n_real = 0, back = n;
     for (uint32_t i = 0; i < n; ++i) {
-        if (!strs[i].is_na()) {
+        if (strs[i].is_na()) {
+            p_out[--back] = static_cast<int>(i);
+        } else {
             keys[n_real] = string_radix_key(strs[i].c_str(), 0);
             p_out[n_real++] = static_cast<int>(i);
         }
     }
-
-
-    // NAs last, in element order
-    uint32_t j = n_real;
-    for (uint32_t i = 0; i < n && j < n; ++i) {
-        if (strs[i].is_na()) {
-            p_out[j++] = static_cast<int>(i);
-        }
-    }
+    // NAs were written in reverse order, so reverse that segment to get the correct order
+    std::reverse(p_out + n_real, p_out + n);
+    // Only sort the non-NAs
     string_radix_sort(strs, keys.get(), p_out, n_real);
 }
 
