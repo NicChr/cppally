@@ -3,27 +3,31 @@
 
 // ------- Hybrid sorting for R vectors -------
 // All sorting is implemented by sorting NA values last (like `order(..., na.last = TRUE)`)
-// ska_sort is used for radix sorting. Copyright Malte Skarupke 2016.
 // Small vectors are sorted using a comparison sort via std::stable_sort.
-// Large vectors of integers or doubles with no fractional part use a counting sort when the
-// range is relatively small. 
-// 64-bit types (int64, dates, date-times) with a wider range that still fits
-// a uint32 offset radix-sort on that narrower key instead of the full 64-bit key. Everything
-// else falls back to a full-width ska_sort.
+// Large vectors of integers or doubles with no fractional part use a counting sort when the range is relatively small. 
+// Wider ranges that still fit a uint32 offset (int, int64, whole number doubles): radix-sort on that narrower key instead of the full 64-bit key.
+// Everything else falls back to a full-width stable multi-threaded LSD radix sort.
 // Strings are sorted by radix sorting unique strings (if cardinality is low enough) and then re-ordering.
+
+// References:
+// - Parallel LSD (per-chunk histograms, prefix sum, scatter): Zagha & Blelloch (1991) doi.org/10.1145/125826.126164
+// - One-pass histograms and skipping shared bytes: Terdiman, "Radix Sort Revisited" (codercorner.com/RadixSortRevisited.htm, see section "Reducing the complexity")
+// - Order-preserving float keys (to_radix_key): Adapted from ska_sort's to_unsigned_or_bool (Malte Skarupke, Boost Software License 1.0)
+// - Insertion sort for small radix sort inputs: inspired by R's iinsert in src/main/radixsort.c
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/hash/hash.h>
 #include <cppally/stats/range.h> // For range
 #include <cppally/sort/is_sorted.h>
 #include <cppally/sort/counting_order.h>
+#include <cppally/group/groups.h>
 #include <cstdint> // For uint32_t and similar
 #include <vector> // For C++ vectors
 #include <limits>
+#include <memory> // For std::unique_ptr
 #include <cmath>
 #include <algorithm> // For std::min
-#include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
-#include <ska_sort/ska_sort.hpp> // For radix sorting via ska_sort
+#include <bit> // For std::bit_cast
 
 namespace cppally {
 
@@ -51,73 +55,253 @@ r_vec<r_int> order_cmp(const T& x) {
     return pv;
 }
 
-template <typename key_t>
-struct key_index {
-    key_t key;
-    uint32_t index;
-};
+// Insertion sort of idx by keys (for small inputs).
+template <std::unsigned_integral key_t>
+inline void insertion_sort(key_t* RESTRICT keys, int* RESTRICT idx, uint32_t n) noexcept {
+    for (uint32_t i = 1; i < n; ++i) {
 
-struct key_of {
-    template <typename key_t>
-    key_t operator()(const key_index<key_t>& k) const noexcept { return k.key; }
-};
+        key_t curr_key = keys[i];
+        key_t prev_key = keys[i - 1];
+        int curr_index = idx[i];
+        int prev_index = idx[i - 1];
 
-// Sort key-index pairs
-template <typename key_t>
-inline void sort_key_index(key_index<key_t>* first, key_index<key_t>* last) {
-    ska_sort::ska_sort(first, last, [](const key_index<key_t>& k) { return std::make_pair(k.key, k.index); });
+        uint32_t j = i;
+        while (prev_key > curr_key){
+            // Shift previous key and index up one slot
+            keys[j] = prev_key;
+            idx[j] = prev_index;
+
+            if (--j == 0){
+                break;
+            }
+            prev_key = keys[j - 1];
+            prev_index = idx[j - 1];
+        }
+        // j is now the slot such that prev_key <= curr_key (or j == 0)
+        keys[j] = curr_key;
+        idx[j] = curr_index;
+    }
 }
 
-// Radix sort of pre-materialised (key, index) pairs. Keys are co-located with
-// the index so every pass is a sequential scan - no per-pass gather through
-// the permutation index. NAs must already be mapped to the max key value.
-template <typename key_t>
-inline r_vec<r_int> order_radix(std::vector<key_index<key_t>>& pairs) {
+// Byte b of key k as a base-256 digit
+// R equivalent: (k %/% 256^b) %% 256
+template <std::unsigned_integral key_t>
+inline uint8_t byte_of(key_t k, int b) noexcept {
+    return static_cast<uint8_t>(k >> (8 * b)); // shift byte to lowest position and keep 8 bits
+}
 
-    uint32_t n = static_cast<uint32_t>(pairs.size());
+// Stable multi-threaded LSD radix sort, one byte per pass, permuting `idx` along with `keys`.
+// Elements are split into contiguous chunks, with each chunk owning its own histograms,
+// so every chunk scatters into output slots no other chunk writes to.
+// Both keys and idx are sorted in-place (based on keys)
+// struct {key, index} would be cleaner but slower for 64-bit keys due to padding
+template <std::unsigned_integral key_t>
+inline CPPALLY_NOINLINE void radix_sort(key_t* keys, int* idx, uint32_t n) {
 
-    // Where the sorted result ends up; usually `pairs`, but ska_sort_copy may
-    // leave it in the scratch buffer.
-    key_index<key_t>* RESTRICT src = pairs.data();
-    std::vector<key_index<key_t>> buffer;
+    // Use insertion sort for small vectors
+    if (n < 200) {
+        insertion_sort(keys, idx, n);
+        return;
+    }
 
-    if constexpr (sizeof(key_t) == sizeof(int)) {
-        // 32-bit key: LSD ska_sort_copy is stable by construction, so the stable
-        // case sorts on the bare key (~4 flat passes) instead of widening to a
-        // (key, index) pair.
-        buffer.resize(n);
-        bool in_buffer = ska_sort::ska_sort_copy(src, src + n, buffer.data(), key_of{});
-        if (in_buffer) {
-            src = buffer.data();
+    constexpr int n_bytes = sizeof(key_t);
+    int n_chunks = calc_threads(n);
+
+    // Each chunk's histograms
+    constexpr std::size_t gap = 1024 / sizeof(uint32_t); // 1KB gap to avoid false sharing
+    // The gap avoids false sharing by keeping counters on separate cache lines
+    constexpr std::size_t stride = n_bytes * 256 + gap;
+    
+    // Single vector containing all histograms
+    // Each thread gets its own histogram (chunk)
+    // Each histogram is composed of counts of each digit AND the gap as described above
+    // E.g if key_t is uint32_t, then n_bytes is 4,
+    // assuming 4 threads:
+    // histogram0 (chunk0) = {byte0[256], byte1[256], byte2[256], byte3[256], gap[256]}
+    // ...
+    // histogram3 (chunk3) = ----------------------------------------------------------
+    //
+    // So for byte0[256], it holds counts for byte 0 (number of keys that have digit 0, 1, ..., 255)
+    // And similarly for byte1[256], etc..
+    std::vector<uint32_t> histograms(static_cast<std::size_t>(n_chunks) * stride); // Counts initialised to 0
+    std::unique_ptr<key_t[]> keys_buf(new key_t[n]);
+    std::unique_ptr<int[]> idx_buf(new int[n]);
+
+    // Chunk c's histogram of byte b
+    uint32_t* p_hists = histograms.data();
+    auto hist_of = [p_hists](int c, int b) noexcept {
+        return p_hists + static_cast<std::size_t>(c) * stride + b * 256;
+    };
+
+    // ----- Fill up histogram counts -----
+
+    // Each byte is a base-256 digit of the key, with byte 0 being least significant.
+    // Count how many keys have each digit (0-255) at each byte position
+    for_each_chunk(n, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
+        uint32_t* RESTRICT hist = hist_of(c, 0);
+        const key_t* RESTRICT chunk_keys = keys;
+        for (uint32_t i = start; i < end; ++i) {
+            const key_t k = chunk_keys[i];
+            for (int b = 0; b < n_bytes; ++b) {
+                ++hist[b * 256 + byte_of(k, b)];
+            }
         }
-    } else {
-        // 64-bit key: ska_sort_copy degrades to unstable in-place at this width,
-        // so stability still needs the (key, index) composite.
-        sort_key_index(src, src + n);
+    });
+
+    // ----- Terdiman's suggestion for reducing radix sort complexity -----
+    // Terdiman, "Radix Sort Revisited" (codercorner.com/RadixSortRevisited.htm)
+    // Do all keys share the same digit at byte `b`?
+
+    // Avoid pass for bytes that are shared by every key, because it can't change the order.
+    // If the first key's digit at byte `b` is held by all `n` keys, every key shares the same value at this byte
+    // We can check this quickly by checking the count of byte `b` for that digit and check if it equals n keys.
+    // For example: keys = {1, 10, 20} all fit in byte 0, so bytes 1-3 are 0 for each key and only byte 0 is sorted
+    int passes[n_bytes];
+    int n_passes = 0;
+    for (int b = 0; b < n_bytes; ++b) {
+        const uint8_t first_byte = byte_of(keys[0], b);
+        uint32_t first_byte_count = 0;
+        for (int c = 0; c < n_chunks; ++c) {
+            first_byte_count += hist_of(c, b)[first_byte];
+        }
+        if (first_byte_count != n) {
+            passes[n_passes++] = b;
+        }
     }
 
+    key_t* k_src = keys;
+    key_t* k_dst = keys_buf.get();
+    int* i_src = idx;
+    int* i_dst = idx_buf.get();
+
+    // ----- Counting sort per byte -----
+    // Starting from least significant digit.
+    // Keys with same byte keep their order from previous iteration, which already sorted them by less significant bytes
+    for (int p = 0; p < n_passes; ++p) {
+        const int b = passes[p];
+
+        // Chunk counts depend on element order, so later passes re-count.
+        // A single chunk's counts are the totals (unchanging).
+        if (p > 0 && n_chunks > 1) {
+            for_each_chunk(n, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
+                uint32_t* RESTRICT hist = hist_of(c, b);
+                const key_t* RESTRICT chunk_keys = k_src;
+                const int chunk_b = b; // Local copy, so the loop doesn't reload b through the closure
+                std::fill(hist, hist + 256, 0u);
+                for (uint32_t i = start; i < end; ++i) {
+                    ++hist[byte_of(chunk_keys[i], chunk_b)];
+                }
+            });
+        }
+
+        // Counts -> buckets' first output slot.
+        // Digits outer, chunks inner: chunk c's keys with digit d land after chunk c - 1's
+        uint32_t total = 0;
+        for (int d = 0; d < 256; ++d) {
+            for (int c = 0; c < n_chunks; ++c) {
+                uint32_t& slot = hist_of(c, b)[d];
+                const uint32_t count = slot;
+                slot = total;
+                total += count;
+            }
+        }
+
+        for_each_chunk(n, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
+            uint32_t* RESTRICT next_slot = hist_of(c, b);
+            const key_t* RESTRICT chunk_k_src = k_src;
+            key_t* RESTRICT chunk_k_dst = k_dst;
+            const int* RESTRICT chunk_i_src = i_src;
+            int* RESTRICT chunk_i_dst = i_dst;
+            const int chunk_b = b;
+            for (uint32_t i = start; i < end; ++i) {
+                const key_t k = chunk_k_src[i];
+                const uint32_t pos = next_slot[byte_of(k, chunk_b)]++;
+                chunk_k_dst[pos] = k;
+                chunk_i_dst[pos] = chunk_i_src[i];
+            }
+        });
+
+        // Current output becomes next iteration's input
+        std::swap(k_src, k_dst);
+        std::swap(i_src, i_dst);
+    }
+
+    // Each iteration flips between the inputs and the buffers,
+    // after an odd number of passes, the result is in the buffers
+    if (i_src != idx) {
+        const key_t* sorted_keys = k_src;
+        const int* sorted_idx = i_src;
+        for_each_chunk(n, n_chunks, [&](int, uint32_t start, uint32_t end) noexcept {
+            std::copy(sorted_idx + start, sorted_idx + end, idx + start);
+            std::copy(sorted_keys + start, sorted_keys + end, keys + start); // Sorted keys back into keys
+        });
+    }
+}
+
+// Using keys, return order permutation [0, n - 1]
+// NAs must be mapped to max key.
+// Note: `keys` become sorted in-place
+template <std::unsigned_integral key_t>
+inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
     r_vec<r_int> out(static_cast<r_size_t>(n));
-    int* RESTRICT p_out = out.data();
-
-    OMP_PARALLEL_FOR_SIMD(calc_threads(n))
-    for (uint32_t i = 0; i < n; ++i) {
-        p_out[i] = static_cast<int>(src[i].index);
-    }
+    out.iota();
+    radix_sort(keys, out.data(), n);
     return out;
 }
 
-template <CppNumber T>
-inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, T hi) {
+// Maps a number to an unsigned key with the same ordering
+template <typename T>
+inline auto to_radix_key(T x) noexcept {
+    if constexpr (std::unsigned_integral<T>) {
+        return x;
+    } else if constexpr (std::floating_point<T>) {
 
-    // All NA means order is [0, n)
-    if (is_na(lo) || is_na(hi)) {
-        r_vec<r_int> out(static_cast<r_size_t>(n));
-        out.iota();
-        return out;
+        // Adapted from ska_sort's:
+        // std::uint64_t to_unsigned_or_bool(double f){
+        //     union { double d; uint64_t u; } as_union = { f };
+        //     uint64_t sign_bit = -int64_t(as_union.u >> 63);
+        //     return as_union.u ^ (sign_bit | 0x8000000000000000);
+        // }
+        
+        using key_t = std::conditional_t<sizeof(T) == 8, uint64_t, uint32_t>;
+        const key_t u = std::bit_cast<key_t>(x);
+
+        constexpr int sign_shift = 8 * sizeof(T) - 1; // Position of sign bit
+
+        // (u >> sign_shift) - shift by sign_shift places to the right so that only sign bit survives, e.g. 0000....1 if x < 0, otherwise, 00000...0
+        // negating the result then converts the 0000....1 into all ones: 111111, and leaves 0000...0 as all zeroes: 0000...0
+        const key_t mask = -(u >> sign_shift);
+        // (1 << sign_shift) shifts by sign_shift places to the left this time - gives 1000...0
+        // the bitwise or (mask | 1000...0) - returns 1111...1 if x < 0, otherwise 1000...0
+        // the (u ^ result) flips the bits of u for every 1 in result. So for x < 0, all bits are flipped, otherwise only top bit is flipped
+        // So for x < 0, we always end up with 0XXX...X, otherwise, 1XXX...X
+        // We flip bits so that it reverses the order of negatives, so that negatives with larger size are ordered before smaller ones
+        // Rationale: we want negatives to sort first, so their top bit is now 0, which is less than 1, so the unsigned result of negatives sort before non-negatives
+        return static_cast<key_t>(u ^ (mask | (key_t(1) << sign_shift)));
+    } else if constexpr (std::signed_integral<T>) {
+        
+        // Adapted from ska_sort's:
+        // unsigned int to_unsigned_or_bool(int i){
+        //     return static_cast<unsigned int>(i) + static_cast<unsigned int>(1 << (sizeof(int) * 8 - 1));
+        // }
+
+        using key_t = std::make_unsigned_t<T>;
+        const key_t u = static_cast<key_t>(x);
+
+        constexpr int sign_shift = 8 * sizeof(T) - 1;
+
+        // Same equation as in floating-point branch with mask = 0
+        // Two's complement ensures negatives will order correctly, so only flip the sign bit
+        return static_cast<key_t>(u ^ (key_t(1) << sign_shift));
+    } else {
+        static_assert(always_false<T>, "Don't know how to convert this type to a radix key");
     }
+}
 
-    using radix_key_t = decltype(ska_sort::detail::to_unsigned_or_bool(std::declval<T>()));
-    constexpr bool wide_key = sizeof(radix_key_t) > sizeof(int);
+template <CppNumber T>
+inline CPPALLY_NOINLINE r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, T hi) {
+
+    using radix_key_t = decltype(to_radix_key(std::declval<T>()));
     constexpr uint32_t NA_KEY32 = std::numeric_limits<uint32_t>::max();
 
     // ---- Can every value be keyed as a whole-number uint32 offset from lo? ----
@@ -125,14 +309,12 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
     uint64_t span = 0;
     bool offsets_fit = false;
 
-    if constexpr (CppIntegerType<T>) {
+    if constexpr (CppIntegerNumber<T>) {
         span = static_cast<uint64_t>(hi) - static_cast<uint64_t>(lo);
         offsets_fit = span < NA_KEY32;
     } else if constexpr (CppFloatType<T>) {
-        // Above 2^digits, not every whole number is representable
-        constexpr T EXACT_LIMIT = static_cast<T>(uint64_t(1) << (std::numeric_limits<T>::digits - 1)) * 2;
         double dspan = static_cast<double>(hi) - static_cast<double>(lo);
-        offsets_fit = dspan < NA_KEY32 && lo >= -EXACT_LIMIT && hi <= EXACT_LIMIT;
+        offsets_fit = dspan < NA_KEY32;
 
         for (uint32_t i = 0; offsets_fit && i < n; ++i) {
             const T v = p_x[i];
@@ -147,9 +329,9 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
 
     // ---- Counting sort: small span, offsets index straight into counts ----
 
-    // Counts capped at 32MB, int-sized offsets, and a multiple of n
-    constexpr uint64_t MAX_COUNTS = std::min<uint64_t>((32ull << 20) / sizeof(uint32_t), std::numeric_limits<int>::max());
-    constexpr uint64_t COUNTS_PER_ELEMENT = wide_key ? 16 : 4;
+    // Counts capped at 32MB and a multiple of n
+    constexpr uint64_t MAX_COUNTS = (32ull << 20) / sizeof(uint32_t);
+    constexpr uint64_t COUNTS_PER_ELEMENT = 4;
     const uint64_t counts_cap = std::min(MAX_COUNTS, static_cast<uint64_t>(n) * COUNTS_PER_ELEMENT);
 
     if (offsets_fit && span < counts_cap) {
@@ -168,36 +350,50 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
 
     // ---- Narrow radix: uint32 offset keys instead of the full-width key ----
 
-    if (offsets_fit && (wide_key || CppFloatType<T>)) {
-        std::vector<key_index<uint32_t>> pairs(n);
-        for (uint32_t i = 0; i < n; ++i) {
-            T v = p_x[i];
-            uint32_t narrow_key = is_na(v) ? NA_KEY32 : static_cast<uint32_t>(v - lo);
-            pairs[i] = { narrow_key, i };
-        }
-        return order_radix(pairs);
+    if (offsets_fit) {
+        using offset_t = typename std::conditional_t<CppIntegerNumber<T>, std::make_unsigned<T>, std::type_identity<T>>::type;
+        std::unique_ptr<uint32_t[]> keys(new uint32_t[n]);
+        uint32_t* p_keys = keys.get();
+        for_each_chunk(n, calc_threads(n), [&](int, uint32_t start, uint32_t end) noexcept {
+            const T* RESTRICT chunk_x = p_x;
+            uint32_t* RESTRICT chunk_keys = p_keys;
+            const offset_t chunk_lo = lo;
+            OMP_SIMD
+            for (uint32_t i = start; i < end; ++i) {
+                const T v = chunk_x[i];
+                chunk_keys[i] = is_na(v) ? NA_KEY32 : static_cast<uint32_t>(static_cast<offset_t>(v) - chunk_lo);
+            }
+        });
+        return order_radix(p_keys, n);
     }
 
     // ---- Full-width radix ----
 
     // NA owns the type minimum, so shifting real keys down by 1 keeps the max below the NA key
-    constexpr bool shift_below_na = CppIntegerType<T> && is<T, unwrap_t<as_r_scalar_t<T>>> &&
-        unwrap(na<as_r_scalar_t<T>>()) == std::numeric_limits<T>::min();
+    constexpr bool shift_below_na = std::signed_integral<T>;
     constexpr radix_key_t NA_KEY = std::numeric_limits<radix_key_t>::max();
 
-    std::vector<key_index<radix_key_t>> pairs(n);
-    for (uint32_t i = 0; i < n; ++i) {
-        radix_key_t radix_key = NA_KEY;
-        if (!is_na(p_x[i])) {
-            T v = p_x[i] + T(0); // + 0 normalises -0.0 to 0.0
-            radix_key = ska_sort::detail::to_unsigned_or_bool(v);
-            if constexpr (shift_below_na) {
-                radix_key -= 1u;
+    std::unique_ptr<radix_key_t[]> keys(new radix_key_t[n]);
+    radix_key_t* p_keys = keys.get();
+    for_each_chunk(n, calc_threads(n), [&](int, uint32_t start, uint32_t end) noexcept {
+        const T* RESTRICT chunk_x = p_x;
+        radix_key_t* RESTRICT chunk_keys = p_keys;
+        OMP_SIMD
+        for (uint32_t i = start; i < end; ++i) {
+            radix_key_t radix_key = NA_KEY;
+            if (!is_na(chunk_x[i])) {
+                T v = chunk_x[i] + T(0); // + 0 normalises -0.0 to 0.0
+                radix_key = to_radix_key(v);
+                if constexpr (shift_below_na) {
+                    // NA must be the min of signed integer type
+                    static_assert(unwrap(na<as_r_scalar_t<T>>()) == std::numeric_limits<T>::min());
+                    radix_key -= 1u;
+                }
             }
+            chunk_keys[i] = radix_key;
         }
-        pairs[i] = { radix_key, i };
-    }
-    return order_radix(pairs);
+    });
+    return order_radix(p_keys, n);
 }
 
 // Pack 8 bytes of string into uint64_t (pad zeros at the end)
@@ -210,11 +406,8 @@ inline uint64_t string_radix_key(const char* s, uint32_t depth) noexcept {
     return k;
 }
 
-// Sorts radix key-index pairs, caller has to have built radix key from string (first 8 bytes only)
-// Index is used for ties to keep sort stable
-inline void sort_string_keys(const r_str_view* strs, std::vector<key_index<uint64_t>>& keys) {
-
-    uint32_t n = keys.size();
+// Stable sort of string keys and their indices into `strs`, caller has to have built the keys (first 8 bytes only)
+inline CPPALLY_NOINLINE void string_radix_sort(const r_str_view* strs, uint64_t* RESTRICT keys, int* RESTRICT idx, uint32_t n) {
 
     if (n < 2) {
         return;
@@ -233,28 +426,29 @@ inline void sort_string_keys(const r_str_view* strs, std::vector<key_index<uint6
         run r = runs.back();
         runs.pop_back();
 
-        key_index<uint64_t>* first = keys.data() + r.begin;
-        key_index<uint64_t>* last = keys.data() + r.end;
+        uint64_t* run_keys = keys + r.begin;
+        int* run_idx = idx + r.begin;
+        uint32_t run_n = r.end - r.begin;
 
         if (r.depth > 0) {
-            for (auto* p = first; p != last; ++p) {
-                p->key = string_radix_key(strs[p->index].c_str(), r.depth);
+            for (uint32_t j = 0; j < run_n; ++j) {
+                run_keys[j] = string_radix_key(strs[run_idx[j]].c_str(), r.depth);
             }
         }
 
         // A shared prefix leaves the whole run on one window, nothing to sort at this depth
-        bool all_equal = std::all_of(first, last, [w = first->key](const key_index<uint64_t>& k) { return k.key == w; });
+        bool all_equal = std::all_of(run_keys, run_keys + run_n, [w = run_keys[0]](uint64_t k) { return k == w; });
         if (!all_equal) {
-            sort_key_index(first, last);
+            radix_sort(run_keys, run_idx, run_n);
         }
 
         for (uint32_t j = r.begin; j < r.end;) {
             uint32_t k = j + 1;
-            while (k < r.end && keys[k].key == keys[j].key) {
+            while (k < r.end && keys[k] == keys[j]) {
                 ++k;
             }
             // Non-zero last byte means the strings continue past this window
-            if (k - j > 1 && (keys[j].key & 0xff) != 0) {
+            if (k - j > 1 && (keys[j] & 0xff) != 0) {
                 runs.push_back({j, k, r.depth + 8});
             }
             j = k;
@@ -262,56 +456,76 @@ inline void sort_string_keys(const r_str_view* strs, std::vector<key_index<uint6
     }
 }
 
-// Ids [0, n - 1] of the unique strings, in C-locale order
-inline std::vector<uint32_t> sort_unique_strings(const std::vector<r_str_view>& uniques) {
+// Order strings by radix sort, NAs last
+inline CPPALLY_NOINLINE void order_strings(const r_str_view* strs, uint32_t n, int* RESTRICT p_out) {
 
-    uint32_t n = uniques.size();
-    std::vector<uint32_t> ids(n);
-
-    std::vector<key_index<uint64_t>> keys(n);
-    for (uint32_t id = 0; id < n; ++id) {
-        keys[id] = { string_radix_key(uniques[id].c_str(), 0), id };
+    // ----- Build keys -----
+    // Non-NA strings go to the front, NAs in the back
+    std::unique_ptr<uint64_t[]> keys(new uint64_t[n]);
+    uint32_t n_real = 0, back = n;
+    for (uint32_t i = 0; i < n; ++i) {
+        if (strs[i].is_na()) {
+            p_out[--back] = static_cast<int>(i);
+        } else {
+            keys[n_real] = string_radix_key(strs[i].c_str(), 0);
+            p_out[n_real++] = static_cast<int>(i);
+        }
     }
-
-    sort_string_keys(uniques.data(), keys);
-
-    for (uint32_t j = 0; j < n; ++j) {
-        ids[j] = keys[j].index;
-    }
-    return ids;
+    // NAs were written in reverse order, so reverse that segment to get the correct order
+    std::reverse(p_out + n_real, p_out + n);
+    // Only sort the non-NAs
+    string_radix_sort(strs, keys.get(), p_out, n_real);
 }
 
-// High-cardinality string vector: skip deduplication and scatter
-inline void order_strings_direct(const r_str_view* strs, uint32_t n, int* RESTRICT p_out) {
+inline CPPALLY_NOINLINE r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
 
-    std::vector<key_index<uint64_t>> keys;
-    keys.reserve(n);
-    for (uint32_t i = 0; i < n; ++i) {
-        if (!strs[i].is_na()) {
-            keys.push_back({ string_radix_key(strs[i].c_str(), 0), i });
-        }
+    uint32_t n = x.length();
+    r_vec<r_int> out(n);
+
+    static_assert(sizeof(r_str_view) == sizeof(SEXP) && std::is_standard_layout_v<r_str_view> && std::is_trivially_copyable_v<r_str_view>);
+    uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<r_str>, internal::r_hash_eq<r_str>>(x.data(), n);
+
+    const r_str_view* strs = reinterpret_cast<const r_str_view*>(x.data());
+    
+    // High cardinality -> direct sort
+    if (estimate >= n / 4) {
+        internal::sort::order_strings(strs, n, out.data());
+        return out;
     }
 
-    sort_string_keys(strs, keys);
+    // Low cardinality -> sort unique strings (NA last), then counting sort by group rank
+    groups g = make_groups(x);
+    uint32_t n_groups = static_cast<uint32_t>(g.n_groups);
+    r_vec<r_int> group_start_locations = g.starts();
+    const int* RESTRICT p_starts = group_start_locations.data();
+    const int* RESTRICT p_ids = g.ids.data();
 
-    uint32_t n_real = keys.size();
-    for (uint32_t j = 0; j < n_real; ++j) {
-        p_out[j] = static_cast<int>(keys[j].index);
+    std::vector<r_str_view> unique_strs;
+    unique_strs.reserve(n_groups);
+    for (uint32_t i = 0; i < n_groups; ++i){
+        unique_strs.push_back(strs[p_starts[i]]);
+    }
+    std::unique_ptr<int[]> sorted_ids(new int[n_groups]);
+    internal::sort::order_strings(unique_strs.data(), n_groups, sorted_ids.get());
+
+    std::unique_ptr<uint32_t[]> rank(new uint32_t[n_groups]);
+    uint32_t* RESTRICT p_rank = rank.get();
+    for (uint32_t r = 0; r < n_groups; ++r) {
+        p_rank[sorted_ids[r]] = r;
     }
 
-    // NAs last, in element order
-    uint32_t j = n_real;
-    for (uint32_t i = 0; i < n && j < n; ++i) {
-        if (strs[i].is_na()) {
-            p_out[j++] = static_cast<int>(i);
-        }
-    }
+    internal::sort::counting_order(
+        [p_ids, p_rank](int i) noexcept { return p_rank[p_ids[i]]; },
+        static_cast<int>(n), n_groups, out.data()
+    );
+    return out;
 }
 
 // In-place sort
+// buffer is optional. If passed, x is copied into buffer before sorting x in-place, otherwise a new buffer is allocated.
 template <typename T>
-requires requires (const T& v, r_size_t i) { v.get(i);}
-void sort_in_place(T& x, const r_vec<r_int>& order){
+requires requires (const T& v, r_size_t i) { v.get(i); }
+void sort_in_place(T& x, const r_vec<r_int>& order, unwrap_t<typename std::remove_cvref_t<T>::data_type>* buffer = nullptr){
 
     int n = static_cast<int>(x.length());
 
@@ -320,23 +534,26 @@ void sort_in_place(T& x, const r_vec<r_int>& order){
     }
 
     using data_t = typename std::remove_cvref_t<T>::data_type;
-    std::vector<unwrap_t<data_t>> buf;
-    buf.reserve(n);
+    std::unique_ptr<unwrap_t<data_t>[]> local;
+    if (!buffer){
+        local.reset(new unwrap_t<data_t>[n]);
+        buffer = local.get();
+    }
     for (int i = 0; i < n; ++i){
-        buf.push_back(unwrap(x.view(i)));
+        buffer[i] = unwrap(x.view(i));
     }
 
-    const int* RESTRICT o = order.data();
     for (int i = 0; i < n; ++i){
-        x.set(i, internal::unsafe_reconstruct_view<data_t>(buf[o[i]]));
+        x.set(i, internal::unsafe_reconstruct_view<data_t>(buffer[unwrap(order.get(i))]));
     }
 }
 
 // Inverse of sort_in_place
 // assuming x is already sorted by `order`, this restores x in its original order
+// buffer is optional. If passed, x is copied into buffer before restoring x's original order, otherwise a new buffer is allocated.
 template <typename T>
-requires requires (const T& v, r_size_t i) { v.get(i);}
-void unsort_in_place(T& x, const r_vec<r_int>& order){
+requires requires (const T& v, r_size_t i) { v.get(i); }
+void unsort_in_place(T& x, const r_vec<r_int>& order, unwrap_t<typename std::remove_cvref_t<T>::data_type>* buffer = nullptr){
 
     int n = static_cast<int>(x.length());
 
@@ -345,15 +562,17 @@ void unsort_in_place(T& x, const r_vec<r_int>& order){
     }
 
     using data_t = typename std::remove_cvref_t<T>::data_type;
-    std::vector<unwrap_t<data_t>> buf;
-    buf.reserve(n);
+    std::unique_ptr<unwrap_t<data_t>[]> local;
+    if (!buffer){
+        local.reset(new unwrap_t<data_t>[n]);
+        buffer = local.get();
+    }
     for (int i = 0; i < n; ++i){
-        buf.push_back(unwrap(x.view(i)));
+        buffer[i] = unwrap(x.view(i));
     }
 
-    const int* RESTRICT o = order.data();
     for (int i = 0; i < n; ++i){
-        x.set(o[i], internal::unsafe_reconstruct_view<data_t>(buf[i]));
+        x.set(unwrap(order.get(i)), internal::unsafe_reconstruct_view<data_t>(buffer[i]));
     }
 }
 
@@ -367,8 +586,11 @@ template <RSortableVector T>
 inline r_vec<r_int> order(const T& x) {
 
     using data_t = typename T::data_type;
-
     uint32_t n = x.length();
+
+    if (n > std::numeric_limits<int>::max()) [[unlikely]] {
+        abort("Cannot sort long-vectors");
+    }
     
     if (n < 200){
         return internal::sort::order_cmp(x);
@@ -382,6 +604,13 @@ inline r_vec<r_int> order(const T& x) {
     
         T rng = range(x, true);
         auto min_val = rng.get(0), max_val = rng.get(1);
+
+        // All NA means order is [0, n)
+        if (is_na(min_val) || is_na(max_val)) {
+            r_vec<r_int> out(static_cast<r_size_t>(n));
+            out.iota();
+            return out;
+        }
     
         return internal::sort::order_numeric_data(x.data(), n, unwrap(min_val), unwrap(max_val));
 
@@ -390,80 +619,8 @@ inline r_vec<r_int> order(const T& x) {
         // ----------------------------------------------------------------------
         // Strings
         // ---------------------------------------------------------------------- 
-    
-        r_vec<r_int> out(n);
-        auto* RESTRICT px = x.data();
 
-        uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>>(px, n);
-        // High cardinality -> direct sort
-        if (estimate >= n / 2) {
-            static_assert(sizeof(r_str_view) == sizeof(SEXP) && std::is_standard_layout_v<r_str_view> && std::is_trivially_copyable_v<r_str_view>);
-            internal::sort::order_strings_direct(reinterpret_cast<const r_str_view*>(px), n, out.data());
-            return out;
-        }
-        // Low cardinality -> sort uniques
-        auto n_uniques_guess = internal::get_hash_map_reserve_size<T>(px, n);
-
-        // Single Hash Map to assign group IDs and count frequencies
-        ankerl::unordered_dense::map<SEXP, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>> lookup;
-        lookup.reserve(n_uniques_guess);
-        
-        std::vector<r_str_view> uniques;
-        uniques.reserve(n_uniques_guess);
-        std::vector<uint32_t> counts;
-        counts.reserve(n_uniques_guess);
-        std::vector<uint32_t> group_ids; // Caches the ID for each element
-        group_ids.reserve(n);
-        
-        uint32_t last_id = uint32_t(-1);
-        
-        for (uint32_t i = 0; i < n; ++i) {
-            r_str_view str = r_str_view(px[i], internal::no_checks_tag{});
-            
-            if (str.is_na()){
-                group_ids.push_back(uint32_t(-1));
-            }
-            // Linear Scan Cache - identical strings have identical pointers
-            else if (i > 0 && unwrap(str) == px[i - 1]) { 
-                group_ids.push_back(last_id);
-                counts[last_id]++;
-            } 
-            else {
-                auto [it, inserted] = lookup.try_emplace(str, static_cast<int>(uniques.size()));
-                if (inserted) {
-                    last_id = uniques.size();
-                    uniques.push_back(str);
-                    counts.push_back(1);
-                } else {
-                    last_id = it->second;
-                    counts[last_id]++;
-                }
-                group_ids.push_back(last_id);
-            }
-        }
-
-        uint32_t n_uniques = uniques.size();
-        // Sort the unique group IDs by string content
-        std::vector<uint32_t> sorted_ids = internal::sort::sort_unique_strings(uniques);
-
-        // Prefix Sums: calculate the starting write offset for each group
-        std::vector<uint32_t> offsets(n_uniques + 1);
-        uint32_t current_offset = 0;
-
-        for (uint32_t id : sorted_ids) {
-            offsets[id] = current_offset;
-            current_offset += counts[id];
-        }
-
-        offsets[n_uniques] = current_offset; // NA bucket after all real groups
-    
-        // Distribute indices (Counting Sort)
-        int* RESTRICT p_out = out.data();
-        for (uint32_t i = 0; i < n; ++i) {
-            p_out[offsets[std::min(group_ids[i], n_uniques)]++] = i;
-        }
-        
-        return out;
+        return internal::sort::order_string_data(r_vec<r_str>(x));
     } else {
         return internal::sort::order_cmp(x);
     }
