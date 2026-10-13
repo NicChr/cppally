@@ -309,7 +309,7 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
     uint64_t span = 0;
     bool offsets_fit = false;
 
-    if constexpr (CppIntegerType<T>) {
+    if constexpr (CppIntegerNumber<T>) {
         span = static_cast<uint64_t>(hi) - static_cast<uint64_t>(lo);
         offsets_fit = span < NA_KEY32;
     } else if constexpr (CppFloatType<T>) {
@@ -372,8 +372,7 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
     // ---- Full-width radix ----
 
     // NA owns the type minimum, so shifting real keys down by 1 keeps the max below the NA key
-    constexpr bool shift_below_na = CppIntegerType<T> && is<T, unwrap_t<as_r_scalar_t<T>>> &&
-        unwrap(na<as_r_scalar_t<T>>()) == std::numeric_limits<T>::min();
+    constexpr bool shift_below_na = std::signed_integral<T>;
     constexpr radix_key_t NA_KEY = std::numeric_limits<radix_key_t>::max();
 
     std::unique_ptr<radix_key_t[]> keys(new radix_key_t[n]);
@@ -388,6 +387,8 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
                 T v = chunk_x[i] + T(0); // + 0 normalises -0.0 to 0.0
                 radix_key = to_radix_key(v);
                 if constexpr (shift_below_na) {
+                    // NA must be the min of signed integer type
+                    static_assert(unwrap(na<as_r_scalar_t<T>>()) == std::numeric_limits<T>::min());
                     radix_key -= 1u;
                 }
             }
