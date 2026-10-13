@@ -458,7 +458,7 @@ inline void string_radix_sort(const r_str_view* strs, uint64_t* RESTRICT keys, i
 }
 
 // Order strings by radix sort, NAs last
-inline void order_strings_direct(const r_str_view* strs, uint32_t n, int* RESTRICT p_out) {
+inline void order_strings(const r_str_view* strs, uint32_t n, int* RESTRICT p_out) {
 
     // Non-NA strings are sorted in place at the front of p_out
     std::unique_ptr<uint64_t[]> keys(new uint64_t[n]);
@@ -493,7 +493,7 @@ inline r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
     
     // High cardinality -> direct sort
     if (estimate >= n / 2) {
-        internal::sort::order_strings_direct(strs, n, out.data());
+        internal::sort::order_strings(strs, n, out.data());
         return out;
     }
 
@@ -509,7 +509,7 @@ inline r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
         target_id += (static_cast<uint32_t>(p_ids[i]) == target_id);
     }
     std::unique_ptr<int[]> sorted_ids(new int[n_groups]);
-    internal::sort::order_strings_direct(unique_strs.data(), n_groups, sorted_ids.get());
+    internal::sort::order_strings(unique_strs.data(), n_groups, sorted_ids.get());
 
     std::unique_ptr<uint32_t[]> rank(new uint32_t[n_groups]);
     uint32_t* RESTRICT p_rank = rank.get();
