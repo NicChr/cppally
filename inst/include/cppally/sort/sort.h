@@ -581,6 +581,10 @@ inline r_vec<r_int> order(const T& x) {
 
     using data_t = typename T::data_type;
     uint32_t n = x.length();
+
+    if (n > std::numeric_limits<int>::max()) [[unlikely]] {
+        abort("Cannot sort long-vectors");
+    }
     
     if (n < 200){
         return internal::sort::order_cmp(x);
