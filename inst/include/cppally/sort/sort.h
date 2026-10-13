@@ -522,9 +522,10 @@ inline CPPALLY_NOINLINE r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
 }
 
 // In-place sort
+// buffer is optional. If passed, x is copied into buffer before sorting x in-place, otherwise a new buffer is allocated.
 template <typename T>
-requires requires (const T& v, r_size_t i) { v.get(i);}
-void sort_in_place(T& x, const r_vec<r_int>& order){
+requires requires (const T& v, r_size_t i) { v.get(i); }
+void sort_in_place(T& x, const r_vec<r_int>& order, unwrap_t<typename std::remove_cvref_t<T>::data_type>* buffer = nullptr){
 
     int n = static_cast<int>(x.length());
 
@@ -533,23 +534,26 @@ void sort_in_place(T& x, const r_vec<r_int>& order){
     }
 
     using data_t = typename std::remove_cvref_t<T>::data_type;
-    std::vector<unwrap_t<data_t>> buf;
-    buf.reserve(n);
+    std::unique_ptr<unwrap_t<data_t>[]> local;
+    if (!buffer){
+        local.reset(new unwrap_t<data_t>[n]);
+        buffer = local.get();
+    }
     for (int i = 0; i < n; ++i){
-        buf.push_back(unwrap(x.view(i)));
+        buffer[i] = unwrap(x.view(i));
     }
 
-    const int* RESTRICT o = order.data();
     for (int i = 0; i < n; ++i){
-        x.set(i, internal::unsafe_reconstruct_view<data_t>(buf[o[i]]));
+        x.set(i, internal::unsafe_reconstruct_view<data_t>(buffer[unwrap(order.get(i))]));
     }
 }
 
 // Inverse of sort_in_place
 // assuming x is already sorted by `order`, this restores x in its original order
+// buffer is optional. If passed, x is copied into buffer before restoring x's original order, otherwise a new buffer is allocated.
 template <typename T>
-requires requires (const T& v, r_size_t i) { v.get(i);}
-void unsort_in_place(T& x, const r_vec<r_int>& order){
+requires requires (const T& v, r_size_t i) { v.get(i); }
+void unsort_in_place(T& x, const r_vec<r_int>& order, unwrap_t<typename std::remove_cvref_t<T>::data_type>* buffer = nullptr){
 
     int n = static_cast<int>(x.length());
 
@@ -558,15 +562,17 @@ void unsort_in_place(T& x, const r_vec<r_int>& order){
     }
 
     using data_t = typename std::remove_cvref_t<T>::data_type;
-    std::vector<unwrap_t<data_t>> buf;
-    buf.reserve(n);
+    std::unique_ptr<unwrap_t<data_t>[]> local;
+    if (!buffer){
+        local.reset(new unwrap_t<data_t>[n]);
+        buffer = local.get();
+    }
     for (int i = 0; i < n; ++i){
-        buf.push_back(unwrap(x.view(i)));
+        buffer[i] = unwrap(x.view(i));
     }
 
-    const int* RESTRICT o = order.data();
     for (int i = 0; i < n; ++i){
-        x.set(o[i], internal::unsafe_reconstruct_view<data_t>(buf[i]));
+        x.set(unwrap(order.get(i)), internal::unsafe_reconstruct_view<data_t>(buffer[i]));
     }
 }
 
