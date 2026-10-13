@@ -313,10 +313,8 @@ inline r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, 
         span = static_cast<uint64_t>(hi) - static_cast<uint64_t>(lo);
         offsets_fit = span < NA_KEY32;
     } else if constexpr (CppFloatType<T>) {
-        // Above 2^digits, not every whole number is representable
-        constexpr T EXACT_LIMIT = static_cast<T>(uint64_t(1) << (std::numeric_limits<T>::digits - 1)) * 2;
         double dspan = static_cast<double>(hi) - static_cast<double>(lo);
-        offsets_fit = dspan < NA_KEY32 && lo >= -EXACT_LIMIT && hi <= EXACT_LIMIT;
+        offsets_fit = dspan < NA_KEY32;
 
         for (uint32_t i = 0; offsets_fit && i < n; ++i) {
             const T v = p_x[i];
