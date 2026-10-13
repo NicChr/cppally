@@ -168,6 +168,14 @@ test_group_counts <- function(x, order) {
   .Call(`_cppallytest_test_group_counts`, x, order)
 }
 
+test_group_starts <- function(x, order) {
+  .Call(`_cppallytest_test_group_starts`, x, order)
+}
+
+test_group_order <- function(x, order) {
+  .Call(`_cppallytest_test_group_order`, x, order)
+}
+
 test_match <- function(x, y) {
   .Call(`_cppallytest_test_match`, x, y)
 }
