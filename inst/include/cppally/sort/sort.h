@@ -90,6 +90,16 @@ inline uint8_t byte_of(key_t k, int b) noexcept {
     return static_cast<uint8_t>(k >> (8 * b)); // shift byte to lowest position and keep 8 bits
 }
 
+template <std::unsigned_integral key_t>
+inline void count_digits(uint32_t* RESTRICT hist, const key_t* RESTRICT keys, uint32_t start, uint32_t end, int byte_start, int byte_end) noexcept {
+    for (uint32_t i = start; i < end; ++i) {
+        const key_t k = keys[i];
+        for (int b = byte_start; b < byte_end; ++b) {
+            ++hist[b * 256 + byte_of(k, b)];
+        }
+    }
+}
+
 // Stable multi-threaded LSD radix sort, one byte per pass, permuting `idx` along with `keys`.
 // Elements are split into contiguous chunks, with each chunk owning its own histograms,
 // so every chunk scatters into output slots no other chunk writes to.
@@ -138,14 +148,7 @@ CPPALLY_NOINLINE void radix_sort(key_t* keys, int* idx, uint32_t n) {
     // Each byte is a base-256 digit of the key, with byte 0 being least significant.
     // Count how many keys have each digit (0-255) at each byte position
     for_each_chunk(n, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
-        uint32_t* RESTRICT hist = hist_of(c, 0);
-        const key_t* RESTRICT chunk_keys = keys;
-        for (uint32_t i = start; i < end; ++i) {
-            const key_t k = chunk_keys[i];
-            for (int b = 0; b < n_bytes; ++b) {
-                ++hist[b * 256 + byte_of(k, b)];
-            }
-        }
+        count_digits(hist_of(c, 0), keys, start, end, 0, n_bytes);
     });
 
     // ----- Terdiman's suggestion for reducing radix sort complexity -----
