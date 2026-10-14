@@ -24,7 +24,7 @@ T shallow_copy(const T& x){
 }
 
 template <RVector T>
-inline T deep_copy(const T& x){
+T deep_copy(const T& x){
     
     T out = x.copy();
 
