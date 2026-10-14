@@ -1583,7 +1583,7 @@ cpp_negative_subset(x, x > 5) # Everything except where x > 5
 cpp_negative_subset(x, integer()) # Everything
 ```
 
-Named subsetting is also supported. cppally internally hashes the vector names and performs hash lookups. For more info, see the 'Vector Names Hashing' vignette.
+Named subsetting is also supported. cppally internally hashes the vector names and performs hash lookups. For more info, see the 'Vector Names' vignette.
 
 ```{r}
 names(x) <- LETTERS[seq_along(x)]

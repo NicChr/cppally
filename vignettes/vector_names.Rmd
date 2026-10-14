@@ -1,8 +1,8 @@
 ---
-title: "Vector Names Hashing"
+title: "Vector Names"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vector Names Hashing}
+  %\VignetteIndexEntry{Vector Names}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options: 
@@ -17,11 +17,18 @@ knitr::opts_chunk$set(
 )
 ```
 
-To speed up named-indexing, cppally implements hashing of 
-vector names via a lazy cache-on-lookup approach. To better understand how 
-this works, we will show what name-indexing in R looks like, how to improve it 
-with hashing, as well as the benefits and limitations of cppally's inherent 
-lazy-hashing method.
+cppally vectors cache a hash map of their names. Doing this makes name-lookup 
+much faster, especially on repeated lookups.
+
+To understand how this works, we will first show: 
+
+- What name-indexing in R looks like
+- How to speed up repeated name-indexing with a hash map
+
+After that we will show: 
+
+- The limitations of caching names in R
+- How fast cppally name-indexing is
 
 Let's first load cppally
 
