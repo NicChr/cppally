@@ -3,7 +3,6 @@
 
 #include <cppally/vector/r_vector.h>
 #include <cppally/coerce.h>
-#include <cppally/length.h>
 #include <cppally/group/groups.h>
 #include <vector>
 #include <algorithm>
@@ -15,9 +14,9 @@ namespace cppally {
 
 namespace internal {
 
-template <RComposite T>
+template <RVector T>
 void check_groups_span_data(const T& x, const groups& g){
-    if (length(x) != g.ids.length()) [[unlikely]] {
+    if (x.length() != g.ids.length()) [[unlikely]] {
         abort("check_groups_span_data: data and group IDs must have equal length");
     }
 }
