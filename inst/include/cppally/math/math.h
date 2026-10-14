@@ -383,9 +383,10 @@ inline r_dbl atan(T x){
   return r_dbl(std::atan(internal::coerce_number<r_dbl>(x)));
 }
 
-template <RMathType T>
-r_dbl atan2(T x){
-  return r_dbl(std::atan2(internal::coerce_number<r_dbl>(x)));
+template <MathType T, MathType U>
+requires (RMathType<T> || RMathType<U>)
+inline r_dbl atan2(T y, U x){
+  return r_dbl(std::atan2(internal::coerce_number<r_dbl>(y), internal::coerce_number<r_dbl>(x)));
 }
 
 template <RMathType T>
