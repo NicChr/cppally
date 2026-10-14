@@ -249,6 +249,7 @@ inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
     return out;
 }
 
+// Adapted from ska_sort's to_unsigned_or_bool (Malte Skarupke, Boost Software License 1.0)
 // Maps a number to an unsigned key with the same ordering
 template <typename T>
 inline auto to_radix_key(T x) noexcept {

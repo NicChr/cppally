@@ -27,7 +27,7 @@ Authors:
 Other contributors:
 \itemize{
   \item Martin Leitner-Ankerl (Author of bundled ankerl::unordered_dense library) [copyright holder]
-  \item Malte Skarupke (Author of bundled ska_sort library) [copyright holder]
+  \item Malte Skarupke (Author of ska_sort, from which to_radix_key in sort.h is adapted) [copyright holder]
   \item Ryo Suzuki (Author of bundled Xoshiro-cpp library) [copyright holder]
   \item Posit Software, PBC (SEXP protection mechanism in r_protect.h inspired by cpp11) [copyright holder]
 }
