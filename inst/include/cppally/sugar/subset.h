@@ -190,16 +190,16 @@ T subset(const T& x, const r_vec<U>& indices, bool invert = false, bool check = 
   }
 }
 template <internal::RSubscript U>
-inline r_factors subset(const r_factors& x, const r_vec<U>& indices, bool invert = false, bool check = true) {
+r_factors subset(const r_factors& x, const r_vec<U>& indices, bool invert = false, bool check = true) {
   return r_factors(subset(x.value, indices, invert, check), x.levels(), false);
 }
 
 template <internal::RSubscript U>
-inline r_sexp subset(const r_sexp& x, const r_vec<U>& indices, bool invert = false, bool check = true);
+r_sexp subset(const r_sexp& x, const r_vec<U>& indices, bool invert = false, bool check = true);
 
 template <internal::RSubscript U>
 requires (!RStringType<U>)
-inline r_df subset(const r_df& x, const r_vec<U>& indices, bool invert = false, bool check = true){
+r_df subset(const r_df& x, const r_vec<U>& indices, bool invert = false, bool check = true){
 
   if (indices.is_null()){
     return x;
@@ -228,7 +228,7 @@ inline r_df subset(const r_df& x, const r_vec<U>& indices, bool invert = false, 
 }
 
 template <internal::RSubscript U>
-inline r_sexp subset(const r_sexp& x, const r_vec<U>& indices, bool invert, bool check) {
+r_sexp subset(const r_sexp& x, const r_vec<U>& indices, bool invert, bool check) {
     return r_sexp_view(x, CPPALLY_MAKE_VISITOR(r_sexp, v, subset(v, indices, invert, check)));
 }
 

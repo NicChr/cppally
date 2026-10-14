@@ -31,7 +31,7 @@ inline r_size_t list_common_length(const r_vec<r_sexp>& x){
 }
 
 template <typename... Args>
-inline r_size_t common_length(Args&&... args) {
+r_size_t common_length(Args&&... args) {
   r_vec<r_sexp> vectors = make_vec<r_sexp>(std::forward<Args>(args)...);
   return list_common_length(vectors);
 }
@@ -45,7 +45,7 @@ inline r_vec<r_sexp> list_recycle(const r_vec<r_sexp>& x) {
 
 // Variadic recycle function
 template <typename... Args>
-inline r_vec<r_sexp> recycle(Args&&... args) {
+r_vec<r_sexp> recycle(Args&&... args) {
   r_vec<r_sexp> vectors = make_vec<r_sexp>(std::forward<Args>(args)...);
   return list_recycle(vectors);
 }
