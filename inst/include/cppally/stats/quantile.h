@@ -352,7 +352,7 @@ inline r_dbl quantile(const r_vec<T>& x, double prob, bool na_rm = false){
 }
 
 template <string_literal Method = "linear", RNumber T>
-inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool na_rm = false, bool names = true){
+r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool na_rm = false, bool names = true){
 
     const r_size_t n = x.length();
 
@@ -427,7 +427,7 @@ namespace quantile_impl {
 // Weighted quantile using relative weights (Matthew Kay's method).
 // Important: Zero-weight values are dropped as values with zero weights are treated as absent or non-contributory.
 template <string_literal Method, RNumber T>
-inline r_vec<r_dbl> weighted_quantile_impl(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_dbl>& weights, int* RESTRICT o, bool na_rm, bool names){
+r_vec<r_dbl> weighted_quantile_impl(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_dbl>& weights, int* RESTRICT o, bool na_rm, bool names){
 
     r_size_t n = x.length();
     r_size_t n_probs = probs.length();

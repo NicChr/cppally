@@ -90,7 +90,7 @@ inline void scatter_over_histograms(KeyFn key, int start, int end, uint32_t n_ke
 // Stable multi-threaded counting sort order permutation
 // writes [0, n) to `out` ordered by key(i) in [0, n_keys)
 template <typename KeyFn>
-inline CPPALLY_NOINLINE void counting_order(KeyFn key, int n, uint32_t n_keys, int* RESTRICT out){
+CPPALLY_NOINLINE void counting_order(KeyFn key, int n, uint32_t n_keys, int* RESTRICT out){
 
     static_assert(noexcept(key(0)), "`key` must be noexcept as it may run inside an OMP region");
 

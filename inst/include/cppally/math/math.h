@@ -132,13 +132,13 @@ constexpr r_int sign(T x) noexcept {
 }
 
 template <RMathType T>
-r_dbl sqrt(T x) {
+inline r_dbl sqrt(T x) {
   return r_dbl(std::sqrt(unwrap(internal::coerce_number<r_dbl>(x))));
 }
 
 template <MathType T, MathType U>
-  requires (RMathType<T> || RMathType<U>)
-r_dbl pow(T x, U y){
+requires (RMathType<T> || RMathType<U>)
+inline r_dbl pow(T x, U y){
 
   r_dbl x_ = internal::coerce_number<r_dbl>(x);
   r_dbl y_ = internal::coerce_number<r_dbl>(y);
@@ -157,43 +157,43 @@ r_dbl pow(T x, U y){
 }
 
 template <RMathType T>
-r_dbl exp(T x){
+inline r_dbl exp(T x){
   return r_dbl(std::exp(internal::coerce_number<r_dbl>(x)));
 }
 
 template <RMathType T>
-r_dbl expm1(T x){
+inline r_dbl expm1(T x){
   return r_dbl(std::expm1(internal::coerce_number<r_dbl>(x)));
 }
 
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>)
-r_dbl log(T x, U base){
+inline r_dbl log(T x, U base){
   return r_dbl(std::log(internal::coerce_number<r_dbl>(x)) / std::log(internal::coerce_number<r_dbl>(base)));
 }
 template <RMathType T>
-r_dbl log(T x){
+inline r_dbl log(T x){
   return r_dbl(std::log(internal::coerce_number<r_dbl>(x)));
 }
 
 template <RMathType T>
-r_dbl log10(T x){
+inline r_dbl log10(T x){
   return r_dbl(std::log10(internal::coerce_number<r_dbl>(x)));
 }
 
 template <RMathType T>
-r_dbl log2(T x){
+inline r_dbl log2(T x){
   return r_dbl(std::log2(internal::coerce_number<r_dbl>(x)));
 }
 
 template <RMathType T>
-r_dbl log1p(T x){
+inline r_dbl log1p(T x){
   return r_dbl(std::log1p(internal::coerce_number<r_dbl>(x)));
 }
 
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>)
-r_dbl round(T x, U digits){
+inline r_dbl round(T x, U digits){
 
   r_dbl x_ = internal::coerce_number<r_dbl>(x);
   r_dbl digits_ = internal::coerce_number<r_dbl>(digits);
@@ -213,7 +213,7 @@ r_dbl round(T x, U digits){
 }
 
 template <RMathType T>
-T round(T x){
+inline T round(T x){
   if (is_na(x)){
     return x;
   } else if (internal::coerce_number<r_dbl>(x).is_infinite()){
@@ -224,13 +224,13 @@ T round(T x){
 }
 
 template <RIntegerType T>
-auto round(T x){
+inline auto round(T x){
   return +x;
 }
 
 template <MathType T, MathType U>
 requires (RMathType<T> || RMathType<U>)
-r_dbl signif(T x, U digits){
+inline r_dbl signif(T x, U digits){
 
   r_dbl x_ = internal::coerce_number<r_dbl>(x);
   r_dbl digits_ = internal::coerce_number<r_dbl>(digits);
@@ -355,31 +355,31 @@ inline r_int lcm(r_lgl x, r_lgl y, r_lgl tol = r_limits<r_lgl>::tolerance()) noe
 }
 
 template <RMathType T>
-r_dbl sin(T x){
+inline r_dbl sin(T x){
   return r_dbl(std::sin(internal::coerce_number<r_dbl>(x)));
 }
 template <RMathType T>
-r_dbl cos(T x){
+inline r_dbl cos(T x){
   return r_dbl(std::cos(internal::coerce_number<r_dbl>(x)));
 }
 
 template <RMathType T>
-r_dbl tan(T x){
+inline r_dbl tan(T x){
   return r_dbl(std::tan(internal::coerce_number<r_dbl>(x)));
 }
 
 template <RMathType T>
-r_dbl asin(T x){
+inline r_dbl asin(T x){
   return r_dbl(std::asin(internal::coerce_number<r_dbl>(x)));
 }
 
 template <RMathType T>
-r_dbl acos(T x){
+inline r_dbl acos(T x){
   return r_dbl(std::acos(internal::coerce_number<r_dbl>(x)));
 }
 
 template <RMathType T>
-r_dbl atan(T x){
+inline r_dbl atan(T x){
   return r_dbl(std::atan(internal::coerce_number<r_dbl>(x)));
 }
 
@@ -389,17 +389,17 @@ r_dbl atan2(T x){
 }
 
 template <RMathType T>
-r_dbl sinh(T x){
+inline r_dbl sinh(T x){
   return r_dbl(std::sinh(internal::coerce_number<r_dbl>(x)));
 }
 
 template <RMathType T>
-r_dbl cosh(T x){
+inline r_dbl cosh(T x){
   return r_dbl(std::cosh(internal::coerce_number<r_dbl>(x)));
 }
 
 template <RMathType T>
-r_dbl tanh(T x){
+inline r_dbl tanh(T x){
   return r_dbl(std::tanh(internal::coerce_number<r_dbl>(x)));
 }
 

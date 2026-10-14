@@ -12,6 +12,7 @@
 namespace cppally {
 
 namespace internal {
+
 inline r_vec<r_str_view> combine_levels(const r_vec<r_str_view>& x_lvls, const r_vec<r_str_view>& y_lvls){
     r_vec<r_int> new_lvl_matches = match(y_lvls, x_lvls);
     r_vec<r_int> new_lvl_locations = new_lvl_matches.find(na<r_int>());

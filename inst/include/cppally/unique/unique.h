@@ -134,7 +134,7 @@ r_factors::r_factors(const T& x) : r_factors(x, unique(x)) {}
 
 // Helper to calculate n unique values - can be useful for various algorithms
 template <RVector T>
-inline r_size_t n_unique(const T& x) {
+r_size_t n_unique(const T& x) {
 
   using data_t = typename T::data_type;
 

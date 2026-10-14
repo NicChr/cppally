@@ -30,7 +30,7 @@ inline r_factors unique(const r_factors& x, bool sort) {
 }
 
 template <RVector T>
-inline groups make_groups(const T& x, bool ordered) {
+groups make_groups(const T& x, bool ordered) {
     
     using data_t = typename std::remove_cvref_t<T>::data_type;
 

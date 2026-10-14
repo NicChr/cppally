@@ -11,7 +11,7 @@ namespace cppally {
 
 // ── make_vec ─────────────────────────────────────────────────────
 template <RVal T, typename... Args>
-inline r_vec<T> make_vec(Args... args) {
+r_vec<T> make_vec(Args... args) {
 
   constexpr int n = sizeof...(args);
 
@@ -40,7 +40,7 @@ inline r_vec<T> make_vec(Args... args) {
   }
 }
 template <RVal T, typename... Args>
-inline r_vec<T> make_vector(Args&&... args) {
+r_vec<T> make_vector(Args&&... args) {
   return make_vec<T>(std::forward<Args>(args)...);
 }
 
@@ -49,7 +49,7 @@ namespace attr {
 
 template <RObject T, typename... Args>
 requires requires(T& x) { x.maybe_ensure_exclusive(); }
-inline void modify_attrs(T& x, Args&&... args) {
+void modify_attrs(T& x, Args&&... args) {
   r_vec<r_sexp> attrs = make_vec<r_sexp>(std::forward<Args>(args)...);
   x.maybe_ensure_exclusive();
   attr::impl::modify_attrs_impl(x, attrs);

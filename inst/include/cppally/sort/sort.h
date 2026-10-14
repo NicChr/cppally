@@ -96,7 +96,7 @@ inline uint8_t byte_of(key_t k, int b) noexcept {
 // Both keys and idx are sorted in-place (based on keys)
 // struct {key, index} would be cleaner but slower for 64-bit keys due to padding
 template <std::unsigned_integral key_t>
-inline CPPALLY_NOINLINE void radix_sort(key_t* keys, int* idx, uint32_t n) {
+CPPALLY_NOINLINE void radix_sort(key_t* keys, int* idx, uint32_t n) {
 
     // Use insertion sort for small vectors
     if (n < 200) {
@@ -299,7 +299,7 @@ inline auto to_radix_key(T x) noexcept {
 }
 
 template <CppNumber T>
-inline CPPALLY_NOINLINE r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, T hi) {
+CPPALLY_NOINLINE r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, T hi) {
 
     using radix_key_t = decltype(to_radix_key(std::declval<T>()));
     constexpr uint32_t NA_KEY32 = std::numeric_limits<uint32_t>::max();

@@ -24,7 +24,7 @@ inline bool table_fits_budget(uint64_t table_bytes, uint64_t n) {
 }
 
 template <std::integral Val>
-inline bool use_int_table(uint64_t range_span, r_size_t n) {
+bool use_int_table(uint64_t range_span, r_size_t n) {
 
     if (range_span > ( max_table_bytes / sizeof(Val) )) {
         return false;

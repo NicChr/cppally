@@ -115,13 +115,13 @@ inline r_sexp get_attr(SEXP x, r_sym sym){
 
 template <RObject T>
 requires requires(T& x) { x.maybe_ensure_exclusive(); }
-inline void set_attr(T& x, r_sym sym, SEXP value){
+void set_attr(T& x, r_sym sym, SEXP value){
   x.maybe_ensure_exclusive();
   impl::set_attr_impl(x, sym, value);
 }
 // Do not use, use equivalent `set_names()` member.
 template <RObject T, RStringType U>
-inline void set_old_names(T& x, const r_vec<U>& names){
+void set_old_names(T& x, const r_vec<U>& names){
   set_attr(x, symbol::names_sym, names);
 }
 // Do not use, use equivalent `names()` member.
@@ -132,11 +132,11 @@ inline r_vec<r_str_view> get_old_class(SEXP x){
   return r_vec<r_str_view>(get_attr(x, symbol::class_sym));
 }
 template <RObject T, RStringType U>
-inline void set_old_class(T& x, const r_vec<U>& cls){
+void set_old_class(T& x, const r_vec<U>& cls){
   set_attr(x, symbol::class_sym, cls);
 }
 template <RStringType U>
-inline bool inherits_any(SEXP x, const r_vec<U>& classes){
+bool inherits_any(SEXP x, const r_vec<U>& classes){
   r_size_t n = classes.length();
   for (r_size_t i = 0; i < n; ++i) {
     if (inherits1(x, classes.view(i).c_str())){
@@ -146,7 +146,7 @@ inline bool inherits_any(SEXP x, const r_vec<U>& classes){
   return false;
 }
 template <RStringType U>
-inline bool inherits_all(SEXP x, const r_vec<U>& classes){
+bool inherits_all(SEXP x, const r_vec<U>& classes){
   r_size_t n = classes.length();
   for (r_size_t i = 0; i < n; ++i) {
     if (!inherits1(x, classes.view(i).c_str())){
@@ -157,18 +157,14 @@ inline bool inherits_all(SEXP x, const r_vec<U>& classes){
 }
 template <RObject T>
 requires requires(T& x) { x.maybe_ensure_exclusive(); }
-inline void clear_attrs(T& x){
+void clear_attrs(T& x){
   x.maybe_ensure_exclusive();
   impl::clear_attrs_impl(x);
 }
 
-}
-
-namespace attr {
-
 template <RObject T>
 requires requires(T& x) { x.maybe_ensure_exclusive(); }
-inline void set_attrs(T& x, const r_vec<r_sexp>& attrs){
+void set_attrs(T& x, const r_vec<r_sexp>& attrs){
   clear_attrs(x);
   impl::modify_attrs_impl(x, attrs);
 }

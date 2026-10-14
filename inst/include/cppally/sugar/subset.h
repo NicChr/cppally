@@ -115,7 +115,7 @@ r_vec<V> clean_locs(const r_vec<U>& locs, const T& x){
 }
 
 template <RVector T, internal::RSubscript U>
-inline T subset(const T& x, const r_vec<U>& indices, bool invert = false, bool check = true) {
+T subset(const T& x, const r_vec<U>& indices, bool invert = false, bool check = true) {
 
   using data_t = typename std::remove_cvref_t<T>::data_type;
   

@@ -53,12 +53,12 @@ inline consteval uint64_t nan_hash() noexcept {
 
 // Fallback
 template <RScalar T>
-uint64_t r_hash_impl(T x) noexcept {
+inline uint64_t r_hash_impl(T x) noexcept {
     return ankerl::unordered_dense::hash<unwrap_t<T>>{}(unwrap(x));
 };
 
 template <RIntegerType T>
-uint64_t r_hash_impl(T x) noexcept {
+inline uint64_t r_hash_impl(T x) noexcept {
     return mix_u64(static_cast<uint64_t>(unwrap(x)));
 };
 
@@ -74,7 +74,7 @@ inline uint64_t r_hash_impl(r_dbl x) noexcept {
 };
 
 template <RTimeType T>
-uint64_t r_hash_impl(T x) noexcept {
+inline uint64_t r_hash_impl(T x) noexcept {
     return r_hash_impl(typename std::remove_cvref_t<T>::value_type(x));
 }
 
@@ -105,7 +105,7 @@ inline uint64_t r_hash_impl(const r_sexp& x);
 inline uint64_t hash_attrs(const r_sexp& x, uint64_t seed);
 
 template <RVector T>
-inline uint64_t r_hash_impl(const T& x) {
+uint64_t r_hash_impl(const T& x) {
         
     if (x.is_null()) return 0;
     r_size_t n = x.length();

@@ -257,7 +257,7 @@ namespace internal {
 
 // Make groups from cppally::order(x)
 template <RSortableType T>
-inline groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
+groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
     r_size_t n = x.length();
 
     if (n != o.length()) [[unlikely]] {
@@ -290,7 +290,7 @@ inline groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
 }
 
 template <RVector T>
-inline groups make_unordered_groups(const T& x) {
+groups make_unordered_groups(const T& x) {
 
     using data_t = typename T::data_type;
     using key_type = unwrap_t<data_t>;
