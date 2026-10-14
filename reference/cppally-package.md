@@ -31,8 +31,8 @@ Other contributors:
 - Martin Leitner-Ankerl (Author of bundled ankerl::unordered_dense
   library) \[copyright holder\]
 
-- Malte Skarupke (Author of bundled ska_sort library) \[copyright
-  holder\]
+- Malte Skarupke (Author of ska_sort, from which to_radix_key in sort.h
+  is adapted) \[copyright holder\]
 
 - Ryo Suzuki (Author of bundled Xoshiro-cpp library) \[copyright
   holder\]

@@ -861,9 +861,9 @@ r_psxct get_now(){
 ``` r
 
 get_today()
-#> [1] "2026-10-13"
+#> [1] "2026-10-14"
 get_now()
-#> [1] "2026-10-13 16:20:38 UTC"
+#> [1] "2026-10-14 10:07:14 UTC"
 ```
 
 **Note:** `r_psxct` currently only supports UTC and no other time-zones.
@@ -1254,7 +1254,7 @@ r_date r_get_today(){
 ``` r
 
 r_get_today()
-#> [1] "2026-10-13"
+#> [1] "2026-10-14"
 ```
 
 To get a function from a specific package, use `pkg_env`, a helper that
@@ -1455,8 +1455,8 @@ cpp_negative_subset(x, integer()) # Everything
 ```
 
 Named subsetting is also supported. cppally internally hashes the vector
-names and performs hash lookups. For more info, see the ‘Vector Names
-Hashing’ vignette.
+names and performs hash lookups. For more info, see the ‘Vector Names’
+vignette.
 
 ``` r
 
@@ -1827,8 +1827,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression       min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_sum    142µs    142µs     6892.        0B        0
-#> 2 base_sum       403µs    405µs     2440.        0B        0
+#> 1 cppally_sum    109µs    110µs     9016.        0B        0
+#> 2 base_sum       313µs    315µs     3148.        0B        0
 
 # Sum (not ignoring NAs)
 mark(
@@ -1838,8 +1838,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression       min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_sum   1.13µs    1.3µs   723288.        0B        0
-#> 2 base_sum       200ns  231.1ns  3361401.        0B        0
+#> 1 cppally_sum    861ns   1.03µs   910584.        0B        0
+#> 2 base_sum       160ns 180.09ns  4227447.        0B        0
 
 # Range (ignoring NAs)
 mark(
@@ -1849,8 +1849,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression         min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>    <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_range  229.9µs 230.73µs     4274.        0B       0 
-#> 2 base_range      3.02ms   3.06ms      307.    11.4MB     193.
+#> 1 cppally_range 178.79µs  179.4µs     5499.        0B       0 
+#> 2 base_range      2.36ms    2.4ms      396.    11.4MB     257.
 
 # Range (not ignoring NAs)
 mark(
@@ -1860,8 +1860,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression         min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>    <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_range   1.12µs   1.22µs   778413.        0B      0  
-#> 2 base_range     560.5µs   1.26ms     1032.    1.91MB     66.7
+#> 1 cppally_range    861ns  941.1ns  1001221.        0B      0  
+#> 2 base_range       447µs   1.03ms     1040.    1.91MB     55.3
 
 # Variance (ignoring NAs)
 mark(
@@ -1871,8 +1871,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression       min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_var 759.49µs 837.31µs     1195.        0B      0  
-#> 2 base_var      6.34ms   6.56ms      153.    5.74MB     22.2
+#> 1 cppally_var 604.47µs    688µs     1460.        0B     2.01
+#> 2 base_var      4.43ms      5ms      198.    5.74MB    27.2
 
 # Variance (not ignoring NAs)
 mark(
@@ -1882,8 +1882,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression       min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_var   1.13µs   1.22µs   769594.        0B      0  
-#> 2 base_var      1.23ms   1.33ms      754.    3.81MB     67.5
+#> 1 cppally_var    871ns 951.11ns   983742.        0B      0  
+#> 2 base_var       951µs   1.03ms      928.    3.81MB     85.6
 
 # Quantile (ignoring NAs)
 # Since quantile(na.rm = F) errors when NAs are present, we can compare against it
@@ -1894,8 +1894,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_quantile   1.16ms    1.9ms     530.     1.91MB     23.6
-#> 2 base_quantile      9.01ms   9.18ms      94.2    13.3MB     61.6
+#> 1 cppally_quantile   1.41ms   1.51ms      662.    1.91MB     28.9
+#> 2 base_quantile      7.07ms   7.17ms      122.    13.3MB     78.4
 # Many probabilities
 mark(
   cppally_quantile = cpp_quantile(x, seq(0, 1, 0.001), na_rm = TRUE, names = FALSE), 
@@ -1904,8 +1904,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_quantile    1.2ms   1.57ms     596.     1.94MB     41.2
-#> 2 base_quantile      22.9ms     23ms      43.4   13.43MB     32.6
+#> 1 cppally_quantile   1.24ms   1.32ms     755.     1.94MB     39.7
+#> 2 base_quantile     17.88ms  17.95ms      54.7   13.43MB     34.2
 
 # Using multiple threads
 
@@ -1919,8 +1919,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression       min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_sum   76.6µs   78.3µs    11856.        0B        0
-#> 2 base_sum     402.9µs  405.4µs     2428.        0B        0
+#> 1 cppally_sum   57.6µs   58.3µs    16810.        0B        0
+#> 2 base_sum     313.6µs  314.6µs     3140.        0B        0
 
 # Sum (not ignoring NAs)
 mark(
@@ -1930,8 +1930,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression       min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_sum   1.11µs    1.2µs   755026.        0B        0
-#> 2 base_sum       200ns    230ns  3603159.        0B        0
+#> 1 cppally_sum    861ns    942ns   953867.        0B        0
+#> 2 base_sum       150ns    180ns  4633613.        0B        0
 
 # Range (ignoring NAs)
 mark(
@@ -1941,8 +1941,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression         min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>    <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_range  76.01µs  78.99µs    11627.        0B       0 
-#> 2 base_range      3.03ms   3.06ms      311.    11.4MB     184.
+#> 1 cppally_range  59.71µs  61.58µs    15825.        0B       0 
+#> 2 base_range      2.38ms   2.41ms      397.    11.4MB     243.
 
 # Range (not ignoring NAs)
 mark(
@@ -1952,8 +1952,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression         min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>    <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_range   1.13µs   1.22µs   769505.        0B      0  
-#> 2 base_range    564.91µs  586.3µs     1349.    1.91MB     71.0
+#> 1 cppally_range    871ns    942ns  1000938.        0B      0  
+#> 2 base_range       448µs    460µs     2163.    1.91MB     92.6
 
 # Variance (ignoring NAs)
 mark(
@@ -1963,8 +1963,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression       min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_var 400.26µs 407.86µs     2306.        0B      0  
-#> 2 base_var      4.82ms   4.95ms      179.    5.72MB     24.2
+#> 1 cppally_var 320.07µs 323.58µs     3039.        0B      0  
+#> 2 base_var      3.72ms   3.77ms      253.    5.72MB     41.7
 
 # Variance (not ignoring NAs)
 mark(
@@ -1974,8 +1974,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression       min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>  <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_var   1.12µs   1.22µs   778080.        0B      0  
-#> 2 base_var    445.91µs    1.2ms     1085.    3.81MB     98.9
+#> 1 cppally_var    861ns    942ns   986077.        0B       0 
+#> 2 base_var       362µs    417µs     1424.    3.81MB     128.
 
 # Reset to single-threaded
 cpp_set_threads(1)
@@ -2028,8 +2028,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression            min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>       <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_n_unique       704µs    720µs     1379.    1.38MB     44.6
-#> 2 cppally_n_unique    152µs    152µs     6481.        0B      0
+#> 1 base_n_unique       549µs    563µs     1776.    1.38MB     57.1
+#> 2 cppally_n_unique    118µs    118µs     8345.        0B      0
 
 mark(
   base_unique = unique(x),
@@ -2038,8 +2038,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression          min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>     <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_unique       704µs    719µs     1385.    1.38MB     44.6
-#> 2 cppally_unique    158µs    159µs     6176.      448B      0
+#> 1 base_unique       549µs    563µs     1775.    1.38MB     57.3
+#> 2 cppally_unique    122µs    124µs     7973.      448B      0
 
 mark(
   base_sorted_unique = sort(unique(x)),
@@ -2048,18 +2048,18 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression                 min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>            <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 base_sorted_unique       730µs    754µs     1294.    1.38MB     41.7
-#> 2 cppally_sorted_unique    159µs    161µs     6120.      896B      0
+#> 1 base_sorted_unique       576µs    592µs     1665.    1.38MB     52.1
+#> 2 cppally_sorted_unique    124µs    125µs     7906.      896B      0
 ```
 
 ## Sorting
 
 cppally also offers
 [`order()`](https://bit64.r-lib.org/reference/bit64S3.html) and
-[`sort()`](https://rdrr.io/r/base/sort.html) for sorting purposes. A
-hybrid approach is used, incorporating various sorting algorithms,
-including ska sort (a variant on radix sort), counting sort, quick sort,
-etc. These have been implemented with speed being a key focus.
+[`sort()`](https://rdrr.io/r/base/sort.html) for sorting vectors.
+
+A hybrid approach is used, incorporating various sorting algorithms like
+counting sort, LSD radix sort, insertion sort, etc.
 
 ``` cpp
 
@@ -2100,14 +2100,14 @@ mark(cpp_sort(c(3, 2, 1)), r_radix_sort(c(3, 2, 1)))
 #> # A tibble: 2 × 6
 #>   expression                    min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>               <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cpp_sort(c(3, 2, 1))       1.29µs   1.42µs   609851.        0B      0  
-#> 2 r_radix_sort(c(3, 2, 1))  25.24µs  27.81µs    35004.        0B     14.0
+#> 1 cpp_sort(c(3, 2, 1))          1µs   1.08µs   779137.        0B      0  
+#> 2 r_radix_sort(c(3, 2, 1))     20µs  22.35µs    43568.        0B     17.4
 mark(cpp_order(c(3, 2, 1)), r_radix_order(c(3, 2, 1)))
 #> # A tibble: 2 × 6
 #>   expression                     min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>                <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cpp_order(c(3, 2, 1))       1.25µs   1.42µs   632579.        0B      0  
-#> 2 r_radix_order(c(3, 2, 1))  11.44µs  12.76µs    75580.        0B     15.1
+#> 1 cpp_order(c(3, 2, 1))     942.15ns   1.11µs   801481.        0B      0  
+#> 2 r_radix_order(c(3, 2, 1))   8.97µs  10.28µs    93641.        0B     18.7
 
 # Integer data
 ints <- sample.int(20, 2e05, replace = TRUE)
@@ -2115,14 +2115,14 @@ mark(cpp_sort(ints), r_radix_sort(ints))
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cpp_sort(ints)        590µs 944.52µs     1060.    1.53MB     39.5
-#> 2 r_radix_sort(ints)    1.1ms   1.14ms      875.    1.53MB     40.1
+#> 1 cpp_sort(ints)        498µs    819µs     1213.    1.53MB     47.4
+#> 2 r_radix_sort(ints)    851µs    906µs      973.    1.53MB     45.3
 mark(cpp_order(ints), r_radix_order(ints))
 #> # A tibble: 2 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cpp_order(ints)        506µs    541µs     1781.     781KB     34.1
-#> 2 r_radix_order(ints)    625µs    656µs     1372.     781KB     24.3
+#> 1 cpp_order(ints)        399µs    437µs     1877.     781KB     32.2
+#> 2 r_radix_order(ints)    487µs    516µs     1643.     781KB     29.1
 
 # Double-floating point precision data
 dbls <- as.double(ints)
@@ -2130,14 +2130,14 @@ mark(cpp_sort(dbls), r_radix_sort(dbls))
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cpp_sort(dbls)       1.65ms   1.83ms      546.    2.29MB     37.8
-#> 2 r_radix_sort(dbls)   4.54ms    4.7ms      213.    2.29MB     13.2
+#> 1 cpp_sort(dbls)       1.22ms   1.44ms      694.    2.29MB     47.5
+#> 2 r_radix_sort(dbls)   3.32ms   3.55ms      286.    2.29MB     17.7
 mark(cpp_order(dbls), r_radix_order(dbls))
 #> # A tibble: 2 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cpp_order(dbls)       1.36ms    1.4ms      703.     781KB    15.0 
-#> 2 r_radix_order(dbls)   4.94ms   5.74ms      175.     781KB     4.11
+#> 1 cpp_order(dbls)       1.08ms   1.09ms      871.     781KB    19.5 
+#> 2 r_radix_order(dbls)   2.92ms    3.2ms      312.     781KB     6.24
 
 # Floating point data with decimals
 dcmls <- rnorm(length(dbls))
@@ -2145,14 +2145,14 @@ mark(cpp_sort(dcmls), r_radix_sort(dcmls))
 #> # A tibble: 2 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cpp_sort(dcmls)       5.38ms   5.54ms      178.    2.29MB     16.0
-#> 2 r_radix_sort(dcmls)   7.52ms   7.65ms      131.    2.29MB     11.1
+#> 1 cpp_sort(dcmls)       4.27ms    4.4ms      228.    2.29MB     18.0
+#> 2 r_radix_sort(dcmls)   5.56ms   5.74ms      172.    2.29MB     18.4
 mark(cpp_order(dcmls), r_radix_order(dcmls))
 #> # A tibble: 2 × 6
 #>   expression                min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>           <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cpp_order(dcmls)       5.05ms   5.11ms      195.     781KB     4.10
-#> 2 r_radix_order(dcmls)   7.04ms   7.15ms      139.     781KB     4.14
+#> 1 cpp_order(dcmls)       3.95ms   3.99ms      250.     781KB     6.24
+#> 2 r_radix_order(dcmls)   5.31ms   5.53ms      180.     781KB     4.10
 
 # String data
 strs <- round(dcmls, 2) |> paste0()
@@ -2160,14 +2160,14 @@ mark(cpp_sort(strs), r_radix_sort(strs))
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cpp_sort(strs)       2.61ms   2.86ms      349.    3.06MB     52.5
-#> 2 r_radix_sort(strs)   2.28ms   2.46ms      401.    2.29MB     44.6
+#> 1 cpp_sort(strs)       2.13ms   2.34ms      421.    3.06MB     68.4
+#> 2 r_radix_sort(strs)   1.84ms   1.94ms      505.    2.29MB     50.8
 mark(cpp_order(strs), r_radix_order(strs))
 #> # A tibble: 2 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cpp_order(strs)       1.57ms   1.73ms      579.    1.53MB     40.6
-#> 2 r_radix_order(strs)   1.01ms   1.04ms      960.   781.3KB     26.9
+#> 1 cpp_order(strs)       1.36ms   1.43ms      695.    1.53MB     31.8
+#> 2 r_radix_order(strs) 794.12µs 818.24µs     1211.   781.3KB     24.1
 ```
 
 ## Grouping
@@ -2287,8 +2287,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression                min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>           <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_group_counts 356.31µs 364.05µs     2694.   514.1KB     35.5
-#> 2 base_table             7.94ms   8.05ms      124.     6.2MB     25.7
+#> 1 cppally_group_counts 258.07µs 283.52µs     3460.   514.1KB     45.8
+#> 2 base_table             6.15ms   6.27ms      159.     6.2MB     37.6
 ```
 
 ## Annex

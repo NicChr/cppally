@@ -1,10 +1,15 @@
 # cppally
 
-cppally is a high-performance header-only library providing a rich C++20
-API for advanced R data manipulation. Leveraging C++20 Concepts, custom
-R-based classes, templated functions and
-Single-Instruction-Multiple-Data (SIMD) vectorisation, cppally enables
-type-safety, performance, flexible templates and readable code.
+cppally is a high-performance, header-only library providing a rich
+C++20 API for R.
+
+It offers type-safe classes, C++20 concepts, template registration, and
+R-based scalars to make code readable, fast, and maintainable.
+
+Multiple threads and Single-Instruction-Multiple-Data (SIMD)
+vectorisation are used where possible. The number of threads used across
+cppally can be set with `cppally::set_threads()` and queried with
+`cppally::get_threads()`.
 
 For info on using cppally see [Getting started with
 cppally](https://nicchr.github.io/cppally/articles/cppally.html)
@@ -20,71 +25,62 @@ and R integration.
 
 ## cppally features
 
-- C++20 concepts specific to R
+- Registering C++ templates to R
 
-- Custom C++ scalar classes with NA-aware operators that mirror R
-  semantics
+- C++20 concepts based on R
 
-- `r_vector<T>` - A templated C++ style R vector class with many useful
-  members
+- Custom C++ scalar classes
 
-- A date (and date-time) class with a complete set of `std::chrono`
-  backed members for date arithmetic and manipulation
+- NA-aware scalar algebra
 
-- Automatic protection for `SEXP`-based objects with low overhead via
-  custom class `r_sexp`
+- C++ style R vectors with `r_vector<T>`
 
-- Registration of C++ template (and non-template) functions to R
+- C++ class `r_sym` for R symbols
 
-- Very flexible coercion between types using `as<T>`
+- C++ class `r_function` for R functions
+
+- C++ class `r_df` for data frames
+
+- Date & Date-Time classes using `std::chrono`
+
+- Fast automatic garbage collector protection with `r_sexp`
+
+- Flexible coercion between types using `as<T>`
 
 - Visit type-erased `SEXP` with `r_sexp_visit`
 
-- SIMD vectorisation and multi-threaded execution
+- SIMD vectorisation
 
-- Reproducible random number generation with `random_stream`
+- Multi-threaded algorithms
 
-- Common scalar Math functions such as
-  [`abs()`](https://rdrr.io/r/base/MathFun.html),
-  [`sqrt()`](https://rdrr.io/r/base/MathFun.html),
-  [`log()`](https://rdrr.io/r/base/Log.html),
-  [`round()`](https://rdrr.io/r/base/Round.html), and many more
+- Random number generation with `random_stream`
 
-- Vector name-lookup and factor level lookup via lazily cached hash maps
+- Rich math library
 
-- Factor manipulation with custom `r_factors` class
+- Fast name-lookup via hash maps
 
-- Attribute manipulation with helpers defined in
-  [`cppally::attr`](https://rdrr.io/r/base/attr.html) namespace
+- Factor manipulation
 
-- Custom classes for R symbols and R functions, `r_sym` and `r_function`
-  respectively
+- Attribute manipulation
 
-- Powerful vectorisation of C++ functions using `pmap()`
+- Vectorisation of C++ functions using `pmap()`
 
-- Vectorised operators for vectorised arithmetic (e.g. addition of two
-  or more vectors)
+- Vectorised algebra
 
-- Common vector algorithms like `unique`, `sort`, `match`, `subset`,
-  `duplicated`, and more
+- Fast sorting
 
-- Common statistical summary functions such as
+- Vector algorithms like `unique`, `subset`, and more
+
+- Statistical functions such as
   [`sum()`](https://rdrr.io/r/base/sum.html),
   [`var()`](https://rdrr.io/r/stats/cor.html),
-  [`range()`](https://rdrr.io/r/base/range.html), etc
+  [`range()`](https://rdrr.io/r/base/range.html),
+  [`quantile()`](https://rdrr.io/r/stats/quantile.html), and more
 
-- A powerful class `groups` to encode groups into group Ids and other
-  useful group metadata
+- C++ class `groups` for fast group ID generation with group metadata
+  members
 
-- Regular sequence generation with
-  [`seq()`](https://rdrr.io/r/base/seq.html),
-  [`sequence()`](https://rdrr.io/r/base/sequence.html), and other
-  helpers
-
-- Flexible in-line vector construction with `make_vector<T>`, plus
-  `named_arg` for building named vectors
-
-- Data frame manipulation via custom class `r_df`
+- Regular sequence generation
 
 ## Installation
 
@@ -102,7 +98,9 @@ or the development version
 pak::pak("NicChr/cppally")
 ```
 
-## Basic usage: Sum using a C++ template
+## Registering C++ templates to R
+
+**Example:** Templated sum
 
 ``` cpp
 
@@ -120,7 +118,9 @@ r_dbl cpp_sum(r_vector<T> x){
   
 ```
 
-Register the C++ function to R
+You can use
+[`cpp_source()`](https://nicchr.github.io/cppally/reference/cpp_source.md)
+to register this C++ function to R
 
 ``` r
 
@@ -184,19 +184,25 @@ cpp_sum("A STRING")
 
 ### Templates
 
-cppally makes heavy use of templates for powerful generic programming.
-While this offers a flexible framework for writing generic functions, it
-comes at the cost of slower compile times and larger binary sizes.
+cppally uses templates a lot for generic programming. While this can be
+a flexible way to write generic functions, it can slow down compile
+times and increase binary sizes.
 
-Users can write and register their own templates to R, but there are two
-main limitations to be aware of.
+There are two limitations when it comes to registering C++ templates to
+R.
 
-The first is that templates must be written in header files if they are
-to be used across multiple compilation units.
+- Templates must be written in header files
 
-The second limitation is that template specialisations cannot be called
-from R. This means that automatic deduction is the only mechanism we
-have at our disposal when calling C++ template functions from R.
+- Template specialisations cannot be directly called from R
+
+The first is a C++ limitation, though it only applies when that template
+is shared across more than 1 cpp file (translation unit).
+
+The second is an R/C++ interoperability limitation. It means we can’t
+call e.g. `foo<T>(x)` directly from R. Instead we rely on automatic
+deduction, which the majority of templates use. Automatic deduction here
+looks like `foo(x)` where `T` is deduced from `x` by a cppally template
+dispatch layer between R and C++.
 
 ### Scalar R types and custom methods
 
@@ -355,20 +361,110 @@ it can do that is by detecting changes to the names via
 
 ### Attributes
 
-Attribute manipulation is possible and helpers can be found in the
-`attr` namespace via `cppally::attr::`
+Attribute manipulation can be done using functions in the `attr`
+namespace via `cppally::attr::`
 
 ### Views
 
-To avoid the overhead associated with automatic protection entirely, one
-can use view types like e.g. `r_str_view`, a non-owning class for R
-strings. For more info on views see [Automatic
+A view in standard C++ can mean different things. With
+`std::string_view`, it means we don’t own the string data, we are just
+viewing its contents. `r_str_view` is similar, but the data it’s
+referring to is the underlying `SEXP`. Views in cppally mean “I don’t
+protect the `SEXP`”. Therefore, `r_str_view` is a view into the
+`CHARSXP`, without taking protection ownership of it. `r_str` on the
+other hand does protect the `CHARSXP`, via `r_sexp`.
+
+#### Why use views?
+
+We offer views for performance reasons. Protecting an object is a
+considerable overhead (about 5-10 ns per protect). We can avoid that
+overhead by using views. This is safe as long as we are sure that the
+view object is protected by another object.
+
+Here are some common use-cases where one might use views:
+
+- **Setting new vector elements:** No need to protect newly created
+  elements when they are going to be protected by their parent vector
+  anyway
+
+- **Using vector elements temporarily:** It is fine if an element is
+  used for a short-lived time, so long as the element does not outlive
+  its parent vector
+
+- **Referencing protected `SEXP` constants:** Creating `r_sexp`
+  instances around `SEXP` objects that are static constants and known to
+  be protected. E.g. `R_NilValue`.
+
+- **Using `r_str_view` as an argument:** Since `r_str` implicitly
+  converts to `r_str_view`, a function with argument `r_str_view` will
+  implicitly accept both `r_str` and `r_str_view`, avoiding any
+  protection overhead.
+
+#### How to use views
+
+`r_str_view` is a dedicated view type for `r_str`. As mentioned above it
+can be used as function arguments for string inputs. This has the
+benefit of flexibly accepting `r_str` and `r_str_view`, without the
+compile cost of a template.
+
+It is okay as an input, but generally not okay as an output.
+
+Good:
+
+``` cpp
+r_str foo(r_str_view x){
+  return r_str(x);
+}
+```
+
+Bad:
+
+``` cpp
+r_str_view foo(r_str_view x){
+  r_str my_str("hello");
+  return my_str;
+}
+```
+
+If in doubt, always use `r_str`. For more info on views see [Automatic
 Protection](https://nicchr.github.io/cppally/articles/protection.html)
+
+#### View a vector element
+
+If you have a vector, you can use `r_vector::view()`. This will get the
+element without re-protecting it. Just make sure that the element view
+does not outlive its parent vector.
+
+``` cpp
+r_vector<r_sexp> my_list( {r_sexp(), r_sexp()} );
+
+// Unprotected but implicitly protected by my_list
+r_sexp element0 = my_list.view(0);
+r_sexp element1 = my_list.view(1);
+
+// element0 or element1 must not outlive my_list
+```
+
+A copy of an element view is still a view, and not protected.
+
+``` cpp
+r_sexp my_element = r_sexp(element0); // my_element is not protected
+```
+
+If in doubt, use [`get()`](https://rdrr.io/r/base/get.html)
+
+``` cpp
+// Both element0 and element1 are protected themselves
+r_sexp element0 = my_list.get(0);
+r_sexp element1 = my_list.get(1);
+
+r_sexp my_element = element0; // Copy here is very cheap (0.2-0.5 ns/copy)
+```
 
 ### Lossy coercion
 
 Any coercion that results in complete information loss is an error
-(partial is allowed, e.g. double -\> int).
+(partial is allowed, e.g. `double` -\> `int`).
 
 For example, string -\> integer conversion may not be possible without
 complete information loss
@@ -491,6 +587,7 @@ bit64 by marking them with the “integer64” class.
 ``` r
 
 library(bit64)
+#> Warning: package 'bit64' was built under R version 4.6.1
 ```
 
 ``` cpp
@@ -587,6 +684,8 @@ run
 which will set the appropriate Makevars flags. Note that this is
 automatically set by
 [`cppally::use_cppally()`](https://nicchr.github.io/cppally/reference/use_cppally.md).
+
+Threads can be controlled with `set_threads()` and `get_threads()`.
 
 ## C++20 and RStudio
 

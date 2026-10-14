@@ -9,7 +9,7 @@
   Author of bundled ankerl::unordered_dense library
 
 - **Malte Skarupke**. Copyright holder.  
-  Author of bundled ska_sort library
+  Author of ska_sort, from which to_radix_key in sort.h is adapted
 
 - **Ryo Suzuki**. Copyright holder.  
   Author of bundled Xoshiro-cpp library
