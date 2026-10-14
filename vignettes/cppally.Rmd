@@ -1926,7 +1926,9 @@ mark(
 
 ## Sorting
 
-cppally also offers `order()` and `sort()` for sorting purposes. A hybrid approach is used, incorporating various sorting algorithms, including ska sort (a variant on radix sort), counting sort, quick sort, etc. These have been implemented with speed being a key focus.
+cppally also offers `order()` and `sort()` for sorting vectors.
+
+A hybrid approach is used, incorporating various sorting algorithms like counting sort, LSD radix sort, insertion sort, etc.
 
 ```{r, echo=FALSE, results = 'asis'}
 as_cpp_chunk(benchmark_examples[["cpp_sort"]])
