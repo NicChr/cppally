@@ -77,7 +77,7 @@ inline double interpolate_quantile(double x_j, double x_j1, double gamma) noexce
 
 // Count of NAs assuming x is sorted such that NAs are bundled at the tail end
 template <RNumber T>
-inline r_size_t sorted_na_count(const r_vec<T>& x){
+r_size_t sorted_na_count(const r_vec<T>& x){
 
     const r_size_t n = x.length();
     r_size_t i = n;
@@ -126,7 +126,7 @@ inline void check_order(r_size_t n, const r_vec<r_int>& order){
 
 // Filter out NAs, copying the non-NAs into a std::vector
 template <RNumber T>
-inline std::vector<unwrap_t<T>> filter_out_na(const r_vec<T>& x, r_size_t n_na){
+std::vector<unwrap_t<T>> filter_out_na(const r_vec<T>& x, r_size_t n_na){
     const auto* x_data = x.data();
     r_size_t n = x.length();
 
@@ -178,7 +178,7 @@ inline r_dbl do_quantile(const T* x_data, r_size_t n_not_na, double p, const r_v
 // Assumptions:
 // targets is sorted, unique and in [begin, end)
 template <CppNumber T>
-inline void nth_elements(T* x_data, const r_size_t begin, const r_size_t end, const r_size_t* targets, const r_size_t n_targets){
+void nth_elements(T* x_data, const r_size_t begin, const r_size_t end, const r_size_t* targets, const r_size_t n_targets){
 
     // If no target positions, no partition needed
     if (n_targets == 0){
@@ -215,7 +215,7 @@ inline void nth_elements(T* x_data, const r_size_t begin, const r_size_t end, co
 // no NAs in the first n_not_na elements
 // probs in [0, 1]
 template <string_literal Method, CppNumber T>
-inline void do_quantiles(T* x_data, r_size_t n_not_na, const double* probs, const r_size_t n_probs, double* out){
+void do_quantiles(T* x_data, r_size_t n_not_na, const double* probs, const r_size_t n_probs, double* out){
 
     // targets holds the de-duplicated and sorted quantile position indices necessary for nth_elements()
     std::vector<r_size_t> targets(n_probs);
@@ -280,7 +280,7 @@ inline r_vec<r_str> quantile_names(const r_vec<r_dbl>& probs){
 
 // Use this overload if you have already generated an order permutation vector using `cppally::order()`
 template <string_literal Method = "linear", RNumber T>
-inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_int>& order, bool na_rm = false, bool names = true, bool check_order = true){
+r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_int>& order, bool na_rm = false, bool names = true, bool check_order = true){
     
     r_size_t n = x.length();
     r_size_t n_probs = probs.length();
@@ -318,7 +318,7 @@ inline r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const
 }
 
 template <string_literal Method = "linear", RNumber T>
-inline r_dbl quantile(const r_vec<T>& x, double prob, bool na_rm = false){
+r_dbl quantile(const r_vec<T>& x, double prob, bool na_rm = false){
 
     internal::quantile_impl::check_valid_prob(prob);
 
@@ -335,20 +335,21 @@ inline r_dbl quantile(const r_vec<T>& x, double prob, bool na_rm = false){
 
     if constexpr (RIntegerNumber<T>){
         return quantile<Method>(x, r_vec<r_dbl>( {r_dbl(prob)} ), order(x), na_rm, /*names = */ false, /*check_order = */ false).get(0);
+    } else {
+
+        const r_size_t n_na = x.na_count();
+
+        if (n_na > 0 && !na_rm){
+            return na<r_dbl>();
+        }
+
+        std::vector<unwrap_t<T>> v = internal::quantile_impl::filter_out_na(x, n_na);
+
+        const double p = unwrap(prob);
+        double q;
+        internal::quantile_impl::do_quantiles<Method>(v.data(), n - n_na, &p, 1, &q);
+        return r_dbl(q);
     }
-
-    const r_size_t n_na = x.na_count();
-
-    if (n_na > 0 && !na_rm){
-        return na<r_dbl>();
-    }
-
-    std::vector<unwrap_t<T>> v = internal::quantile_impl::filter_out_na(x, n_na);
-
-    const double p = unwrap(prob);
-    double q;
-    internal::quantile_impl::do_quantiles<Method>(v.data(), n - n_na, &p, 1, &q);
-    return r_dbl(q);
 }
 
 template <string_literal Method = "linear", RNumber T>
@@ -377,7 +378,7 @@ r_vec<r_dbl> quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, bool na_rm =
     }
 
     // integer-based `order()` is very fast, so lower threshold for that
-    constexpr int order_method_threshold = RIntegerType<T> ? 2 : 25;
+    constexpr int order_method_threshold = RIntegerNumber<T> ? 2 : 25;
 
     if (is_sorted(x)){
 
@@ -527,13 +528,13 @@ r_vec<r_dbl> weighted_quantile_impl(const r_vec<T>& x, const r_vec<r_dbl>& probs
 }
 
 template <string_literal Method = "linear", RNumber T>
-inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_dbl>& weights, bool na_rm = false, bool names = true){
+r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_dbl>& weights, bool na_rm = false, bool names = true){
     r_vec<r_int> o = order(x);
     return internal::quantile_impl::weighted_quantile_impl<Method>(x, probs, weights, o.data(), na_rm, names);
 }
 
 template <string_literal Method = "linear", RNumber T>
-inline r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_dbl>& weights, const r_vec<r_int>& order, bool na_rm = false, bool names = true){
+r_vec<r_dbl> weighted_quantile(const r_vec<T>& x, const r_vec<r_dbl>& probs, const r_vec<r_dbl>& weights, const r_vec<r_int>& order, bool na_rm = false, bool names = true){
     
     internal::quantile_impl::check_order(x.length(), order);
 
