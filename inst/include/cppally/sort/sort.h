@@ -25,6 +25,7 @@
 #include <vector> // For C++ vectors
 #include <limits>
 #include <memory> // For std::unique_ptr
+#include <optional>
 #include <cmath>
 #include <algorithm> // For std::min
 #include <bit> // For std::bit_cast
@@ -320,34 +321,43 @@ inline auto to_radix_key(T x) noexcept {
     }
 }
 
+// Return (hi - lo) if every value fit into a whole number uint32_t key
+// If not then nullopt
 template <CppNumber T>
-CPPALLY_NOINLINE r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, T hi) {
+inline std::optional<uint64_t> whole_offset_span(const T* RESTRICT p_x, uint32_t n, T lo, T hi) {
 
-    using radix_key_t = decltype(to_radix_key(std::declval<T>()));
     constexpr uint32_t NA_KEY32 = std::numeric_limits<uint32_t>::max();
 
-    // ---- Can every value be keyed as a whole-number uint32 offset from lo? ----
-
-    uint64_t span = 0;
-    bool offsets_fit = false;
-
     if constexpr (CppIntegerNumber<T>) {
-        span = static_cast<uint64_t>(hi) - static_cast<uint64_t>(lo);
-        offsets_fit = span < NA_KEY32;
+        uint64_t span = static_cast<uint64_t>(hi) - static_cast<uint64_t>(lo);
+        if (span < NA_KEY32) {
+            return span;
+        }
     } else if constexpr (CppFloatType<T>) {
         double dspan = static_cast<double>(hi) - static_cast<double>(lo);
-        offsets_fit = dspan < NA_KEY32;
+        bool offsets_fit = dspan < NA_KEY32;
 
         for (uint32_t i = 0; offsets_fit && i < n; ++i) {
-            const T v = p_x[i];
-            const double offset = v - lo;
+            T v = p_x[i];
+            double offset = v - lo;
             offsets_fit = is_na(v) || static_cast<double>(static_cast<int64_t>(offset)) == offset;
         }
 
         if (offsets_fit) {
-            span = static_cast<uint64_t>(dspan);
+            return static_cast<uint64_t>(dspan);
         }
     }
+    return std::nullopt;
+}
+
+template <CppNumber T>
+CPPALLY_NOINLINE r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t n, T lo, T hi, std::optional<uint64_t> fit_span) {
+
+    using radix_key_t = decltype(to_radix_key(std::declval<T>()));
+    constexpr uint32_t NA_KEY32 = std::numeric_limits<uint32_t>::max();
+
+    const bool offsets_fit = fit_span.has_value();
+    const uint64_t span = fit_span.value_or(0);
 
     // ---- Counting sort: small span, offsets index straight into counts ----
 
@@ -402,6 +412,52 @@ CPPALLY_NOINLINE r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t
         }
     });
     return order_radix(p_keys, n);
+}
+
+// Low cardinality: order uniques + counting sort
+template <CppNumber T>
+CPPALLY_NOINLINE r_vec<r_int> order_numeric_groups(const T* RESTRICT p_x, uint32_t n, const groups& g, T lo, T hi) {
+
+    uint32_t ng = static_cast<uint32_t>(g.n_groups);
+
+    if (ng == 0){
+        return r_vec<r_int>();
+    }
+
+    r_vec<r_int> group_starts = g.starts();
+    const int* RESTRICT p_starts = group_starts.data();
+    const int* RESTRICT p_ids = g.ids.data();
+
+    std::unique_ptr<T[]> uniques(new T[ng]);
+    T* RESTRICT p_uniques = uniques.get();
+    for (uint32_t k = 0; k < ng; ++k) {
+        p_uniques[k] = p_x[p_starts[k]];
+    }
+
+    // Order of uniques (full-width radix)
+    r_vec<r_int> sorted_ids = order_numeric_data(p_uniques, ng, lo, hi, std::nullopt);
+    const int* RESTRICT p_sorted = sorted_ids.data();
+
+    // Uniques were ordered by their radix keys, so groups with equal keys (e.g. NA and NaN) tie and share a rank,
+    // keeping them in input order like the direct path
+    std::unique_ptr<uint32_t[]> rank(new uint32_t[ng]);
+    uint32_t* RESTRICT p_rank = rank.get();
+    uint32_t n_ranks = 0;
+
+    for (uint32_t r = 0; r < ng; ++r) {
+        if (r > 0 && to_radix_key(p_uniques[p_sorted[r]]) == to_radix_key(p_uniques[p_sorted[r - 1]])) [[unlikely]] {
+            p_rank[p_sorted[r]] = n_ranks - 1;
+        } else [[likely]] {
+            p_rank[p_sorted[r]] = n_ranks++;
+        }
+    }
+
+    r_vec<r_int> out(static_cast<r_size_t>(n));
+    counting_order(
+        [p_ids, p_rank](int i) noexcept { return p_rank[p_ids[i]]; },
+        static_cast<int>(n), n_ranks, out.data()
+    );
+    return out;
 }
 
 // Pack 8 bytes of string into uint64_t (pad zeros at the end)
@@ -620,7 +676,22 @@ inline r_vec<r_int> order(const T& x) {
             return out;
         }
     
-        return internal::sort::order_numeric_data(x.data(), n, unwrap(min_val), unwrap(max_val));
+        using num_t = unwrap_t<data_t>;
+        const num_t* p_x = x.data();
+        const num_t lo = unwrap(min_val), hi = unwrap(max_val);
+        std::optional<uint64_t> span = internal::sort::whole_offset_span(p_x, n, lo, hi);
+
+        // Low cardinality data (e.g. doubles): sort uniques
+        if constexpr (sizeof(num_t) == 8) {
+            if (!span) {
+                uint64_t estimate = internal::unique_count_estimate<num_t, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>>(p_x, n);
+                if (estimate < n / 8) {
+                    return internal::sort::order_numeric_groups(p_x, n, make_groups(x), lo, hi);
+                }
+            }
+        }
+
+        return internal::sort::order_numeric_data(p_x, n, lo, hi, span);
 
     } else if constexpr (RStringType<data_t>) {
 
