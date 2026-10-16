@@ -253,8 +253,11 @@ inline r_vec<r_int> order_radix(key_t* keys, uint32_t n) {
 }
 
 // Adapted from ska_sort's to_unsigned_or_bool (Malte Skarupke, Boost Software License 1.0)
-// Maps a number to an unsigned key with the same ordering
+// Maps a number to an unsigned key with the same ordering.
+// -0.0 and 0.0 map to the same key
+// NAs are mapped to max value of the relevant type so that the key sorts last.
 template <typename T>
+requires (sizeof(T) <= 8)
 inline auto to_radix_key(T x) noexcept {
     if constexpr (std::unsigned_integral<T>) {
         return x;
@@ -266,9 +269,16 @@ inline auto to_radix_key(T x) noexcept {
         //     uint64_t sign_bit = -int64_t(as_union.u >> 63);
         //     return as_union.u ^ (sign_bit | 0x8000000000000000);
         // }
-        
-        using key_t = std::conditional_t<sizeof(T) == 8, uint64_t, uint32_t>;
-        const key_t u = std::bit_cast<key_t>(x);
+
+        using key_t = std::conditional_t<sizeof(T) < 8, uint32_t, uint64_t>;
+
+        if constexpr (HasNASentinel<T>) {
+            if (is_na(x)) {
+                return std::numeric_limits<key_t>::max();
+            }
+        }
+
+        const key_t u = std::bit_cast<key_t>(x + T(0)); // normalise -0.0 to 0.0
 
         constexpr int sign_shift = 8 * sizeof(T) - 1; // Position of sign bit
 
@@ -296,7 +306,14 @@ inline auto to_radix_key(T x) noexcept {
 
         // Same equation as in floating-point branch with mask = 0
         // Two's complement ensures negatives will order correctly, so only flip the sign bit
-        return static_cast<key_t>(u ^ (key_t(1) << sign_shift));
+        key_t key = static_cast<key_t>(u ^ (key_t(1) << sign_shift));
+
+        if constexpr (HasNASentinel<T>) {
+            // Shift non-NA keys down by 1 to free up space for max key (NA key)
+            static_assert(unwrap(na<as_r_scalar_t<T>>()) == std::numeric_limits<T>::min());
+            key = is_na(x) ? std::numeric_limits<key_t>::max() : static_cast<key_t>(key - 1u);
+        }
+        return key;
     } else {
         static_assert(always_false<T>, "Don't know how to convert this type to a radix key");
     }
@@ -373,10 +390,6 @@ CPPALLY_NOINLINE r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t
 
     // ---- Full-width radix ----
 
-    // NA owns the type minimum, so shifting real keys down by 1 keeps the max below the NA key
-    constexpr bool shift_below_na = std::signed_integral<T>;
-    constexpr radix_key_t NA_KEY = std::numeric_limits<radix_key_t>::max();
-
     std::unique_ptr<radix_key_t[]> keys(new radix_key_t[n]);
     radix_key_t* p_keys = keys.get();
     for_each_chunk(n, calc_threads(n), [&](int, uint32_t start, uint32_t end) noexcept {
@@ -384,17 +397,7 @@ CPPALLY_NOINLINE r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t
         radix_key_t* RESTRICT chunk_keys = p_keys;
         OMP_SIMD
         for (uint32_t i = start; i < end; ++i) {
-            radix_key_t radix_key = NA_KEY;
-            if (!is_na(chunk_x[i])) {
-                T v = chunk_x[i] + T(0); // + 0 normalises -0.0 to 0.0
-                radix_key = to_radix_key(v);
-                if constexpr (shift_below_na) {
-                    // NA must be the min of signed integer type
-                    static_assert(unwrap(na<as_r_scalar_t<T>>()) == std::numeric_limits<T>::min());
-                    radix_key -= 1u;
-                }
-            }
-            chunk_keys[i] = radix_key;
+            chunk_keys[i] = to_radix_key(chunk_x[i]);
         }
     });
     return order_radix(p_keys, n);

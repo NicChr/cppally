@@ -435,6 +435,9 @@ inline constexpr unwrap_t<T> unwrap(const T& x) noexcept {
   return static_cast<unwrap_t<T>>(x);
 }
 
+template <typename T>
+concept HasNASentinel = RScalar<T> || (CppType<T> && CastableToRScalar<T> && is<unwrap_t<as_r_scalar_t<T>>, T>);
+
 // An RScalar that holds an RScalar (e.g. r_date)
 template <typename T>
 concept RNestedScalar = RScalar<T> && RScalar<typename std::remove_cvref_t<T>::value_type>;
