@@ -321,7 +321,7 @@ inline auto to_radix_key(T x) noexcept {
     }
 }
 
-// Return (hi - lo) if every value fit into a whole number uint32_t key
+// Return (hi - lo) if every value fits into a whole number uint32_t key
 // If not then nullopt
 template <CppNumber T>
 inline std::optional<uint64_t> whole_offset_span(const T* RESTRICT p_x, uint32_t n, T lo, T hi) {
@@ -414,50 +414,47 @@ CPPALLY_NOINLINE r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t
     return order_radix(p_keys, n);
 }
 
-// Low cardinality: order uniques + counting sort
+// Stable order of x's elements by the rank of their group
+inline CPPALLY_NOINLINE r_vec<r_int> order_by_group_rank(const groups& g, const int* rank, int n_ranks) {
+    int n = g.ids.length();
+    const int* ids = g.ids.data();
+    r_vec<r_int> out(n);
+    counting_order([ids, rank](int i) noexcept { return rank[ids[i]]; }, static_cast<int>(n), n_ranks, out.data());
+    return out;
+}
+
+// Low cardinality: order the unique values by their radix keys, then counting sort by group rank
 template <CppNumber T>
-CPPALLY_NOINLINE r_vec<r_int> order_numeric_groups(const T* RESTRICT p_x, uint32_t n, const groups& g, T lo, T hi) {
+CPPALLY_NOINLINE r_vec<r_int> order_numeric_data_using_groups(const T* RESTRICT p_x, const groups& g) {
 
-    uint32_t ng = static_cast<uint32_t>(g.n_groups);
-
-    if (ng == 0){
-        return r_vec<r_int>();
-    }
+    using key_t = decltype(to_radix_key(std::declval<T>()));
+    int ng = g.n_groups;
 
     r_vec<r_int> group_starts = g.starts();
     const int* RESTRICT p_starts = group_starts.data();
-    const int* RESTRICT p_ids = g.ids.data();
 
-    std::unique_ptr<T[]> uniques(new T[ng]);
-    T* RESTRICT p_uniques = uniques.get();
-    for (uint32_t k = 0; k < ng; ++k) {
-        p_uniques[k] = p_x[p_starts[k]];
+    std::unique_ptr<key_t[]> unique_keys(new key_t[ng]);
+    key_t* RESTRICT p_keys = unique_keys.get();
+    for (int k = 0; k < ng; ++k) {
+        p_keys[k] = to_radix_key(p_x[p_starts[k]]);
     }
 
-    // Order of uniques (full-width radix)
-    r_vec<r_int> sorted_ids = order_numeric_data(p_uniques, ng, lo, hi, std::nullopt);
-    const int* RESTRICT p_sorted = sorted_ids.data();
+    // Order permutation of the unique values, p_keys is now sorted
+    r_vec<r_int> unique_order = order_radix(p_keys, ng);
+    const int* RESTRICT p_order = unique_order.data();
 
-    // Uniques were ordered by their radix keys, so groups with equal keys (e.g. NA and NaN) tie and share a rank,
-    // keeping them in input order like the direct path
-    std::unique_ptr<uint32_t[]> rank(new uint32_t[ng]);
-    uint32_t* RESTRICT p_rank = rank.get();
-    uint32_t n_ranks = 0;
-
-    for (uint32_t r = 0; r < ng; ++r) {
-        if (r > 0 && to_radix_key(p_uniques[p_sorted[r]]) == to_radix_key(p_uniques[p_sorted[r - 1]])) [[unlikely]] {
-            p_rank[p_sorted[r]] = n_ranks - 1;
-        } else [[likely]] {
-            p_rank[p_sorted[r]] = n_ranks++;
+    // Dense rank: groups with equal keys (e.g. NA and NaN) share a rank, keeping them in input order like the direct path
+    std::unique_ptr<int[]> rank(new int[ng]);
+    int* RESTRICT p_rank = rank.get();
+    int curr_rank = 0;
+    for (int r = 0; r < ng; ++r) {
+        if (r > 0 && p_keys[r] != p_keys[r - 1]) [[likely]] {
+            ++curr_rank;
         }
+        p_rank[p_order[r]] = curr_rank;
     }
 
-    r_vec<r_int> out(static_cast<r_size_t>(n));
-    counting_order(
-        [p_ids, p_rank](int i) noexcept { return p_rank[p_ids[i]]; },
-        static_cast<int>(n), n_ranks, out.data()
-    );
-    return out;
+    return order_by_group_rank(g, p_rank, curr_rank + 1);
 }
 
 // Pack 8 bytes of string into uint64_t (pad zeros at the end)
@@ -544,45 +541,40 @@ inline CPPALLY_NOINLINE void order_strings(const r_str_view* strs, uint32_t n, i
 inline CPPALLY_NOINLINE r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
 
     uint32_t n = x.length();
-    r_vec<r_int> out(n);
 
     static_assert(sizeof(r_str_view) == sizeof(SEXP) && std::is_standard_layout_v<r_str_view> && std::is_trivially_copyable_v<r_str_view>);
     uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<r_str>, internal::r_hash_eq<r_str>>(x.data(), n);
 
     const r_str_view* strs = reinterpret_cast<const r_str_view*>(x.data());
-    
+
     // High cardinality -> direct sort
     if (estimate >= n / 4) {
+        r_vec<r_int> out(n);
         internal::sort::order_strings(strs, n, out.data());
         return out;
     }
 
     // Low cardinality -> sort unique strings (NA last), then counting sort by group rank
     groups g = make_groups(x);
-    uint32_t n_groups = static_cast<uint32_t>(g.n_groups);
+    int n_groups = g.n_groups;
     r_vec<r_int> group_start_locations = g.starts();
     const int* RESTRICT p_starts = group_start_locations.data();
-    const int* RESTRICT p_ids = g.ids.data();
 
     std::vector<r_str_view> unique_strs;
     unique_strs.reserve(n_groups);
-    for (uint32_t i = 0; i < n_groups; ++i){
+    for (int i = 0; i < n_groups; ++i){
         unique_strs.push_back(strs[p_starts[i]]);
     }
     std::unique_ptr<int[]> sorted_ids(new int[n_groups]);
     internal::sort::order_strings(unique_strs.data(), n_groups, sorted_ids.get());
 
-    std::unique_ptr<uint32_t[]> rank(new uint32_t[n_groups]);
-    uint32_t* RESTRICT p_rank = rank.get();
-    for (uint32_t r = 0; r < n_groups; ++r) {
+    std::unique_ptr<int[]> rank(new int[n_groups]);
+    int* RESTRICT p_rank = rank.get();
+    for (int r = 0; r < n_groups; ++r) {
         p_rank[sorted_ids[r]] = r;
     }
 
-    internal::sort::counting_order(
-        [p_ids, p_rank](int i) noexcept { return p_rank[p_ids[i]]; },
-        static_cast<int>(n), n_groups, out.data()
-    );
-    return out;
+    return order_by_group_rank(g, p_rank, n_groups);
 }
 
 // In-place sort
@@ -686,7 +678,7 @@ inline r_vec<r_int> order(const T& x) {
             if (!span) {
                 uint64_t estimate = internal::unique_count_estimate<num_t, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>>(p_x, n);
                 if (estimate < n / 8) {
-                    return internal::sort::order_numeric_groups(p_x, n, make_groups(x), lo, hi);
+                    return internal::sort::order_numeric_data_using_groups(p_x, make_groups(x));
                 }
             }
         }
