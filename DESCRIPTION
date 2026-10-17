@@ -61,3 +61,4 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 SystemRequirements: C++20
 Config/roxygen2/version: 8.0.0
+Config/Needs/website: rmarkdown
