@@ -92,11 +92,11 @@ inline uint8_t byte_of(key_t k, int b) noexcept {
 }
 
 template <std::unsigned_integral key_t>
-inline void fill_digit_histograms(uint32_t* RESTRICT hist, const key_t* RESTRICT keys, uint32_t start, uint32_t end) noexcept {
-    constexpr int n_bytes = sizeof(key_t);
+inline void fill_digit_histograms(uint32_t* RESTRICT hist, const key_t* RESTRICT keys, uint32_t start, uint32_t end, int byte_start, int byte_end) noexcept {
     for (uint32_t i = start; i < end; ++i) {
         const key_t k = keys[i];
-        for (int b = 0; b < n_bytes; ++b) {
+        #pragma GCC unroll 8
+        for (int b = byte_start; b < byte_end; ++b) {
             ++hist[b * 256 + byte_of(k, b)];
         }
     }
@@ -150,7 +150,7 @@ CPPALLY_NOINLINE void radix_sort(key_t* keys, int* idx, uint32_t n) {
     // Each byte is a base-256 digit of the key, with byte 0 being least significant.
     // Count how many keys have each digit (0-255) at each byte position
     for_each_chunk(n, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
-        fill_digit_histograms(hist_of(c, 0), keys, start, end);
+        fill_digit_histograms(hist_of(c, 0), keys, start, end, 0, n_bytes);
     });
 
     // ----- Terdiman's suggestion for reducing radix sort complexity -----
