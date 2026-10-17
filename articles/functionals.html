@@ -34,7 +34,8 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/functionals.html">Functional Programming with cppally</a></li>
+<li><a class="dropdown-item" href="../articles/benchmarks.html">Benchmarks</a></li>
+    <li><a class="dropdown-item" href="../articles/functionals.html">Functional Programming with cppally</a></li>
     <li><a class="dropdown-item" href="../articles/protection.html">Automatic Protection</a></li>
     <li><a class="dropdown-item" href="../articles/random.html">Random number generation</a></li>
     <li><a class="dropdown-item" href="../articles/vector_names.html">Vector Names</a></li>
@@ -82,7 +83,7 @@ vectorised operations everywhere possible. For R this is both cleaner
 and more efficient. In C++ the reverse is true. It is arguably cleaner
 to write functions at the scalar level, and then <strong>vectorise after
 the fact</strong>.</p>
-<p>As will soon be demonstrated in this vignette, <code>pmap()</code>
+<p>As will soon be demonstrated in this vignette, <code><a href="https://purrr.tidyverse.org/reference/pmap.html" class="external-link">pmap()</a></code>
 exists to bridge that final step of taking <strong>scalar-based</strong>
 functions and vectorising<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content="&lt;p&gt;Vectorising in the R sense, not the SIMD
 (single-instruction-multiple-data) sense. In R, vectorising literally
@@ -171,8 +172,8 @@ capture the index as we iterate along the vector</p>
 <p><code>r_vector::reduce()</code> is a left-fold reduction functional
 that successively applies a binary function along the elements of the
 vector (from left-to-right). It allows for returning early and
-explicitly continuing by calling <code>done()</code> and
-<code>keep()</code>. The input function is typically a lambda, but can
+explicitly continuing by calling <code><a href="https://rlang.r-lib.org/reference/done.html" class="external-link">done()</a></code> and
+<code><a href="https://purrr.tidyverse.org/reference/keep.html" class="external-link">keep()</a></code>. The input function is typically a lambda, but can
 also be a callable (struct with <code>operator()</code>).</p>
 <p>Example of summing a vector with <code>reduce</code></p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a></span>
@@ -218,7 +219,7 @@ hand, cppally provides <code><a href="https://rdrr.io/r/base/sum.html" class="ex
 <h4 id="returning-early">Returning early<a class="anchor" aria-label="anchor" href="#returning-early"></a>
 </h4>
 <p>To perform a reduction until a condition is met, use the helpers
-<code>done()</code> and <code>keep()</code></p>
+<code><a href="https://rlang.r-lib.org/reference/done.html" class="external-link">done()</a></code> and <code><a href="https://purrr.tidyverse.org/reference/keep.html" class="external-link">keep()</a></code></p>
 <p><strong>Example:</strong> Check vector has any <code>NA</code> or all
 <code>NA</code></p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a></span>

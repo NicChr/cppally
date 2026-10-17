@@ -2,6 +2,7 @@
 
 ### All vignettes
 
+- [Benchmarks](https://nicchr.github.io/cppally/articles/benchmarks.md):
 - [Getting started with
   cppally](https://nicchr.github.io/cppally/articles/cppally.md):
 - [Functional Programming with

@@ -603,9 +603,10 @@ functions that rely on in-place modification.
 
 Inspired by
 [`purrr::pmap`](https://purrr.tidyverse.org/reference/pmap.html) and
-[`base::mapply`](https://rdrr.io/r/base/mapply.html), `cppally::pmap` is
-a C++ variadic function that supports applying custom C++ lambda
-functions across corresponding elements of multiple vectors.
+[`base::mapply`](https://rdrr.io/r/base/mapply.html),
+[`cppally::pmap`](https://purrr.tidyverse.org/reference/pmap.html) is a
+C++ variadic function that supports applying custom C++ lambda functions
+across corresponding elements of multiple vectors.
 
 With `pmap` it is trivial to calculate parallel statistics like max,
 min, etc. Example of C++ version of

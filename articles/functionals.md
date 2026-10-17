@@ -15,9 +15,10 @@ and more efficient. In C++ the reverse is true. It is arguably cleaner
 to write functions at the scalar level, and then **vectorise after the
 fact**.
 
-As will soon be demonstrated in this vignette, `pmap()` exists to bridge
-that final step of taking **scalar-based** functions and vectorising[^1]
-them.
+As will soon be demonstrated in this vignette,
+[`pmap()`](https://purrr.tidyverse.org/reference/pmap.html) exists to
+bridge that final step of taking **scalar-based** functions and
+vectorising[^1] them.
 
 Let’s load cppally in R and include cppally in our cpp or header file to
 get started.
@@ -128,8 +129,10 @@ cpp_seq_along(letters)
 `r_vector::reduce()` is a left-fold reduction functional that
 successively applies a binary function along the elements of the vector
 (from left-to-right). It allows for returning early and explicitly
-continuing by calling `done()` and `keep()`. The input function is
-typically a lambda, but can also be a callable (struct with
+continuing by calling
+[`done()`](https://rlang.r-lib.org/reference/done.html) and
+[`keep()`](https://purrr.tidyverse.org/reference/keep.html). The input
+function is typically a lambda, but can also be a callable (struct with
 `operator()`).
 
 Example of summing a vector with `reduce`
@@ -204,7 +207,8 @@ cpp_sum3(c(10, 20, 30))
 #### Returning early
 
 To perform a reduction until a condition is met, use the helpers
-`done()` and `keep()`
+[`done()`](https://rlang.r-lib.org/reference/done.html) and
+[`keep()`](https://purrr.tidyverse.org/reference/keep.html)
 
 **Example:** Check vector has any `NA` or all `NA`
 
