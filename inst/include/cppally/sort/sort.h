@@ -339,8 +339,8 @@ inline std::optional<uint64_t> whole_offset_span(const T* RESTRICT p_x, uint32_t
 
         for (uint32_t i = 0; offsets_fit && i < n; ++i) {
             T v = p_x[i];
-            double offset = v - lo;
-            offsets_fit = is_na(v) || static_cast<double>(static_cast<int64_t>(offset)) == offset;
+            double offset = (is_na(v) ? lo : v) - lo; // Branchless way to allow NAs to fit
+            offsets_fit = static_cast<double>(static_cast<int64_t>(offset)) == offset;
         }
 
         if (offsets_fit) {
@@ -372,8 +372,12 @@ CPPALLY_NOINLINE r_vec<r_int> order_numeric_data(const T* RESTRICT p_x, uint32_t
         counting_order(
             [p_x, lo, na_key](int i) noexcept {
                 T v = p_x[i];
-                uint32_t key = is_na(v) ? na_key : static_cast<uint32_t>(v - lo);
-                return key;
+                if constexpr (CppFloatType<T>) {
+                    // v > lo is false for NA/NaN
+                    return static_cast<uint32_t>((v > lo ? v : lo) - lo) + is_na(v) * na_key;
+                } else {
+                    return is_na(v) ? na_key : static_cast<uint32_t>(v - lo);
+                }
             },
             static_cast<int>(n), na_key + 1, out.data()
         );
