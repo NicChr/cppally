@@ -22,9 +22,9 @@ inline constexpr bool identical_impl(const T& a, const T& b) noexcept {
 
     if constexpr (RScalar<value_type>){
         return identical_impl(static_cast<value_type>(a), static_cast<value_type>(b));
-      } else {
+    } else {
         return unwrap(a) == unwrap(b);
-      }
+    }
 }
 
 template<>

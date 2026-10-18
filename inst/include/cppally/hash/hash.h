@@ -50,19 +50,26 @@ inline consteval uint64_t nan_hash() noexcept {
     return mix_u64(nan_bits());
 }
 
-
-// Fallback
-template <RScalar T>
-inline uint64_t r_hash_impl(T x) noexcept {
-    return ankerl::unordered_dense::hash<unwrap_t<T>>{}(unwrap(x));
-};
-
 template <RIntegerType T>
-inline uint64_t r_hash_impl(T x) noexcept {
+inline uint64_t r_hash_impl(const T& x) noexcept {
     return mix_u64(static_cast<uint64_t>(unwrap(x)));
 };
 
-inline uint64_t r_hash_impl(r_dbl x) noexcept {
+template <RScalar T>
+inline uint64_t r_hash_impl(const T& x) noexcept {
+
+    using value_type = typename std::remove_cvref_t<T>::value_type;
+
+    if constexpr (RScalar<value_type>){
+        return r_hash_impl(static_cast<value_type>(x));
+    } else {
+        // Fallback
+        return ankerl::unordered_dense::hash<unwrap_t<T>>{}(unwrap(x));
+    }
+};
+
+template<>
+inline uint64_t r_hash_impl(const r_dbl& x) noexcept {
     if (is_na(x)){
         // Checks that x matches exactly to R's NA_REAL
         return has_na_real_payload(x) ? na_real_hash() : nan_hash();
@@ -73,17 +80,14 @@ inline uint64_t r_hash_impl(r_dbl x) noexcept {
     }
 };
 
-template <RTimeType T>
-inline uint64_t r_hash_impl(T x) noexcept {
-    return r_hash_impl(typename std::remove_cvref_t<T>::value_type(x));
-}
-
+template<>
 inline uint64_t r_hash_impl(const r_cplx& x) noexcept {
         // Hash real and imag parts and mix
         return hash_combine(r_hash_impl(x.re()), r_hash_impl(x.im()));
 };
 
-inline uint64_t r_hash_impl(r_str_view x) noexcept {
+template<>
+inline uint64_t r_hash_impl(const r_str_view& x) noexcept {
     // Cast pointer to integer (uintptr_t)
     auto ptr_val = reinterpret_cast<uintptr_t>(unwrap(x));
     
