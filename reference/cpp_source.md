@@ -276,13 +276,13 @@ mark(last_altrep_aware(1:10^5)) # No materialisation
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 3.92µs 4.69µs   194943.    3.18KB        0 10000     0     51.3ms
+#> 1 last_altrep… 3.88µs  4.6µs   199135.    3.18KB        0 10000     0     50.2ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
-#>   <bch:expr>    <bch> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep_…  37µs 38.5µs    22463.     391KB     182.  3706    30      165ms
+#>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 last_altrep… 36.8µs 39.2µs    22082.     391KB     179.  3705    30      168ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 ### Copy-on-modify
@@ -318,7 +318,7 @@ mark(reverse(x)) # Memory allocated, therefore x was copied before reversing
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr> <bch:tm> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 reverse(x)    257µs  264µs     3642.     391KB     28.5  1660    13      456ms
+#> 1 reverse(x)    257µs  265µs     3647.     391KB     28.8  1645    13      451ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 # The cppally preferred approach is to allocate a fresh vector or copy the
@@ -345,9 +345,9 @@ mark(
 #> # A tibble: 3 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>  <bch:t> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 r_reverse   220.3µs  224µs     3708.     781KB     58.2  1210    19      326ms
-#> 2 cppally_co…   256µs  265µs     3744.     391KB     30.9  1694    14      452ms
-#> 3 cppally_no…  55.8µs  204µs     6636.     391KB     50.3  2638    20      398ms
+#> 1 r_reverse   220.6µs  224µs     4274.     781KB     68.8  1366    22      320ms
+#> 2 cppally_co… 257.2µs  264µs     3765.     391KB     28.7  1703    13      452ms
+#> 3 cppally_no…  57.3µs  203µs     6319.     391KB     49.3  2050    16      324ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 ### Speeding up template-heavy compilation
@@ -406,8 +406,8 @@ mark(
 #> # A tibble: 2 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 unrestricted  7.73s  7.73s     0.129        NA        0     1     0      7.73s
-#> 2 restricted    4.69s  4.69s     0.213        NA        0     1     0      4.69s
+#> 1 unrestricted  7.58s  7.58s     0.132        NA        0     1     0      7.58s
+#> 2 restricted    4.46s  4.46s     0.224        NA        0     1     0      4.46s
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 sorted_unique(c(1, 1, 2, 2, 3, 3))

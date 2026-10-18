@@ -72,14 +72,14 @@
     
 <p>This vignette compares the speed of cppally sorting, group ID
 generation, and statistical functions against base R, ‘data.table’, and
-‘collapse’. Base R radix-sorting is very fast, and the latter two
-packages implement very fast grouped calculations. We will cover:</p>
+‘collapse’. Base R radix-sorting is already very fast, while the latter
+two packages implement efficient grouped calculations. We will
+cover:</p>
 <ul>
-<li>Sorting (<code><a href="https://bit64.r-lib.org/reference/bit64S3.html" class="external-link">order()</a></code>)</li>
-<li>Group IDs (<code>make_groups()</code>)</li>
-<li>Statistical summaries (<code><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum()</a></code>, <code><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min()</a></code>,
-<code><a href="https://rdrr.io/r/stats/cor.html" class="external-link">var()</a></code>, <code><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile()</a></code>)</li>
-<li>Grouped statistical summaries (<code>apply_by_group()</code>)</li>
+<li>Sorting</li>
+<li>Group IDs</li>
+<li>Statistical summaries</li>
+<li>Grouped statistical summaries</li>
 </ul>
 <p>This vignette was built on a laptop with an Intel Core Ultra 5 125H
 (14 cores: 4 performance and 10 efficiency, 18 threads) and 16 GB of
@@ -189,7 +189,7 @@ against base R, so that the timings are not affected.</p>
 <span>    <span class="fu"><a href="https://bench.r-lib.org/reference/scale_bench_time.html" class="external-link">scale_x_bench_time</a></span><span class="op">(</span>base <span class="op">=</span> <span class="fl">2</span>, breaks <span class="op">=</span> \<span class="op">(</span><span class="va">lims</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">ms</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">lims</span><span class="op">)</span> <span class="op">*</span> <span class="fl">1e3</span></span>
 <span>    <span class="fl">2</span><span class="op">^</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">ms</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">ceiling</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">ms</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1e3</span></span>
-<span>  <span class="op">}</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="op">}</span>, sec.axis <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/sec_axis.html" class="external-link">dup_axis</a></span><span class="op">(</span>name <span class="op">=</span> <span class="cn">NULL</span>, labels <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span><span class="fu"><a href="https://bench.r-lib.org/reference/as_bench_time.html" class="external-link">as_bench_time</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_fill_manual</a></span><span class="op">(</span>values <span class="op">=</span> <span class="va">package_colours</span>, breaks <span class="op">=</span> <span class="va">pkgs</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_grid.html" class="external-link">facet_grid</a></span><span class="op">(</span>rows <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/vars.html" class="external-link">vars</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span>, switch <span class="op">=</span> <span class="st">"y"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="va">title</span>, x <span class="op">=</span> <span class="st">"time"</span>, y <span class="op">=</span> <span class="cn">NULL</span>, fill <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">+</span></span>
@@ -273,11 +273,7 @@ dataset.</p>
 <span>         <span class="fu">plot_bench</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"order()"</span>, <span class="st">"|"</span>, <span class="va">nm</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>         <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>     <span class="op">}</span><span class="op">)</span></span></code></pre></div>
-<div class="figure">
-<img src="figure/sort-plots-1.png" alt="order() benchmark, 1 thread"><p class="caption">
-plot of chunk sort-plots
-</p>
-</div>
+<p><img src="figure/sort-plots-1.png" alt="order() benchmark, 1 thread"></p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/imap.html" class="external-link">iwalk</a></span><span class="op">(</span><span class="va">multi_threaded_sort_comparisons</span>,</span>
 <span>     \<span class="op">(</span><span class="va">res</span>, <span class="va">nm</span><span class="op">)</span><span class="op">{</span></span>
@@ -285,11 +281,7 @@ plot of chunk sort-plots
 <span>         <span class="fu">plot_bench</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"order()"</span>, <span class="st">"|"</span>, <span class="va">nm</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>         <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>     <span class="op">}</span><span class="op">)</span></span></code></pre></div>
-<div class="figure">
-<img src="figure/sort-plots-2.png" alt="order() benchmark, 4 threads"><p class="caption">
-plot of chunk sort-plots
-</p>
-</div>
+<p><img src="figure/sort-plots-2.png" alt="order() benchmark, 4 threads"></p>
 </div>
 <div class="section level3">
 <h3 id="data-with-nas">Data with NAs<a class="anchor" aria-label="anchor" href="#data-with-nas"></a>
@@ -326,11 +318,7 @@ lots of NAs.</p>
 <span>         <span class="fu">plot_bench</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"order()"</span>, <span class="st">"|"</span>, <span class="va">nm</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>         <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>     <span class="op">}</span><span class="op">)</span></span></code></pre></div>
-<div class="figure">
-<img src="figure/sort-plots-nas-1.png" alt="order() benchmark with 20% NAs, 1 thread"><p class="caption">
-plot of chunk sort-plots-nas
-</p>
-</div>
+<p><img src="figure/sort-plots-nas-1.png" alt="order() benchmark with 20% NAs, 1 thread"></p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/imap.html" class="external-link">iwalk</a></span><span class="op">(</span><span class="va">multi_threaded_sort_comparisons</span>,</span>
 <span>     \<span class="op">(</span><span class="va">res</span>, <span class="va">nm</span><span class="op">)</span><span class="op">{</span></span>
@@ -338,11 +326,7 @@ plot of chunk sort-plots-nas
 <span>         <span class="fu">plot_bench</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"order()"</span>, <span class="st">"|"</span>, <span class="va">nm</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>         <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>     <span class="op">}</span><span class="op">)</span></span></code></pre></div>
-<div class="figure">
-<img src="figure/sort-plots-nas-2.png" alt="order() benchmark with 20% NAs, 4 threads"><p class="caption">
-plot of chunk sort-plots-nas
-</p>
-</div>
+<p><img src="figure/sort-plots-nas-2.png" alt="order() benchmark with 20% NAs, 4 threads"></p>
 </div>
 </div>
 <div class="section level2">
@@ -392,11 +376,7 @@ order. We compare unordered group IDs against
 <span>      <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  <span class="op">}</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="figure">
-<img src="figure/unordered-group-id-plots-1.png" alt="Unordered group ID benchmark"><p class="caption">
-plot of chunk unordered-group-id-plots
-</p>
-</div>
+<p><img src="figure/unordered-group-id-plots-1.png" alt="Unordered group ID benchmark"></p>
 <p>Ordered group ID correctness check</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">d</span> <span class="kw">in</span> <span class="va">benchmark_data</span><span class="op">)</span><span class="op">{</span></span>
@@ -429,11 +409,7 @@ plot of chunk unordered-group-id-plots
 <span>      <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  <span class="op">}</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="figure">
-<img src="figure/ordered-group-id-plots-1.png" alt="Ordered group ID benchmark"><p class="caption">
-plot of chunk ordered-group-id-plots
-</p>
-</div>
+<p><img src="figure/ordered-group-id-plots-1.png" alt="Ordered group ID benchmark"></p>
 </div>
 </div>
 <div class="section level2">
@@ -503,26 +479,7 @@ thread.</p>
 <span>    <span class="fu">plot_bench</span><span class="op">(</span><span class="va">stat</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<div class="figure">
-<img src="figure/stat-plots-1.png" alt="Sum benchmark"><p class="caption">
-plot of chunk stat-plots
-</p>
-</div>
-<div class="figure">
-<img src="figure/stat-plots-2.png" alt="Min benchmark"><p class="caption">
-plot of chunk stat-plots
-</p>
-</div>
-<div class="figure">
-<img src="figure/stat-plots-3.png" alt="Variance benchmark"><p class="caption">
-plot of chunk stat-plots
-</p>
-</div>
-<div class="figure">
-<img src="figure/stat-plots-4.png" alt="Quantile benchmark"><p class="caption">
-plot of chunk stat-plots
-</p>
-</div>
+<p><img src="figure/stat-plots-1.png" alt="Sum benchmark"><img src="figure/stat-plots-2.png" alt="Min benchmark"><img src="figure/stat-plots-3.png" alt="Variance benchmark"><img src="figure/stat-plots-4.png" alt="Quantile benchmark"></p>
 </div>
 <div class="section level2">
 <h2 id="grouped-statistical-summaries">Grouped statistical summaries<a class="anchor" aria-label="anchor" href="#grouped-statistical-summaries"></a>
@@ -618,26 +575,7 @@ meant to be generic.</p>
 <span>    <span class="fu">plot_bench</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Grouped"</span>, <span class="va">stat</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<div class="figure">
-<img src="figure/grouped-stat-plots-1.png" alt="Grouped sum benchmark"><p class="caption">
-plot of chunk grouped-stat-plots
-</p>
-</div>
-<div class="figure">
-<img src="figure/grouped-stat-plots-2.png" alt="Grouped min benchmark"><p class="caption">
-plot of chunk grouped-stat-plots
-</p>
-</div>
-<div class="figure">
-<img src="figure/grouped-stat-plots-3.png" alt="Grouped variance benchmark"><p class="caption">
-plot of chunk grouped-stat-plots
-</p>
-</div>
-<div class="figure">
-<img src="figure/grouped-stat-plots-4.png" alt="Grouped median benchmark"><p class="caption">
-plot of chunk grouped-stat-plots
-</p>
-</div>
+<p><img src="figure/grouped-stat-plots-1.png" alt="Grouped sum benchmark"><img src="figure/grouped-stat-plots-2.png" alt="Grouped min benchmark"><img src="figure/grouped-stat-plots-3.png" alt="Grouped variance benchmark"><img src="figure/grouped-stat-plots-4.png" alt="Grouped median benchmark"></p>
 </div>
 <div class="section level2">
 <h2 id="session-details">Session details<a class="anchor" aria-label="anchor" href="#session-details"></a>

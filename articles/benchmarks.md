@@ -2,16 +2,13 @@
 
 This vignette compares the speed of cppally sorting, group ID
 generation, and statistical functions against base R, ‘data.table’, and
-‘collapse’. Base R radix-sorting is very fast, and the latter two
-packages implement very fast grouped calculations. We will cover:
+‘collapse’. Base R radix-sorting is already very fast, while the latter
+two packages implement efficient grouped calculations. We will cover:
 
-- Sorting ([`order()`](https://bit64.r-lib.org/reference/bit64S3.html))
-- Group IDs (`make_groups()`)
-- Statistical summaries ([`sum()`](https://rdrr.io/r/base/sum.html),
-  [`min()`](https://rdrr.io/r/base/Extremes.html),
-  [`var()`](https://rdrr.io/r/stats/cor.html),
-  [`quantile()`](https://rdrr.io/r/stats/quantile.html))
-- Grouped statistical summaries (`apply_by_group()`)
+- Sorting
+- Group IDs
+- Statistical summaries
+- Grouped statistical summaries
 
 This vignette was built on a laptop with an Intel Core Ultra 5 125H (14
 cores: 4 performance and 10 efficiency, 18 threads) and 16 GB of RAM,
@@ -131,7 +128,7 @@ plot_bench <- function(res, title){
     scale_x_bench_time(base = 2, breaks = \(lims) {
     ms <- as.numeric(lims) * 1e3
     2^(floor(log2(ms[1])):ceiling(log2(ms[2]))) / 1e3
-  }) +
+  }, sec.axis = dup_axis(name = NULL, labels = \(x) trimws(format(as_bench_time(x))))) +
     scale_fill_manual(values = package_colours, breaks = pkgs) +
     facet_grid(rows = vars(data), switch = "y") +
     labs(title = title, x = "time", y = NULL, fill = NULL) +
@@ -227,8 +224,6 @@ purrr::iwalk(single_threaded_sort_comparisons,
 
 ![order() benchmark, 1 thread](figure/sort-plots-1.png)
 
-plot of chunk sort-plots
-
 ``` r
 
 purrr::iwalk(multi_threaded_sort_comparisons,
@@ -240,8 +235,6 @@ purrr::iwalk(multi_threaded_sort_comparisons,
 ```
 
 ![order() benchmark, 4 threads](figure/sort-plots-2.png)
-
-plot of chunk sort-plots
 
 ### Data with NAs
 
@@ -288,8 +281,6 @@ purrr::iwalk(single_threaded_sort_comparisons,
 
 ![order() benchmark with 20% NAs, 1 thread](figure/sort-plots-nas-1.png)
 
-plot of chunk sort-plots-nas
-
 ``` r
 
 purrr::iwalk(multi_threaded_sort_comparisons,
@@ -302,8 +293,6 @@ purrr::iwalk(multi_threaded_sort_comparisons,
 
 ![order() benchmark with 20% NAs, 4
 threads](figure/sort-plots-nas-2.png)
-
-plot of chunk sort-plots-nas
 
 ## Group IDs
 
@@ -362,8 +351,6 @@ purrr::iwalk(
 
 ![Unordered group ID benchmark](figure/unordered-group-id-plots-1.png)
 
-plot of chunk unordered-group-id-plots
-
 Ordered group ID correctness check
 
 ``` r
@@ -402,8 +389,6 @@ purrr::iwalk(
 ```
 
 ![Ordered group ID benchmark](figure/ordered-group-id-plots-1.png)
-
-plot of chunk ordered-group-id-plots
 
 ## Statistical summaries
 
@@ -481,21 +466,10 @@ for (stat in names(stat_fns)){
 }
 ```
 
-![Sum benchmark](figure/stat-plots-1.png)
-
-plot of chunk stat-plots
-
-![Min benchmark](figure/stat-plots-2.png)
-
-plot of chunk stat-plots
-
-![Variance benchmark](figure/stat-plots-3.png)
-
-plot of chunk stat-plots
-
-![Quantile benchmark](figure/stat-plots-4.png)
-
-plot of chunk stat-plots
+![Sum benchmark](figure/stat-plots-1.png)![Min
+benchmark](figure/stat-plots-2.png)![Variance
+benchmark](figure/stat-plots-3.png)![Quantile
+benchmark](figure/stat-plots-4.png)
 
 ## Grouped statistical summaries
 
@@ -593,21 +567,10 @@ for (stat in names(grouped_fns)){
 }
 ```
 
-![Grouped sum benchmark](figure/grouped-stat-plots-1.png)
-
-plot of chunk grouped-stat-plots
-
-![Grouped min benchmark](figure/grouped-stat-plots-2.png)
-
-plot of chunk grouped-stat-plots
-
-![Grouped variance benchmark](figure/grouped-stat-plots-3.png)
-
-plot of chunk grouped-stat-plots
-
-![Grouped median benchmark](figure/grouped-stat-plots-4.png)
-
-plot of chunk grouped-stat-plots
+![Grouped sum benchmark](figure/grouped-stat-plots-1.png)![Grouped min
+benchmark](figure/grouped-stat-plots-2.png)![Grouped variance
+benchmark](figure/grouped-stat-plots-3.png)![Grouped median
+benchmark](figure/grouped-stat-plots-4.png)
 
 ## Session details
 
