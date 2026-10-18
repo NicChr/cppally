@@ -103,7 +103,7 @@ struct r_date {
     public:
 
     explicit constexpr r_date(double days_since_epoch) noexcept : value {
-        (days_since_epoch >= chrono_min_days() && days_since_epoch < chrono_max_days()) || r_dbl(days_since_epoch).is_infinite() ? days_since_epoch : r_dbl::na()
+        ((days_since_epoch < chrono_min_days() || days_since_epoch >= chrono_max_days()) && r_dbl(days_since_epoch).is_finite()) ? r_dbl::na() : days_since_epoch
     } {}
 
     static constexpr r_date na() noexcept {

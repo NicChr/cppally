@@ -84,7 +84,7 @@ struct r_psxct {
     public:
 
     explicit constexpr r_psxct(double seconds_since_epoch) noexcept : value {
-        (seconds_since_epoch >= chrono_min_seconds() && seconds_since_epoch < chrono_max_seconds()) || r_dbl(seconds_since_epoch).is_infinite() ? seconds_since_epoch : r_dbl::na()
+        ((seconds_since_epoch < chrono_min_seconds() || seconds_since_epoch >= chrono_max_seconds()) && r_dbl(seconds_since_epoch).is_finite()) ? r_dbl::na() : seconds_since_epoch
     } {}
 
     static constexpr r_psxct na() noexcept {
