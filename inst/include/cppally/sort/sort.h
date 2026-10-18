@@ -423,7 +423,7 @@ inline CPPALLY_NOINLINE r_vec<r_int> order_by_group_rank(const groups& g, const 
     int n = g.ids.length();
     const int* ids = g.ids.data();
     r_vec<r_int> out(n);
-    counting_order([ids, rank](int i) noexcept { return rank[ids[i]]; }, static_cast<int>(n), n_ranks, out.data());
+    counting_order([ids, rank](int i) noexcept { return rank[ids[i]]; }, n, n_ranks, out.data());
     return out;
 }
 
@@ -646,11 +646,13 @@ template <RSortableVector T>
 inline r_vec<r_int> order(const T& x) {
 
     using data_t = typename T::data_type;
-    uint32_t n = x.length();
+    r_size_t vec_length = x.length();
 
-    if (n > std::numeric_limits<int>::max()) [[unlikely]] {
+    if (vec_length > std::numeric_limits<int>::max()) [[unlikely]] {
         abort("Cannot sort long-vectors");
     }
+
+    uint32_t n = static_cast<uint32_t>(vec_length);
     
     if (n < 200){
         return internal::sort::order_cmp(x);
