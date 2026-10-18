@@ -135,7 +135,7 @@ inline int calc_threads(r_size_t data_size){
 
 // Runs body(c, start, end) over n_chunks of contiguous ranges of [0, n).
 template <typename F>
-inline void for_each_chunk(uint32_t n, uint32_t n_chunks, F&& body) {
+inline void for_each_chunk(uint32_t n, uint32_t n_chunks, const F& body) {
     static_assert(noexcept(body(0u, 0u, 0u)), "chunk bodies may run inside an OMP region and must not throw");
     if (n_chunks > 1) {
         OMP_PARALLEL_FOR(n_chunks)
