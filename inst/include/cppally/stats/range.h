@@ -119,6 +119,44 @@ r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
     return r_vec<T>( { T(lo_), T(hi_) } );
 }
 
+template <RNumericType T>
+requires (CppFloatType<unwrap_t<T>>)
+r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
+    
+    r_size_t n = x.length();
+
+    if (n == 0){
+        return r_vec<T>( { na<T>(), na<T>() } );
+    }
+
+    unwrap_t<T> lo_ = unwrap(r_limits<T>::max());
+    unwrap_t<T> hi_ = unwrap(r_limits<T>::min());
+
+    int_fast64_t na_count = 0;
+
+    // NA/NaN is propagated via std::min/std::max so no need to check for it
+    internal::simd_reduce_minmax(
+        x,
+        [](T v) noexcept { return unwrap(v); },
+        [](T v) noexcept { return unwrap(v); },
+        lo_, hi_, na_count
+    );
+
+    if (na_rm){
+        if (na_count == n){
+            lo_ = unwrap(na<T>());
+            hi_ = lo_;
+        }
+    } else {
+        if (na_count > 0){
+            lo_ = unwrap(na<T>());
+            hi_ = lo_;
+        }
+    }
+    
+    return r_vec<T>( { T(lo_), T(hi_) } );
+}
+
 template <RStringType T>
 r_vec<T> range(const r_vec<T>& x, bool na_rm = false){
     r_size_t n = x.length();
