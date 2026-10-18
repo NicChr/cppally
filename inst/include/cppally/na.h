@@ -42,16 +42,12 @@ inline constexpr bool is_na<r_sexp>(const r_sexp& x) noexcept {
 
 template <typename T>
 inline constexpr bool is_nan(const T& x) noexcept {
-  return false;
-}
-// NaN but not NA_REAL
-template <>
-inline constexpr bool is_nan(const r_dbl& x) noexcept {
-  return x.is_nan();
-}
-template <>
-inline constexpr bool is_nan(const double& x) noexcept {
-  return r_dbl(x).is_nan();
+  if constexpr (CppFloatType<unwrap_t<T>>){
+    // NaN but not NA_REAL
+    return r_dbl(x).is_nan();
+  } else {
+    return false;
+  }
 }
 
 // Inspired by SQL COALESCE: returns x, or y if x is NA.
