@@ -133,6 +133,22 @@ inline int calc_threads(r_size_t data_size){
   return OMP_IN_PARALLEL ? 1 : get_threads();
 }
 
+// Runs body(c, start, end) over n_chunks of contiguous ranges of [0, n).
+template <typename F>
+inline void for_each_chunk(uint32_t n, uint32_t n_chunks, F&& body) {
+    static_assert(noexcept(body(0u, 0u, 0u)), "chunk bodies may run inside an OMP region and must not throw");
+    if (n_chunks > 1) {
+        OMP_PARALLEL_FOR(n_chunks)
+        for (uint32_t c = 0; c < n_chunks; ++c) {
+            uint32_t start = static_cast<uint32_t>(static_cast<uint64_t>(n) * c / n_chunks);
+            uint32_t end = static_cast<uint32_t>(static_cast<uint64_t>(n) * (c + 1) / n_chunks);
+            body(c, start, end);
+        }
+    } else {
+        body(0u, 0u, n);
+    }
+}
+
 }
 
 }

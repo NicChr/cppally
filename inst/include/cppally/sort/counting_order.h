@@ -15,22 +15,6 @@ namespace sort {
 // Minimum average elements per (chunk, key) histogram cell for multi-threaded counting sort
 inline constexpr uint64_t min_elements_per_chunk_key = 8;
 
-// Runs body(c, start, end) over n_chunks of contiguous ranges of [0, n).
-template <typename F>
-inline void for_each_chunk(uint32_t n, int n_chunks, F&& body) {
-    static_assert(noexcept(body(0, 0u, 0u)), "chunk bodies may run inside an OMP region and must not throw");
-    if (n_chunks > 1) {
-        OMP_PARALLEL_FOR(n_chunks)
-        for (int c = 0; c < n_chunks; ++c) {
-            const uint32_t start = static_cast<uint32_t>(static_cast<uint64_t>(n) * c / n_chunks);
-            const uint32_t end = static_cast<uint32_t>(static_cast<uint64_t>(n) * (c + 1) / n_chunks);
-            body(c, start, end);
-        }
-    } else {
-        body(0, 0u, n);
-    }
-}
-
 // Counts key(i) over [start, end) into 4 histograms, each of size n_keys.
 // Blocks are non-overlapping, contiguous, and their ranges are: [start, n1), [n1, n2), [n2, n3), [n3, end).
 // len = (end - start) / 4, n1 = start + len, n2 = n1 + len, n3 = n2 + len. The 4th block also takes the 0-3 leftover elements.

@@ -363,7 +363,7 @@ groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
         std::vector<int> chunk_counts(n_chunks);
 
         // Walk through x in sorted order and identify group IDs when value changes from previous value
-        sort::for_each_chunk(tail, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
+        for_each_chunk(tail, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
             int count = 0;
             for (uint32_t i = std::max(start, 1u); i < end; ++i) {
                 uint8_t is_new = !identical(x.view(p_o[i]), x.view(p_o[i - 1]));
@@ -382,7 +382,7 @@ groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
         }
 
         // Convert new group flags into group IDs and scatter back to x's original order
-        sort::for_each_chunk(tail, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
+        for_each_chunk(tail, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
             int id = chunk_counts[c];
             for (uint32_t i = start; i < end; ++i) {
                 id += p_new[i];
