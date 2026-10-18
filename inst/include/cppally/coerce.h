@@ -122,10 +122,18 @@ inline T as_impl(const U& x) {
 
   r_size_t n = x.length();
   T out(n);
+  out.set_names(x.names());
+
+  if constexpr (RAtomicVector<T> && (is<from_data_t, r_base_scalar_t<to_data_t>> || is<to_data_t, r_base_scalar_t<from_data_t>>) && !is<unwrap_t<from_data_t>, SEXP>){
+    if (x.is_materialised()){
+      std::copy_n(x.data(), n, out.data());
+      return out;
+    }
+  }
+
   for (r_size_t i = 0; i < n; ++i){
     out.set(i, x.view(i));
   }
-  out.set_names(x.names());
   return out;
 }
 
