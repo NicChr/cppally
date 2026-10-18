@@ -255,40 +255,6 @@ struct groups {
 
 namespace internal {
 
-// Make groups from cppally::order(x)
-template <RSortableType T>
-groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
-    r_size_t n = x.length();
-
-    if (n != o.length()) [[unlikely]] {
-        abort("`x.length()` must match `o.length()`");
-    }
-
-    if (n == 0) return groups(r_vec<r_int>(), 0, true, true);
-    
-    r_vec<r_int> group_ids(n);
-    int* RESTRICT p_group_ids = group_ids.data();
-
-    int first_idx = unwrap(o.get(0));
-    p_group_ids[first_idx] =  0;
-
-    int current_group = 0;
-    T prev_value = x.view(first_idx);
-
-    for (r_size_t i = 1; i < n; ++i) {
-        int curr_idx = unwrap(o.get(i));
-        T curr_value = x.view(curr_idx);
-
-        current_group += !identical(curr_value, prev_value);
-        p_group_ids[curr_idx] = current_group;
-
-        prev_value = std::move(curr_value);
-    }
-
-    int n_groups = current_group + 1;
-    return groups(group_ids, n_groups, /*ordered=*/ true);
-}
-
 template <RVector T>
 groups make_unordered_groups(const T& x) {
 
@@ -358,6 +324,87 @@ groups make_unordered_groups(const T& x) {
     
     n_groups = next_id;
     return groups(group_ids, n_groups, false, ids_are_sorted(p_id, n));
+}
+
+// Make groups from cppally::order(x)
+template <RSortableType T>
+groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
+    r_size_t n = x.length();
+
+    if (n != o.length()) [[unlikely]] {
+        abort("`x.length()` must match `o.length()`");
+    }
+
+    if (n == 0) return groups(r_vec<r_int>(), 0, true, true);
+    
+    r_vec<r_int> group_ids(n);
+    int* RESTRICT p_group_ids = group_ids.data();
+
+    int n_chunks = calc_threads(n);
+
+    // Materialise up-front so view() is multi-thread safe
+    (void) x.data();
+    const int* RESTRICT p_o = o.data();
+
+    // order() ties NA/NaN even though they are distinct groups
+    // so we deal with these ranges separately
+    uint32_t tail = static_cast<uint32_t>(n);
+    while (tail > 0 && is_na(x.view(p_o[tail - 1]))) {
+        --tail;
+    }
+
+    int n_groups = 0;
+
+    if (tail > 0) {
+
+        std::unique_ptr<uint8_t[]> new_group(new uint8_t[tail]);
+        uint8_t* RESTRICT p_new = new_group.get();
+        p_new[0] = 0;
+        std::vector<int> chunk_counts(n_chunks);
+
+        // Walk through x in sorted order and identify group IDs when value changes from previous value
+        sort::for_each_chunk(tail, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
+            int count = 0;
+            for (uint32_t i = std::max(start, 1u); i < end; ++i) {
+                uint8_t is_new = !identical(x.view(p_o[i]), x.view(p_o[i - 1]));
+                p_new[i] = is_new;
+                count += is_new;
+            }
+            chunk_counts[c] = count;
+        });
+
+        // Prefix sum
+        int total = 0;
+        for (int& count : chunk_counts) {
+            int chunk_count = count;
+            count = total;
+            total += chunk_count;
+        }
+
+        // Convert new group flags into group IDs and scatter back to x's original order
+        sort::for_each_chunk(tail, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
+            int id = chunk_counts[c];
+            for (uint32_t i = start; i < end; ++i) {
+                id += p_new[i];
+                p_group_ids[p_o[i]] = id;
+            }
+        });
+
+        n_groups = total + 1;
+    }
+
+    if (tail < n) {
+        bool first_is_nan = is_nan(x.view(p_o[tail]));
+        bool both_kinds = false;
+        for (uint32_t i = tail; i < n; ++i) {
+            bool second_kind = is_nan(x.view(p_o[i])) != first_is_nan;
+            both_kinds = both_kinds || second_kind;
+            p_group_ids[p_o[i]] = n_groups + second_kind;
+        }
+        n_groups += 1 + both_kinds;
+    }
+
+    return groups(group_ids, n_groups, /*ordered=*/ true);
 }
 
 }
