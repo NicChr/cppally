@@ -6,12 +6,12 @@ title: "Benchmarks"
 
 
 
-This vignette compares the speed of cppally sorting, group ID generation, and statistical functions against base R, 'data.table', and 'collapse'. Base R radix-sorting is very fast, and the latter two packages implement very fast grouped calculations. We will cover:
+This vignette compares the speed of cppally sorting, group ID generation, and statistical functions against base R, 'data.table', and 'collapse'. Base R radix-sorting is already very fast, while the latter two packages implement efficient grouped calculations. We will cover:
 
-- Sorting (`order()`)
-- Group IDs (`make_groups()`)
-- Statistical summaries (`sum()`, `min()`, `var()`, `quantile()`)
-- Grouped statistical summaries (`apply_by_group()`)
+- Sorting
+- Group IDs
+- Statistical summaries
+- Grouped statistical summaries
 
 This vignette was built on a laptop with an Intel Core Ultra 5 125H (14 cores: 4 performance and 10 efficiency, 18 threads) and 16 GB of RAM, running Windows 11 and R 4.6.0 on 17 Oct 2026.
 
@@ -123,7 +123,7 @@ plot_bench <- function(res, title){
     scale_x_bench_time(base = 2, breaks = \(lims) {
     ms <- as.numeric(lims) * 1e3
     2^(floor(log2(ms[1])):ceiling(log2(ms[2]))) / 1e3
-  }) +
+  }, sec.axis = dup_axis(name = NULL, labels = \(x) trimws(format(as_bench_time(x))))) +
     scale_fill_manual(values = package_colours, breaks = pkgs) +
     facet_grid(rows = vars(data), switch = "y") +
     labs(title = title, x = "time", y = NULL, fill = NULL) +
@@ -215,10 +215,7 @@ purrr::iwalk(single_threaded_sort_comparisons,
      })
 ```
 
-<div class="figure">
 <img src="figure/sort-plots-1.png" alt="order() benchmark, 1 thread"  />
-<p class="caption">plot of chunk sort-plots</p>
-</div>
 
 ``` r
 purrr::iwalk(multi_threaded_sort_comparisons,
@@ -229,10 +226,7 @@ purrr::iwalk(multi_threaded_sort_comparisons,
      })
 ```
 
-<div class="figure">
 <img src="figure/sort-plots-2.png" alt="order() benchmark, 4 threads"  />
-<p class="caption">plot of chunk sort-plots</p>
-</div>
 
 ### Data with NAs
 
@@ -276,10 +270,7 @@ purrr::iwalk(single_threaded_sort_comparisons,
      })
 ```
 
-<div class="figure">
 <img src="figure/sort-plots-nas-1.png" alt="order() benchmark with 20% NAs, 1 thread"  />
-<p class="caption">plot of chunk sort-plots-nas</p>
-</div>
 
 ``` r
 purrr::iwalk(multi_threaded_sort_comparisons,
@@ -290,10 +281,7 @@ purrr::iwalk(multi_threaded_sort_comparisons,
      })
 ```
 
-<div class="figure">
 <img src="figure/sort-plots-nas-2.png" alt="order() benchmark with 20% NAs, 4 threads"  />
-<p class="caption">plot of chunk sort-plots-nas</p>
-</div>
 
 ## Group IDs
 
@@ -346,10 +334,7 @@ purrr::iwalk(
 )
 ```
 
-<div class="figure">
 <img src="figure/unordered-group-id-plots-1.png" alt="Unordered group ID benchmark"  />
-<p class="caption">plot of chunk unordered-group-id-plots</p>
-</div>
 
 Ordered group ID correctness check
 
@@ -388,10 +373,7 @@ purrr::iwalk(
 )
 ```
 
-<div class="figure">
 <img src="figure/ordered-group-id-plots-1.png" alt="Ordered group ID benchmark"  />
-<p class="caption">plot of chunk ordered-group-id-plots</p>
-</div>
 
 ## Statistical summaries
 
@@ -468,19 +450,7 @@ for (stat in names(stat_fns)){
 }
 ```
 
-<div class="figure">
-<img src="figure/stat-plots-1.png" alt="Sum benchmark"  />
-<p class="caption">plot of chunk stat-plots</p>
-</div><div class="figure">
-<img src="figure/stat-plots-2.png" alt="Min benchmark"  />
-<p class="caption">plot of chunk stat-plots</p>
-</div><div class="figure">
-<img src="figure/stat-plots-3.png" alt="Variance benchmark"  />
-<p class="caption">plot of chunk stat-plots</p>
-</div><div class="figure">
-<img src="figure/stat-plots-4.png" alt="Quantile benchmark"  />
-<p class="caption">plot of chunk stat-plots</p>
-</div>
+<img src="figure/stat-plots-1.png" alt="Sum benchmark"  /><img src="figure/stat-plots-2.png" alt="Min benchmark"  /><img src="figure/stat-plots-3.png" alt="Variance benchmark"  /><img src="figure/stat-plots-4.png" alt="Quantile benchmark"  />
 
 ## Grouped statistical summaries
 
@@ -571,19 +541,7 @@ for (stat in names(grouped_fns)){
 }
 ```
 
-<div class="figure">
-<img src="figure/grouped-stat-plots-1.png" alt="Grouped sum benchmark"  />
-<p class="caption">plot of chunk grouped-stat-plots</p>
-</div><div class="figure">
-<img src="figure/grouped-stat-plots-2.png" alt="Grouped min benchmark"  />
-<p class="caption">plot of chunk grouped-stat-plots</p>
-</div><div class="figure">
-<img src="figure/grouped-stat-plots-3.png" alt="Grouped variance benchmark"  />
-<p class="caption">plot of chunk grouped-stat-plots</p>
-</div><div class="figure">
-<img src="figure/grouped-stat-plots-4.png" alt="Grouped median benchmark"  />
-<p class="caption">plot of chunk grouped-stat-plots</p>
-</div>
+<img src="figure/grouped-stat-plots-1.png" alt="Grouped sum benchmark"  /><img src="figure/grouped-stat-plots-2.png" alt="Grouped min benchmark"  /><img src="figure/grouped-stat-plots-3.png" alt="Grouped variance benchmark"  /><img src="figure/grouped-stat-plots-4.png" alt="Grouped median benchmark"  />
 
 ## Session details
 
