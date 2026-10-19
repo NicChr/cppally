@@ -65,13 +65,17 @@ inline char* write_r_double(char* first, char* last, double x){
 }
 
 // Coercion functions that account for NA
-// Important: all internal helpers assume that T != U since this identity is already checked by scalar_coerce()
 
 template <RLogicalType T, RScalar U>
 inline constexpr T scalar_coerce_impl(const U& x) noexcept(RMathType<U>) {
-  using unwrapped_t = unwrap_t<U>;
+  using unwrapped_to_t = unwrap_t<T>;
+  using unwrapped_from_t = unwrap_t<U>;
 
-  if constexpr (MathType<unwrapped_t>){
+  if constexpr (is<T, U>){
+    return x;
+  } else if constexpr (is<unwrapped_to_t, unwrapped_from_t> && std::constructible_from<T, unwrapped_from_t>){
+    return T(unwrap(x));
+  } else if constexpr (MathType<unwrapped_from_t>){
     return is_na(x) ? r_na : r_lgl(static_cast<bool>(unwrap(x)));
   } else if constexpr (RStringType<U>){
     if (x.is_na()){
@@ -90,10 +94,15 @@ inline constexpr T scalar_coerce_impl(const U& x) noexcept(RMathType<U>) {
 
 template <RNumber T, RScalar U>
 inline constexpr T scalar_coerce_impl(const U& x) noexcept(RMathType<U>) {
-  using unwrapped_t = unwrap_t<T>;
+  using unwrapped_to_t = unwrap_t<T>;
+  using unwrapped_from_t = unwrap_t<U>;
 
-  if constexpr (MathType<unwrap_t<U>>){
-    return is_na(x) || !numeric_can_be_cast_without_complete_loss<unwrapped_t>(unwrap(x)) ? na<T>() : T(static_cast<unwrapped_t>(unwrap(x)));
+  if constexpr (is<T, U>){
+    return x;
+  } else if constexpr (is<unwrapped_to_t, unwrapped_from_t> && std::constructible_from<T, unwrapped_from_t>){
+    return T(unwrap(x));
+  } else if constexpr (MathType<unwrapped_from_t>){
+    return is_na(x) || !numeric_can_be_cast_without_complete_loss<unwrapped_to_t>(unwrap(x)) ? na<T>() : T(static_cast<unwrapped_to_t>(unwrap(x)));
   } else if constexpr (RStringType<U>){
     return coerce_number<T>(parse_double(x.c_str()));
   } else {
@@ -104,9 +113,14 @@ inline constexpr T scalar_coerce_impl(const U& x) noexcept(RMathType<U>) {
 
 template <RComplexType T, RScalar U>
 inline constexpr T scalar_coerce_impl(const U& x) {
-  using unwrapped_t = unwrap_t<U>;
+  using unwrapped_to_t = unwrap_t<T>;
+  using unwrapped_from_t = unwrap_t<U>;
 
-  if constexpr (MathType<unwrapped_t>){
+  if constexpr (is<T, U>){
+    return x;
+  } else if constexpr (is<unwrapped_to_t, unwrapped_from_t> && std::constructible_from<T, unwrapped_from_t>){
+    return T(unwrap(x));
+  } else if constexpr (MathType<unwrapped_from_t>){
     return r_cplx{scalar_coerce_impl<r_dbl>(x), r_dbl(0.0)};
   } else {
     return na<r_cplx>();
@@ -115,9 +129,14 @@ inline constexpr T scalar_coerce_impl(const U& x) {
 
 template <RRawType T, RScalar U>
 inline constexpr T scalar_coerce_impl(const U& x) {
-  using unwrapped_t = unwrap_t<U>;
+  using unwrapped_to_t = unwrap_t<T>;
+  using unwrapped_from_t = unwrap_t<U>;
 
-  if constexpr (MathType<unwrapped_t>){
+  if constexpr (is<T, U>){
+    return x;
+  } else if constexpr (is<unwrapped_to_t, unwrapped_from_t> && std::constructible_from<T, unwrapped_from_t>){
+    return T(unwrap(x));
+  } else if constexpr (MathType<unwrapped_from_t>){
     return is_na(x) || !numeric_can_be_cast_without_complete_loss<unsigned char>(unwrap(x)) ? na<r_raw>() : r_raw(static_cast<unsigned char>(unwrap(x)));
   } else {
     return na<r_raw>();
@@ -126,7 +145,10 @@ inline constexpr T scalar_coerce_impl(const U& x) {
 
 template <RStringType T, RScalar U>
 inline constexpr T scalar_coerce_impl(const U& x) {
-  if constexpr (RStringType<U>){
+
+  if constexpr (is<T, U>){
+    return x;
+  } else if constexpr (RStringType<U>){
     return T(x);
   } else if constexpr (is<U, r_lgl>){
     if (is_na(x)){
@@ -197,7 +219,10 @@ inline constexpr T scalar_coerce_impl(const U& x) {
 
 template <RTimeType T, RScalar U>
 inline constexpr T scalar_coerce_impl(const U& x) {
-  if constexpr (RDateType<T> && RPsxctType<U>){
+
+  if constexpr (is<T, U>){
+    return x;
+  } else if constexpr (RDateType<T> && RPsxctType<U>){
     return x.as_date();
   } else if constexpr (RPsxctType<T> && RDateType<U>){
     return x.as_datetime();
