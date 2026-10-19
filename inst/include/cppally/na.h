@@ -44,7 +44,7 @@ template <typename T>
 inline constexpr bool is_nan(const T& x) noexcept {
   if constexpr (CppFloatType<unwrap_t<T>>){
     // NaN but not NA_REAL
-    return r_dbl(x).is_nan();
+    return r_dbl(unwrap(x)).is_nan();
   } else {
     return false;
   }
