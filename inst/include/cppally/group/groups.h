@@ -365,7 +365,7 @@ groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
         // Walk through x in sorted order and identify group IDs when value changes from previous value
         for_each_chunk(tail, n_chunks, [&](int c, uint32_t start, uint32_t end) noexcept {
             int count = 0;
-            for (uint32_t i = std::max(start, 1u); i < end; ++i) {
+            for (uint32_t i = start == 0u ? 1u : start; i < end; ++i) {
                 uint8_t is_new = !identical(x.view(p_o[i]), x.view(p_o[i - 1]));
                 p_new[i] = is_new;
                 count += is_new;
@@ -397,9 +397,10 @@ groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
         bool first_is_nan = is_nan(x.view(p_o[tail]));
         bool both_kinds = false;
         for (uint32_t i = tail; i < n; ++i) {
-            bool second_kind = is_nan(x.view(p_o[i])) != first_is_nan;
+            int idx = p_o[i];
+            bool second_kind = is_nan(x.view(idx)) != first_is_nan;
             both_kinds = both_kinds || second_kind;
-            p_group_ids[p_o[i]] = n_groups + second_kind;
+            p_group_ids[idx] = n_groups + second_kind;
         }
         n_groups += 1 + both_kinds;
     }
