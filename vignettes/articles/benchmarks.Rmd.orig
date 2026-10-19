@@ -28,7 +28,7 @@ This vignette compares the speed of cppally sorting, group ID generation, and st
 - Statistical summaries
 - Grouped statistical summaries
 
-This vignette was built on a laptop with an Intel Core Ultra 5 125H (14 cores: 4 performance and 10 efficiency, 18 threads) and 16 GB of RAM, running Windows 11 and R 4.6.0 on 17 Oct 2026.
+This vignette was built on a laptop with an Intel Core Ultra 5 125H (14 cores: 4 performance and 10 efficiency, 18 threads) and 16 GB of RAM, running Windows 11 and R 4.6.0 on `r format(Sys.Date(), "%d %b %Y")`.
 
 ## Setup
 
@@ -149,8 +149,7 @@ Sorting benchmarks are compared using multiple threads and a single thread. All 
 ```{r}
 n <- 1e06
 
-# CRAN machines are limited to 2 threads
-max_threads <- if (nzchar(Sys.getenv("_R_CHECK_LIMIT_CORES_"))) 2L else 4L
+max_threads <- 4L
 
 set_threads_all <- function(n_threads){
   set_cppally_threads(n_threads)
@@ -294,6 +293,8 @@ purrr::iwalk(multi_threaded_sort_comparisons,
          plot_bench(paste("order()", "|", nm)) |>
          print()
      })
+rm(single_threaded_sort_comparisons, multi_threaded_sort_comparisons)
+invisible(gc())
 ```
 
 ### Data with NAs
@@ -339,6 +340,9 @@ purrr::iwalk(multi_threaded_sort_comparisons,
          plot_bench(paste("order()", "|", nm)) |>
          print()
      })
+
+rm(single_threaded_sort_comparisons, multi_threaded_sort_comparisons)
+invisible(gc())
 ```
 
 ## Group IDs
@@ -383,6 +387,8 @@ purrr::iwalk(
   }
 )
 
+rm(unordered_group_id_comparisons)
+invisible(gc())
 ```
 
 Ordered group ID correctness check
@@ -418,6 +424,9 @@ purrr::iwalk(
       print()
   }
 )
+
+rm(ordered_group_id_comparisons)
+invisible(gc())
 ```
 
 ## Statistical summaries
