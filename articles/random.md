@@ -199,9 +199,9 @@ mark(
 )
 #> # A tibble: 2 × 6
 #>   expression                           min   median `itr/sec` mem_alloc `gc/sec`
-#>   <bch:expr>                       <bch:t> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_sample_int_with_replace… 193.2µs 336.29µs     2942.     391KB    21.4 
-#> 2 base_sample_int_with_replacement   2.2ms   2.33ms      428.     391KB     4.13
+#>   <bch:expr>                      <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 cppally_sample_int_with_replac… 149.95µs 254.72µs     3908.     391KB    30.4 
+#> 2 base_sample_int_with_replaceme…   1.74ms   1.86ms      523.     391KB     2.02
 ```
 
 In this simple benchmark we achieve a large speed improvement over base
@@ -407,8 +407,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally      23.1ms   23.4ms      41.7    15.4MB     27.8
-#> 2 base_r         62ms   62.1ms      16.1    23.1MB     48.3
+#> 1 cppally      13.4ms   14.6ms      68.1    15.4MB     40.9
+#> 2 base_r       43.5ms   46.2ms      21.7    23.1MB     97.5
 ```
 
 The hand-tuned bootstrap mean naturally is faster.
@@ -423,8 +423,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression                      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>                 <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 boot_mean_cppally(x, 2000)  22.94ms  23.26ms      42.8    15.4MB     26.4
-#> 2 boot_mean(x, 2000)           4.35ms   4.36ms     229.     21.8KB      0
+#> 1 boot_mean_cppally(x, 2000)   13.5ms  13.98ms      70.2    15.4MB     40.1
+#> 2 boot_mean(x, 2000)            2.8ms   2.92ms     337.     21.8KB      0
 ```
 
 ### A flexible and fast bootstrapper
@@ -523,8 +523,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 boot_mean(x, 2000)    4.36ms   4.37ms      229.    15.7KB        0
-#> 2 boot_mean2(x, 2000)   5.02ms   5.02ms      198.    23.5KB        0
+#> 1 boot_mean(x, 2000)     2.8ms   3.04ms      330.    15.7KB        0
+#> 2 boot_mean2(x, 2000)   3.42ms   3.48ms      280.    23.5KB        0
 ```
 
 Almost as fast as the hand-tuned version, which is a nice result given
