@@ -76,6 +76,10 @@ struct r_psxct {
         return std::chrono::hh_mm_ss{chrono_tp() - chrono_days()};
     }
 
+    static constexpr r_psxct chrono_to_datetime(std::chrono::sys_seconds tp) noexcept {
+        return r_psxct(static_cast<double>(tp.time_since_epoch().count()));
+    }
+
     // Sub-second fraction, always in [0, 1)
     constexpr double chrono_frac() const noexcept {
         return unwrap(*this) - static_cast<double>(chrono_tp().time_since_epoch().count());
@@ -391,34 +395,37 @@ struct r_psxct {
             return *this;
         }
 
+        using namespace std::chrono;
+
         if constexpr (unit == "years") {
 
-            return r_psxct(year(), 1, 1, 0, 0, 0.0);
+            return chrono_to_datetime(sys_days{chrono_ymd().year() / January / 1});
 
         } else if constexpr (unit == "months") {
-            
-            return r_psxct(year(), month(), 1, 0, 0, 0.0);
+
+            year_month_day ymd = chrono_ymd();
+            return chrono_to_datetime(sys_days{ymd.year() / ymd.month() / 1});
 
         } else if constexpr (unit == "weeks") {
 
-            r_psxct start_of_week = add<"days">(internal::coerce_number<r_dbl>(-(wday(week_start) - 1)));
-            return r_psxct(start_of_week.year(), start_of_week.month(), start_of_week.day(), 0, 0, 0);
+            r_int wd = wday(week_start);
+            return wd.is_na() ? na() : chrono_to_datetime(chrono_days() - days{unwrap(wd) - 1});
 
         } else if constexpr (unit == "days"){
 
-            return r_psxct(year(), month(), day(), 0, 0, 0);
+            return chrono_to_datetime(chrono_days());
 
         } else if constexpr (unit == "hours"){
 
-            return r_psxct(year(), month(), day(), hour(), 0, 0);
+            return chrono_to_datetime(std::chrono::floor<hours>(chrono_tp()));
 
         } else if constexpr (unit == "minutes"){
 
-            return r_psxct(year(), month(), day(), hour(), minute(), 0);
+            return chrono_to_datetime(std::chrono::floor<minutes>(chrono_tp()));
 
         } else { // Seconds
 
-            return r_psxct(year(), month(), day(), hour(), minute(), r_dbl(internal::floor2(second())));
+            return chrono_to_datetime(chrono_tp());
 
         }
     }
