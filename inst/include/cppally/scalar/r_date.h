@@ -299,18 +299,16 @@ struct r_date {
     
     // Week of the year
     constexpr r_int week() const noexcept {
-        r_int res = yday() - r_int(1);
-        res /= r_int(7); // Floor integer division
-        return res + r_int(1);
+        r_int yd = yday();
+        return yd.is_na() ? yd : r_int( ((unwrap(yd) - 1) / 7) + 1);
     }
 
     // ISO-8601 weeks.
     // A year has either 52 or 53 full ISO weeks, which has the advantage that all ISO weeks have 7 days.
     constexpr r_int iso_week() const noexcept {
         r_date thursday = add_days(r_dbl(4) - wday(/*week_start=*/ 1));
-        r_int res = thursday.yday() - r_int(1);
-        res /= r_int(7); // Floored integer division
-        return res + r_int(1);
+        r_int yd = thursday.yday();
+        return yd.is_na() ? yd : r_int( ((unwrap(yd) - 1) / 7) + 1 );
     }
 
     constexpr r_int iso_year() const noexcept {
