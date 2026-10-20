@@ -93,11 +93,18 @@ struct r_date {
         return days_since_epoch().is_finite(); // Also false for NA
     }
 
+    // Please ensure is_chrono_safe() is true before calling chrono_days()
+    constexpr std::chrono::sys_days chrono_days() const noexcept {
+        return std::chrono::sys_days{std::chrono::days{static_cast<int32_t>(internal::floor2(unwrap(*this)))}};
+    }
+
     // Please ensure is_chrono_safe() is true before calling chrono_ymd()
-    constexpr auto chrono_ymd() const noexcept {
-        return std::chrono::year_month_day{
-            std::chrono::sys_days{std::chrono::days{static_cast<int32_t>(internal::floor2(unwrap(*this)))}}
-        };
+    constexpr std::chrono::year_month_day chrono_ymd() const noexcept {
+        return std::chrono::year_month_day{chrono_days()};
+    }
+
+    static constexpr r_date chrono_to_date(std::chrono::sys_days d) noexcept {
+        return r_date(static_cast<double>(d.time_since_epoch().count()));
     }
 
     public:
@@ -323,15 +330,23 @@ struct r_date {
 
     // Day of the year
     constexpr r_int yday() const noexcept {
-        r_date first_day_of_the_year = r_date(year(), 1, 1);
-        r_dbl this_day_of_the_year = days_since_epoch() - first_day_of_the_year.days_since_epoch() + r_dbl(1.0);
-        return internal::coerce_number<r_int>(this_day_of_the_year);
+        if (!is_chrono_safe()) {
+            return r_int::na();
+        }
+        using namespace std::chrono;
+        sys_days this_day = chrono_days();
+        sys_days jan_1 = year_month_day{this_day}.year() / January / 1;
+        return r_int(static_cast<int>((this_day - jan_1).count()) + 1);
     }
 
     // Day of the week (1-based)
     // week_start = [1 = Monday, 7 = Sunday]
     constexpr r_int wday(int week_start = 7) const noexcept {
-        return !is_chrono_safe() || week_start < 1 || week_start > 7 ? r_int::na() :  r_int( ( static_cast<int>(std::chrono::weekday(chrono_ymd()).iso_encoding()) - week_start + 7 ) % 7 + 1 );
+        if (!is_chrono_safe() || week_start < 1 || week_start > 7) {
+            return r_int::na();
+        }
+        int iso_wday = static_cast<int>(std::chrono::weekday{chrono_days()}.iso_encoding());
+        return r_int((iso_wday - week_start + 7) % 7 + 1);
     }
 
     constexpr r_lgl is_leap_year() const noexcept {
@@ -339,7 +354,6 @@ struct r_date {
     }
 
     constexpr r_int days_in_month() const noexcept {
-
         r_date first_day_of_month = r_date(year(), month(), 1);
         r_date first_day_of_next_month = first_day_of_month.add_months(r_int(1));
         r_dbl out = first_day_of_next_month.days_since_epoch() - first_day_of_month.days_since_epoch();
@@ -383,22 +397,25 @@ struct r_date {
             return *this;
         }
 
+        using namespace std::chrono;
+
         if constexpr (unit == "years") {
 
-            return r_date(year(), 1, 1);
+            return chrono_to_date(chrono_ymd().year() / January / 1);
 
         } else if constexpr (unit == "months") {
 
-            return r_date(year(), month(), 1);
+            year_month_day ymd = chrono_ymd();
+            return chrono_to_date(ymd.year() / ymd.month() / 1);
 
         } else if constexpr (unit == "weeks") {
 
-            r_date start_of_week = add<"days">(internal::coerce_number<r_dbl>(-(wday(week_start) - 1)));
-            return r_date(start_of_week.year(), start_of_week.month(), start_of_week.day());
+            r_int wd = wday(week_start);
+            return wd.is_na() ? na() : chrono_to_date(chrono_days() - days{unwrap(wd) - 1});
 
         } else if constexpr (unit == "days"){
 
-            return r_date(year(), month(), day());
+            return chrono_to_date(chrono_days());
 
         } else if constexpr (unit == "hours"){
 
