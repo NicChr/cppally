@@ -50,7 +50,8 @@ For \code{cpp_eval} - This can be a character vector of single-line expressions.
 
 \item{env}{Environment where R functions should be defined.}
 
-\item{clean}{Should files be cleaned up after sourcing? Default is \code{TRUE}.}
+\item{clean}{Should files be cleaned up after sourcing? Default is \code{TRUE}.
+Only newly created directories are removed, existing ones are left as-is.}
 
 \item{quiet}{Should compiler output be suppressed? Default is \code{TRUE}.}
 

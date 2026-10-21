@@ -66,6 +66,7 @@ curr_env <- function(){
 #' For `cpp_eval` - This can be a character vector of single-line expressions.
 #' @param env Environment where R functions should be defined.
 #' @param clean Should files be cleaned up after sourcing? Default is `TRUE`.
+#' Only newly created directories are removed, existing ones are left as-is.
 #' @param quiet Should compiler output be suppressed? Default is `TRUE`.
 #' @param cxx_std C++ standard to use. Should be >= C++20.
 #' @param debug Should C++ code be compiled in a debug build?
@@ -328,9 +329,17 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
     stop("Can't find `file` at this path:\n", file, "\n", call. = FALSE)
   }
 
-  dir.create(dir, showWarnings = FALSE, recursive = TRUE)
-  dir.create(file.path(dir, "R"), showWarnings = FALSE)
-  dir.create(file.path(dir, "src"), showWarnings = FALSE)
+  # Keep track of newly created directories
+  newly_created_dirs <- character()
+  for (d in c(dir, file.path(dir, "R"), file.path(dir, "src"))) {
+    if (!dir.exists(d)) {
+      dir.create(d, recursive = TRUE)
+      newly_created_dirs <- c(newly_created_dirs, d)
+    }
+  }
+  if (isTRUE(clean)) {
+    on.exit(unlink(newly_created_dirs, recursive = TRUE), add = TRUE)
+  }
   if (!is.null(code)) {
     tf <- tempfile(pattern = "code_", fileext = ".cpp")
     file <- tf
@@ -346,11 +355,11 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
   package <- tools::file_path_sans_ext(name)
   orig_dir <- normalizePath(dirname(file), winslash = "/")
   new_dir <- normalizePath(file.path(dir, "src"), winslash = "/")
-  file.copy(file, file.path(new_dir, name))
+  file.copy(file, file.path(new_dir, name), overwrite = TRUE)
   new_file_path <- file.path(new_dir, name)
   new_file_name <- basename(new_file_path)
   orig_file_path <- file.path(orig_dir, new_file_name)
-  suppressWarnings(all_decorations <- cpp_decorations(dir, is_attribute = TRUE))
+  suppressWarnings(all_decorations <- cpp_decorations(dir, files = new_file_path, is_attribute = TRUE))
   check_valid_attributes(all_decorations, file = orig_file_path)
   funs <- get_registered_functions(all_decorations, "cppally::register", quiet = quiet)
   cpp_functions_definitions <- generate_cpp_functions(funs, package = package)
@@ -365,9 +374,6 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
                     cpp_path)
   linking_to <- union(get_linking_to(all_decorations), "cppally")
   includes <- generate_include_paths(linking_to)
-  if (isTRUE(clean)) {
-    on.exit(unlink(dir, recursive = TRUE), add = TRUE)
-  }
   r_functions <- generate_r_functions(funs, package = package,
                                       use_package = TRUE)
 
