@@ -381,6 +381,10 @@ struct r_date {
         return r_str(static_cast<const char*>(buf));
     }
 
+    r_str as_str() const {
+        return date_str();
+    }
+
     constexpr r_psxct as_datetime() const noexcept;
 
     // today's date based on unix time

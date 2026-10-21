@@ -376,6 +376,11 @@ struct r_psxct {
         return r_str(static_cast<const char*>(buf));
     }
 
+    r_str as_str() const {
+        return datetime_str();
+    }
+
+
     constexpr r_date as_date() const noexcept {
         // return is_chrono_safe() ? r_date(static_cast<double>(chrono_days().time_since_epoch().count())) : r_date(seconds_since_epoch());
         return r_date(r_dbl(internal::floor2(seconds_since_epoch() / r_dbl(86400.0))));
