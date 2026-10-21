@@ -75,6 +75,10 @@ struct r_date {
         return static_cast<r_dbl>(*this);
     }
 
+    constexpr r_dbl epoch_offset() const noexcept {
+        return days_since_epoch();
+    }
+
     private:
 
     static constexpr double chrono_min_days() noexcept {
