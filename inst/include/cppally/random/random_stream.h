@@ -115,6 +115,14 @@ struct random_stream {
     return r_dbl(std::fma(b, u, a * (1.0 - u)));
   }
 
+  r_lgl bernoulli(double prob) noexcept {
+    if (!(prob >= 0.0 && prob <= 1.0)) [[unlikely]] {
+      return r_na;
+    }
+    double u = unif();
+    return r_lgl(u < prob);
+  }
+
   // Ahrens & Dieter (1972) algorithm SA.
   r_dbl exp() noexcept {
 
@@ -192,8 +200,7 @@ struct random_stream {
   private:
 
   // A whole number in [0, range). `range == 0` means the full 64-bit range -
-  // index()'s full-width case, where span + 1 wraps. Load-bearing: without it
-  // mum() yields 0 and every full-width draw would return the lower bound.
+  // index()'s full-width case, where span + 1 wraps.
   // Lemire's method, over ankerl's portable 128-bit multiply.
   uint64_t bounded(uint64_t range) noexcept {
       if (range == 0) [[unlikely]] {
