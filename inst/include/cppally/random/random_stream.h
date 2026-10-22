@@ -314,12 +314,34 @@ struct random_stream {
     return gamma(0.5 * degrees_of_freedom, 0.5);
   }
 
-  // Student's t deviates: z / sqrt(chi_squared(df) / df)
+  // Non-central chi-squared
+  r_dbl chi_squared(double degrees_of_freedom, double non_centrality) noexcept {
+    if (!(degrees_of_freedom >= 0.0 && non_centrality >= 0.0 && non_centrality < internal::exp2(63))) [[unlikely]] {
+      return r_dbl::na();
+    }
+    double k = static_cast<double>(unwrap(poisson(0.5 * non_centrality)));
+    return chi_squared(degrees_of_freedom + 2.0 * k);
+  }
+
+  // Student's t deviates
   r_dbl student_t(double degrees_of_freedom) noexcept {
     if (!(degrees_of_freedom > 0.0)) [[unlikely]] {
       return r_dbl::na();
     }
     double z = normal();
+    if (r_dbl(degrees_of_freedom).is_infinite()) {
+      return r_dbl(z);
+    }
+    double c = chi_squared(degrees_of_freedom);
+    return r_dbl(z / std::sqrt(c / degrees_of_freedom));
+  }
+
+  // Non-central t
+  r_dbl student_t(double degrees_of_freedom, double non_centrality) noexcept {
+    if (!(degrees_of_freedom > 0.0) || r_dbl(non_centrality).is_na()) [[unlikely]] {
+      return r_dbl::na();
+    }
+    double z = unwrap(normal()) + non_centrality;
     if (r_dbl(degrees_of_freedom).is_infinite()) {
       return r_dbl(z);
     }
@@ -333,6 +355,20 @@ struct random_stream {
       return r_dbl::na();
     }
     r_dbl chi1 = chi_squared(degrees_of_freedom1);
+    r_dbl chi2 = chi_squared(degrees_of_freedom2);
+
+    double num = r_dbl(degrees_of_freedom1).is_infinite() ? 1.0 : unwrap(chi1) / degrees_of_freedom1;
+    double den = r_dbl(degrees_of_freedom2).is_infinite() ? 1.0 : unwrap(chi2) / degrees_of_freedom2;
+    return r_dbl(num / den);
+  }
+
+  // Non-central F
+  r_dbl fisher_snedecor(double degrees_of_freedom1, double degrees_of_freedom2, double non_centrality) noexcept {
+    if (!(degrees_of_freedom1 > 0.0 && degrees_of_freedom2 > 0.0 &&
+          non_centrality >= 0.0 && non_centrality < internal::exp2(63))) [[unlikely]] {
+      return r_dbl::na();
+    }
+    r_dbl chi1 = chi_squared(degrees_of_freedom1, non_centrality);
     r_dbl chi2 = chi_squared(degrees_of_freedom2);
 
     double num = r_dbl(degrees_of_freedom1).is_infinite() ? 1.0 : unwrap(chi1) / degrees_of_freedom1;
@@ -363,6 +399,15 @@ struct random_stream {
     double x = gamma(shape1);
     double y = gamma(shape2);
     return r_dbl(1.0 / (1.0 + y / x));
+  }
+
+  // Non-central beta
+  r_dbl beta(double shape1, double shape2, double non_centrality) noexcept {
+    if (!(shape1 >= 0.0 && shape2 >= 0.0 && non_centrality >= 0.0 && non_centrality < internal::exp2(63))) [[unlikely]] {
+      return r_dbl::na();
+    }
+    double k = static_cast<double>(unwrap(poisson(0.5 * non_centrality)));
+    return beta(shape1 + k, shape2);
   }
 
   // Logistic deviates
