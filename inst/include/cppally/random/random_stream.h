@@ -111,7 +111,7 @@ struct random_stream {
   static constexpr result_type max() noexcept { return engine_type::max(); }
   result_type operator()() noexcept { return engine_(); }
 
-  // Returns a random index in [a, b] : b > a
+  // Returns a random index in [a, b] : b >= a
   // Lemire's divisionless method along with ankerl's portable 128bit multiply
   // makes this fast, portable, and hence reproducible.
   r_int64 index(int64_t a, int64_t b) noexcept {
@@ -148,6 +148,23 @@ struct random_stream {
     }
     double u = uniform();
     return r_lgl(u < prob);
+  }
+
+  // Binomial deviates
+  // Inversion below a mean of 10, otherwise Hormann's (1993) BTRS transformed rejection
+  r_int64 binomial(int64_t size, double prob) noexcept {
+    if (!(size >= 0 && internal::numeric_cast_is_lossless<double>(size) && prob >= 0.0 && prob <= 1.0)) [[unlikely]] {
+      return r_int64::na();
+    }
+    // Draw with the smaller of prob and 1 - prob, then flip back
+    bool flip = prob > 0.5;
+    double p = flip ? 1.0 - prob : prob;
+    if (size == 0 || p == 0.0) {
+      return r_int64(flip ? size : 0);
+    }
+    double n = static_cast<double>(size);
+    int64_t k = n * p < 10.0 ? binomial_inversion(n, p) : binomial_btrs(n, p);
+    return r_int64(flip ? size - k : k);
   }
 
   // Ahrens & Dieter (1972) algorithm SA.
@@ -451,8 +468,7 @@ struct random_stream {
 
   private:
 
-  // A whole number in [0, range). `range == 0` means the full 64-bit range -
-  // index()'s full-width case, where span + 1 wraps.
+  // A whole number in [0, range). `range == 0` means the full 64-bit range.
   // Lemire's method, over ankerl's portable 128-bit multiply.
   uint64_t bounded(uint64_t range) noexcept {
       if (range == 0) [[unlikely]] {
@@ -497,6 +513,57 @@ struct random_stream {
       double bound = internal::fma(d, internal::fma(-ww, w, 1.0) + internal::portable_log(v), 0.5 * x2);
       if (internal::portable_log(u) < bound) {
         return d * v;
+      }
+    }
+  }
+
+  // Binomial inversion (Kachitvichyanukul & Schmeiser 1988), p <= 0.5
+  int64_t binomial_inversion(double n, double p) noexcept {
+    double q = 1.0 - p;
+    // log(1 - p), corrected for the rounding in q
+    double log_q = internal::portable_log(q) + ((1.0 - q) - p) / q;
+    double qn = internal::portable_exp(n * log_q);
+    double r = p / q;
+    while (true) {
+      double u = uniform();
+      double f = qn;
+      for (int64_t k = 0; k <= 110; ++k) {
+        if (u < f) {
+          return k;
+        }
+        u -= f;
+        f *= r * (n - k) / (k + 1);
+      }
+    }
+  }
+
+  // Hormann (1993) BTRS, p <= 0.5 and n * p >= 10
+  int64_t binomial_btrs(double n, double p) noexcept {
+    double q = 1.0 - p;
+    double spq = std::sqrt(n * p * q);
+    double b = internal::fma(2.53, spq, 1.15);
+    double a = internal::fma(0.0248, b, internal::fma(0.01, p, -0.0873));
+    double c = internal::fma(n, p, 0.5);
+    double vr = 0.92 - 4.2 / b;
+    while (true) {
+      double u = unwrap(uniform()) - 0.5;
+      double v = uniform();
+      double us = 0.5 - std::fabs(u);
+      double k = std::floor(internal::fma(2.0 * a / us + b, u, c));
+      if (us >= 0.07 && v <= vr) {
+        return static_cast<int64_t>(k);
+      }
+      if (k < 0.0 || k > n) {
+        continue;
+      }
+      // Only compute these variables when needed as most draws return early above
+      double alpha = (2.83 + 5.1 / b) * spq;
+      double lpq = internal::portable_log(p / q);
+      double m = std::floor((n + 1.0) * p);
+      double h = internal::log_factorial(m) + internal::log_factorial(n - m);
+      double log_ratio = internal::portable_log(v * alpha / (a / (us * us) + b));
+      if (log_ratio <= internal::fma(k - m, lpq, h - internal::log_factorial(k) - internal::log_factorial(n - k))) {
+        return static_cast<int64_t>(k);
       }
     }
   }
