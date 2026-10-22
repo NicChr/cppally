@@ -258,6 +258,19 @@ struct random_stream {
     return gamma(0.5 * degrees_of_freedom, 2.0);
   }
 
+  // Student's t deviates: z / sqrt(chisq(df) / df)
+  r_dbl student_t(double degrees_of_freedom) noexcept {
+    if (!(degrees_of_freedom > 0.0)) [[unlikely]] {
+      return r_dbl::na();
+    }
+    double z = norm();
+    if (r_dbl(degrees_of_freedom).is_infinite()) {
+      return r_dbl(z);
+    }
+    double c = chisq(degrees_of_freedom);
+    return r_dbl(z / std::sqrt(c / degrees_of_freedom));
+  }
+
   // The seed this stream started from. Log it to replay a run via random_stream(seed)
   uint64_t seed() const noexcept { return seed_; }
 
