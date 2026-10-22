@@ -110,6 +110,19 @@ struct random_stream {
   static constexpr result_type max() noexcept { return engine_type::max(); }
   result_type operator()() noexcept { return engine_(); }
 
+  // Returns a random index in [a, b] : b > a
+  // Lemire's divisionless method along with ankerl's portable 128bit multiply
+  // makes this fast, portable, and hence reproducible.
+  r_int64 index(int64_t a, int64_t b) noexcept {
+
+    if (r_int64(a).is_na() || b < a) [[unlikely]] {
+      return r_int64::na();
+    }
+
+    uint64_t span = static_cast<uint64_t>(b) - static_cast<uint64_t>(a);
+    return r_int64(static_cast<int64_t>(static_cast<uint64_t>(a) + bounded(span + 1u)));
+  }
+
   r_dbl unif() noexcept {
     // Top 53 bits scaled into [0, 1) - exact, bit-reproducible as is
     return r_dbl(static_cast<double>(engine_() >> 11) * 0x1.0p-53);
@@ -240,17 +253,9 @@ struct random_stream {
     return r_dbl(g * scale);
   }
 
-  // Returns a random index in [a, b] : b > a
-  // Lemire's divisionless method along with ankerl's portable 128bit multiply
-  // makes this fast, portable, and hence reproducible.
-  r_int64 index(int64_t a, int64_t b) noexcept {
-
-    if (r_int64(a).is_na() || b < a) [[unlikely]] {
-      return r_int64::na();
-    }
-
-    uint64_t span = static_cast<uint64_t>(b) - static_cast<uint64_t>(a);
-    return r_int64(static_cast<int64_t>(static_cast<uint64_t>(a) + bounded(span + 1u)));
+  // Chi-squared deviates
+  r_dbl chisq(double degrees_of_freedom) noexcept {
+    return gamma(0.5 * degrees_of_freedom, 2.0);
   }
 
   // The seed this stream started from. Log it to replay a run via random_stream(seed)
