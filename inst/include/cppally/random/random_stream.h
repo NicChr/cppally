@@ -120,7 +120,7 @@ struct random_stream {
   // makes this fast, portable, and hence reproducible.
   r_int64 index(int64_t a, int64_t b) noexcept {
 
-    if (b < a) [[unlikely]] {
+    if (r_int64(a).is_na() || b < a) [[unlikely]] {
       return r_int64::na();
     }
 
