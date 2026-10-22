@@ -5,6 +5,7 @@
 #include <cppally/utils.h> // for exp2
 #include <cppally/math/portable_log.h>
 #include <cppally/math/portable_exp.h>
+#include <cppally/math/log_factorial.h>
 #include <cppally/math/fma.h>
 #include <R_ext/Random.h>
 #include <Xoshiro-cpp/XoshiroCpp.hpp> // xoshiro256++ (Ryo Suzuki, MIT)
@@ -357,6 +358,47 @@ struct random_stream {
     }
     double z = logistic();
     return r_dbl(internal::fma(scale, z, location));
+  }
+
+  // Poisson deviates
+  // Knuth's multiplication method below 10, otherwise Hormann's (1993) PTRS transformed rejection
+  r_int64 poisson(double lambda) noexcept {
+    // Counts can't be super large
+    if (!(lambda >= 0.0 && lambda < internal::exp2(62))) [[unlikely]] {
+      return r_int64::na();
+    }
+    if (lambda < 10.0) {
+      double threshold = internal::portable_exp(-lambda);
+      double prod = uniform();
+      int64_t k = 0;
+      while (prod > threshold) {
+        prod *= unwrap(uniform());
+        ++k;
+      }
+      return r_int64(k);
+    }
+    double slam = std::sqrt(lambda);
+    double log_lambda = internal::portable_log(lambda);
+    double b = internal::fma(2.53, slam, 0.931);
+    double a = internal::fma(0.02483, b, -0.059);
+    double inv_alpha = 1.1239 + 1.1328 / (b - 3.4);
+    double vr = 0.9277 - 3.6224 / (b - 2.0);
+    while (true) {
+      double u = unwrap(uniform()) - 0.5;
+      double v = uniform();
+      double us = 0.5 - std::fabs(u);
+      double k = std::floor(internal::fma(2.0 * a / us + b, u, lambda + 0.43));
+      if (us >= 0.07 && v <= vr) {
+        return r_int64(static_cast<int64_t>(k));
+      }
+      if (k < 0.0 || (us < 0.013 && v > us)) {
+        continue;
+      }
+      double log_ratio = internal::portable_log(v * inv_alpha / (a / (us * us) + b));
+      if (log_ratio <= internal::fma(k, log_lambda, -lambda) - internal::log_factorial(k)) {
+        return r_int64(static_cast<int64_t>(k));
+      }
+    }
   }
 
   // The seed this stream started from. Log it to replay a run via random_stream(seed)
