@@ -129,7 +129,10 @@ struct random_stream {
   }
   
   r_dbl unif(double a, double b) noexcept {
-    double u = unif(); 
+    if (!(a <= b)) [[unlikely]] {
+      return r_dbl::na();
+    }
+    double u = unif();
     return r_dbl(internal::fma(b, u, a * (1.0 - u)));
   }
 
@@ -184,6 +187,9 @@ struct random_stream {
   }
 
   r_dbl exp(double rate) noexcept {
+    if (r_dbl(rate).is_na()) [[unlikely]] {
+      return r_dbl(rate);
+    }
     return r_dbl(exp() / rate);
   }
 
