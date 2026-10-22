@@ -279,17 +279,17 @@ struct random_stream {
     return r_dbl(gamma_mt(shape));
   }
 
-  r_dbl gamma(double shape, double scale) noexcept {
-    if (!(scale >= 0.0)) [[unlikely]] {
+  r_dbl gamma(double shape, double rate) noexcept {
+    if (!(rate >= 0.0)) [[unlikely]] {
       return r_dbl::na();
     }
     double g = gamma(shape);
-    return r_dbl(g * scale);
+    return r_dbl(g / rate);
   }
 
   // Chi-squared deviates
   r_dbl chi_squared(double degrees_of_freedom) noexcept {
-    return gamma(0.5 * degrees_of_freedom, 2.0);
+    return gamma(0.5 * degrees_of_freedom, 0.5);
   }
 
   // Student's t deviates: z / sqrt(chi_squared(df) / df)
@@ -413,7 +413,7 @@ struct random_stream {
     if (r_dbl(size).is_infinite()) {
       return poisson(mean);
     }
-    double lambda = gamma(size, mean / size);
+    double lambda = gamma(size, size / mean);
     return poisson(lambda);
   }
 
