@@ -400,10 +400,8 @@ struct random_stream {
       return r_int64(k);
     }
     double slam = std::sqrt(lambda);
-    double log_lambda = internal::portable_log(lambda);
     double b = internal::fma(2.53, slam, 0.931);
     double a = internal::fma(0.02483, b, -0.059);
-    double inv_alpha = 1.1239 + 1.1328 / (b - 3.4);
     double vr = 0.9277 - 3.6224 / (b - 2.0);
     while (true) {
       double u = unwrap(uniform()) - 0.5;
@@ -416,6 +414,9 @@ struct random_stream {
       if (k < 0.0 || (us < 0.013 && v > us)) {
         continue;
       }
+      // Only compute these variables when needed as most draws return early above
+      double inv_alpha = 1.1239 + 1.1328 / (b - 3.4);
+      double log_lambda = internal::portable_log(lambda);
       double log_ratio = internal::portable_log(v * inv_alpha / (a / (us * us) + b));
       if (log_ratio <= internal::fma(k, log_lambda, -lambda) - internal::log_factorial(k)) {
         return r_int64(static_cast<int64_t>(k));
