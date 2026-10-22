@@ -413,6 +413,18 @@ struct random_stream {
     return poisson(lambda);
   }
 
+  // Geometric deviates
+  r_int64 geometric(double prob) noexcept {
+    if (!(prob > 0.0 && prob <= 1.0)) [[unlikely]] {
+      return r_int64::na();
+    }
+    if (prob == 1.0) {
+      return r_int64(0);
+    }
+    double e = exponential();
+    return poisson(e * ((1.0 - prob) / prob));
+  }
+
   // The seed this stream started from. Log it to replay a run via random_stream(seed)
   uint64_t seed() const noexcept { return seed_; }
 
