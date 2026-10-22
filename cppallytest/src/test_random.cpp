@@ -99,7 +99,7 @@ r_vec<r_int> test_rng_bounded_small(uint64_t seed, uint64_t range, r_size_t n) {
 }
 
 // ---------------------------------------------------------------------------
-// index() and unif()
+// index() and uniform()
 // ---------------------------------------------------------------------------
 
 [[cppally::register]]
@@ -129,7 +129,7 @@ r_vec<r_dbl> test_rng_unif(uint64_t seed, r_dbl a, r_dbl b, r_size_t n) {
     random_stream rs(seed);
     r_vec<r_dbl> out(n);
     for (r_size_t i = 0; i < n; ++i) {
-        out.set(i, rs.unif(a, b));
+        out.set(i, rs.uniform(a, b));
     }
     return out;
 }
@@ -143,7 +143,7 @@ r_vec<r_dbl> test_rng_from_r(r_size_t n) {
     random_stream rs;
     r_vec<r_dbl> out(n);
     for (r_size_t i = 0; i < n; ++i) {
-        out.set(i, rs.unif());
+        out.set(i, rs.uniform());
     }
     return out;
 }

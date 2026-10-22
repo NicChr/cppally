@@ -42,7 +42,7 @@ test_that("index() covers its range inclusively and returns NA for a reversed on
   expect_true(test_rng_index_extremes(1L))
 })
 
-test_that("unif() respects its half-open range", {
+test_that("uniform() respects its half-open range", {
 
   u <- test_rng_unif(1L, 0, 1, 1e6L)
 

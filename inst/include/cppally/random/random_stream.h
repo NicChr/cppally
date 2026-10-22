@@ -123,16 +123,16 @@ struct random_stream {
     return r_int64(static_cast<int64_t>(static_cast<uint64_t>(a) + bounded(span + 1u)));
   }
 
-  r_dbl unif() noexcept {
+  r_dbl uniform() noexcept {
     // Top 53 bits scaled into [0, 1) - exact, bit-reproducible as is
     return r_dbl(static_cast<double>(engine_() >> 11) * 0x1.0p-53);
   }
   
-  r_dbl unif(double a, double b) noexcept {
+  r_dbl uniform(double a, double b) noexcept {
     if (!(a <= b)) [[unlikely]] {
       return r_dbl::na();
     }
-    double u = unif();
+    double u = uniform();
     return r_dbl(internal::fma(b, u, a * (1.0 - u)));
   }
 
@@ -140,12 +140,12 @@ struct random_stream {
     if (!(prob >= 0.0 && prob <= 1.0)) [[unlikely]] {
       return r_na;
     }
-    double u = unif();
+    double u = uniform();
     return r_lgl(u < prob);
   }
 
   // Ahrens & Dieter (1972) algorithm SA.
-  r_dbl exp() noexcept {
+  r_dbl exponential() noexcept {
 
     // q[k - 1] = sum(log(2)^i / i!, i = 1, ..., k)
     static constexpr double q[16] = {
@@ -157,9 +157,9 @@ struct random_stream {
     static_assert(q[15] == 1.0); // Guarantees the loop terminates
 
     double a = 0.0;
-    double u = unif();
+    double u = uniform();
     while (u == 0.0) {
-      u = unif();
+      u = uniform();
     }
 
     u += u;
@@ -173,10 +173,10 @@ struct random_stream {
       return r_dbl(a + u);
     }
 
-    double umin = unif();
+    double umin = uniform();
     int i = 0;
     while (u > q[i]) {
-      double ustar = unif();
+      double ustar = uniform();
       if (ustar < umin) {
         umin = ustar;
       }
@@ -186,41 +186,41 @@ struct random_stream {
     return r_dbl(internal::fma(umin, q[0], a));
   }
 
-  r_dbl exp(double rate) noexcept {
+  r_dbl exponential(double rate) noexcept {
     if (r_dbl(rate).is_na()) [[unlikely]] {
       return r_dbl(rate);
     }
-    return r_dbl(exp() / rate);
+    return r_dbl(exponential() / rate);
   }
 
   // Bit-portable standard normal deviates
   // Half-normal by rejection from an Exp(1) envelope, then a random sign (von Neumann 1951; see Devroye 1986)
-  r_dbl norm() noexcept {
+  r_dbl normal() noexcept {
     double x;
     double threshold;
     do {
-      x = exp();
+      x = exponential();
       threshold = 0.5 * (x - 1.0) * (x - 1.0);
-    } while (exp() < threshold);
+    } while (exponential() < threshold);
 
     return r_dbl((engine_() >> 63) ? -x : x);
   }
 
-  r_dbl norm(double mean, double sd) noexcept {
+  r_dbl normal(double mean, double sd) noexcept {
     if (r_dbl(mean).is_na() || !(sd >= 0.0)) [[unlikely]] {
       return r_dbl::na();
     }
-    double z = norm();
+    double z = normal();
     return r_dbl(internal::fma(sd, z, mean));
   }
 
   // Log-normal deviates
-  r_dbl lnorm() noexcept {
-    return r_dbl(internal::portable_exp(norm()));
+  r_dbl lognormal() noexcept {
+    return r_dbl(internal::portable_exp(normal()));
   }
 
-  r_dbl lnorm(double meanlog, double sdlog) noexcept {
-    double z = norm(meanlog, sdlog);
+  r_dbl lognormal(double meanlog, double sdlog) noexcept {
+    double z = normal(meanlog, sdlog);
     return r_dbl(internal::portable_exp(z));
   }
 
@@ -229,7 +229,7 @@ struct random_stream {
     if (!(shape > 0.0)) [[unlikely]] {
       return r_dbl::na();
     }
-    double e = exp();
+    double e = exponential();
     return r_dbl(internal::portable_exp(internal::portable_log(e) / shape));
   }
 
@@ -247,8 +247,8 @@ struct random_stream {
     double u;
     double v;
     do {
-      u = 2.0 * unwrap(unif()) - 1.0;
-      v = 2.0 * unwrap(unif()) - 1.0;
+      u = 2.0 * unwrap(uniform()) - 1.0;
+      v = 2.0 * unwrap(uniform()) - 1.0;
     } while (u == 0.0 || internal::fma(u, u, v * v) > 1.0);
     return r_dbl(v / u);
   }
@@ -272,7 +272,7 @@ struct random_stream {
     }
     if (shape < 1.0) {
       double g = gamma_mt(shape + 1.0);
-      double e = exp();
+      double e = exponential();
       return r_dbl(g * internal::portable_exp(-e / shape));
     }
     return r_dbl(gamma_mt(shape));
@@ -287,30 +287,30 @@ struct random_stream {
   }
 
   // Chi-squared deviates
-  r_dbl chisq(double degrees_of_freedom) noexcept {
+  r_dbl chi_squared(double degrees_of_freedom) noexcept {
     return gamma(0.5 * degrees_of_freedom, 2.0);
   }
 
-  // Student's t deviates: z / sqrt(chisq(df) / df)
+  // Student's t deviates: z / sqrt(chi_squared(df) / df)
   r_dbl student_t(double degrees_of_freedom) noexcept {
     if (!(degrees_of_freedom > 0.0)) [[unlikely]] {
       return r_dbl::na();
     }
-    double z = norm();
+    double z = normal();
     if (r_dbl(degrees_of_freedom).is_infinite()) {
       return r_dbl(z);
     }
-    double c = chisq(degrees_of_freedom);
+    double c = chi_squared(degrees_of_freedom);
     return r_dbl(z / std::sqrt(c / degrees_of_freedom));
   }
 
-  // F deviates (Fisher 1924, Snedecor 1934): chisq ratios
+  // F deviates (Fisher 1924, Snedecor 1934): chi-squared ratios
   r_dbl fisher_snedecor(double degrees_of_freedom1, double degrees_of_freedom2) noexcept {
     if (!(degrees_of_freedom1 > 0.0 && degrees_of_freedom2 > 0.0)) [[unlikely]] {
       return r_dbl::na();
     }
-    r_dbl chi1 = chisq(degrees_of_freedom1);
-    r_dbl chi2 = chisq(degrees_of_freedom2);
+    r_dbl chi1 = chi_squared(degrees_of_freedom1);
+    r_dbl chi2 = chi_squared(degrees_of_freedom2);
 
     double num = r_dbl(degrees_of_freedom1).is_infinite() ? 1.0 : unwrap(chi1) / degrees_of_freedom1;
     double den = r_dbl(degrees_of_freedom2).is_infinite() ? 1.0 : unwrap(chi2) / degrees_of_freedom2;
@@ -332,9 +332,9 @@ struct random_stream {
     }
     if (shape1 < 1.0 && shape2 < 1.0) {
       double gx = gamma_mt(shape1 + 1.0);
-      double ex = exp();
+      double ex = exponential();
       double gy = gamma_mt(shape2 + 1.0);
-      double ey = exp();
+      double ey = exponential();
       return r_dbl(1.0 / internal::fma(gy / gx, internal::portable_exp(ex / shape1 - ey / shape2), 1.0));
     }
     double x = gamma(shape1);
@@ -343,19 +343,19 @@ struct random_stream {
   }
 
   // Logistic deviates
-  r_dbl logis() noexcept {
+  r_dbl logistic() noexcept {
     double u;
     do {
-      u = unif();
+      u = uniform();
     } while (u == 0.0);
     return r_dbl(internal::portable_log(u / (1.0 - u)));
   }
 
-  r_dbl logis(double location, double scale) noexcept {
+  r_dbl logistic(double location, double scale) noexcept {
     if (r_dbl(location).is_na() || !(scale >= 0.0)) [[unlikely]] {
       return r_dbl::na();
     }
-    double z = logis();
+    double z = logistic();
     return r_dbl(internal::fma(scale, z, location));
   }
 
@@ -405,7 +405,7 @@ struct random_stream {
     double inv_c = std::sqrt(9.0 * d);
     double c = 1.0 / inv_c;
     while (true) {
-      double x = norm();
+      double x = normal();
       double xs = x + inv_c;
       if (xs <= 0.0) {
         continue;
@@ -414,7 +414,7 @@ struct random_stream {
       double ww = w * w;
       double v = ww * w;
       double x2 = x * x;
-      double u = unif();
+      double u = uniform();
 
       if (1.0 - u > 0.0331 * (x2 * x2)) {
         return d * v;

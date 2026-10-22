@@ -71,7 +71,7 @@ examples <- c(
   one_unif = '
 [[cppally::register]]
 r_dbl one_unif(){
-  return r_dbl(random_stream().unif());
+  return r_dbl(random_stream().uniform());
 }
 ',
   unif_deviates = '
@@ -83,7 +83,7 @@ r_vector<r_dbl> unif_deviates(int n){
   r_vector<r_dbl> out(n);
 
   for (r_size_t i = 0; i < n; ++i){
-    out.set(i, r.unif());
+    out.set(i, r.uniform());
   }
   return out;
 }
@@ -97,7 +97,7 @@ r_vector<r_dbl> unif_seeded(int n, uint64_t seed){
   r_vector<r_dbl> out(n);
 
   for (r_size_t i = 0; i < n; ++i){
-    out.set(i, r.unif());
+    out.set(i, r.uniform());
   }
   return out;
 }
@@ -337,7 +337,7 @@ set.seed(1)
 unif_deviates(10)
 ```
 
-`unif()` returns a `double` in `[0, 1)` by default, but can return any range 
+`uniform()` returns a `double` in `[0, 1)` by default, but can return any range 
 in `[a, b)`.
 
 ## Explicit seeds
@@ -429,10 +429,10 @@ platforms, compilers, or standard library versions. The same seed reproduces
 the same numbers on one machine, but not necessarily on somebody else's.
 Relatedly, *Writing R Extensions* asks compiled code not to depend on the
 C++11 random number library - which is why `random_stream`'s own methods
-(`unif()`, `index()`) are implemented directly rather than delegating to
+(`uniform()`, `index()`) are implemented directly rather than delegating to
 `<random>`.
 
-If cross-platform reproducibility matters, prefer `unif()`/`index()`, or R's
+If cross-platform reproducibility matters, prefer `uniform()`/`index()`, or R's
 own distribution functions via `draw_from_r()`.
 
 ## Calling R C API RNG functions
