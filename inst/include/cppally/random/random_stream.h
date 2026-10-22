@@ -201,10 +201,10 @@ struct random_stream {
   }
 
   r_dbl norm(double mean, double sd) noexcept {
-    double z = norm();
-    if (!(sd >= 0.0)) [[unlikely]] {
+    if (r_dbl(mean).is_na() || !(sd >= 0.0)) [[unlikely]] {
       return r_dbl::na();
     }
+    double z = norm();
     return r_dbl(internal::fma(sd, z, mean));
   }
 
@@ -220,18 +220,18 @@ struct random_stream {
 
   // Weibull deviates
   r_dbl weibull(double shape) noexcept {
-    double e = exp();
     if (!(shape > 0.0)) [[unlikely]] {
       return r_dbl::na();
     }
+    double e = exp();
     return r_dbl(internal::portable_exp(internal::portable_log(e) / shape));
   }
 
   r_dbl weibull(double shape, double scale) noexcept {
-    double w = weibull(shape);
     if (!(scale >= 0.0)) [[unlikely]] {
       return r_dbl::na();
     }
+    double w = weibull(shape);
     return r_dbl(w * scale);
   }
 
@@ -248,10 +248,10 @@ struct random_stream {
   }
 
   r_dbl cauchy(double location, double scale) noexcept {
-    double z = cauchy();
-    if (!(scale >= 0.0)) [[unlikely]] {
+    if (r_dbl(location).is_na() || !(scale >= 0.0)) [[unlikely]] {
       return r_dbl::na();
     }
+    double z = cauchy();
     return r_dbl(internal::fma(scale, z, location));
   }
 
@@ -273,10 +273,10 @@ struct random_stream {
   }
 
   r_dbl gamma(double shape, double scale) noexcept {
-    double g = gamma(shape);
     if (!(scale >= 0.0)) [[unlikely]] {
       return r_dbl::na();
     }
+    double g = gamma(shape);
     return r_dbl(g * scale);
   }
 
@@ -300,6 +300,9 @@ struct random_stream {
 
   // F deviates (Fisher 1924, Snedecor 1934): chisq ratios
   r_dbl fisher_snedecor(double degrees_of_freedom1, double degrees_of_freedom2) noexcept {
+    if (!(degrees_of_freedom1 > 0.0 && degrees_of_freedom2 > 0.0)) [[unlikely]] {
+      return r_dbl::na();
+    }
     r_dbl chi1 = chisq(degrees_of_freedom1);
     r_dbl chi2 = chisq(degrees_of_freedom2);
 
@@ -318,7 +321,7 @@ struct random_stream {
   }
 
   r_dbl logis(double location, double scale) noexcept {
-    if (!(scale >= 0.0)) [[unlikely]] {
+    if (r_dbl(location).is_na() || !(scale >= 0.0)) [[unlikely]] {
       return r_dbl::na();
     }
     double z = logis();
