@@ -383,13 +383,13 @@ struct random_stream {
   }
 
   // Poisson deviates
-  // Knuth's multiplication method below 10, otherwise Hormann's (1993) PTRS transformed rejection
+  // Knuth's multiplication method below 16, otherwise Hormann's (1993) PTRS transformed rejection
   r_int64 poisson(double lambda) noexcept {
     // Counts can't be super large
     if (!(lambda >= 0.0 && lambda < internal::exp2(62))) [[unlikely]] {
       return r_int64::na();
     }
-    if (lambda < 10.0) {
+    if (lambda < 16.0) {
       double threshold = internal::portable_exp(-lambda);
       double prod = uniform();
       int64_t k = 0;
