@@ -401,15 +401,19 @@ struct random_stream {
     }
   }
 
-  // Negative binomial deviates
-  r_int64 negative_binomial(double size, double prob) noexcept {
-    if (!(size >= 0.0 && prob > 0.0 && prob <= 1.0)) [[unlikely]] {
+  // Negative binomial deviates (mean parameterisation)
+  // For R's prob version: mean = size * (1 - prob) / prob
+  r_int64 negative_binomial(double size, double mean) noexcept {
+    if (!(size > 0.0 && mean >= 0.0)) [[unlikely]] {
       return r_int64::na();
     }
-    if (prob == 1.0) {
+    if (mean == 0.0) {
       return r_int64(0);
     }
-    double lambda = gamma(size, (1.0 - prob) / prob);
+    if (r_dbl(size).is_infinite()) {
+      return poisson(mean);
+    }
+    double lambda = gamma(size, mean / size);
     return poisson(lambda);
   }
 
