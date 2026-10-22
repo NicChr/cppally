@@ -17,10 +17,16 @@ inline constexpr double ln2_hi = 0x1.62e42p-1;
 inline constexpr double ln2_lo = 0x1.fdf473de6af28p-22;
 
 inline double portable_log(double x) noexcept {
+  
   if (x == 0.0) {
     return -unwrap(r_limits<r_dbl>::max());
   }
-  if (!(x > 0.0) || r_dbl(x).is_infinite()) {
+  
+  if (r_dbl(x).is_na()){
+    return x;
+  }
+
+  if (x < 0.0 || r_dbl(x).is_infinite()) {
     return x > 0.0 ? x : unwrap(r_dbl::nan());
   }
 
