@@ -271,6 +271,16 @@ struct random_stream {
     return r_dbl(z / std::sqrt(c / degrees_of_freedom));
   }
 
+  // F deviates (Fisher 1924, Snedecor 1934): chisq ratios
+  r_dbl fisher_snedecor(double degrees_of_freedom1, double degrees_of_freedom2) noexcept {
+    if (!(degrees_of_freedom1 > 0.0 && degrees_of_freedom2 > 0.0)) [[unlikely]] {
+      return r_dbl::na();
+    }
+    double num = r_dbl(degrees_of_freedom1).is_infinite() ? 1.0 : unwrap(chisq(degrees_of_freedom1)) / degrees_of_freedom1;
+    double den = r_dbl(degrees_of_freedom1).is_infinite() ? 1.0 : unwrap(chisq(degrees_of_freedom2)) / degrees_of_freedom2;
+    return r_dbl(num / den);
+  }
+
   // The seed this stream started from. Log it to replay a run via random_stream(seed)
   uint64_t seed() const noexcept { return seed_; }
 
