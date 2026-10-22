@@ -79,6 +79,8 @@ decltype(auto) draw_from_r(F&& f) {
 // but R's RNG is touched once per object - two unif_rand() draws - rather than
 // once per draw.
 //
+// All random number generating members are bit-portable across different machines.
+//
 // Drives xoshiro256++ (Blackman & Vigna, public domain) via the bundled
 // Xoshiro-cpp. Not <random>: Writing R Extensions, "Portable C and C++ code",
 // asks compiled code not to use the C++11 random number library
