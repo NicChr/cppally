@@ -401,6 +401,18 @@ struct random_stream {
     }
   }
 
+  // Negative binomial deviates
+  r_int64 negative_binomial(double size, double prob) noexcept {
+    if (!(size >= 0.0 && prob > 0.0 && prob <= 1.0)) [[unlikely]] {
+      return r_int64::na();
+    }
+    if (prob == 1.0) {
+      return r_int64(0);
+    }
+    double lambda = gamma(size, (1.0 - prob) / prob);
+    return poisson(lambda);
+  }
+
   // The seed this stream started from. Log it to replay a run via random_stream(seed)
   uint64_t seed() const noexcept { return seed_; }
 
