@@ -308,6 +308,23 @@ struct random_stream {
     return r_dbl(num / den);
   }
 
+  // Logistic deviates
+  r_dbl logis() noexcept {
+    double u;
+    do {
+      u = unif();
+    } while (u == 0.0);
+    return r_dbl(internal::portable_log(u / (1.0 - u)));
+  }
+
+  r_dbl logis(double location, double scale) noexcept {
+    if (!(scale >= 0.0)) [[unlikely]] {
+      return r_dbl::na();
+    }
+    double z = logis();
+    return r_dbl(internal::fma(scale, z, location));
+  }
+
   // The seed this stream started from. Log it to replay a run via random_stream(seed)
   uint64_t seed() const noexcept { return seed_; }
 
