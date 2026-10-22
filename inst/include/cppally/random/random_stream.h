@@ -215,6 +215,29 @@ struct random_stream {
     return r_dbl(internal::fma(scale, z, location));
   }
 
+  // gamma deviates
+  // Marsaglia & Tsang (2000) for shape >= 1, boosted via gamma(shape + 1) * U^(1 / shape) below 1
+  r_dbl gamma(double shape) noexcept {
+    if (!(shape >= 0.0)) [[unlikely]] {
+      return r_dbl::na();
+    }
+    if (shape == 0.0 || r_dbl(shape).is_infinite()) [[unlikely]] {
+      return r_dbl(shape);
+    }
+    if (shape < 1.0) {
+      double g = gamma_mt(shape + 1.0);
+      double e = exp();
+      return r_dbl(g * internal::portable_exp(-e / shape));
+    }
+    return r_dbl(gamma_mt(shape));
+  }
+
+  r_dbl gamma(double shape, double scale) noexcept {
+    double g = gamma(shape);
+    if (!(scale >= 0.0)) [[unlikely]] {
+      return r_dbl::na();
+    }
+    return r_dbl(g * scale);
   }
 
   // Returns a random index in [a, b] : b > a
@@ -269,7 +292,34 @@ struct random_stream {
       }
       return hi;
   }
-  
+
+  // Marsaglia & Tsang (2000), shape >= 1
+  double gamma_mt(double shape) noexcept {
+    double d = shape - 1.0 / 3.0;
+    double inv_c = std::sqrt(9.0 * d);
+    double c = 1.0 / inv_c;
+    while (true) {
+      double x = norm();
+      double xs = x + inv_c;
+      if (xs <= 0.0) {
+        continue;
+      }
+      double w = c * xs;
+      double ww = w * w;
+      double v = ww * w;
+      double x2 = x * x;
+      double u = unif();
+
+      if (1.0 - u > 0.0331 * (x2 * x2)) {
+        return d * v;
+      }
+      double bound = internal::fma(d, internal::fma(-ww, w, 1.0) + internal::portable_log(v), 0.5 * x2);
+      if (internal::portable_log(u) < bound) {
+        return d * v;
+      }
+    }
+  }
+
   uint64_t seed_;
   engine_type engine_;
 
