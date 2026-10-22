@@ -277,7 +277,7 @@ struct random_stream {
       return r_dbl::na();
     }
     double num = r_dbl(degrees_of_freedom1).is_infinite() ? 1.0 : unwrap(chisq(degrees_of_freedom1)) / degrees_of_freedom1;
-    double den = r_dbl(degrees_of_freedom1).is_infinite() ? 1.0 : unwrap(chisq(degrees_of_freedom2)) / degrees_of_freedom2;
+    double den = r_dbl(degrees_of_freedom2).is_infinite() ? 1.0 : unwrap(chisq(degrees_of_freedom2)) / degrees_of_freedom2;
     return r_dbl(num / den);
   }
 
