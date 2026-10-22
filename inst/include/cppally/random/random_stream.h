@@ -137,6 +137,11 @@ struct random_stream {
     return r_dbl(internal::fma(b, u, a * (1.0 - u)));
   }
 
+  // Coin-flip
+  r_lgl bernoulli() noexcept {
+    return r_lgl((engine_() >> 63) == 0);
+  }
+
   r_lgl bernoulli(double prob) noexcept {
     if (!(prob >= 0.0 && prob <= 1.0)) [[unlikely]] {
       return r_na;
