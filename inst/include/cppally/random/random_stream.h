@@ -311,6 +311,31 @@ struct random_stream {
     return r_dbl(num / den);
   }
 
+  // Beta deviates
+  r_dbl beta(double shape1, double shape2) noexcept {
+    if (!(shape1 >= 0.0 && shape2 >= 0.0)) [[unlikely]] {
+      return r_dbl::na();
+    }
+    bool inf1 = r_dbl(shape1).is_infinite();
+    bool inf2 = r_dbl(shape2).is_infinite();
+    if (shape1 == 0.0 || shape2 == 0.0 || inf1 || inf2) [[unlikely]] {
+      if (shape1 == shape2) {
+        return r_dbl(shape1 == 0.0 ? static_cast<double>(engine_() >> 63) : 0.5);
+      }
+      return r_dbl(shape1 == 0.0 || inf2 ? 0.0 : 1.0);
+    }
+    if (shape1 < 1.0 && shape2 < 1.0) {
+      double gx = gamma_mt(shape1 + 1.0);
+      double ex = exp();
+      double gy = gamma_mt(shape2 + 1.0);
+      double ey = exp();
+      return r_dbl(1.0 / internal::fma(gy / gx, internal::portable_exp(ex / shape1 - ey / shape2), 1.0));
+    }
+    double x = gamma(shape1);
+    double y = gamma(shape2);
+    return r_dbl(1.0 / (1.0 + y / x));
+  }
+
   // Logistic deviates
   r_dbl logis() noexcept {
     double u;
