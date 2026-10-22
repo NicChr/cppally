@@ -3,10 +3,14 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/utils.h> // for exp2
+#include <cppally/math/portable_log.h>
+#include <cppally/math/portable_exp.h>
+#include <cppally/math/fma.h>
 #include <R_ext/Random.h>
 #include <Xoshiro-cpp/XoshiroCpp.hpp> // xoshiro256++ (Ryo Suzuki, MIT)
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #if defined(_MSC_VER) && defined(_M_X64)
 #include <intrin.h> // _umul128
 #endif
@@ -66,7 +70,6 @@ inline uint64_t draw_seed() {
 
 }
 
-
 // Runs `f` with R's RNG state loaded, writing it back on exit. 
 // You can safely call R's C API RNG functions with this.
 template <typename F>
@@ -114,7 +117,7 @@ struct random_stream {
   
   r_dbl unif(double a, double b) noexcept {
     double u = unif(); 
-    return r_dbl(std::fma(b, u, a * (1.0 - u)));
+    return r_dbl(internal::fma(b, u, a * (1.0 - u)));
   }
 
   r_lgl bernoulli(double prob) noexcept {
@@ -164,7 +167,7 @@ struct random_stream {
       ++i;
     }
 
-    return r_dbl(std::fma(umin, q[0], a));
+    return r_dbl(internal::fma(umin, q[0], a));
   }
 
   r_dbl exp(double rate) noexcept {
@@ -189,7 +192,7 @@ struct random_stream {
     if (!(sd >= 0.0)) [[unlikely]] {
       return r_dbl::na();
     }
-    return r_dbl(std::fma(sd, z, mean));
+    return r_dbl(internal::fma(sd, z, mean));
   }
 
   // Cauchy deviates: v / u for a uniform point (u, v) in the unit disc
@@ -200,7 +203,7 @@ struct random_stream {
     do {
       u = 2.0 * unwrap(unif()) - 1.0;
       v = 2.0 * unwrap(unif()) - 1.0;
-    } while (u == 0.0 || std::fma(u, u, v * v) > 1.0);
+    } while (u == 0.0 || internal::fma(u, u, v * v) > 1.0);
     return r_dbl(v / u);
   }
 
@@ -209,7 +212,9 @@ struct random_stream {
     if (!(scale >= 0.0)) [[unlikely]] {
       return r_dbl::na();
     }
-    return r_dbl(std::fma(scale, z, location));
+    return r_dbl(internal::fma(scale, z, location));
+  }
+
   }
 
   // Returns a random index in [a, b] : b > a
