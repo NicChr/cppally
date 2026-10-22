@@ -24,14 +24,12 @@ auto sequence(int size, T from, U by){
     }
 
     r_vec<common_t> out(size);
-    int interrupt_counter = 0;
+    r_size_t interrupt_counter = 0;
 
-    for (int j = 0; j < size; ++j, ++interrupt_counter){
-        if (interrupt_counter == 100000000) [[unlikely]] {
-            check_user_interrupt();
-            interrupt_counter = 0;
-        }
-        out.set(j, from + (j * by) );
+    for (int j = 0; j < size; ++j){
+        check_for_interruption_and_reset_counter(interrupt_counter);
+        common_t next_value = from + (j * by); // Overflow safe due to RNumber arithmetic
+        out.set(j, next_value);
     }
     return out;
 }
