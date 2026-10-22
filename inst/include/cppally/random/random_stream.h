@@ -115,6 +115,52 @@ struct random_stream {
     return r_dbl(std::fma(b, u, a * (1.0 - u)));
   }
 
+  // Ahrens & Dieter (1972) algorithm SA.
+  r_dbl exp() noexcept {
+
+    // q[k - 1] = sum(log(2)^i / i!, i = 1, ..., k)
+    static constexpr double q[16] = {
+      0x1.62e42fefa39efp-1, 0x1.dde327edaeb53p-1, 0x1.fa4e30c4b355fp-1, 0x1.ff3adba0a1e99p-1,
+      0x1.ffe99f9fde3ccp-1, 0x1.fffdd0310dc39p-1, 0x1.ffffcffd0a1c1p-1, 0x1.fffffc550e636p-1,
+      0x1.ffffffbf58dddp-1, 0x1.fffffffbf2c80p-1, 0x1.ffffffffc45d9p-1, 0x1.fffffffffcd54p-1,
+      0x1.ffffffffffd80p-1, 0x1.fffffffffffe3p-1, 0x1.fffffffffffffp-1, 0x1.0000000000000p+0
+    };
+    static_assert(q[15] == 1.0); // Guarantees the loop terminates
+
+    double a = 0.0;
+    double u = unif();
+    while (u == 0.0) {
+      u = unif();
+    }
+
+    u += u;
+    while (u <= 1.0) {
+      a += q[0];
+      u += u;
+    }
+    u -= 1.0;
+
+    if (u <= q[0]) {
+      return r_dbl(a + u);
+    }
+
+    double umin = unif();
+    int i = 0;
+    while (u > q[i]) {
+      double ustar = unif();
+      if (ustar < umin) {
+        umin = ustar;
+      }
+      ++i;
+    }
+
+    return r_dbl(std::fma(umin, q[0], a));
+  }
+
+  r_dbl exp(double rate) noexcept {
+    return r_dbl(exp() / rate);
+  }
+
   // Returns a random index in [a, b] : b > a
   // Lemire's divisionless method along with ankerl's portable 128bit multiply
   // makes this fast, portable, and hence reproducible.
