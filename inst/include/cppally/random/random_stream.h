@@ -218,6 +218,23 @@ struct random_stream {
     return r_dbl(internal::portable_exp(z));
   }
 
+  // Weibull deviates
+  r_dbl weibull(double shape) noexcept {
+    double e = exp();
+    if (!(shape > 0.0)) [[unlikely]] {
+      return r_dbl::na();
+    }
+    return r_dbl(internal::portable_exp(internal::portable_log(e) / shape));
+  }
+
+  r_dbl weibull(double shape, double scale) noexcept {
+    double w = weibull(shape);
+    if (!(scale >= 0.0)) [[unlikely]] {
+      return r_dbl::na();
+    }
+    return r_dbl(w * scale);
+  }
+
   // Cauchy deviates: v / u for a uniform point (u, v) in the unit disc
   // Equivalent to cauchy(location = 0, scale = 1)
   r_dbl cauchy() noexcept {
