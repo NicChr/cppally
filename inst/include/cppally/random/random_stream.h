@@ -180,7 +180,7 @@ struct random_stream {
       x = exp();
       threshold = 0.5 * (x - 1.0) * (x - 1.0);
     } while (exp() < threshold);
-    
+
     return r_dbl((engine_() >> 63) ? -x : x);
   }
 
@@ -190,6 +190,26 @@ struct random_stream {
       return r_dbl::na();
     }
     return r_dbl(std::fma(sd, z, mean));
+  }
+
+  // Cauchy deviates: v / u for a uniform point (u, v) in the unit disc
+  // Equivalent to cauchy(location = 0, scale = 1)
+  r_dbl cauchy() noexcept {
+    double u;
+    double v;
+    do {
+      u = 2.0 * unwrap(unif()) - 1.0;
+      v = 2.0 * unwrap(unif()) - 1.0;
+    } while (u == 0.0 || std::fma(u, u, v * v) > 1.0);
+    return r_dbl(v / u);
+  }
+
+  r_dbl cauchy(double location, double scale) noexcept {
+    double z = cauchy();
+    if (!(scale >= 0.0)) [[unlikely]] {
+      return r_dbl::na();
+    }
+    return r_dbl(std::fma(scale, z, location));
   }
 
   // Returns a random index in [a, b] : b > a
