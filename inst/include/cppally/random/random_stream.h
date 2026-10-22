@@ -169,6 +169,27 @@ struct random_stream {
     return r_dbl(exp() / rate);
   }
 
+  // Bit-portable standard normal deviates
+  // Half-normal by rejection from an Exp(1) envelope, then a random sign (von Neumann 1951; see Devroye 1986)
+  r_dbl norm() noexcept {
+    double x;
+    double threshold;
+    do {
+      x = exp();
+      threshold = 0.5 * (x - 1.0) * (x - 1.0);
+    } while (exp() < threshold);
+    
+    return r_dbl((engine_() >> 63) ? -x : x);
+  }
+
+  r_dbl norm(double mean, double sd) noexcept {
+    double z = norm();
+    if (!(sd >= 0.0)) [[unlikely]] {
+      return r_dbl::na();
+    }
+    return r_dbl(std::fma(sd, z, mean));
+  }
+
   // Returns a random index in [a, b] : b > a
   // Lemire's divisionless method along with ankerl's portable 128bit multiply
   // makes this fast, portable, and hence reproducible.
