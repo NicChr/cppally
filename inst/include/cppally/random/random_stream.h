@@ -208,6 +208,16 @@ struct random_stream {
     return r_dbl(internal::fma(sd, z, mean));
   }
 
+  // Log-normal deviates
+  r_dbl lnorm() noexcept {
+    return r_dbl(internal::portable_exp(norm()));
+  }
+
+  r_dbl lnorm(double meanlog, double sdlog) noexcept {
+    double z = norm(meanlog, sdlog);
+    return r_dbl(internal::portable_exp(z));
+  }
+
   // Cauchy deviates: v / u for a uniform point (u, v) in the unit disc
   // Equivalent to cauchy(location = 0, scale = 1)
   r_dbl cauchy() noexcept {
