@@ -97,7 +97,13 @@ before dispatching work.
 fast sampling with replacement. It uses Lemire's divisionless method 
 (source: arXiv:1805.10941) along with a portable 128-bit multiply, provided by
 the ankerl library. This makes it fast and platform-agnostic, therefore results 
-should be reproducible across platforms. 
+should be reproducible across platforms.
+
+- `random_stream` also offers most of the same distributional
+random number generators that 'stats' offers, including `uniform()`, 
+`normal()`, `exponential()`, and many more. While these will not produce 
+identical numbers to 'stats' equivalents, their distributional properties 
+are the same.
 
 - `draw_from_r` must be used if one wishes to call scalar RNG functions from the 
 R C API header 'Random.h'.
