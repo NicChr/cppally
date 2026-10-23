@@ -54,8 +54,8 @@ r_vec<r_int> test_rng_lemire_huge(uint64_t seed, r_size_t n) {
     
     constexpr uint64_t two_pow_63 = static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) + 1;
     constexpr uint64_t range = two_pow_63 + 1;
-    constexpr int64_t lo = std::numeric_limits<int64_t>::min();
-    constexpr int64_t hi = 0;
+    constexpr int64_t lo = std::numeric_limits<int64_t>::min() + 1; // min() is NA
+    constexpr int64_t hi = 1;
 
     constexpr int n_buckets = 16;
     constexpr uint64_t bucket_width = two_pow_63 / n_buckets;
