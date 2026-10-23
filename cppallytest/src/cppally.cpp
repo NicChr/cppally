@@ -1124,6 +1124,13 @@ extern "C" attribute_visible SEXP _cppallytest_test_rng_error_inside_with_rng() 
   return cpp_to_r(::test_rng_error_inside_with_rng());
   END_CPPALLY
 }
+// test_random.cpp
+r_vec<r_str> test_rng_reproducibility();
+extern "C" attribute_visible SEXP _cppallytest_test_rng_reproducibility() {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_rng_reproducibility());
+  END_CPPALLY
+}
 // test_refs.h
 SEXP test_by_value(r_vec<r_dbl> x);
 extern "C" attribute_visible SEXP _cppallytest_test_by_value(SEXP x) {
@@ -1447,6 +1454,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_rng_index_extremes",           (DL_FUNC) &_cppallytest_test_rng_index_extremes,           1},
     {"_cppallytest_test_rng_lemire_huge",              (DL_FUNC) &_cppallytest_test_rng_lemire_huge,              2},
     {"_cppallytest_test_rng_raw_hex",                  (DL_FUNC) &_cppallytest_test_rng_raw_hex,                  2},
+    {"_cppallytest_test_rng_reproducibility",          (DL_FUNC) &_cppallytest_test_rng_reproducibility,          0},
     {"_cppallytest_test_rng_seed_from_r",              (DL_FUNC) &_cppallytest_test_rng_seed_from_r,              0},
     {"_cppallytest_test_rng_unif",                     (DL_FUNC) &_cppallytest_test_rng_unif,                     4},
     {"_cppallytest_test_rval_identity",                (DL_FUNC) &_cppallytest_test_rval_identity,                1},

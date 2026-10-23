@@ -508,6 +508,10 @@ test_rng_error_inside_with_rng <- function() {
   .Call(`_cppallytest_test_rng_error_inside_with_rng`)
 }
 
+test_rng_reproducibility <- function() {
+  .Call(`_cppallytest_test_rng_reproducibility`)
+}
+
 test_by_value <- function(x) {
   .Call(`_cppallytest_test_by_value`, x)
 }
