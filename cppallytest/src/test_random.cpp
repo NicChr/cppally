@@ -1,6 +1,8 @@
 #include <cppally_light.hpp>
 #include <random>   // test-only: for the uniform_random_bit_generator check
 #include <cppally/random/random_stream.h>
+#include <bit>
+#include <string>
 #include <type_traits>
 
 using namespace cppally;
@@ -166,4 +168,72 @@ r_sexp test_rng_error_inside_with_rng() {
         abort("deliberate error inside draw_from_r");
         return r_null;
     });
+}
+
+// ---------------------------------------------------------------------------
+// Cross-platform reproducibility. Each member draws from its own fresh stream,
+// and the bits of every draw are folded into an FNV-1a hash, so a single
+// changed bit on any platform changes that member's "name:hash" entry
+// ---------------------------------------------------------------------------
+
+template <typename F>
+std::string draws_hash(const char* name, F draw) {
+    random_stream rs(42);
+    uint64_t h = 0xcbf29ce484222325ULL;
+    for (int i = 0; i < 1000; ++i) {
+        uint64_t bits = draw(rs);
+        for (int b = 0; b < 8; ++b) {
+            h ^= (bits >> (8 * b)) & 0xff;
+            h *= 0x100000001b3ULL;
+        }
+    }
+    char buf[17];
+    std::snprintf(buf, sizeof(buf), "%016llx", static_cast<unsigned long long>(h));
+    return std::string(name) + ":" + buf;
+}
+
+inline uint64_t bits_of(r_dbl x) { return std::bit_cast<uint64_t>(unwrap(x)); }
+inline uint64_t bits_of(r_int64 x) { return static_cast<uint64_t>(unwrap(x)); }
+inline uint64_t bits_of(r_lgl x) { return static_cast<uint64_t>(unwrap(x)); }
+
+[[cppally::register]]
+r_vec<r_str> test_rng_reproducibility() {
+    std::string hashes[] = {
+        draws_hash("index", [](random_stream& r) { return bits_of(r.index(-1000000, 1000000)); }),
+        draws_hash("uniform", [](random_stream& r) { return bits_of(r.uniform()); }),
+        draws_hash("uniform(a, b)", [](random_stream& r) { return bits_of(r.uniform(-3.0, 7.5)); }),
+        draws_hash("bernoulli", [](random_stream& r) { return bits_of(r.bernoulli()); }),
+        draws_hash("bernoulli(p)", [](random_stream& r) { return bits_of(r.bernoulli(0.3)); }),
+        draws_hash("binomial inversion", [](random_stream& r) { return bits_of(r.binomial(20, 0.2)); }),
+        draws_hash("binomial btrs", [](random_stream& r) { return bits_of(r.binomial(1000, 0.3)); }),
+        draws_hash("binomial flipped", [](random_stream& r) { return bits_of(r.binomial(1000, 0.8)); }),
+        draws_hash("exponential", [](random_stream& r) { return bits_of(r.exponential()); }),
+        draws_hash("exponential(rate)", [](random_stream& r) { return bits_of(r.exponential(2.5)); }),
+        draws_hash("normal", [](random_stream& r) { return bits_of(r.normal()); }),
+        draws_hash("normal(mean, sd)", [](random_stream& r) { return bits_of(r.normal(10.0, 3.0)); }),
+        draws_hash("lognormal", [](random_stream& r) { return bits_of(r.lognormal(1.0, 0.5)); }),
+        draws_hash("weibull", [](random_stream& r) { return bits_of(r.weibull(1.5, 2.0)); }),
+        draws_hash("cauchy", [](random_stream& r) { return bits_of(r.cauchy(1.0, 2.0)); }),
+        draws_hash("gamma shape < 1", [](random_stream& r) { return bits_of(r.gamma(0.5)); }),
+        draws_hash("gamma(shape, rate)", [](random_stream& r) { return bits_of(r.gamma(2.5, 1.5)); }),
+        draws_hash("chi_squared", [](random_stream& r) { return bits_of(r.chi_squared(3.0)); }),
+        draws_hash("chi_squared ncp", [](random_stream& r) { return bits_of(r.chi_squared(3.0, 2.0)); }),
+        draws_hash("student_t", [](random_stream& r) { return bits_of(r.student_t(5.0)); }),
+        draws_hash("student_t ncp", [](random_stream& r) { return bits_of(r.student_t(5.0, 1.5)); }),
+        draws_hash("fisher_snedecor", [](random_stream& r) { return bits_of(r.fisher_snedecor(4.0, 10.0)); }),
+        draws_hash("fisher_snedecor ncp", [](random_stream& r) { return bits_of(r.fisher_snedecor(4.0, 10.0, 3.0)); }),
+        draws_hash("beta shapes < 1", [](random_stream& r) { return bits_of(r.beta(0.5, 0.5)); }),
+        draws_hash("beta", [](random_stream& r) { return bits_of(r.beta(2.0, 3.0)); }),
+        draws_hash("beta ncp", [](random_stream& r) { return bits_of(r.beta(2.0, 3.0, 1.5)); }),
+        draws_hash("logistic", [](random_stream& r) { return bits_of(r.logistic(1.0, 2.0)); }),
+        draws_hash("poisson knuth", [](random_stream& r) { return bits_of(r.poisson(4.0)); }),
+        draws_hash("poisson ptrs", [](random_stream& r) { return bits_of(r.poisson(50.0)); }),
+        draws_hash("negative_binomial", [](random_stream& r) { return bits_of(r.negative_binomial(3.0, 7.0)); }),
+        draws_hash("geometric", [](random_stream& r) { return bits_of(r.geometric(0.2)); })
+    };
+    r_vec<r_str> out(static_cast<r_size_t>(std::size(hashes)));
+    for (r_size_t i = 0; i < out.length(); ++i) {
+        out.set(i, r_str(hashes[i].c_str()));
+    }
+    return out;
 }

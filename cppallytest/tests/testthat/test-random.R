@@ -126,3 +126,43 @@ test_that("known-answer test against the reference implementation", {
     )
   )
 })
+
+test_that("Are RNG functions bit-identical across platforms?", {
+
+  # This test may fail on pre-2013 x86 CPU with no FMA instructions
+
+  snapshot_target <- c(
+    "index:e46c57dcc3c43d0c",
+    "uniform:3e08e3659b8eeb44",
+    "uniform(a, b):d0c728c4d886fd89",
+    "bernoulli:ea178746a273db44",
+    "bernoulli(p):3d2514d55dc9c7e4",
+    "binomial inversion:3e6fc1af89f403ec",
+    "binomial btrs:1953b593e1bec720",
+    "binomial flipped:3627c24a30903d31",
+    "exponential:f4ddcc7c0eb92d77",
+    "exponential(rate):671ae7ad55d7b19a",
+    "normal:8548ddbc7d1c22f6",
+    "normal(mean, sd):fec0ffb48dedfb5d",
+    "lognormal:293c66aaa0c26853",
+    "weibull:d81fa083a4eeacd0",
+    "cauchy:6918d7937615b62f",
+    "gamma shape < 1:53b36a4e9290f2e6",
+    "gamma(shape, rate):c269f8ec413c705e",
+    "chi_squared:875034cc770747b7",
+    "chi_squared ncp:522e65d403407986",
+    "student_t:22783dacfcb4ba7c",
+    "student_t ncp:b3230a435db53cb6",
+    "fisher_snedecor:83e97bd86711b397",
+    "fisher_snedecor ncp:49310f714ab2d452",
+    "beta shapes < 1:50772e50ee0f6dd4",
+    "beta:b59dd7bc9dfe9526",
+    "beta ncp:f50cdfed54a3098b",
+    "logistic:7e0e9d7afc777b78",
+    "poisson knuth:fc92f412e15a08a2",
+    "poisson ptrs:a9c714c9492e96ed",
+    "negative_binomial:574f76dea9336b52",
+    "geometric:8f33827bb67adaf4"
+  )
+  expect_identical(test_rng_reproducibility(), snapshot_target)
+})
