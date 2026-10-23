@@ -108,7 +108,7 @@ inline void check_user_interrupt() { safe[R_CheckUserInterrupt](); }
 // Check for R interruption, increment `counter` by 1, and reset it to 0 every `every` iterations
 // Assuming `every` is a large number, this is a fast check because the branch should be well predicted (tagged with [[unlikely]])
 inline void check_for_interruption_and_reset_counter(r_size_t& counter, r_size_t every = 1e08){
-    if (++counter == every) [[unlikely]] {
+    if (++counter >= every) [[unlikely]] {
         check_user_interrupt();
         counter = 0;
     }
