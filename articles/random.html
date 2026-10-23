@@ -90,7 +90,7 @@ builds a stream is reproducible from R.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a></span>
 <span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
 <span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>r_dbl one_unif<span class="op">(){</span></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="cf">return</span> r_dbl<span class="op">(</span>random_stream<span class="op">().</span>unif<span class="op">());</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="cf">return</span> r_dbl<span class="op">(</span>random_stream<span class="op">().</span>uniform<span class="op">());</span></span>
 <span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
@@ -128,7 +128,7 @@ constructing a new one per draw.</p>
 <span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>  r_vector<span class="op">&lt;</span>r_dbl<span class="op">&gt;</span> out<span class="op">(</span>n<span class="op">);</span></span>
 <span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a></span>
 <span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="dt">r_size_t</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> n<span class="op">;</span> <span class="op">++</span>i<span class="op">){</span></span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>    out<span class="op">.</span>set<span class="op">(</span>i<span class="op">,</span> r<span class="op">.</span>unif<span class="op">());</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>    out<span class="op">.</span>set<span class="op">(</span>i<span class="op">,</span> r<span class="op">.</span>uniform<span class="op">());</span></span>
 <span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>  <span class="op">}</span></span>
 <span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>  <span class="cf">return</span> out<span class="op">;</span></span>
 <span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
@@ -137,7 +137,7 @@ constructing a new one per draw.</p>
 <span><span class="fu">unif_deviates</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1] 0.8642478 0.3523587 0.2399782 0.3767446 0.8174655 0.9434300 0.9112013</span></span>
 <span><span class="co">#&gt;  [8] 0.4336280 0.2818099 0.0432162</span></span></code></pre></div>
-<p><code>unif()</code> returns a <code>double</code> in
+<p><code>uniform()</code> returns a <code>double</code> in
 <code>[0, 1)</code> by default, but can return any range in
 <code>[a, b)</code>.</p>
 </div>
@@ -155,7 +155,7 @@ state is irrelevant and never touched:</p>
 <span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>  r_vector<span class="op">&lt;</span>r_dbl<span class="op">&gt;</span> out<span class="op">(</span>n<span class="op">);</span></span>
 <span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a></span>
 <span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="dt">r_size_t</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> n<span class="op">;</span> <span class="op">++</span>i<span class="op">){</span></span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>    out<span class="op">.</span>set<span class="op">(</span>i<span class="op">,</span> r<span class="op">.</span>unif<span class="op">());</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>    out<span class="op">.</span>set<span class="op">(</span>i<span class="op">,</span> r<span class="op">.</span>uniform<span class="op">());</span></span>
 <span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>  <span class="op">}</span></span>
 <span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>  <span class="cf">return</span> out<span class="op">;</span></span>
 <span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
@@ -219,10 +219,10 @@ the same integers everywhere.</p>
 <span>  check <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
-<span><span class="co">#&gt;   expression                           min   median `itr/sec` mem_alloc `gc/sec`</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>                      <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sample_int_with_replac… 149.95µs 254.72µs     <span style="text-decoration: underline;">3</span>908.     391KB    30.4 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sample_int_with_replaceme…   1.74ms   1.86ms      523.     391KB     2.02</span></span></code></pre></div>
+<span><span class="co">#&gt;   expression                            min  median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>                       <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:t&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_sample_int_with_replace… 198.22µs 315.5µs     <span style="text-decoration: underline;">3</span>156.     391KB    24.3 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_sample_int_with_replacement   1.67ms   1.8ms      552.     391KB     4.10</span></span></code></pre></div>
 <p>In this simple benchmark we achieve a large speed improvement over
 base R. The whole loop runs without re-entering R’s RNG once - only the
 <code>random_stream r;</code> line does that.</p>
@@ -265,10 +265,11 @@ or standard library versions. The same seed reproduces the same numbers
 on one machine, but not necessarily on somebody else’s. Relatedly,
 <em>Writing R Extensions</em> asks compiled code not to depend on the
 C++11 random number library - which is why <code>random_stream</code>’s
-own methods (<code>unif()</code>, <code>index()</code>) are implemented
-directly rather than delegating to <code>&lt;random&gt;</code>.</p>
+own methods (<code>uniform()</code>, <code>index()</code>) are
+implemented directly rather than delegating to
+<code>&lt;random&gt;</code>.</p>
 <p>If cross-platform reproducibility matters, prefer
-<code>unif()</code>/<code>index()</code>, or R’s own distribution
+<code>uniform()</code>/<code>index()</code>, or R’s own distribution
 functions via <code>draw_from_r()</code>.</p>
 </div>
 <div class="section level2">
@@ -401,8 +402,8 @@ sample-with-replacement.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally      13.4ms   14.6ms      68.1    15.4MB     40.9</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_r       43.5ms   46.2ms      21.7    23.1MB     97.5</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally      20.2ms   20.6ms      47.4    15.4MB     27.1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_r       49.9ms   50.1ms      20.0    23.1MB     79.8</span></span></code></pre></div>
 <p>The hand-tuned bootstrap mean naturally is faster.</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
@@ -413,8 +414,8 @@ sample-with-replacement.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression                      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>                 <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> boot_mean_cppally(x, 2000)   13.5ms  13.98ms      70.2    15.4MB     40.1</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> boot_mean(x, 2000)            2.8ms   2.92ms     337.     21.8KB      0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> boot_mean_cppally(x, 2000)  20.22ms  20.52ms      48.4    15.4MB     25.8</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> boot_mean(x, 2000)           3.81ms   3.82ms     261.     21.8KB      0</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="a-flexible-and-fast-bootstrapper">A flexible and fast bootstrapper<a class="anchor" aria-label="anchor" href="#a-flexible-and-fast-bootstrapper"></a>
@@ -506,8 +507,8 @@ version.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression               min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> boot_mean(x, 2000)     2.8ms   3.04ms      330.    15.7KB        0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> boot_mean2(x, 2000)   3.42ms   3.48ms      280.    23.5KB        0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> boot_mean(x, 2000)    3.81ms   3.82ms      261.    15.7KB        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> boot_mean2(x, 2000)   4.38ms   4.39ms      227.    23.5KB        0</span></span></code></pre></div>
 <p>Almost as fast as the hand-tuned version, which is a nice result
 given that <code>boot_mean2</code> was written using a functional.</p>
 <p>One benefit of a generic bootstrap functional like
