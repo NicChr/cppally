@@ -1091,6 +1091,27 @@ struct r_vec {
     set(n, val);
   }
 
+  // Remove last element
+  void pop_back(){
+    set_length(length() - 1);
+  }
+
+  // Remove all elements while preserving capacity
+  void clear(){
+    set_length(r_size_t(0));
+  }
+
+  // Append vector efficiently
+  void append(const r_vec<T>& x){
+    r_size_t n = length();
+    r_size_t m = x.length();
+    if (n + m > capacity()){
+      set_capacity(std::max(2 * capacity(), n + m));
+    }
+    resize_in_place(n + m);
+    r_copy_n(*this, x, n, m);
+  }
+
   void shrink_to_fit() {
     // capacity can only be > length for resizable vectors, so this is a safe check
     if (capacity() > length()){
