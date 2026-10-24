@@ -157,6 +157,8 @@ struct r_vec {
 
   private:
 
+  r_size_t m_length = Rf_xlength(value);
+
   // Initialise data (pointer) to:
   // const SEXP* (read-only) - If T is a type convertible to SEXP
   // unwrap_t<T>* - Otherwise
@@ -168,6 +170,10 @@ struct r_vec {
   mutable ptr_t m_ptr = nullptr;
 #else
   ptr_t m_ptr = nullptr;
+#endif
+
+#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+  r_size_t m_capacity = R_isResizable(value) ? R_maxLength(value) : m_length;
 #endif
 
   // Names caching strategy
@@ -362,13 +368,13 @@ struct r_vec {
 
   // Vector length
   r_size_t length() const noexcept {
-    return Rf_xlength(value);
+    return m_length;
   }
 
 #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
   // Capacity of vector - always >= length()
   r_size_t capacity() const noexcept {
-    return R_maxLength(value);
+    return m_capacity;
   }
 #endif
 
@@ -1057,6 +1063,7 @@ struct r_vec {
     maybe_ensure_exclusive();
     bool had_attrs = ANY_ATTRIB(value);
     R_resizeVector(value, n);
+    m_length = n;
     if (had_attrs){
       invalidate_names_cache();
     }
