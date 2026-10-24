@@ -4,6 +4,7 @@
 #include <cppally/vector/r_vector.h>
 #include <cppally/coerce.h>
 #include <cppally/group/groups.h>
+#include <cppally/r_function.h>
 #include <vector>
 #include <algorithm>
 
@@ -258,6 +259,13 @@ auto apply_by_group(const T& x, const groups& g, F fn) {
         out.set(j, fn(buf));
     }
     return out;
+}
+
+// Apply an R function by group
+// Not as fast as applying a C++ function/lambda but can be useful in some cases
+template <typename ret_t, RVector T>
+auto apply_by_group(const T& x, const groups& g, r_function fn) {
+    return apply_by_group(x, g, [&](const auto& vec){ return as<ret_t>(fn(vec)); });
 }
 
 }
