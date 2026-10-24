@@ -9,7 +9,12 @@ namespace cppally {
 
 namespace internal {
 
-inline r_sexp new_vec(SEXPTYPE type, r_size_t n){
+inline r_sexp new_vec(SEXPTYPE type, r_size_t n, bool resizable = false){
+#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+  if (resizable){
+    return r_sexp(safe[R_allocResizableVector](type, n));
+  }
+#endif
   return r_sexp(safe[Rf_allocVector](type, n));
 }
 
@@ -186,11 +191,11 @@ inline unwrap_t<r_sexp> elt<r_sexp>(SEXP x, r_size_t i) {
 
 // Internal vec constructor
 template <RVal T>
-inline r_sexp new_vec_impl(r_size_t n) {
+inline r_sexp new_vec_impl(r_size_t n, bool resizable = false) {
 
   if constexpr (RDateType<T>){
     static r_sexp& date_cls = *new r_sexp(safe[Rf_ScalarString](unwrap(r_str("Date"))));
-    r_sexp out = new_vec_impl<typename T::value_type>(n);
+    r_sexp out = new_vec_impl<typename T::value_type>(n, resizable);
     Rf_setAttrib(out, symbol::class_sym, date_cls);
     return out;
   } else if constexpr (RPsxctType<T>){
@@ -204,7 +209,7 @@ inline r_sexp new_vec_impl(r_size_t n) {
 
     static r_sexp& utc_tz = *new r_sexp(safe[Rf_ScalarString](unwrap(r_str("UTC"))));
 
-    r_sexp out = new_vec_impl<typename T::value_type>(n);
+    r_sexp out = new_vec_impl<typename T::value_type>(n, resizable);
     Rf_setAttrib(out, symbol::class_sym, psxct_cls);
     Rf_setAttrib(out, cached_sym<"tzone">(), utc_tz);
     return out;
@@ -218,43 +223,43 @@ inline r_sexp new_vec_impl(r_size_t n) {
 }
 
 template <>
-inline r_sexp new_vec_impl<r_lgl>(r_size_t n) {
-  return internal::new_vec(LGLSXP, n);
+inline r_sexp new_vec_impl<r_lgl>(r_size_t n, bool resizable){
+  return internal::new_vec(LGLSXP, n, resizable);
 }
 template <>
-inline r_sexp new_vec_impl<r_int>(r_size_t n){
-  return internal::new_vec(INTSXP, n);
+inline r_sexp new_vec_impl<r_int>(r_size_t n, bool resizable){
+  return internal::new_vec(INTSXP, n, resizable);
 }
 template <>
-inline r_sexp new_vec_impl<r_dbl>(r_size_t n){
-  return internal::new_vec(REALSXP, n);
+inline r_sexp new_vec_impl<r_dbl>(r_size_t n, bool resizable){
+  return internal::new_vec(REALSXP, n, resizable);
 }
 template <>
-inline r_sexp new_vec_impl<r_int64>(r_size_t n){
+inline r_sexp new_vec_impl<r_int64>(r_size_t n, bool resizable){
   static r_sexp& integer64_cls = *new r_sexp(safe[Rf_ScalarString](unwrap(r_str("integer64"))));
-  r_sexp out = internal::new_vec(REALSXP, n);
+  r_sexp out = internal::new_vec(REALSXP, n, resizable);
   Rf_setAttrib(out, symbol::class_sym, integer64_cls);
   return out;
 }
 template <>
-inline r_sexp new_vec_impl<r_str_view>(r_size_t n){
-  return internal::new_vec(STRSXP, n);
+inline r_sexp new_vec_impl<r_str_view>(r_size_t n, bool resizable){
+  return internal::new_vec(STRSXP, n, resizable);
 }
 template <>
-inline r_sexp new_vec_impl<r_str>(r_size_t n){
-  return internal::new_vec(STRSXP, n);
+inline r_sexp new_vec_impl<r_str>(r_size_t n, bool resizable){
+  return internal::new_vec(STRSXP, n, resizable);
 }
 template <>
-inline r_sexp new_vec_impl<r_cplx>(r_size_t n){
-  return internal::new_vec(CPLXSXP, n);
+inline r_sexp new_vec_impl<r_cplx>(r_size_t n, bool resizable){
+  return internal::new_vec(CPLXSXP, n, resizable);
 }
 template <>
-inline r_sexp new_vec_impl<r_raw>(r_size_t n){
-  return internal::new_vec(RAWSXP, n);
+inline r_sexp new_vec_impl<r_raw>(r_size_t n, bool resizable){
+  return internal::new_vec(RAWSXP, n, resizable);
 }
 template <>
-inline r_sexp new_vec_impl<r_sexp>(r_size_t n){
-  return internal::new_vec(VECSXP, n);
+inline r_sexp new_vec_impl<r_sexp>(r_size_t n, bool resizable){
+  return internal::new_vec(VECSXP, n, resizable);
 }
 
 }
