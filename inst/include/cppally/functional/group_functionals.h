@@ -22,21 +22,6 @@ void check_groups_span_data(const T& x, const groups& g){
     }
 }
 
-// Group IDs in order of group size (ascending)
-inline std::vector<int> group_order_by_size(const int* RESTRICT p_counts, int ng){
-
-    int max_size = 0;
-    OMP_SIMD_REDUCTION1(max:max_size)
-    for (int j = 0; j < ng; ++j) max_size = std::max(max_size, p_counts[j]);
-
-    std::vector<int> group_order(ng);
-    internal::sort::counting_order(
-        [p_counts](int j) noexcept { return static_cast<uint32_t>(p_counts[j]); },
-        ng, static_cast<uint32_t>(max_size) + 1, group_order.data()
-    );
-    return group_order;
-}
-
 template <bool SeedFromFirst, RVal T, typename Acc, typename F>
 void reduce_by_group_impl(const r_vec<T>& x, const groups& g, std::vector<Acc>& accs, F& fn, bool na_skip){
 
@@ -154,21 +139,19 @@ auto reduce_by_group(const r_vec<T>& x, const groups& g, F fn, Acc init, bool na
     return as<r_vec<acc_t>>(accs);
 }
 
-// Efficiently apply a function by-group.
+// Apply fn to each group, in group ID order
 template <RVector T, typename F>
 requires (std::invocable<F&, const r_vec<typename T::data_type>&>)
 auto apply_by_group(const T& x, const groups& g, F fn) {
 
     internal::check_groups_span_data(x, g);
 
-    // Group positions are int throughout, as everywhere else in `groups`
     if (x.is_long()) [[unlikely]] {
         abort("`apply_by_group`: long vectors are not supported");
     }
 
     using data_t = typename T::data_type;
     using ret_t = std::remove_cvref_t<std::invoke_result_t<F&, const r_vec<data_t>&>>;
-    // using ret_t = std::conditional_t<RComposite<raw_ret_t>, r_sexp, raw_ret_t>;
 
     int n = static_cast<int>(x.length());
     int ng = g.n_groups;
@@ -178,100 +161,100 @@ auto apply_by_group(const T& x, const groups& g, F fn) {
         return r_vec<ret_t>( {fn(x)} );
     }
 
-    // One buffer, two phases: group sizes for the sort below, then scanned in
-    // place into group ends. Every group's end is the next group's start, so
-    // ends alone gives both bounds - group j spans [ends[j - 1], ends[j]),
-    // and group 0 starts at 0
-    r_vec<r_int> group_bounds = g.counts();
-    std::vector<int> bounds_copy;
-    int* p_bounds = nullptr;
+    r_vec<r_int> group_sizes = g.counts();
 
-    if (group_bounds.is_exclusive()){
-        p_bounds = group_bounds.data();
-    } else {
-        bounds_copy.assign(group_bounds.data(), group_bounds.data() + ng);
-        p_bounds = bounds_copy.data();
+    std::vector<int> group_starts;
+    group_starts.reserve(ng);
+    int max_size = 0;
+    for (int k = 0, start = 0; k < ng; ++k){
+        int group_size = group_sizes.get(k);
+        group_starts.push_back(start);
+        start += group_size;
+        max_size = std::max(max_size, group_size);
     }
 
-    // Group locations sorted by group size
-    // Sort by group size so that we can reuse the same buffer and avoid R vector allocations
-    // e.g. if group_size[i] == group_size[i + 1], we can reuse the same buffer (R vectors are fixed-length once allocated).
-    // This is a nice way to get around the problem of large overhead of repeated R vector allocations
-    // because in high cardinality situations (where length(unique(g)) is close to length(x)),
-    // We end up reusing the buffer frequently
-    // and in low cardinality situations (where length(unique(g)) is small), there aren't many
-    // allocations anyway.
-    std::vector<int> group_order = internal::group_order_by_size(p_bounds, ng);
+    T data_sorted_by_group_buffer(0);
 
-    // Overwrite the group counts into group "ends" (the start indices of the next group)
-    for (int j = 1; j < ng; ++j){
-        p_bounds[j] += p_bounds[j - 1];
-    }
-
-    // When group IDs are sorted, each group is already a contiguous run of x
-    // Otherwise gather x into group-contiguous order once, so that every group
-    // is a contiguous run of `src`
-    T scratch(0);
-
+    // We want to iterate over data sorted by group order
+    // such that data_sorted_by_group[i] == x[order(g)[i]]
     if (!g.sorted){
-
-        scratch = T(n);
-
-        std::vector<int> pos;
-        pos.reserve(ng);
-        pos.push_back(0);
-        for (int j = 1; j < ng; ++j){
-            pos.push_back(p_bounds[j - 1]);
-        }
+        data_sorted_by_group_buffer = T(n);
+        std::vector<int> pos(group_starts);
         for (int i = 0; i < n; ++i){
-            scratch.set(pos[unwrap(g.ids.get(i))]++, x.view(i));
+            data_sorted_by_group_buffer.set(pos[unwrap(g.ids.get(i))]++, x.view(i));
         }
     }
 
-    const T& src = g.sorted ? x : scratch;
+    const T& data_sorted_by_group = g.sorted ? x : data_sorted_by_group_buffer;
+
+    #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+        T buffer(0, resizable{}, max_size);
+    #else
+        // A buffer for each unique group size
+        std::vector<int> buffer_slot(max_size + 1, -1);
+        std::vector<T> buffers;
+    #endif
 
     r_vec<ret_t> out(ng);
 
-    T buf(0);
-    int buf_len = 0;
-
-    // At this point the data (`src`) is sorted by group ID
-    // Such that the IDs are in ascending order
-    // But we don't run through the data in that order - we jump around it instead
-    // group_order is the permutation corresponding to ascending group sizes, and we traverse in that order,
-    // picking the groups with the smallest group size first and ending with the groups with the largest size
     for (int k = 0; k < ng; ++k){
 
-        int j = group_order[k];
-        int start = j > 0 ? p_bounds[j - 1] : 0;
-        int count = p_bounds[j] - start;
+        int size = group_sizes.get(k);
 
-        // Only reuse buf if it's still exclusively ours
-        // If fn() returned or captured buf itself, reusing it here would silently
-        // overwrite an already-stored result instead of allocating a fresh buffer
-        if (count != buf_len || !buf.is_exclusive()){
-            buf = T(count);
-            buf_len = count;
-        }
+        #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+            // fn may have kept the buffer, so don't overwrite it
+            if (!buffer.is_exclusive()) [[unlikely]] {
+                buffer = T(0, resizable{}, max_size);
+            }
+            buffer.set_length(size);
+        #else
+            int& slot = buffer_slot[size];
+            if (slot < 0){
+                slot = static_cast<int>(buffers.size());
+                buffers.emplace_back(size);
+            } else if (!buffers[slot].is_exclusive()) [[unlikely]] {
+                // fn may have kept the buffer, so don't overwrite it
+                buffers[slot] = T(size);
+            }
+            T& buffer = buffers[slot];
+        #endif
 
-        // Every group is a contiguous run of `src`
-        r_copy_n(buf, src, 0, count, start);
-        out.set(j, fn(buf));
+        // Every group is a contiguous run of `data_sorted_by_group`
+        r_copy_n(buffer, data_sorted_by_group, 0, size, group_starts[k]);
+        out.set(k, fn(buffer));
     }
     return out;
+}
+
+namespace internal {
+
+// Call an R function on a buffer without leaving a reference to the buffer behind, so it stays exclusive and re-usable.
+// Binds x to a symbol rather than putting it in the call, as builtins like sum() duplicate their call
+struct r_function_caller {
+    r_sexp env;
+    r_sexp call;
+    explicit r_function_caller(const r_function& fn) :
+        env(safe[R_NewEnv](env::global_env, FALSE, 1)),
+        call(safe[Rf_lang2](fn, cached_sym<".cppally_x">())) {
+        safe[Rf_defineVar](cached_sym<".cppally_x">(), R_NilValue, env);
+    }
+    r_sexp operator()(SEXP x) const {
+        Rf_defineVar(cached_sym<".cppally_x">(), x, env);
+        r_sexp res = eval(call, env);
+        Rf_defineVar(cached_sym<".cppally_x">(), R_NilValue, env);
+        return res;
+    }
+};
+
 }
 
 // Apply an R function by group
 // Not as fast as applying a C++ function/lambda but can be useful in some cases
 template <typename ret_t, RVector T>
 auto apply_by_group(const T& x, const groups& g, r_function fn) {
-    // One call - clearing the arg after each fn call ensures the buffer stays exclusive and hence re-usable
-    r_sexp call = r_sexp(safe[Rf_lang2](fn, R_NilValue));
+    internal::r_function_caller call_fn(fn);
     return apply_by_group(x, g, [&](const auto& vec){
-        SETCADR(call, vec);
-        r_sexp res = eval(call, env::global_env);
-        SETCADR(call, R_NilValue);
-        return as<ret_t>(res);
+        return as<ret_t>(call_fn(vec));
     });
 }
 
