@@ -1061,12 +1061,9 @@ struct r_vec {
   // Very hot path: `push_back()` calls this on every append
   void resize_in_place(r_size_t n){
     ensure_exclusive();
-    bool had_attrs = ANY_ATTRIB(value);
     R_resizeVector(value, n);
     m_length = n;
-    if (had_attrs){
-      invalidate_names_cache();
-    }
+    invalidate_names_cache();
   }
 
   public:
