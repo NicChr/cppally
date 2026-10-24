@@ -1086,6 +1086,13 @@ struct r_vec {
     *this = std::move(out);
   }
 
+  // Make room for at least n elements and never shrink (like std::vector::reserve)
+  void reserve(r_size_t n){
+    if (n > capacity()){
+      set_capacity(n);
+    }
+  }
+
   // Like std::vector.push_back(), append value and double capacity when full
   // O(1) on average
   void push_back(const T& val){
