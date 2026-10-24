@@ -1060,7 +1060,7 @@ struct r_vec {
   // n must be >= 0 and <= capacity
   // Very hot path: `push_back()` calls this on every append
   void resize_in_place(r_size_t n){
-    maybe_ensure_exclusive();
+    ensure_exclusive();
     bool had_attrs = ANY_ATTRIB(value);
     R_resizeVector(value, n);
     m_length = n;
