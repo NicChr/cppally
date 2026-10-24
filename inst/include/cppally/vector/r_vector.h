@@ -1032,18 +1032,37 @@ struct r_vec {
 #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
   // Resize in place (no copy) to n <= capacity(), unlike resize(). R drops names, dim and dimnames
   void set_length(r_size_t n){
+    
     r_size_t len = length();
+    
+    if (n < 0) [[unlikely]] {
+      abort ("`set_length()`: `n` must be >= 0");
+    }
+
     if (n == len){
       return;
     }
+
     if (n > capacity() || !is_resizable()){
       set_capacity(std::max(n, len));
-    } else {
-      maybe_ensure_exclusive();
     }
-    safe[R_resizeVector](value, n);
-    invalidate_names_cache();
+    resize_in_place(n);
   }
+
+  private:
+
+  // n must be >= 0 and <= capacity
+  // Very hot path: `push_back()` calls this on every append
+  void resize_in_place(r_size_t n){
+    maybe_ensure_exclusive();
+    bool had_attrs = ANY_ATTRIB(value);
+    R_resizeVector(value, n);
+    if (had_attrs){
+      invalidate_names_cache();
+    }
+  }
+
+  public:
 
   // Reallocate with room for cap >= length() elements; also makes a fixed vector resizable
   void set_capacity(r_size_t cap){
@@ -1068,7 +1087,7 @@ struct r_vec {
       // Double the capacity
       set_capacity(std::max<r_size_t>(2 * n, 1));
     }
-    set_length(n + 1);
+    resize_in_place(n + 1);
     set(n, val);
   }
 
