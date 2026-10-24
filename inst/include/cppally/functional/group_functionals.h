@@ -265,7 +265,14 @@ auto apply_by_group(const T& x, const groups& g, F fn) {
 // Not as fast as applying a C++ function/lambda but can be useful in some cases
 template <typename ret_t, RVector T>
 auto apply_by_group(const T& x, const groups& g, r_function fn) {
-    return apply_by_group(x, g, [&](const auto& vec){ return as<ret_t>(fn(vec)); });
+    // One call - clearing the arg after each fn call ensures the buffer stays exclusive and hence re-usable
+    r_sexp call = r_sexp(safe[Rf_lang2](fn, R_NilValue));
+    return apply_by_group(x, g, [&](const auto& vec){
+        SETCADR(call, vec);
+        r_sexp res = eval(call, env::global_env);
+        SETCADR(call, R_NilValue);
+        return as<ret_t>(res);
+    });
 }
 
 }
