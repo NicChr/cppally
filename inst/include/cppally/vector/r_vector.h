@@ -24,9 +24,6 @@ namespace cppally {
 // Forward declarations
 
 template <RVector T>
-inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_t n, r_size_t source_offset);
-
-template <RVector T>
 inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_t n);
   
 namespace internal {
@@ -215,9 +212,6 @@ struct r_vec {
     r_vec<T> new_vec = copy();
     *this = std::move(new_vec);
   }
-
-  template <RVector U>
-  friend void r_copy_n(U& target, const U& source, r_size_t target_offset, r_size_t n, r_size_t source_offset);
 
   public:
 
@@ -989,14 +983,7 @@ struct r_vec {
     } else {
       r_vec<T> resized_vec(n);
       r_size_t n_to_copy = std::min(n, vec_size);
-
-      if constexpr (RVectorisable<T>){
-        std::copy_n(data(), n_to_copy, resized_vec.data());
-      } else {
-        for (r_size_t i = 0; i < n_to_copy; ++i){
-          resized_vec.set(i, view(i)); 
-        }
-      }
+      r_copy_n(resized_vec, *this, 0, n_to_copy);
       resized_vec.set_names(names().resize(n));
       return resized_vec;
     }
@@ -1123,29 +1110,40 @@ struct r_vec {
 template <RVal T>
 using r_vector = r_vec<T>;
 
-template <RVector T>
-inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_t n, r_size_t source_offset){
-
-  using data_t = typename T::data_type;
-
-  target.maybe_ensure_exclusive();
+template <RVector U>
+inline void r_copy_n(U& target, const unwrap_t<typename std::remove_cvref_t<U>::data_type>* source, r_size_t target_offset, r_size_t n) {
+  
+  using data_t = typename std::remove_cvref_t<U>::data_type;
 
   if (n == 0) return;
 
   if constexpr (RVectorisable<data_t>){
-
+    target.maybe_ensure_exclusive();
     auto* p_target = target.data();
-    const auto* p_source = source.data();
-    std::memmove(p_target + target_offset, p_source + source_offset, n * sizeof(*p_target));
+    std::memmove(p_target + target_offset, source, n * sizeof(*p_target));
   } else {
     for (r_size_t i = 0; i < n; ++i) {
-      target.set(target_offset + i, source.view(source_offset + i));
+      target.set(target_offset + i, internal::unsafe_reconstruct_view<data_t>(source[i]));
     }
   }
 }
 
-template <RVector T>
-inline void r_copy_n(T& target, const T& source, r_size_t target_offset, r_size_t n){
+template <RVector U>
+inline void r_copy_n(U& target, const U& source, r_size_t target_offset, r_size_t n, r_size_t source_offset){
+  // Avoid materialising altrep source vector if flag is on
+  #if defined(CPPALLY_PRESERVE_ALTREP)
+    if (!source.is_materialised()){
+      for (r_size_t i = 0; i < n; ++i) {
+        target.set(target_offset + i, source.view(source_offset + i));
+      }
+      return;
+    }
+  #endif
+  r_copy_n(target, source.data() + source_offset, target_offset, n);
+}
+
+template <RVector U>
+inline void r_copy_n(U& target, const U& source, r_size_t target_offset, r_size_t n){
   r_copy_n(target, source, target_offset, n, 0);
 }
 
