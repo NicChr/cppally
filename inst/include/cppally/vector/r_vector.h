@@ -173,7 +173,7 @@ struct r_vec {
 #endif
 
 #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
-  r_size_t m_capacity = R_isResizable(value) ? R_maxLength(value) : m_length;
+  r_size_t m_capacity = R_isResizable(value) ? R_maxLength(value) : -1;
 #endif
 
   // Names caching strategy
@@ -321,7 +321,7 @@ struct r_vec {
 
 #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
   bool is_resizable() const noexcept {
-    return R_isResizable(value);
+    return m_capacity >= 0;
   }
 #endif
 
@@ -374,7 +374,7 @@ struct r_vec {
 #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
   // Capacity of vector - always >= length()
   r_size_t capacity() const noexcept {
-    return m_capacity;
+    return is_resizable() ? m_capacity : m_length;
   }
 #endif
 
