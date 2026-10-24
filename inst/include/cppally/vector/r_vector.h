@@ -1093,7 +1093,14 @@ struct r_vec {
 
   // Remove last element
   void pop_back(){
-    set_length(length() - 1);
+    r_size_t n = length();
+    if (n == 0) [[unlikely]] {
+      abort("`pop_back()`: vector is empty");
+    }
+    if (!is_resizable()) [[unlikely]] {
+      set_capacity(n); // -> resizable vector
+    }
+    resize_in_place(n - 1);
   }
 
   // Remove all elements while preserving capacity
