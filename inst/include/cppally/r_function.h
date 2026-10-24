@@ -126,9 +126,14 @@ struct r_function {
     }
 
     r_sexp call_impl(const r_sexp& args, const r_sexp& env = env::global_env) const {
-      return r_sexp(
+      r_sexp out = r_sexp(
         internal::unwind_protect([&] { return Rf_eval(Rf_lcons(*this, args), env); })
       );
+      // Drop the reference held by dead cell
+      for (SEXP cell = args; cell != R_NilValue; cell = CDR(cell)){
+        SETCAR(cell, R_NilValue);
+      }
+      return out;
     }
 
 };
