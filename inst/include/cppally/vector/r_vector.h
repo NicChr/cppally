@@ -1017,7 +1017,11 @@ struct r_vec {
     if (n == vec_size || is_null()){
       return *this;
     } else {
+#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+      r_vec<T> resized_vec = is_resizable() ? r_vec<T>(n, resizable{}, std::max(n, capacity())) : r_vec<T>(n);
+#else
       r_vec<T> resized_vec(n);
+#endif
       r_size_t n_to_copy = std::min(n, vec_size);
       r_copy_n(resized_vec, *this, 0, n_to_copy);
       resized_vec.set_names(names().resize(n));
@@ -1086,7 +1090,11 @@ struct r_vec {
       return *this;
     }
 
+#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+    r_vec<T> out = is_resizable() ? r_vec<T>(n, resizable{}, std::max(n, capacity())) : r_vec<T>(n);
+#else
     r_vec<T> out(n);
+#endif
 
     if (size == 1){
       out.fill(view(0));
