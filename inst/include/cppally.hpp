@@ -54,5 +54,6 @@
 #include <cppally/list/list_pmap.h>
 #include <cppally/group/groups.h>
 #include <cppally/random/random_stream.h>
+#include <cppally/random/draw_parallel.h>
 
 #endif
