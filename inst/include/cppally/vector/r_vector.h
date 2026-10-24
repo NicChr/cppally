@@ -233,6 +233,20 @@ struct r_vec {
     initialise_ptr();
   }
 
+  #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+    // Resizable vector of length n and capacity n
+    template <CppIntegerNumber N>
+    explicit r_vec(N n, resizable) : value(internal::new_vec_impl<data_type>(static_cast<r_size_t>(n), true)){
+      initialise_ptr();
+    }
+
+    // Resizable vector of length n and capacity >= n
+    template <CppIntegerNumber N>
+    explicit r_vec(N n, resizable, r_size_t capacity) : r_vec(capacity, resizable{}){
+      set_length(static_cast<r_size_t>(n));
+    }
+  #endif
+
   // Construct new r_vec of length n filled with default value
   template <CppIntegerNumber N>
   explicit r_vec(N n, const T& default_value) : r_vec(n){
@@ -280,20 +294,6 @@ struct r_vec {
     set_names(nms);
 
   }
-
-#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
-  // Resizable vector of length n and capacity n
-  template <CppIntegerNumber N>
-  explicit r_vec(N n, resizable) : value(internal::new_vec_impl<data_type>(static_cast<r_size_t>(n), true)){
-    initialise_ptr();
-  }
-
-  // Resizable vector of length n and capacity >= n
-  template <CppIntegerNumber N>
-  explicit r_vec(N n, resizable, N capacity) : r_vec(capacity, resizable{}){
-    set_length(static_cast<r_size_t>(n));
-  }
-#endif
 
   template <typename V>
   requires (RVector<V> && internal::r_typeof<V> != internal::r_typeof<r_vec<T>>)
