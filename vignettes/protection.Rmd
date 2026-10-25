@@ -272,7 +272,7 @@ insert_release_cppally <- replicate(10^4, bench_protect_insert_release_cppally(1
 mean(insert_release_cppally)
 ```
 
-On my machine, cpp11 performs an insert & release every ~`r round(mean(insert_release_cpp11))` nanoseconds. cppally performs better, with ~`r round(mean(insert_release_cppally))` nanoseconds per insert & release.
+On this machine, cpp11 performs an insert & release every ~`r round(mean(insert_release_cpp11))` nanoseconds. cppally performs an insert & release every ~`r round(mean(insert_release_cppally))` nanoseconds.
 
 **Copy benchmark**
 
