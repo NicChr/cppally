@@ -80,6 +80,7 @@
 <li><p><code>random_stream</code> can also be constructed directly from a custom <code>uint64_t</code> seed, allowing the generation of random numbers without affecting R’s RNG state. This can be useful if you do not need reproducibility from R’s <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code>.</p></li>
 <li><p><code>random_stream::split()</code> returns an independent child stream. Parallel code should build its streams up front via <code><a href="https://rdrr.io/r/base/split.html" class="external-link">split()</a></code> before dispatching work.</p></li>
 <li><p><code>random_stream::index</code> samples random indices in [a, b], allowing for fast sampling with replacement. It uses Lemire’s divisionless method (source: arXiv:1805.10941) along with a portable 128-bit multiply, provided by the ankerl library. This makes it fast and platform-agnostic, therefore results should be reproducible across platforms.</p></li>
+<li><p><code>random_stream</code> also offers most of the same distributional random number generators that ‘stats’ offers, including <code>uniform()</code>, <code>normal()</code>, <code>exponential()</code>, and many more. While these will not produce identical numbers to ‘stats’ equivalents, their distributional properties are the same.</p></li>
 <li><p><code>draw_from_r</code> must be used if one wishes to call scalar RNG functions from the R C API header ‘Random.h’.</p></li>
 </ul></div>
 <div class="section level3">
@@ -121,6 +122,52 @@
 <p>For monthly time differences, sometimes impossible dates can arise when either x or y has a day-of-the-month that is larger than the other’s number of days in the month. While the default <code>time_diff&lt;"months"&gt;()</code> would return <code>NA</code>, we can control the internal impossible date rolling with the <code>on_impossible_date</code> arg.</p>
 <p>For example, assuming x is 31 Jan 2024 and y is 29 Feb 2024, <code>time_diff&lt;"months"&gt;(x, y, 1, roll::nearest)</code> rolls the impossible 31 Feb date back to 29th February, resulting in a difference of exactly 1 month. If we specified <code>roll::away</code> the date becomes 1st March instead, giving a fractional answer that is slightly less than 1 month.</p>
 </div>
+</div>
+<div class="section level3">
+<h3 id="resizable-vectors-development-version">Resizable vectors<a class="anchor" aria-label="anchor" href="#resizable-vectors-development-version"></a></h3>
+<p>cppally now supports resizable vectors for R versions &gt;= 4.6.0.</p>
+<p>The R C API itself is still <strong>experimental</strong>, so the cppally API may evolve with it.</p>
+<p>To check whether resizable vectors are available, use this flag:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="pp">#ifdef CPPALLY_HAS_RESIZABLE_VECTORS</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="co">// Do something with resizable vectors</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="pp">#else</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="co">// Do something with fixed vectors</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="pp">#endif</span></span></code></pre></div>
+<p>To create a resizable vector, allocate an empty vector and set capacity with <code>reserve()</code>.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;</span> int_vec<span class="op">;</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>int_vec<span class="op">.</span>reserve<span class="op">(</span><span class="dv">100</span><span class="op">);</span> <span class="co">// length = 0, capacity = 100</span></span></code></pre></div>
+<p>You can then resize the vector with <code>set_length()</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>int_vec<span class="op">.</span>set_length<span class="op">(</span><span class="dv">50</span><span class="op">);</span> <span class="co">// length = 50, capacity = 100</span></span></code></pre></div>
+<p>Alternatively you can create a resizable vector upfront with the <code>resizable{}</code> tag.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>r_vector<span class="op">&lt;</span>r_int<span class="op">&gt;</span> int_vec<span class="op">(</span><span class="dv">50</span><span class="op">,</span> resizable<span class="op">{},</span> <span class="co">/*capacity=*/</span> <span class="dv">100</span><span class="op">);</span> <span class="co">// length = 50, capacity = 100</span></span></code></pre></div>
+<p>Useful members for resizable vectors:</p>
+<ul><li>
+<code>capacity()</code> - Total capacity which is always &gt;= length.</li>
+<li>
+<code>reserve()</code> - Reserve a capacity larger than current capacity (it never shrinks capacity).</li>
+<li>
+<code>set_capacity()</code> - Like <code>reserve()</code> but the capacity is allowed to shrink.</li>
+<li>
+<code>set_length()</code> - Resize vector in-place, reallocating if new length exceeds capacity.</li>
+<li>
+<code>push_back()</code> - Append value. Capacity automatically grows (2x) when full.</li>
+<li>
+<code>pop_back()</code> - Remove last value. Abort if vector is empty.</li>
+<li>
+<code>clear()</code> - Remove all elements while preserving capacity.</li>
+<li>
+<code>shrink_to_fit()</code> - Shrink capacity to match length.</li>
+<li>
+<code><a href="https://rdrr.io/r/base/append.html" class="external-link">append()</a></code> - Append vector, increasing capacity if necessary.</li>
+<li>
+<code><a href="https://rlang.r-lib.org/reference/is_empty.html" class="external-link">is_empty()</a></code> - Is vector empty (length == 0)?</li>
+<li>
+<code>front()</code> - First value of vector. Abort if vector is empty.</li>
+<li>
+<code>back()</code> - Last value of vector. Abort if vector is empty.</li>
+</ul><p><strong>Important:</strong> Members that change the length or capacity will automatically convert regular fixed vectors into resizable vectors.</p>
+<p>A note on <code>r_vector::resize()</code>:</p>
+<p>Unlike <code>std::vector::resize()</code>, <code>resize()</code> does not modify the vector. It is an older member that always allocates a fresh vector. To resize in-place, use <code>set_length()</code>. If the vector is shared elsewhere, <code>set_length()</code> copies it first (regardless of <code>CPPALLY_COPY_ON_MODIFY</code>), so other references are never affected.</p>
 </div>
 <div class="section level3">
 <h3 id="improvements-development-version">Improvements<a class="anchor" aria-label="anchor" href="#improvements-development-version"></a></h3>
@@ -218,9 +265,9 @@
 <li><p><code>r_factors</code> elements are now treated as <code>r_str</code> in member functions like <code>get</code> and <code>set</code></p></li>
 <li><p><code>r_sexp_visit</code> now visits <code>r_null</code> as <code>r_vec&lt;r_sexp&gt;(r_null)</code>, essentially treating <code>NULL</code> as an empty list but without changing the underlying data.</p></li>
 </ul><p>For example, in the below pseudo-code, when x is <code>r_null</code> of type <code>r_sexp</code>, <code>r_sexp_visit</code> will disambiguate it as <code>r_vec&lt;r_sexp&gt;(r_null)</code>, preserving its data as R’s <code>NULL</code> but assigning its type as <code>r_vec&lt;r_sexp&gt;</code> (list).</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a> r_sexp_visit<span class="op">(</span>x<span class="op">,</span> <span class="op">[&amp;]&lt;</span>RVector T<span class="op">&gt;(</span><span class="at">const</span> T<span class="op">&amp;</span> vec<span class="op">)</span> <span class="op">-&gt;</span> <span class="dt">bool</span> <span class="op">{</span></span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="cf">return</span> vec<span class="op">.</span>is_null<span class="op">();</span></span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a> <span class="op">});</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a> r_sexp_visit<span class="op">(</span>x<span class="op">,</span> <span class="op">[&amp;]&lt;</span>RVector T<span class="op">&gt;(</span><span class="at">const</span> T<span class="op">&amp;</span> vec<span class="op">)</span> <span class="op">-&gt;</span> <span class="dt">bool</span> <span class="op">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="cf">return</span> vec<span class="op">.</span>is_null<span class="op">();</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a> <span class="op">});</span></span></code></pre></div>
 <p>This preservation behaviour is not new, in fact all <code>r_vec&lt;T&gt;</code> vectors preserve <code>r_null</code> by design, allowing for efficient and easier attribute manipulation with vectors that may or may not be <code>r_null</code>. What is new is that previously <code>r_null</code> was not a visitable <code>r_sexp</code> object and now it is.</p>
 </div>
 <div class="section level3">
@@ -263,21 +310,21 @@
 <h3 id="pmap-1-0-0">pmap<a class="anchor" aria-label="anchor" href="#pmap-1-0-0"></a></h3>
 <p>Inspired by <code><a href="https://purrr.tidyverse.org/reference/pmap.html" class="external-link">purrr::pmap</a></code> and <code><a href="https://rdrr.io/r/base/mapply.html" class="external-link">base::mapply</a></code>, <code><a href="https://purrr.tidyverse.org/reference/pmap.html" class="external-link">cppally::pmap</a></code> is a C++ variadic function that supports applying custom C++ lambda functions across corresponding elements of multiple vectors.</p>
 <p>With <code>pmap</code> it is trivial to calculate parallel statistics like max, min, etc. Example of C++ version of <code><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">base::pmax</a></code> applied to two vectors.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RVector T<span class="op">,</span> RVector U<span class="op">&gt;</span></span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="kw">requires</span> <span class="kw">requires</span><span class="op">(</span><span class="kw">typename</span> T<span class="op">::</span><span class="dt">data_type</span> a<span class="op">,</span> <span class="kw">typename</span> U<span class="op">::</span><span class="dt">data_type</span> b<span class="op">)</span> <span class="op">{</span> max<span class="op">(</span>a<span class="op">,</span> b<span class="op">);</span> <span class="op">}</span></span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="kw">auto</span> cpp_pmax2<span class="op">(</span>T x<span class="op">,</span> U y<span class="op">){</span></span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="cf">return</span> pmap<span class="op">([](</span><span class="kw">auto</span> a<span class="op">,</span> <span class="kw">auto</span> b<span class="op">){</span> <span class="cf">return</span> max<span class="op">(</span>a<span class="op">,</span> b<span class="op">);</span> <span class="op">},</span> x<span class="op">,</span> y<span class="op">);</span></span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span>RVector T<span class="op">,</span> RVector U<span class="op">&gt;</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="kw">requires</span> <span class="kw">requires</span><span class="op">(</span><span class="kw">typename</span> T<span class="op">::</span><span class="dt">data_type</span> a<span class="op">,</span> <span class="kw">typename</span> U<span class="op">::</span><span class="dt">data_type</span> b<span class="op">)</span> <span class="op">{</span> max<span class="op">(</span>a<span class="op">,</span> b<span class="op">);</span> <span class="op">}</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="kw">auto</span> cpp_pmax2<span class="op">(</span>T x<span class="op">,</span> U y<span class="op">){</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="cf">return</span> pmap<span class="op">([](</span><span class="kw">auto</span> a<span class="op">,</span> <span class="kw">auto</span> b<span class="op">){</span> <span class="cf">return</span> max<span class="op">(</span>a<span class="op">,</span> b<span class="op">);</span> <span class="op">},</span> x<span class="op">,</span> y<span class="op">);</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="reduce-1-0-0">reduce<a class="anchor" aria-label="anchor" href="#reduce-1-0-0"></a></h3>
 <p>A left-fold reduction functional that successively applies a binary function along the elements of the vector (from left-to-right).</p>
 <p>Example: maximum value across vector of doubles</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>r_dbl cpp_max<span class="op">(</span>r_vec<span class="op">&lt;</span>r_dbl<span class="op">&gt;</span> x<span class="op">){</span></span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="cf">return</span> x<span class="op">.</span>reduce<span class="op">([](</span><span class="kw">auto</span> acc<span class="op">,</span> <span class="kw">auto</span> curr<span class="op">){</span> <span class="cf">return</span> max<span class="op">(</span>acc<span class="op">,</span> curr<span class="op">);</span> <span class="op">});</span></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>r_dbl cpp_max<span class="op">(</span>r_vec<span class="op">&lt;</span>r_dbl<span class="op">&gt;</span> x<span class="op">){</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="cf">return</span> x<span class="op">.</span>reduce<span class="op">([](</span><span class="kw">auto</span> acc<span class="op">,</span> <span class="kw">auto</span> curr<span class="op">){</span> <span class="cf">return</span> max<span class="op">(</span>acc<span class="op">,</span> curr<span class="op">);</span> <span class="op">});</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="other-changes-1-0-0">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-1-0-0"></a></h3>
