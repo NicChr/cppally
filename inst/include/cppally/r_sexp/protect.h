@@ -473,6 +473,7 @@ namespace refcount {
 struct protect_cell {
     vec_store::slot_ref token; // slot in the chunked VECSXP pool
     std::uint32_t       refs;  // how many r_sexps point at this control block
+    bool                expanded; // If true it means Rf_xlength is held at R_maxLength until conversion to SEXP/r_sexp (only applicable for resizable vectors)
     protect_cell*       next;  // freelist link (only valid while on freelist)
 };
 
@@ -508,6 +509,7 @@ inline protect_cell* insert(SEXP x) {
     protect_cell* p = alloc_cell();
     p->token = token;
     p->refs  = 1;
+    p->expanded = false;
     p->next  = nullptr;
     return p;
 }

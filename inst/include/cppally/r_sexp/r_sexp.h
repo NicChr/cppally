@@ -5,6 +5,7 @@
 #include <cppally/r_concepts.h>
 #include <cppally/r_sexp/protect.h>
 #include <cppally/scalar/r_lgl.h>
+#include <cstdint>
 
 namespace cppally {
 
@@ -77,7 +78,7 @@ struct r_sexp {
   // Both conditions must be true
   // Useful for conditional in-place manipulation (e.g. in vector math ops)
   bool is_exclusive() const noexcept {
-    return ctl_ != nullptr && ctl_->refs == 1 && NOT_SHARED(value);
+    return owns_protect_cell() && protect_cell_refcount() == 1 && NOT_SHARED(value);
   }
 
   // Not recommended for general usage - currently needed for attribute manipulation
@@ -100,6 +101,31 @@ struct r_sexp {
   // Copy construction bumps `ctl_->refs` instead of allocating a new cons cell,
   // so passing r_sexp around by value is essentially free
   internal::refcount::protect_cell* ctl_ = nullptr;
+
+  // Holds a protect cell (false for views and R_NilValue)
+  bool owns_protect_cell() const noexcept {
+    return ctl_ != nullptr;
+  }
+
+  uint32_t protect_cell_refcount() const noexcept {
+    return ctl_->refs;
+  }
+
+  // Resizable r_vec state lives on the protect cell so every wrapper of a SEXP agrees on R's length
+  template <RVal T>
+  friend struct r_vec;
+
+  bool is_expanded() const noexcept {
+    return owns_protect_cell() && ctl_->expanded;
+  }
+  // Only cppally copies can share an expanded vector. R only sees it after sync
+  bool is_expanded_exclusive() const noexcept {
+    return owns_protect_cell() && ctl_->expanded && protect_cell_refcount() == 1;
+  }
+  // Requires an owning r_sexp
+  void set_expanded(bool expanded) const noexcept {
+    ctl_->expanded = expanded;
+  }
 
 };
 

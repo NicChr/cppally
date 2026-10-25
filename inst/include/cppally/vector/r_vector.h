@@ -306,11 +306,13 @@ struct r_vec {
 
   // Implicit conversion to SEXP
   operator SEXP() const noexcept {
+    sync_length();
     return value.value;
   }
 
   // Explicit conversion to r_sexp
   explicit operator r_sexp() const noexcept {
+    sync_length();
     return value;
   }
 
@@ -448,7 +450,7 @@ struct r_vec {
     safe[SHALLOW_DUPLICATE_ATTRIB](*this, source);
     invalidate_names_cache();
 
-    if (auto sp = internal::levels_cache().try_lookup(*this)) [[unlikely]] {
+    if (auto sp = internal::levels_cache().try_lookup(unwrap(value))) [[unlikely]] {
       sp->invalidate();
     }
   }
@@ -460,7 +462,7 @@ struct r_vec {
   void invalidate_names_cache() noexcept {
     if (cached_names) {
       cached_names->invalidate();
-    } else if (auto sp = internal::name_cache().try_lookup(*this)) [[unlikely]] {
+    } else if (auto sp = internal::name_cache().try_lookup(unwrap(value))) [[unlikely]] {
       // If a sibling has cached names, adopt then invalidate the cache for all siblings
       cached_names = internal::names_map::ptr(sp);
       cached_names->invalidate();
@@ -484,7 +486,8 @@ struct r_vec {
     if (has_cached_names()){
       return;
     }
-    cache_names(r_vec<r_str_view>(Rf_getAttrib(value, symbol::names_sym)));
+    // *this syncs an expanded vector first, which drops names its resize would have dropped
+    cache_names(r_vec<r_str_view>(Rf_getAttrib(*this, symbol::names_sym)));
   }
 
   public:
@@ -1274,20 +1277,38 @@ struct r_vec {
 
   private:
 
+#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
   // n must be >= 0 and <= capacity
   // Very hot path: `push_back()` calls this on every append
   void resize_in_place(r_size_t n){
+    if constexpr (!is_write_barrier_protected){
+      // Still expanded means R hasn't seen the SEXP since the last check and names are already invalidated
+      if (value.is_expanded_exclusive()) [[likely]] {
+        m_length = n;
+        return;
+      }
+    }
     ensure_exclusive();
-    // R_resizeVector() incurs a large overhead in hot loop ~ 3ns per call
-    // possible but slightly convoluted solution to speed this up would be to just defer the R C API resizing to operator SEXP()/r_sexp()
-    // which means that until *this is actually converted to SEXP, its length is out of sync with R C API.
-    // This solution would only work for direct pointer-writable data, so doesn't work for STRSXP or VECSXP because we call 
-    // SET_STRING_ELT()/SET_VECTOR_ELT() for those writes and R would throw an out-of-bounds error.
-    // ensure_exclusive() and invalidate_names_cache() collectively are ~ 1ns/call no matter what.
-    // The solution also relies on R not touching out-of-bounds slots when growing (likely true but not 100%).
-    R_resizeVector(value, n);
+    if constexpr (is_write_barrier_protected){
+      R_resizeVector(value, n);
+    } else {
+      // Hold R's length at capacity so writes are in-bounds
+      R_resizeVector(value, capacity());
+      value.set_expanded(true);
+    }
     m_length = n;
     invalidate_names_cache();
+  }
+#endif
+
+  // An expanded vector's R length is its capacity, so set it to length() before R sees it
+  void sync_length() const noexcept {
+    #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+      if (is_resizable() && value.is_expanded()) [[unlikely]] {
+        R_resizeVector(value.value, m_length);
+        value.set_expanded(false);
+      }
+    #endif
   }
 
 };
