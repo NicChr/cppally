@@ -388,6 +388,11 @@ struct r_vec {
     return length() > unwrap(r_limits<r_int>::max());
   }
 
+  // Is vector empty (i.e. length == 0)?
+  bool is_empty() const noexcept {
+    return length() == 0;
+  }
+
   // SEXP memory address
   r_str address() const {
     return value.address();
