@@ -401,7 +401,7 @@ struct r_vec {
   // ----- Copy-on-modify -----
 
   // data is copied but attributes are shallow copied, matching Rf_shallow_duplicate.
-  r_vec<T> copy() const {
+  [[nodiscard]] r_vec<T> copy() const {
     if (is_null()) return *this;
     r_size_t n = length();
 #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
@@ -937,7 +937,7 @@ struct r_vec {
     
     return out;
   }
-  r_vec<T> remove(const T& val) const {
+  [[nodiscard]] r_vec<T> remove(const T& val) const {
     r_size_t n_remove = count(val);
     r_size_t n = length();
 
@@ -1042,7 +1042,7 @@ struct r_vec {
   }
 
   // Resize vector to desired length
-  r_vec<T> resize(r_size_t n) const {
+  [[nodiscard]] r_vec<T> resize(r_size_t n) const {
     r_size_t vec_size = length();
     if (n == vec_size || is_null()){
       return *this;
@@ -1154,7 +1154,7 @@ struct r_vec {
 #endif
 
   // Recycle vector elements to desired length
-  r_vec<T> rep_len(r_size_t n) const {
+  [[nodiscard]] r_vec<T> rep_len(r_size_t n) const {
 
     r_size_t size = length();
 

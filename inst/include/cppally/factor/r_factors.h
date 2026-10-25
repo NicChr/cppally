@@ -54,7 +54,7 @@ struct r_factors {
       requires requires(const r_vec<r_int>& v, Args&&... args) {          \
           v.NAME(std::forward<Args>(args)...);                            \
       }                                                                   \
-      r_factors NAME(Args&&... args) const {                              \
+      [[nodiscard]] r_factors NAME(Args&&... args) const {                \
           /* Call the method on the underlying r_vec<r_int> */            \
           auto new_vec = value.NAME(std::forward<Args>(args)...);         \
           /* Wrap it in a new r_factors and pass our current levels */    \
@@ -292,7 +292,7 @@ struct r_factors {
 
   // Re-express this factor's values against a new set of levels
   template <RStringType U>
-  r_factors refactor(const r_vec<U>& new_levels) const {
+  [[nodiscard]] r_factors refactor(const r_vec<U>& new_levels) const {
 
     if (identical(new_levels, levels())){
       return *this;
@@ -389,7 +389,7 @@ struct r_factors {
     replace(0, value.length(), old_val, new_val);
   }
 
-  r_factors remove(r_str_view val) const {
+  [[nodiscard]] r_factors remove(r_str_view val) const {
     if (is_na(val)){
       r_vec<r_int> fct_codes = value.remove(na<r_int>());
       return r_factors(std::move(fct_codes), this->levels(), false);
