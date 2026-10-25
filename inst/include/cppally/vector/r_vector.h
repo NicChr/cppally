@@ -1128,6 +1128,9 @@ struct r_vec {
   void append(const r_vec<T>& x){
     r_size_t n = length();
     r_size_t m = x.length();
+    if (m == 0){
+      return;
+    }
     if (n + m > capacity()){
       set_capacity(std::max(2 * capacity(), n + m));
     }
