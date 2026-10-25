@@ -242,8 +242,13 @@ struct r_vec {
 
     // Resizable vector of length n and capacity >= n
     template <CppIntegerNumber N>
-    explicit r_vec(N n, resizable, r_size_t capacity) : r_vec(capacity, resizable{}){
-      set_length(static_cast<r_size_t>(n));
+    explicit r_vec(N n, resizable, r_size_t capacity) : r_vec(std::max(static_cast<r_size_t>(n), capacity), resizable{}){
+      r_size_t len = static_cast<r_size_t>(n);
+      if (len < 0) [[unlikely]] {
+        abort("`r_vec()`: `n` must be >= 0");
+      }
+      R_resizeVector(value, len);
+      m_length = len;
     }
   #endif
 
