@@ -144,6 +144,10 @@ r_sexp r_function::operator()(Args&&... args) const {
   return call_impl(internal::make_pairlist(std::forward<Args>(args)...));
 }
 
+#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+  struct resizable {};
+#endif
+
 template <RVal T>
 struct r_vec {
 
@@ -152,6 +156,8 @@ struct r_vec {
   using data_type = std::remove_cvref_t<T>;
 
   private:
+
+  r_size_t m_length = Rf_xlength(value);
 
   // Initialise data (pointer) to:
   // const SEXP* (read-only) - If T is a type convertible to SEXP
@@ -164,6 +170,10 @@ struct r_vec {
   mutable ptr_t m_ptr = nullptr;
 #else
   ptr_t m_ptr = nullptr;
+#endif
+
+#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+  r_size_t m_capacity = R_isResizable(value) ? R_maxLength(value) : -1;
 #endif
 
   // Names caching strategy
@@ -222,6 +232,25 @@ struct r_vec {
   explicit r_vec(N n) : value(internal::new_vec_impl<data_type>(static_cast<r_size_t>(n))){
     initialise_ptr();
   }
+
+  #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+    // Resizable vector of length n and capacity n
+    template <CppIntegerNumber N>
+    explicit r_vec(N n, resizable) : value(internal::new_vec_impl<data_type>(static_cast<r_size_t>(n), true)){
+      initialise_ptr();
+    }
+
+    // Resizable vector of length n and capacity >= n
+    template <CppIntegerNumber N>
+    explicit r_vec(N n, resizable, r_size_t capacity) : r_vec(std::max(static_cast<r_size_t>(n), capacity), resizable{}){
+      r_size_t len = static_cast<r_size_t>(n);
+      if (len < 0) [[unlikely]] {
+        abort("`r_vec()`: `n` must be >= 0");
+      }
+      R_resizeVector(value, len);
+      m_length = len;
+    }
+  #endif
 
   // Construct new r_vec of length n filled with default value
   template <CppIntegerNumber N>
@@ -295,6 +324,12 @@ struct r_vec {
     return value.is_altrep();
   }
 
+#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+  bool is_resizable() const noexcept {
+    return m_capacity >= 0;
+  }
+#endif
+
   // Is this the only r_vec holding this r_sexp?
   bool is_exclusive() const noexcept {
     return value.is_exclusive();
@@ -338,12 +373,24 @@ struct r_vec {
 
   // Vector length
   r_size_t length() const noexcept {
-    return Rf_xlength(value);
+    return m_length;
   }
+
+#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+  // Capacity of vector - always >= length()
+  r_size_t capacity() const noexcept {
+    return is_resizable() ? m_capacity : m_length;
+  }
+#endif
 
   // Is vector length >= 2^31?
   bool is_long() const noexcept {
     return length() > unwrap(r_limits<r_int>::max());
+  }
+
+  // Is vector empty (i.e. length == 0)?
+  bool is_empty() const noexcept {
+    return length() == 0;
   }
 
   // SEXP memory address
@@ -354,10 +401,15 @@ struct r_vec {
   // ----- Copy-on-modify -----
 
   // data is copied but attributes are shallow copied, matching Rf_shallow_duplicate.
-  r_vec<T> copy() const {
+  [[nodiscard]] r_vec<T> copy() const {
     if (is_null()) return *this;
     r_size_t n = length();
+#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+    // Keep capacity for resizable vectors
+    r_vec<T> new_vec = is_resizable() ? r_vec<T>(n, resizable{}, capacity()) : r_vec<T>(n);
+#else
     r_vec<T> new_vec(n);
+#endif
 
     #if defined(CPPALLY_PRESERVE_ALTREP)
     r_copy_n(new_vec, *this, 0, n);
@@ -610,6 +662,20 @@ struct r_vec {
   // Set element by vector name
   void set(const char* name, const T& val) {
       set(r_str(name), val);
+  }
+
+  T front() const {
+    if (is_empty()) [[unlikely]] {
+      abort("`front()`: vector is empty");
+    }
+    return get(r_size_t(0));
+  }
+
+  T back() const {
+    if (is_empty()) [[unlikely]] {
+      abort("`back()`: vector is empty");
+    }
+    return get(length() - 1);
   }
 
   // ----- Apply -----
@@ -871,7 +937,7 @@ struct r_vec {
     
     return out;
   }
-  r_vec<T> remove(const T& val) const {
+  [[nodiscard]] r_vec<T> remove(const T& val) const {
     r_size_t n_remove = count(val);
     r_size_t n = length();
 
@@ -976,12 +1042,16 @@ struct r_vec {
   }
 
   // Resize vector to desired length
-  r_vec<T> resize(r_size_t n) const {
+  [[nodiscard]] r_vec<T> resize(r_size_t n) const {
     r_size_t vec_size = length();
     if (n == vec_size || is_null()){
       return *this;
     } else {
+#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+      r_vec<T> resized_vec = is_resizable() ? r_vec<T>(n, resizable{}, std::max(n, capacity())) : r_vec<T>(n);
+#else
       r_vec<T> resized_vec(n);
+#endif
       r_size_t n_to_copy = std::min(n, vec_size);
       r_copy_n(resized_vec, *this, 0, n_to_copy);
       resized_vec.set_names(names().resize(n));
@@ -989,8 +1059,102 @@ struct r_vec {
     }
   }
 
+#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+  // Resize in place (no copy) to n <= capacity(), unlike resize(). R drops names, dim and dimnames
+  void set_length(r_size_t n){
+    
+    r_size_t len = length();
+    
+    if (n < 0) [[unlikely]] {
+      abort ("`set_length()`: `n` must be >= 0");
+    }
+
+    if (n == len){
+      return;
+    }
+
+    if (n > capacity() || !is_resizable()){
+      set_capacity(std::max(n, len));
+    }
+    resize_in_place(n);
+  }
+
+  // Reallocate with room for cap >= length() elements; also makes a fixed vector resizable
+  void set_capacity(r_size_t cap){
+    if (cap < length()) [[unlikely]] {
+      abort("`set_capacity`: capacity must be >= length(), use `set_length()` first");
+    }
+    if (cap == capacity() && is_resizable()){
+      return;
+    }
+    r_size_t n = length();
+    r_vec<T> out(n, resizable{}, cap);
+    r_copy_n(out, *this, 0, n);
+    out.copy_attrs_from(*this);
+    *this = std::move(out);
+  }
+
+  // Make room for at least n elements and never shrink (like std::vector::reserve)
+  void reserve(r_size_t n){
+    if (n > capacity()){
+      set_capacity(n);
+    }
+  }
+
+  // Like std::vector.push_back(), append value and double capacity when full
+  // O(1) on average
+  void push_back(const T& val){
+    r_size_t n = length();
+    if (n == capacity()){
+      // Double the capacity
+      set_capacity(std::max<r_size_t>(2 * n, 1));
+    }
+    resize_in_place(n + 1);
+    set(n, val);
+  }
+
+  // Remove last element
+  void pop_back(){
+    r_size_t n = length();
+    if (n == 0) [[unlikely]] {
+      abort("`pop_back()`: vector is empty");
+    }
+    if (!is_resizable()) [[unlikely]] {
+      set_capacity(n); // -> resizable vector
+    }
+    resize_in_place(n - 1);
+  }
+
+  // Remove all elements while preserving capacity
+  void clear(){
+    set_length(r_size_t(0));
+  }
+
+  // Append vector efficiently
+  void append(const r_vec<T>& x){
+    r_size_t n = length();
+    r_size_t m = x.length();
+    if (m == 0){
+      return;
+    }
+    if (n + m > capacity()){
+      set_capacity(std::max(2 * capacity(), n + m));
+    }
+    resize_in_place(n + m);
+    r_copy_n(*this, x, n, m);
+  }
+
+  void shrink_to_fit() {
+    // capacity can only be > length for resizable vectors, so this is a safe check
+    if (capacity() > length()){
+      set_capacity(length());
+    }
+  }
+
+#endif
+
   // Recycle vector elements to desired length
-  r_vec<T> rep_len(r_size_t n) const {
+  [[nodiscard]] r_vec<T> rep_len(r_size_t n) const {
 
     r_size_t size = length();
 
@@ -998,7 +1162,11 @@ struct r_vec {
       return *this;
     }
 
+#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+    r_vec<T> out = is_resizable() ? r_vec<T>(n, resizable{}, std::max(n, capacity())) : r_vec<T>(n);
+#else
     r_vec<T> out(n);
+#endif
 
     if (size == 1){
       out.fill(view(0));
@@ -1103,6 +1271,26 @@ struct r_vec {
     maybe_ensure_exclusive();
     safe[Rf_setAttrib](value, cached_sym<"tzone">(), r_vec<r_str>({ r_str(tz) }));
   }
+
+  private:
+
+  #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+    // n must be >= 0 and <= capacity
+    // Very hot path: `push_back()` calls this on every append
+    void resize_in_place(r_size_t n){
+      ensure_exclusive();
+      // R_resizeVector() incurs a large overhead in hot loop ~ 3ns per call
+      // possible but slightly convoluted solution to speed this up would be to just defer the R C API resizing to operator SEXP()/r_sexp()
+      // which means that until *this is actually converted to SEXP, its length is out of sync with R C API.
+      // This solution would only work for direct pointer-writable data, so doesn't work for STRSXP or VECSXP because we call 
+      // SET_STRING_ELT()/SET_VECTOR_ELT() for those writes and R would throw an out-of-bounds error.
+      // ensure_exclusive() and invalidate_names_cache() collectively are ~ 1ns/call no matter what.
+      // The solution also relies on R not touching out-of-bounds slots when growing (likely true but not 100%).
+      R_resizeVector(value, n);
+      m_length = n;
+      invalidate_names_cache();
+    }
+  #endif
 
 };
 

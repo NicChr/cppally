@@ -212,6 +212,66 @@ back to 29th February, resulting in a difference of exactly 1 month.
 If we specified `roll::away` the date becomes 1st March instead, 
 giving a fractional answer that is slightly less than 1 month. 
 
+## Resizable vectors
+
+cppally now supports resizable vectors for R versions >= 4.6.0.
+
+The R C API itself is still **experimental**, so the cppally API may evolve with it.
+
+To check whether resizable vectors are available, use this flag:
+
+```cpp
+#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+  // Do something with resizable vectors
+#else
+  // Do something with fixed vectors
+#endif
+```
+
+To create a resizable vector, allocate an empty vector and set capacity with `reserve()`.
+
+```cpp
+r_vector<r_int> int_vec;
+int_vec.reserve(100); // length = 0, capacity = 100
+```
+
+You can then resize the vector with `set_length()`.
+
+```cpp
+int_vec.set_length(50); // length = 50, capacity = 100
+```
+
+Alternatively you can create a resizable vector upfront with the `resizable{}` tag.
+
+```cpp
+r_vector<r_int> int_vec(50, resizable{}, /*capacity=*/ 100); // length = 50, capacity = 100
+```
+
+Useful members for resizable vectors:
+
+- `capacity()` - Total capacity which is always >= length.
+- `reserve()` - Reserve a capacity larger than current capacity (it never shrinks capacity).
+- `set_capacity()` - Like `reserve()` but the capacity is allowed to shrink.
+- `set_length()` - Resize vector in-place, reallocating if new length exceeds capacity.
+- `push_back()` - Append value. Capacity automatically grows (2x) when full.
+- `pop_back()` - Remove last value. Abort if vector is empty.
+- `clear()` - Remove all elements while preserving capacity.
+- `shrink_to_fit()` - Shrink capacity to match length.
+- `append()` - Append vector, increasing capacity if necessary.
+- `is_empty()` - Is vector empty (length == 0)?
+- `front()` - First value of vector. Abort if vector is empty.
+- `back()` - Last value of vector. Abort if vector is empty.
+
+**Important:** Members that change the length or capacity 
+will automatically convert regular fixed vectors into resizable vectors.
+
+A note on `r_vector::resize()`:
+
+Unlike `std::vector::resize()`, `resize()` does not modify the vector. 
+It is an older member that always allocates a fresh vector. To resize in-place, 
+use `set_length()`. If the vector is shared elsewhere, `set_length()` copies it
+first (regardless of `CPPALLY_COPY_ON_MODIFY`), so other references are never affected.
+
 ## Improvements
 
 - `cpp_source` now generates OpenMP flags by default, so its compiled functions 

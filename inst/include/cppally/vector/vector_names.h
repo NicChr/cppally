@@ -287,6 +287,9 @@ struct cache_registry {
 
     // Non-owning, for immediate use only
     names_map* try_lookup(SEXP s) noexcept {
+        if (storage_.empty()){
+            return nullptr;
+        }
         auto it = storage_.find(s);
         return it != storage_.end() ? it->second : nullptr;
     }

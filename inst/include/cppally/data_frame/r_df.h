@@ -181,7 +181,7 @@ struct r_df {
         requires requires(const r_vec<r_sexp>& v, Args&&... args) {                 \
             v.NAME(std::forward<Args>(args)...);                                    \
         }                                                                           \
-        r_df NAME(Args&&... args) const {                                           \
+        [[nodiscard]] r_df NAME(Args&&... args) const {                             \
             /* Call the method on the underlying r_vec<r_int> */                    \
             r_vec<r_sexp> new_vec = value.NAME(std::forward<Args>(args)...);        \
             /* Wrap it in a new r_df */                                             \

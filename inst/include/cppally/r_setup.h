@@ -22,8 +22,13 @@
 #endif
 
 #include <Rinternals.h>
+#include <Rversion.h>
 #include <iosfwd> // Forward declarations for strings
 #include <cstdint>
+
+#if R_VERSION >= R_Version(4, 6, 0)
+#define CPPALLY_HAS_RESIZABLE_VECTORS 1
+#endif
 
 // clang-format off
 #ifdef __clang__
