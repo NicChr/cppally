@@ -664,6 +664,20 @@ struct r_vec {
       set(r_str(name), val);
   }
 
+  T front() const {
+    if (is_empty()) [[unlikely]] {
+      abort("`front()`: vector is empty");
+    }
+    return get(r_size_t(0));
+  }
+
+  T back() const {
+    if (is_empty()) [[unlikely]] {
+      abort("`back()`: vector is empty");
+    }
+    return get(length() - 1);
+  }
+
   // ----- Apply -----
 
   private:
@@ -1065,26 +1079,6 @@ struct r_vec {
     resize_in_place(n);
   }
 
-  private:
-
-  // n must be >= 0 and <= capacity
-  // Very hot path: `push_back()` calls this on every append
-  void resize_in_place(r_size_t n){
-    ensure_exclusive();
-    // R_resizeVector() incurs a large overhead in hot loop ~ 3ns per call
-    // possible but slightly convoluted solution to speed this up would be to just defer the R C API resizing to operator SEXP()/r_sexp()
-    // which means that until *this is actually converted to SEXP, its length is out of sync with R C API.
-    // This solution would only work for direct pointer-writable data, so doesn't work for STRSXP or VECSXP because we call 
-    // SET_STRING_ELT()/SET_VECTOR_ELT() for those writes and R would throw an out-of-bounds error.
-    // ensure_exclusive() and invalidate_names_cache() collectively are ~ 1ns/call no matter what.
-    // The solution also relies on R not touching out-of-bounds slots when growing (likely true but not 100%).
-    R_resizeVector(value, n);
-    m_length = n;
-    invalidate_names_cache();
-  }
-
-  public:
-
   // Reallocate with room for cap >= length() elements; also makes a fixed vector resizable
   void set_capacity(r_size_t cap){
     if (cap < length()) [[unlikely]] {
@@ -1276,6 +1270,24 @@ struct r_vec {
   void set_tzone(const char* tz) requires RPsxctType<T> {
     maybe_ensure_exclusive();
     safe[Rf_setAttrib](value, cached_sym<"tzone">(), r_vec<r_str>({ r_str(tz) }));
+  }
+
+  private:
+
+  // n must be >= 0 and <= capacity
+  // Very hot path: `push_back()` calls this on every append
+  void resize_in_place(r_size_t n){
+    ensure_exclusive();
+    // R_resizeVector() incurs a large overhead in hot loop ~ 3ns per call
+    // possible but slightly convoluted solution to speed this up would be to just defer the R C API resizing to operator SEXP()/r_sexp()
+    // which means that until *this is actually converted to SEXP, its length is out of sync with R C API.
+    // This solution would only work for direct pointer-writable data, so doesn't work for STRSXP or VECSXP because we call 
+    // SET_STRING_ELT()/SET_VECTOR_ELT() for those writes and R would throw an out-of-bounds error.
+    // ensure_exclusive() and invalidate_names_cache() collectively are ~ 1ns/call no matter what.
+    // The solution also relies on R not touching out-of-bounds slots when growing (likely true but not 100%).
+    R_resizeVector(value, n);
+    m_length = n;
+    invalidate_names_cache();
   }
 
 };
