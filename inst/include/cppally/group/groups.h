@@ -256,6 +256,13 @@ struct groups {
 namespace internal {
 
 template <RVector T>
+void check_groups_span_data(const T& x, const groups& g){
+    if (x.length() != g.ids.length()) [[unlikely]] {
+        abort("check_groups_span_data: data and group IDs must have equal length");
+    }
+}
+
+template <RVector T>
 groups make_unordered_groups(const T& x) {
 
     using data_t = typename T::data_type;
@@ -426,6 +433,8 @@ template <typename T>
 requires requires (const T& vec) { make_groups(vec); }
 r_vec<r_str> group_names(const T& x, const groups& g) {
 
+    internal::check_groups_span_data(x, g);
+
     int ng = g.n_groups;
     int n = g.ids.length();
 
@@ -468,6 +477,8 @@ r_vec<r_str> group_names(const T& x, const groups& g) {
 // To return an R list, simply call as<r_vector<r_sexp>>() on the result.
 template <RVector T>
 CPPALLY_NOINLINE std::vector<T> split(const T& x, const groups& g){
+
+    internal::check_groups_span_data(x, g);
 
     int n_groups = g.n_groups;
     r_vec<r_int> sizes = g.counts();

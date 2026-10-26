@@ -15,13 +15,6 @@ namespace cppally {
 
 namespace internal {
 
-template <RVector T>
-void check_groups_span_data(const T& x, const groups& g){
-    if (x.length() != g.ids.length()) [[unlikely]] {
-        abort("check_groups_span_data: data and group IDs must have equal length");
-    }
-}
-
 template <bool SeedFromFirst, RVal T, typename Acc, typename F>
 void reduce_by_group_impl(const r_vec<T>& x, const groups& g, std::vector<Acc>& accs, F& fn, bool na_skip){
 
