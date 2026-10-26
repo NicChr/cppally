@@ -185,7 +185,7 @@ struct r_vec {
   // Any two r_vec wrappers around the same SEXP point to the same names_map via the registry
   mutable internal::names_map::ptr cached_names;
 
-  void initialise_ptr(){
+  void initialise_data_pointer(){
 #ifdef CPPALLY_PRESERVE_ALTREP
     // For ALTREP leave m_ptr null so get/view go through elt<T>
     // data() will materialise on first call
@@ -235,7 +235,7 @@ struct r_vec {
                         , m_capacity(-1)
   #endif
   {
-    initialise_ptr();
+    initialise_data_pointer();
   }
 
   #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
@@ -244,7 +244,7 @@ struct r_vec {
     explicit r_vec(N n, resizable) : value(internal::new_vec_impl<data_type>(static_cast<r_size_t>(n), true)),
                                      m_length(static_cast<r_size_t>(n)),
                                      m_capacity(static_cast<r_size_t>(n)) {
-      initialise_ptr();
+      initialise_data_pointer();
     }
 
     // Resizable vector of length n and capacity >= n
@@ -272,7 +272,7 @@ struct r_vec {
     if (!is_null()) {
       internal::check_valid_construction<r_vec<T>>(value);
       validate_class<T>(value);
-      initialise_ptr();
+      initialise_data_pointer();
     }
   }
 
@@ -281,7 +281,7 @@ struct r_vec {
 
   // Unchecked constructors: skip type and class validation
   // For use where the SEXP type is already established (e.g. r_visit.h dispatchers)
-  explicit r_vec(r_sexp s, internal::no_checks_tag) : value(std::move(s)) { initialise_ptr(); }
+  explicit r_vec(r_sexp s, internal::no_checks_tag) : value(std::move(s)) { initialise_data_pointer(); }
   explicit r_vec(SEXP s, internal::view_tag, internal::no_checks_tag) : r_vec(r_sexp(s, internal::view_tag{}), internal::no_checks_tag{}){}
 
   explicit r_vec(std::initializer_list<T> elements) : r_vec(static_cast<r_size_t>(elements.size())) {
