@@ -358,9 +358,9 @@ struct r_vec {
         return m_ptr;
       }
       if constexpr (is_write_barrier_protected) {
-        m_ptr = safe[internal::vector_ptr_ro<T>](value);
+        m_ptr = safe[internal::vector_ptr_ro<T>](*this);
       } else {
-        m_ptr = safe[internal::vector_ptr<T>](value);
+        m_ptr = safe[internal::vector_ptr<T>](*this);
       }
     }
     return m_ptr;
@@ -470,7 +470,7 @@ struct r_vec {
   // Place names into cache (no hash map yet)
   void cache_names(const r_vec<r_str_view>& nms) const {
     if (!cached_names){
-      cached_names = internal::name_cache().get_or_create(unwrap(value));
+      cached_names = internal::name_cache().get_or_create(unwrap(*this));
     }
     cached_names->names.emplace(static_cast<r_sexp>(nms));
   }
@@ -484,7 +484,7 @@ struct r_vec {
     if (has_cached_names()){
       return;
     }
-    cache_names(r_vec<r_str_view>(Rf_getAttrib(value, symbol::names_sym)));
+    cache_names(r_vec<r_str_view>(Rf_getAttrib(*this, symbol::names_sym)));
   }
 
   public:
@@ -576,7 +576,7 @@ struct r_vec {
   template <IntegerNumber I>
   T get(I index) const {
     unwrap_t<I> i = unwrap(index);
-    return internal::unsafe_reconstruct<T>(is_materialised() ? m_ptr[i] : internal::elt<T>(value, i));
+    return internal::unsafe_reconstruct<T>(is_materialised() ? m_ptr[i] : internal::elt<T>(*this, i));
   }
   #else
   template <IntegerNumber I>
@@ -602,7 +602,7 @@ struct r_vec {
   template <IntegerNumber I>
   T view(I index) const {
     unwrap_t<I> i = unwrap(index);
-    return internal::unsafe_reconstruct_view<T>(is_materialised() ? m_ptr[i] : internal::elt<T>(value, i));
+    return internal::unsafe_reconstruct_view<T>(is_materialised() ? m_ptr[i] : internal::elt<T>(*this, i));
   }
   #else
   template <IntegerNumber I>
@@ -636,9 +636,9 @@ struct r_vec {
     ensure_exclusive();
     #endif
     if constexpr (RStringType<T>){
-      SET_STRING_ELT(value, unwrap(index), unwrap(val));
+      SET_STRING_ELT(*this, unwrap(index), unwrap(val));
     } else if constexpr (is<T, r_sexp>){
-      SET_VECTOR_ELT(value, unwrap(index), unwrap(val));
+      SET_VECTOR_ELT(*this, unwrap(index), unwrap(val));
     } else {
       static_assert(!is_write_barrier_protected, "Can't write data directly here, data is R write-barrier protected");
       data()[unwrap(index)] = unwrap(val);
@@ -1254,7 +1254,7 @@ struct r_vec {
 
   // POSIXct-only members
   r_str tzone() const requires RPsxctType<T> {
-    r_vec<r_str_view> tz(Rf_getAttrib(value, cached_sym<"tzone">()));
+    r_vec<r_str_view> tz(Rf_getAttrib(*this, cached_sym<"tzone">()));
     
     if (tz.length() == 0){
       return cached_str<"">();
@@ -1269,7 +1269,7 @@ struct r_vec {
 
   void set_tzone(const char* tz) requires RPsxctType<T> {
     maybe_ensure_exclusive();
-    safe[Rf_setAttrib](value, cached_sym<"tzone">(), r_vec<r_str>({ r_str(tz) }));
+    safe[Rf_setAttrib](*this, cached_sym<"tzone">(), r_vec<r_str>({ r_str(tz) }));
   }
 
   private:
@@ -1286,7 +1286,7 @@ struct r_vec {
       // SET_STRING_ELT()/SET_VECTOR_ELT() for those writes and R would throw an out-of-bounds error.
       // ensure_exclusive() and invalidate_names_cache() collectively are ~ 1ns/call no matter what.
       // The solution also relies on R not touching out-of-bounds slots when growing (likely true but not 100%).
-      R_resizeVector(value, n);
+      R_resizeVector(*this, n);
       m_length = n;
       invalidate_names_cache();
     }
