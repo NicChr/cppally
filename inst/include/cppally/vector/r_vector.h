@@ -229,14 +229,21 @@ struct r_vec {
 
   // Construct new r_vec of length n
   template <CppIntegerNumber N>
-  explicit r_vec(N n) : value(internal::new_vec_impl<data_type>(static_cast<r_size_t>(n))){
+  explicit r_vec(N n) : value(internal::new_vec_impl<data_type>(static_cast<r_size_t>(n))),
+                        m_length(static_cast<r_size_t>(n))
+  #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+                        , m_capacity(-1)
+  #endif
+  {
     initialise_ptr();
   }
 
   #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
     // Resizable vector of length n and capacity n
     template <CppIntegerNumber N>
-    explicit r_vec(N n, resizable) : value(internal::new_vec_impl<data_type>(static_cast<r_size_t>(n), true)){
+    explicit r_vec(N n, resizable) : value(internal::new_vec_impl<data_type>(static_cast<r_size_t>(n), true)),
+                                     m_length(static_cast<r_size_t>(n)),
+                                     m_capacity(static_cast<r_size_t>(n)) {
       initialise_ptr();
     }
 
