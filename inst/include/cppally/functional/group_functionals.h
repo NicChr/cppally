@@ -16,7 +16,7 @@ namespace cppally {
 namespace internal {
 
 template <bool SeedFromFirst, RVal T, typename Acc, typename F>
-void reduce_by_group_impl(const r_vec<T>& x, const groups& g, std::vector<Acc>& accs, F& fn, bool na_skip){
+CPPALLY_NOINLINE void reduce_by_group_impl(const r_vec<T>& x, const groups& g, std::vector<Acc>& accs, F& fn, bool na_skip){
 
     r_size_t n = x.length();
 
@@ -73,10 +73,10 @@ void reduce_by_group_impl(const r_vec<T>& x, const groups& g, std::vector<Acc>& 
     }
 
     // Unsorted: a group's elements are scattered, so first-touch has to be tracked
-    std::vector<bool> seen;
+    std::vector<uint8_t> seen;
 
     if constexpr (SeedFromFirst){
-        seen.assign(g.n_groups, false);
+        seen.assign(g.n_groups, 0);
     }
 
     for (r_size_t i = 0; i < n; ++i){
@@ -87,7 +87,7 @@ void reduce_by_group_impl(const r_vec<T>& x, const groups& g, std::vector<Acc>& 
         if constexpr (SeedFromFirst){
             if (!seen[gid]){
                 accs[gid] = as<Acc>(x.view(i));
-                seen[gid] = true;
+                seen[gid] = 1;
                 continue;
             }
         }
@@ -135,7 +135,7 @@ auto reduce_by_group(const r_vec<T>& x, const groups& g, F fn, Acc init, bool na
 // Apply fn to each group, in group ID order
 template <RVector T, typename F>
 requires (std::invocable<F&, const r_vec<typename T::data_type>&>)
-auto apply_by_group(const T& x, const groups& g, F fn) {
+CPPALLY_NOINLINE auto apply_by_group(const T& x, const groups& g, F fn) {
 
     internal::check_groups_span_data(x, g);
 
