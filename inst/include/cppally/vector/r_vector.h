@@ -157,7 +157,20 @@ struct r_vec {
 
   private:
 
-  r_size_t m_length = Rf_xlength(value);
+  r_size_t m_length = 0;
+
+  #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+    r_size_t m_capacity = -1; // < 0 means not resizable
+  #endif
+
+  void initialise_length_and_capacity() noexcept {
+    m_length = Rf_xlength(value);
+    #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+      if (R_isResizable(value)){
+        m_capacity = R_maxLength(value);
+      }
+    #endif
+  }
 
   // Initialise data (pointer) to:
   // const SEXP* (read-only) - If T is a type convertible to SEXP
@@ -170,10 +183,6 @@ struct r_vec {
   mutable ptr_t m_ptr = nullptr;
 #else
   ptr_t m_ptr = nullptr;
-#endif
-
-#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
-  r_size_t m_capacity = R_isResizable(value) ? R_maxLength(value) : -1;
 #endif
 
   // Names caching strategy
@@ -270,6 +279,7 @@ struct r_vec {
   // Construct r_vector from r_sexp
   explicit r_vec(r_sexp s) : value(std::move(s)) {
     if (!is_null()) {
+      initialise_length_and_capacity();
       internal::check_valid_construction<r_vec<T>>(value);
       validate_class<T>(value);
       initialise_data_pointer();
@@ -281,7 +291,10 @@ struct r_vec {
 
   // Unchecked constructors: skip type and class validation
   // For use where the SEXP type is already established (e.g. r_visit.h dispatchers)
-  explicit r_vec(r_sexp s, internal::no_checks_tag) : value(std::move(s)) { initialise_data_pointer(); }
+  explicit r_vec(r_sexp s, internal::no_checks_tag) : value(std::move(s)) {
+    initialise_length_and_capacity();
+    initialise_data_pointer();
+  }
   explicit r_vec(SEXP s, internal::view_tag, internal::no_checks_tag) : r_vec(r_sexp(s, internal::view_tag{}), internal::no_checks_tag{}){}
 
   explicit r_vec(std::initializer_list<T> elements) : r_vec(static_cast<r_size_t>(elements.size())) {
