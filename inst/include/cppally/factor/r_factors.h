@@ -109,7 +109,9 @@ struct r_factors {
   FORWARD_METHOD(data)
   FORWARD_METHOD(address)
   FORWARD_METHOD(names)
+  FORWARD_METHOD(has_names)
   FORWARD_MUTATING_METHOD(set_names)
+  FORWARD_MUTATING_METHOD(clear_names)
   FORWARD_METHOD(name_index)
 
   // Methods that return factors
