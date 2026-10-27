@@ -280,7 +280,7 @@ struct r_vec {
   explicit r_vec(r_sexp s) : value(std::move(s)) {
     if (!is_null()) {
       initialise_length_and_capacity();
-      internal::check_valid_construction<r_vec<T>>(value);
+      internal::check_valid_storage<r_vec<T>>(value);
       validate_class<T>();
       initialise_data_pointer();
     }

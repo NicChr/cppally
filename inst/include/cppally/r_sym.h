@@ -19,7 +19,7 @@ struct r_sym {
 
   r_sym() : value(internal::lazy_sym_impl<"NA">()){}
 
-  explicit r_sym(SEXP x) : value{x} { internal::check_valid_construction<r_sym>(value); }
+  explicit r_sym(SEXP x) : value{x} { internal::check_valid_storage<r_sym>(value); }
   explicit r_sym(SEXP x, internal::view_tag) : r_sym(x) {}
   explicit r_sym(SEXP x, internal::no_checks_tag) : value(x) {}
   explicit r_sym(SEXP x, internal::view_tag, internal::no_checks_tag) : value(x) {}

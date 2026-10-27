@@ -38,7 +38,7 @@ struct r_str {
   r_str() : value{internal::lazy_str_impl<"">(), internal::view_tag{}} {}
 
   explicit r_str(r_sexp x) : value(std::move(x)) {
-    internal::check_valid_construction<r_str>(unwrap(value));
+    internal::check_valid_storage<r_str>(unwrap(value));
   }
 
   // Explicit SEXP -> r_str
@@ -147,7 +147,7 @@ struct r_str_view {
   // Constructors
   r_str_view() : value{static_cast<SEXP>(internal::lazy_str_impl<"">())} {}
   explicit r_str_view(SEXP x) : value{x} {
-    internal::check_valid_construction<r_str_view>(value);
+    internal::check_valid_storage<r_str_view>(value);
   }
   explicit r_str_view(SEXP x, internal::view_tag) : r_str_view(x) {}
   explicit r_str_view(SEXP x, internal::no_checks_tag) noexcept : value{x} {}

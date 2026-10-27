@@ -139,9 +139,10 @@ template<> inline constexpr uint16_t r_typeof<r_vec<r_psxct>> =             CPPA
 template<> inline constexpr uint16_t r_typeof<r_factors> =                  CPPALLY_FCTSXP;
 template<> inline constexpr uint16_t r_typeof<r_df> =                       CPPALLY_DFSXP;
 
-// Low-level type ID check, primarily used in constructing classed cppally objects from SEXP
+// Low-level type ID check, primarily used in constructing cppally objects from SEXP
+// It checks storage via TYPEOF, hence does NOT check class
 template <typename T>
-inline void check_valid_construction(SEXP x){
+inline void check_valid_storage(SEXP x){
     if (r_typeof_impl<T> != TYPEOF(x)) [[unlikely]] {
         abort("Bad construction from R type %s to C++ type %s", Rf_type2char(TYPEOF(x)), type_str<T>());
     }
