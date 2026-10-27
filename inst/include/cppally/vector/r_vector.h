@@ -563,6 +563,11 @@ struct r_vec {
     cache_names(r_vec<r_str_view>(r_sexp(Rf_getAttrib(*this, symbol::names_sym)), internal::no_checks_tag{}));
   }
 
+  // Remove vector names.
+  void clear_names() {
+    set_names(r_null);
+  }
+
   // For named vectors: find first index of name
   // `abort_on_missing` - When supplied name doesn't exist, abort, otherwise return `NA`
   r_int name_index(r_str_view name, bool abort_on_missing = true) const {
