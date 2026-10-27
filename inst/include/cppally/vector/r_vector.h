@@ -279,9 +279,9 @@ struct r_vec {
   // Construct r_vector from r_sexp
   explicit r_vec(r_sexp s) : value(std::move(s)) {
     if (!is_null()) {
-      initialise_length_and_capacity();
       internal::check_valid_storage<r_vec<T>>(value);
       validate_class<T>();
+      initialise_length_and_capacity();
       initialise_data_pointer();
     }
   }
