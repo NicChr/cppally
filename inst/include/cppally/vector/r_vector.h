@@ -320,6 +320,7 @@ struct r_vec {
 
   }
 
+  // Stop construction where TYPEOF(x) != TYPEOF(y)
   template <typename V>
   requires (RVector<V> && internal::r_typeof<V> != internal::r_typeof<r_vec<T>>)
   r_vec(const V&) = delete;
