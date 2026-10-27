@@ -1093,7 +1093,7 @@ struct r_vec {
       return;
     }
 
-    if (n > capacity() || !is_resizable()){
+    if (n > capacity() || !is_resizable()) [[unlikely]] {
       set_capacity(std::max(n, len));
     }
     resize_in_place(n);
@@ -1125,7 +1125,7 @@ struct r_vec {
   // O(1) on average
   void push_back(const T& val){
     r_size_t n = length();
-    if (n == capacity()){
+    if (n == capacity()) [[unlikely]] {
       // Double the capacity
       set_capacity(std::max<r_size_t>(2 * n, 1));
     }
