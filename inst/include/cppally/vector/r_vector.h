@@ -180,9 +180,9 @@ struct r_vec {
 #ifdef CPPALLY_PRESERVE_ALTREP
   // `mutable` so that lazy materialisation for ALTREP inputs can happen
   // For non-ALTREP this is a one-shot init at construction
-  mutable ptr_t m_ptr = nullptr;
+  mutable ptr_t m_data = nullptr;
 #else
-  ptr_t m_ptr = nullptr;
+  ptr_t m_data = nullptr;
 #endif
 
   // Names caching strategy
@@ -196,15 +196,15 @@ struct r_vec {
 
   void initialise_data_pointer(){
 #ifdef CPPALLY_PRESERVE_ALTREP
-    // For ALTREP leave m_ptr null so get/view go through elt<T>
+    // For ALTREP leave m_data null so get/view go through elt<T>
     // data() will materialise on first call
     if (is_altrep()) return;
 #endif
     if (!is_null()){
       if constexpr (is_write_barrier_protected){
-        m_ptr = is_altrep() ? safe[internal::vector_ptr_ro<T>](value) : internal::vector_ptr_ro<T>(value);
+        m_data = is_altrep() ? safe[internal::vector_ptr_ro<T>](value) : internal::vector_ptr_ro<T>(value);
       } else {
-        m_ptr = is_altrep() ? safe[internal::vector_ptr<T>](value) : internal::vector_ptr<T>(value);
+        m_data = is_altrep() ? safe[internal::vector_ptr<T>](value) : internal::vector_ptr<T>(value);
       }
     }
   }
@@ -359,11 +359,11 @@ struct r_vec {
   // Has data been materialised?
   // Will only have been materialised if data ptr has been assigned
   bool is_materialised() const noexcept {
-    return static_cast<bool>(m_ptr); 
+    return static_cast<bool>(m_data); 
   }
   // Deprecated - use `is_materialised()`
   [[deprecated("use `is_materialised()`")]] bool materialised() const noexcept {
-    return static_cast<bool>(m_ptr); 
+    return static_cast<bool>(m_data); 
   }
 
   // Materialise data. It's a no-op for already materialised vectors.
@@ -371,24 +371,27 @@ struct r_vec {
     static_cast<void>(data());
   }
 
-  // Direct pointer access - materialises ALTREP when CPPALLY_PRESERVE_ALTREP is on
   #ifdef CPPALLY_PRESERVE_ALTREP
+  // Direct data access - materialises data for ALTREP vectors.
+  // `get()`, `view()` and `set()` are preferred.
+  // Logically const: may lazily fill the mutable m_data cache, so not thread-safe until materialised.
   ptr_t data() const {
-    if (!m_ptr) [[unlikely]] {
+    if (!is_materialised()) [[unlikely]] {
       if (is_null()){
-        return m_ptr;
+        return m_data;
       }
       if constexpr (is_write_barrier_protected) {
-        m_ptr = safe[internal::vector_ptr_ro<T>](*this);
+        m_data = safe[internal::vector_ptr_ro<T>](*this);
       } else {
-        m_ptr = safe[internal::vector_ptr<T>](*this);
+        m_data = safe[internal::vector_ptr<T>](*this);
       }
     }
-    return m_ptr;
+    return m_data;
   }
   #else
+  // Direct data access - `get()`, `view()` and `set()` are preferred.
   ptr_t data() const noexcept {
-    return m_ptr;
+    return m_data;
   }
   #endif
 
@@ -449,18 +452,22 @@ struct r_vec {
     return new_vec;
   }
 
+  // Makes vector exclusive (if it isn't already) by creating a new copy of the data.
   void ensure_exclusive() {
     if (!is_exclusive()) [[unlikely]] {
       copy_to_make_exclusive();
     }
   }
 
+  // Runs ensure_exclusive() only when CPPALLY_COPY_ON_MODIFY is enabled
+  // Only needed when writing via `data()` - call it before writing (if you want to respect copy-on-modify builds).
   void maybe_ensure_exclusive() {
     #ifdef CPPALLY_COPY_ON_MODIFY
     ensure_exclusive();
     #endif
   }
 
+  // Replace attributes of *this with a shallow copy of source's
   template <RVal U>
   void copy_attrs_from(const r_vec<U>& source) {
     
@@ -510,15 +517,18 @@ struct r_vec {
 
   public:
 
+  // Vector names
   r_vec<r_str_view> names() const {
     ensure_names_cached();
     return r_vec<r_str_view>(*cached_names->names, internal::no_checks_tag{});
   }
 
+  // Does vector have names?
   bool has_names() const {
     return !names().is_null();
   }
 
+  // Replace vector names with new names.
   template <RStringType U>
   void set_names(const r_vec<U>& names){
 
@@ -592,17 +602,19 @@ struct r_vec {
 
   // ----- Element access -----
 
-  // Get element by index (no bounds-check)
+  
   #ifdef CPPALLY_PRESERVE_ALTREP
+  // Get element by index (no bounds-check)
   template <IntegerNumber I>
   T get(I index) const {
     unwrap_t<I> i = unwrap(index);
-    return internal::unsafe_reconstruct<T>(is_materialised() ? m_ptr[i] : internal::elt<T>(*this, i));
+    return internal::unsafe_reconstruct<T>(is_materialised() ? m_data[i] : internal::elt<T>(*this, i));
   }
   #else
+  // Get element by index (no bounds-check)
   template <IntegerNumber I>
-  T get(I index) const noexcept(noexcept(internal::unsafe_reconstruct<T>(m_ptr[unwrap(index)]))) {
-    return internal::unsafe_reconstruct<T>(m_ptr[unwrap(index)]);
+  T get(I index) const noexcept(noexcept(internal::unsafe_reconstruct<T>(m_data[unwrap(index)]))) {
+    return internal::unsafe_reconstruct<T>(m_data[unwrap(index)]);
   }
   #endif
   
@@ -616,19 +628,20 @@ struct r_vec {
     return get(r_str(name));
   }
 
+  #ifdef CPPALLY_PRESERVE_ALTREP
   // View element (like `get()` but elements must be short-lived)
   // Element must not outlive the parent vector
-
-  #ifdef CPPALLY_PRESERVE_ALTREP
   template <IntegerNumber I>
   T view(I index) const {
     unwrap_t<I> i = unwrap(index);
-    return internal::unsafe_reconstruct_view<T>(is_materialised() ? m_ptr[i] : internal::elt<T>(*this, i));
+    return internal::unsafe_reconstruct_view<T>(is_materialised() ? m_data[i] : internal::elt<T>(*this, i));
   }
   #else
+  // View element (like `get()` but elements must be short-lived)
+  // Element must not outlive the parent vector
   template <IntegerNumber I>
-  T view(I index) const noexcept(noexcept(internal::unsafe_reconstruct_view<T>(m_ptr[unwrap(index)]))) {
-    return internal::unsafe_reconstruct_view<T>(m_ptr[unwrap(index)]);
+  T view(I index) const noexcept(noexcept(internal::unsafe_reconstruct_view<T>(m_data[unwrap(index)]))) {
+    return internal::unsafe_reconstruct_view<T>(m_data[unwrap(index)]);
   }
   #endif
 
@@ -653,9 +666,7 @@ struct r_vec {
     !is_write_barrier_protected
     #endif
   ) {
-    #ifdef CPPALLY_COPY_ON_MODIFY
-    ensure_exclusive();
-    #endif
+    maybe_ensure_exclusive();
     if constexpr (RStringType<T>){
       SET_STRING_ELT(*this, unwrap(index), unwrap(val));
     } else if constexpr (is<T, r_sexp>){
@@ -685,13 +696,14 @@ struct r_vec {
       set(r_str(name), val);
   }
 
+  // First value of vector - abort if empty.
   T front() const {
     if (is_empty()) [[unlikely]] {
       abort("`front()`: vector is empty");
     }
     return get(r_size_t(0));
   }
-
+  // Last value of vector - abort if empty.
   T back() const {
     if (is_empty()) [[unlikely]] {
       abort("`back()`: vector is empty");
@@ -919,7 +931,7 @@ struct r_vec {
     r_size_t n = length();
 
     static_assert(
-      noexcept(is_na(internal::unsafe_reconstruct_view<T>(*m_ptr))),
+      noexcept(is_na(internal::unsafe_reconstruct_view<T>(*m_data))),
       "internal error in na_count: constructor must be non-throwing"
     );
 
@@ -958,6 +970,7 @@ struct r_vec {
     
     return out;
   }
+  // Remove `val` from vector - `remove()` creates a new vector if `val` exists.
   [[nodiscard]] r_vec<T> remove(const T& val) const {
     r_size_t n_remove = count(val);
     r_size_t n = length();
@@ -991,7 +1004,7 @@ struct r_vec {
     return r_int64::na();
   }
 
-  // Locations of value in vector
+  // Locations of `val` in vector
   template <internal::RNumericSubscript V = r_int>
   r_vec<V> find(const T& val, bool invert = false) const {
 
@@ -1048,6 +1061,7 @@ struct r_vec {
     fill(0, length(), val);
   }
 
+  // Replace all occurrences of `old_val` with `new_val` (in-place).
   void replace(r_size_t start, r_size_t n, const T& old_val, const T& new_val){
     for (r_size_t i = 0; i < n; ++i) {
       r_size_t idx = start + i;
@@ -1057,12 +1071,11 @@ struct r_vec {
     }
   }
 
-  // Replace all occurrences of old_val with new_val
   void replace(const T& old_val, const T& new_val){
     replace(0, length(), old_val, new_val);
   }
 
-  // Resize vector to desired length
+  // New vector resized to length `n`
   [[nodiscard]] r_vec<T> resize(r_size_t n) const {
     r_size_t vec_size = length();
     if (n == vec_size || is_null()){
@@ -1267,6 +1280,7 @@ struct r_vec {
     set_names(nms);
   }
 
+  // Fill vector with a regular sequence [init, init + 1, ..., init + n - 1]
   void iota(T init = T(0)) requires (any<T, r_int, r_int64>) {
     apply_simd_with_index([init](r_size_t i, auto){ return init + i; });
   }
