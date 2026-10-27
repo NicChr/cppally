@@ -300,8 +300,9 @@ static constexpr bool has_exclusions = []{
 // The dispatcher pre-builds two flat arrays at compile time, indexed by a flat
 // combo index I (0 to N_CANDIDATES^NumTemplateParams - 1):
 //
-//   dispatch_table[I] - nullptr if the combination is invalid for the lambda,
-//                       otherwise a pointer to combo_invoker<...>::invoke
+//   dispatch_table[I] - nullptr if the combination is invalid for the lambda or
+//                       shadowed by an earlier one, otherwise a pointer to
+//                       combo_invoker<...>::invoke
 //   type_table[I][K]  - the CPPALLY_TYPEOF expected for template param K in combo I
 //
 // At runtime a linear scan takes the first I whose entry is non-null and whose codes
@@ -371,50 +372,10 @@ struct combo_invoker<Functor, std::index_sequence<Is...>, std::tuple<Ts...>> {
 
 // ── DISPATCH TABLES ───────────────────────────────────────────────────────────
 
-// A template struct rather than a constexpr function: lambda types are non-literal
-// (non-trivially destructible), which makes a constexpr function templated on Functor
-// illegal in constant expression contexts in GCC. A static constexpr member of a
-// template struct has no such restriction.
-// Primary: invalid combo -> nullptr. Partial specialisation: valid -> invoker address
-template <size_t I, size_t NumTemplateParams, size_t NumArgs, typename Functor,
-          bool Valid = is_combo_callable<
-              Functor, combo_t<I, NumTemplateParams>, std::make_index_sequence<NumArgs>
-          >::value>
-struct dispatch_entry_impl {
-    static constexpr erased_fn_t value = nullptr;
-};
-
-template <size_t I, size_t NumTemplateParams, size_t NumArgs, typename Functor>
-struct dispatch_entry_impl<I, NumTemplateParams, NumArgs, Functor, true> {
-    static constexpr erased_fn_t value =
-        &combo_invoker<Functor, std::make_index_sequence<NumArgs>, combo_t<I, NumTemplateParams>>::invoke;
-};
-
-template <size_t NumTemplateParams, size_t NumArgs, typename Functor, size_t... Is>
-constexpr auto make_dispatch_table(std::index_sequence<Is...>) {
-    return std::array<erased_fn_t, sizeof...(Is)>{
-        dispatch_entry_impl<Is, NumTemplateParams, NumArgs, Functor>::value...
-    };
-}
-
 template <size_t I, size_t NumTemplateParams, size_t... Ks>
 constexpr std::array<uint32_t, NumTemplateParams> make_type_entry(std::index_sequence<Ks...>) {
     return { code_of<std::tuple_element_t<Ks, combo_t<I, NumTemplateParams>>>()... };
 }
-
-// attribute_hidden because the Functor key alone does not make this symbol unique
-// process-wide: a rebuilt shared library of the same name reuses its lambdas'
-// mangled names, and GNU-unique binding would pin the FIRST build's table (the
-// old library is marked NODELETE, so unloading cannot evict it). The reloaded
-// library would then dispatch through stale function pointers - running the
-// previous build's code, or scanning a mis-sized table if the candidate flags
-// changed between builds. Hidden visibility keeps each library on its own table
-template <size_t NumTemplateParams, size_t NumArgs, typename Functor>
-struct attribute_hidden per_functor_dispatch_table {
-    static constexpr auto value = make_dispatch_table<NumTemplateParams, NumArgs, Functor>(
-        std::make_index_sequence<static_pow(N_CANDIDATES, NumTemplateParams)>{}
-    );
-};
 
 // Config pins the candidate set into the symbol name and must be left defaulted.
 // On Linux, GCC emits `value` as STB_GNU_UNIQUE and glibc resolves such symbols
@@ -437,6 +398,98 @@ struct attribute_hidden shared_type_table {
             )...
         };
     }(std::make_index_sequence<Total>{});
+};
+
+// Combo I with digit k swapped for the earliest candidate sharing its code (a scalar's r_vec), or I
+static constexpr size_t shadowing_combo(size_t I, size_t k) {
+    constexpr auto codes = codes_of<all_candidate_types>;
+    size_t place = static_pow(N_CANDIDATES, k);
+    size_t digit = (I / place) % N_CANDIDATES;
+    size_t first = 0;
+    while (codes[first] != codes[digit]) {
+        ++first;
+    }
+    return I - (digit - first) * place;
+}
+
+// J is scanned before I and has the same type entry
+template <size_t NumTemplateParams>
+constexpr bool same_type_entry_earlier(size_t J, size_t I) {
+    constexpr auto& type_table = shared_type_table<NumTemplateParams>::value;
+    if (J >= I) {
+        return false;
+    }
+    for (size_t k = 0; k < NumTemplateParams; ++k) {
+        if (type_table[J][k] != type_table[I][k]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// The scan sees a combo only through its type entry (type_table[I]), so a valid combo is
+// unreachable if an earlier valid combo has the same type entry. shadowing_combo only proposes candidates
+template <size_t I, size_t NumTemplateParams, size_t NumArgs, typename Functor,
+          typename Ks = std::make_index_sequence<NumTemplateParams>>
+struct is_combo_shadowed;
+
+template <size_t I, size_t NumTemplateParams, size_t NumArgs, typename Functor, size_t... Ks>
+struct is_combo_shadowed<I, NumTemplateParams, NumArgs, Functor, std::index_sequence<Ks...>> {
+    static constexpr bool value = ((same_type_entry_earlier<NumTemplateParams>(shadowing_combo(I, Ks), I) &&
+        is_combo_callable<
+            Functor, combo_t<shadowing_combo(I, Ks), NumTemplateParams>, std::make_index_sequence<NumArgs>
+        >::value) || ...);
+};
+
+// Only valid combos get here, so invalid ones never pay for the shadow check
+template <size_t I, size_t NumTemplateParams, size_t NumArgs, typename Functor,
+          bool Shadowed = is_combo_shadowed<I, NumTemplateParams, NumArgs, Functor>::value>
+struct reachable_entry {
+    static constexpr erased_fn_t value =
+        &combo_invoker<Functor, std::make_index_sequence<NumArgs>, combo_t<I, NumTemplateParams>>::invoke;
+};
+
+template <size_t I, size_t NumTemplateParams, size_t NumArgs, typename Functor>
+struct reachable_entry<I, NumTemplateParams, NumArgs, Functor, true> {
+    static constexpr erased_fn_t value = nullptr;
+};
+
+// A template struct rather than a constexpr function: lambda types are non-literal
+// (non-trivially destructible), which makes a constexpr function templated on Functor
+// illegal in constant expression contexts in GCC. A static constexpr member of a
+// template struct has no such restriction.
+// Primary: invalid combo -> nullptr. Partial specialisation: valid -> reachable_entry
+template <size_t I, size_t NumTemplateParams, size_t NumArgs, typename Functor,
+          bool Valid = is_combo_callable<
+              Functor, combo_t<I, NumTemplateParams>, std::make_index_sequence<NumArgs>
+          >::value>
+struct dispatch_entry_impl {
+    static constexpr erased_fn_t value = nullptr;
+};
+
+template <size_t I, size_t NumTemplateParams, size_t NumArgs, typename Functor>
+struct dispatch_entry_impl<I, NumTemplateParams, NumArgs, Functor, true>
+    : reachable_entry<I, NumTemplateParams, NumArgs, Functor> {};
+
+template <size_t NumTemplateParams, size_t NumArgs, typename Functor, size_t... Is>
+constexpr auto make_dispatch_table(std::index_sequence<Is...>) {
+    return std::array<erased_fn_t, sizeof...(Is)>{
+        dispatch_entry_impl<Is, NumTemplateParams, NumArgs, Functor>::value...
+    };
+}
+
+// attribute_hidden because the Functor key alone does not make this symbol unique
+// process-wide: a rebuilt shared library of the same name reuses its lambdas'
+// mangled names, and GNU-unique binding would pin the FIRST build's table (the
+// old library is marked NODELETE, so unloading cannot evict it). The reloaded
+// library would then dispatch through stale function pointers - running the
+// previous build's code, or scanning a mis-sized table if the candidate flags
+// changed between builds. Hidden visibility keeps each library on its own table
+template <size_t NumTemplateParams, size_t NumArgs, typename Functor>
+struct attribute_hidden per_functor_dispatch_table {
+    static constexpr auto value = make_dispatch_table<NumTemplateParams, NumArgs, Functor>(
+        std::make_index_sequence<static_pow(N_CANDIDATES, NumTemplateParams)>{}
+    );
 };
 
 
@@ -527,7 +580,8 @@ SEXP dispatch_template_impl(Functor&& functor, SexpArgs&&... sexp_args) {
         }
     }
 
-    // The one match rule, shared by the scan and the error report below
+    // The one match rule, shared by the scan and the error report below. It sees an entry only
+    // through its type entry (type_table[I]) - is_combo_shadowed relies on that
     auto accepts = [&](size_t I, size_t K, bool null_wildcard) {
         return type_table[I][K] == wildcard_code
             || (null_wildcard && runtime_types[K] == NILSXP)
