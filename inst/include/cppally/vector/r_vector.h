@@ -200,12 +200,10 @@ struct r_vec {
     // data() will materialise on first call
     if (is_altrep()) return;
 #endif
-    if (!is_null()){
-      if constexpr (is_write_barrier_protected){
-        m_data = is_altrep() ? safe[internal::vector_ptr_ro<T>](value) : internal::vector_ptr_ro<T>(value);
-      } else {
-        m_data = is_altrep() ? safe[internal::vector_ptr<T>](value) : internal::vector_ptr<T>(value);
-      }
+    if constexpr (is_write_barrier_protected){
+      m_data = is_altrep() ? safe[internal::vector_ptr_ro<T>](value) : internal::vector_ptr_ro<T>(value);
+    } else {
+      m_data = is_altrep() ? safe[internal::vector_ptr<T>](value) : internal::vector_ptr<T>(value);
     }
   }
 
@@ -292,8 +290,10 @@ struct r_vec {
   // Unchecked constructors: skip type and class validation
   // For use where the SEXP type is already established (e.g. r_visit.h dispatchers)
   explicit r_vec(r_sexp s, internal::no_checks_tag) : value(std::move(s)) {
-    initialise_length_and_capacity();
-    initialise_data_pointer();
+    if (!is_null()){
+      initialise_length_and_capacity();
+      initialise_data_pointer();
+    }
   }
   explicit r_vec(SEXP s, internal::view_tag, internal::no_checks_tag) : r_vec(r_sexp(s, internal::view_tag{}), internal::no_checks_tag{}){}
 
