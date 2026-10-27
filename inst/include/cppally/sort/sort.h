@@ -643,7 +643,7 @@ void unsort_in_place(T& x, const r_vec<r_int>& order, unwrap_t<typename std::rem
 // 0-indexed ordering permutation vector that represents in sequential order, 
 // the indices of `x` elements that need to be chosen to return a sorted `x`
 template <RSortableVector T>
-inline r_vec<r_int> order(const T& x) {
+[[nodiscard]] inline r_vec<r_int> order(const T& x) {
 
     using data_t = typename T::data_type;
     r_size_t vec_length = x.length();
@@ -703,7 +703,7 @@ inline r_vec<r_int> order(const T& x) {
     }
 }
 
-inline r_vec<r_int> order(const r_factors& x) {
+[[nodiscard]] inline r_vec<r_int> order(const r_factors& x) {
     return order(x.value);
 }
 
@@ -718,7 +718,7 @@ inline r_vec<r_int> order(const T& x, bool) {
 
 template <typename T>
 requires requires (T&& v, r_size_t i) { order(v); v.get(i);}
-std::remove_cvref_t<T> sort(T&& x){
+[[nodiscard]] std::remove_cvref_t<T> sort(T&& x){
     
     if constexpr (requires (T&& vec){ is_sorted(vec); }){
 
