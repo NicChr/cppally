@@ -1246,9 +1246,11 @@ struct r_vec {
       set(i, view(k));
       set(k, left);
     }
-    r_vec<r_str_view> nms = names();
-    nms.rev();
-    set_names(nms);
+    if (has_names()){
+      r_vec<r_str_view> nms = names();
+      nms.rev();
+      set_names(nms);
+    }
   }
 
   // In-place shift: k > 0 lags (shifts right), k < 0 leads (shifts left)
@@ -1280,9 +1282,11 @@ struct r_vec {
         set(i, fill_value);
       }
     }
-    r_vec<r_str_view> nms = names();
-    nms.shift(k, r_str_view());
-    set_names(nms);
+    if (has_names()){
+      r_vec<r_str_view> nms = names();
+      nms.shift(k, r_str_view());
+      set_names(nms);
+    }
   }
 
   // Fill vector with a regular sequence [init, init + 1, ..., init + n - 1]

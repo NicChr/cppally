@@ -75,7 +75,7 @@ r_vec<V> clean_locs(const r_vec<U>& locs, const T& x){
     // static_assert(!is<V, r_int64>, "Cannot perform named-subsetting on long vectors");
     static_assert(!is<T, r_df>, "Named-subsetting of r_df is unsupported, use `r_df.select()`");
 
-    if (x.names().is_null()) [[unlikely]] {
+    if (!x.has_names()) [[unlikely]] {
       abort("Cannot subset on the names of an unnamed vector");
     }
 
