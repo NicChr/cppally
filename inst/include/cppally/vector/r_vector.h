@@ -1135,7 +1135,7 @@ struct r_vec {
 
   // Make room for at least n elements and never shrink (like std::vector::reserve)
   void reserve(r_size_t n){
-    if (n > capacity()){
+    if (n > capacity() || is_null()){
       set_capacity(n);
     }
   }
