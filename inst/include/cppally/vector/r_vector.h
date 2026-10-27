@@ -367,7 +367,7 @@ struct r_vec {
   }
 
   // Materialise data. It's a no-op for already materialised vectors.
-  void materialise() {
+  void materialise() const {
     static_cast<void>(data());
   }
 
