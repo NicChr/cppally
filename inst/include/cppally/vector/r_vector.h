@@ -471,8 +471,11 @@ struct r_vec {
   template <RVal U>
   void copy_attrs_from(const r_vec<U>& source) {
     
-    maybe_ensure_exclusive();
+    if (is_null()) [[unlikely]] {
+      abort("Cannot set attributes on `r_null`");
+    }
 
+    maybe_ensure_exclusive();
     safe[SHALLOW_DUPLICATE_ATTRIB](*this, source);
     invalidate_names_cache();
 
@@ -574,6 +577,10 @@ struct r_vec {
 
     ensure_names_cached();
 
+    if (cached_names->names->is_null()) [[unlikely]] {
+      abort("`name_index()`: Vector has no names");
+    }
+
     // Second-or-later lookup - cache hash map
     if (cached_names->accessed) {
       r_int index = cached_names->find(name);
@@ -591,9 +598,6 @@ struct r_vec {
 
     // First lookup: linear scan, no hash-table allocation
     r_vec<r_str_view> names_attr = names();
-    if (names_attr.is_null()) [[unlikely]] {
-      abort("internal error: vector has no names");
-    }
     r_int64 out = names_attr.find_first(name);
     if (abort_on_missing && out.is_na()) [[unlikely]] {
       abort("%s: There is no element named '%s'", __func__, name.c_str());
