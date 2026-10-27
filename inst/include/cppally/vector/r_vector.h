@@ -211,18 +211,18 @@ struct r_vec {
 
   // By default do nothing (e.g. for vectors with no attrs)
   template <typename U>
-  constexpr void validate_class(SEXP x) const noexcept {}
+  constexpr void validate_class() const noexcept {}
 
   template <RDateType U>
-  void validate_class(SEXP x) const {
-    if (!Rf_inherits(x, "Date")) [[unlikely]] {
+  void validate_class() const {
+    if (!Rf_inherits(value, "Date")) [[unlikely]] {
       abort("SEXP must be of class 'Date'");
     }
   }
 
   template <RPsxctType U>
-  void validate_class(SEXP x) const {
-    if (!Rf_inherits(x, "POSIXct")) [[unlikely]] {
+  void validate_class() const {
+    if (!Rf_inherits(value, "POSIXct")) [[unlikely]] {
       abort("SEXP must inherit class 'POSIXct'");
     }
   }
@@ -281,7 +281,7 @@ struct r_vec {
     if (!is_null()) {
       initialise_length_and_capacity();
       internal::check_valid_construction<r_vec<T>>(value);
-      validate_class<T>(value);
+      validate_class<T>();
       initialise_data_pointer();
     }
   }
