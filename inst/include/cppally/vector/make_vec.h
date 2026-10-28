@@ -53,6 +53,7 @@ void modify_attrs(T& x, Args&&... args) {
   r_vec<r_sexp> attrs = make_vec<r_sexp>(std::forward<Args>(args)...);
   x.maybe_ensure_exclusive();
   attr::impl::modify_attrs_impl(x, attrs);
+  internal::restore_immutable_class<T>(x);
 }
 
 }
