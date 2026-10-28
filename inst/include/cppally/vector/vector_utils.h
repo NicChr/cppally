@@ -194,12 +194,21 @@ inline unwrap_t<r_sexp> elt<r_sexp>(SEXP x, r_size_t i) {
 // Immutable class (std::array) of r_vec<T>
 template <typename T>
 constexpr auto immutable_class() noexcept {
-  if constexpr (RDateType<T>){
-    return std::array<const char*, 1>{"Date"};
-  } else if constexpr (RPsxctType<T>){
-    return std::array<const char*, 2>{"POSIXct", "POSIXt"};
-  } else if constexpr (is<T, r_int64>){
-    return std::array<const char*, 1>{"integer64"};
+  if constexpr (RDataFrame<T>){
+    return std::array<const char*, 1>{"data.frame"};
+  } else if constexpr (RFactor<T>){
+    return std::array<const char*, 1>{"factor"};
+  } else if constexpr (RVector<T>){
+    using data_t = typename std::remove_cvref_t<T>::data_type;
+    if constexpr (RDateType<data_t>){
+      return std::array<const char*, 1>{"Date"};
+    } else if constexpr (RPsxctType<data_t>){
+      return std::array<const char*, 2>{"POSIXct", "POSIXt"};
+    } else if constexpr (is<data_t, r_int64>){
+      return std::array<const char*, 1>{"integer64"};
+    } else {
+      return std::array<const char*, 0>{};
+    }
   } else {
     return std::array<const char*, 0>{};
   }
@@ -220,6 +229,20 @@ inline const r_sexp& immutable_class_sexp() {
   return cls;
 }
 
+// If an attribute replacement dropped any of T's required classes, reset them to their defaults
+template <typename T>
+inline void restore_immutable_attrs(SEXP x) {
+  constexpr auto cls = immutable_class<T>();
+  if constexpr (!cls.empty()){
+    for (const char* c : cls){
+      if (!Rf_inherits(x, c)) [[unlikely]] {
+        safe[Rf_setAttrib](x, cached_sym<"class">(), immutable_class_sexp<T>());
+        return;
+      }
+    }
+  }
+}
+
 // Internal vec constructor
 template <RVal T>
 inline r_sexp new_vec_impl(r_size_t n, bool resizable = false) {
@@ -231,8 +254,8 @@ inline r_sexp new_vec_impl(r_size_t n, bool resizable = false) {
     Rf_setAttrib(out, cached_sym<"tzone">(), utc_tz);
   }
 
-  if constexpr (!immutable_class<T>().empty()){
-    Rf_setAttrib(out, cached_sym<"class">(), immutable_class_sexp<T>());
+  if constexpr (!immutable_class<r_vec<T>>().empty()){
+    Rf_setAttrib(out, cached_sym<"class">(), immutable_class_sexp<r_vec<T>>());
   }
 
   return out;
