@@ -1316,6 +1316,9 @@ struct r_vec {
   }
 
   void set_tzone(const char* tz) requires RPsxctType<T> {
+    if (is_null()) [[unlikely]] {
+      return;
+    }
     maybe_ensure_exclusive();
     safe[Rf_setAttrib](*this, cached_sym<"tzone">(), r_vec<r_str>({ r_str(tz) }));
   }
