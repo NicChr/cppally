@@ -223,8 +223,7 @@ constexpr auto core_attrs() noexcept {
 }
 
 // Named attribute and its associated SEXP
-struct attr_value {
-  const named_attr* attr = nullptr;
+struct attr_value : named_attr {
   r_sexp value;
 };
 
@@ -263,7 +262,7 @@ inline core_attr_values<T> get_core_attrs(SEXP x) {
   if constexpr (!core_attrs<T>().empty()){
     static constexpr auto attrs = core_attrs<T>();
     for (std::size_t i = 0; i < attrs.size(); ++i){
-      out[i] = {&attrs[i], r_sexp(Rf_getAttrib(x, attrs[i].sym()))};
+      out[i] = {attrs[i], r_sexp(Rf_getAttrib(x, attrs[i].sym()))};
     }
   }
   return out;
@@ -274,10 +273,10 @@ inline void restore_core_attr(SEXP x, const attr_value& old) {
   if (is_null(old.value)){
     return;
   }
-  r_sym sym = old.attr->sym();
+  r_sym sym = old.sym();
   bool valid = true;
   if (r_addresses_equal(sym, cached_sym<"class">())){
-    for (const char* cls : old.attr->defaults){
+    for (const char* cls : old.defaults){
       if (cls != nullptr && !Rf_inherits(x, cls)){
         valid = false;
         break;
