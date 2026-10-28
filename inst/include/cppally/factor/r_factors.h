@@ -82,7 +82,7 @@ struct r_factors {
     if (has_cached_levels()){
       return;
     }
-    cache_levels(r_vec<r_str_view>(Rf_getAttrib(value, symbol::levels_sym)));
+    cache_levels(r_vec<r_str_view>(Rf_getAttrib(value, cached_sym<"levels">())));
   }
 
   void sync_levels_cache() noexcept {
@@ -163,7 +163,7 @@ struct r_factors {
       validate_levels(value, levels);
     }
     maybe_ensure_exclusive();
-    safe[Rf_setAttrib](value, symbol::levels_sym, levels);
+    safe[Rf_setAttrib](value, cached_sym<"levels">(), levels);
     cached_levels = internal::levels_cache().get_or_create(static_cast<SEXP>(value));
     cached_levels->invalidate();
   }
@@ -179,8 +179,9 @@ struct r_factors {
   template <RStringType T>
   void init_factor(const r_vec<T>& levels, bool check_valid_levels = chk_fct_lvls_opt) {
     static r_vec<r_str_view>& fct_class = *new r_vec<r_str_view>({ r_str_view(r_str("factor")) });
+    MARK_NOT_MUTABLE(fct_class);
     // Set class
-    attr::set_attr(value, symbol::class_sym, fct_class);
+    attr::set_attr(value, cached_sym<"class">(), fct_class);
     // Set levels
     set_levels(levels, check_valid_levels);
   }

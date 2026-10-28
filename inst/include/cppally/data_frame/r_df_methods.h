@@ -56,8 +56,8 @@ inline r_vec<r_sexp> new_df_impl(const r_vec<r_sexp>& cols, bool recycle, int nr
     out.set_names(names); 
 
     r_vec<r_int> row_names = create_row_names(nrows);
-    attr::set_attr(out, symbol::class_sym, data_frame_class());
-    attr::set_attr(out, symbol::row_names_sym, row_names);
+    attr::set_attr(out, cached_sym<"class">(), data_frame_class());
+    attr::set_attr(out, cached_sym<"row.names">(), row_names);
     return out;
 }
 
@@ -96,7 +96,7 @@ inline r_df r_df::get_row(int index) const {
     r_vec<r_sexp> out(ncols);
     out.set_names(colnames());
     attr::set_old_class(out, internal::data_frame_class());
-    attr::set_attr(out, symbol::row_names_sym, internal::single_row_names()); 
+    attr::set_attr(out, cached_sym<"row.names">(), internal::single_row_names()); 
 
     for (int i = 0; i < ncols; ++i){
         out.set(i, internal::view_sexp(value.view(i), [index]<typename vec_t>(const vec_t& vec) -> r_sexp {
@@ -148,7 +148,7 @@ inline r_df r_df::select(const r_vec<U>& cols) const {
 }
 
 inline r_vec<r_str> r_df::rownames() const {
-    return as<r_vec<r_str>>(attr::get_attr(value, symbol::row_names_sym));
+    return as<r_vec<r_str>>(attr::get_attr(value, cached_sym<"row.names">()));
 }
 
 // inline void check_compatible_dfs(const r_df& x, const r_df& y){

@@ -24,11 +24,11 @@ inline void set_attr_impl(SEXP x, r_sym sym, SEXP value){
 
   safe[Rf_setAttrib](x, sym, value);
 
-  if (internal::ptrs_identical(sym, symbol::names_sym)) [[unlikely]] {
+  if (internal::ptrs_identical(sym, cached_sym<"names">())) [[unlikely]] {
     if (auto sp = internal::name_cache().try_lookup(x)){
       sp->invalidate();
     }
-  } else if (internal::ptrs_identical(sym, symbol::levels_sym)) [[unlikely]] {
+  } else if (internal::ptrs_identical(sym, cached_sym<"levels">())) [[unlikely]] {
     if (auto sp = internal::levels_cache().try_lookup(x)){
       sp->invalidate();
     }
@@ -122,18 +122,18 @@ void set_attr(T& x, r_sym sym, SEXP value){
 // Do not use, use equivalent `set_names()` member.
 template <RObject T, RStringType U>
 void set_old_names(T& x, const r_vec<U>& names){
-  set_attr(x, symbol::names_sym, names);
+  set_attr(x, cached_sym<"names">(), names);
 }
 // Do not use, use equivalent `names()` member.
 inline r_vec<r_str_view> get_old_names(SEXP x){
-  return r_vec<r_str_view>(get_attr(x, symbol::names_sym));
+  return r_vec<r_str_view>(get_attr(x, cached_sym<"names">()));
 }
 inline r_vec<r_str_view> get_old_class(SEXP x){
-  return r_vec<r_str_view>(get_attr(x, symbol::class_sym));
+  return r_vec<r_str_view>(get_attr(x, cached_sym<"class">()));
 }
 template <RObject T, RStringType U>
 void set_old_class(T& x, const r_vec<U>& cls){
-  set_attr(x, symbol::class_sym, cls);
+  set_attr(x, cached_sym<"class">(), cls);
 }
 template <RStringType U>
 bool inherits_any(SEXP x, const r_vec<U>& classes){

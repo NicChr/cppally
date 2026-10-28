@@ -12,6 +12,7 @@ namespace internal {
 // Lazily cache data frame class for re-use
 inline r_vec<r_str_view> data_frame_class(){
     static r_vec<r_str_view>& df_cls = *new r_vec<r_str_view>({ r_str_view(cached_str<"data.frame">()) });
+    MARK_NOT_MUTABLE(df_cls);
     return df_cls;
 }
     
@@ -26,6 +27,7 @@ inline r_vec<r_int> create_row_names(int n){
 // Cached row names attribute for fast single-row r_df creation
 inline r_vec<r_int> single_row_names(){
     static r_vec<r_int>& row_nm = *new r_vec<r_int>(create_row_names(1));
+    MARK_NOT_MUTABLE(row_nm);
     return row_nm;
 }
 
@@ -33,8 +35,8 @@ inline r_vec<r_sexp> new_df_impl(int nrows){
     r_vec<r_sexp> out{};
     r_vec<r_int> row_names = create_row_names(nrows);
     out.set_names(r_vec<r_str_view>());
-    attr::set_attr(out, symbol::class_sym, data_frame_class());
-    attr::set_attr(out, symbol::row_names_sym, row_names);
+    attr::set_attr(out, cached_sym<"class">(), data_frame_class());
+    attr::set_attr(out, cached_sym<"row.names">(), row_names);
     return out;
 }
 
@@ -51,7 +53,7 @@ struct r_df {
     private:
 
     int get_nrow() const noexcept {
-        return Rf_length(Rf_getAttrib(value, symbol::row_names_sym));
+        return Rf_length(Rf_getAttrib(value, cached_sym<"row.names">()));
     }
 
     int cached_nrow;
@@ -77,7 +79,7 @@ struct r_df {
     }
 
     void set_nrow(int n) {
-        attr::set_attr(value, symbol::row_names_sym, internal::create_row_names(n));
+        attr::set_attr(value, cached_sym<"row.names">(), internal::create_row_names(n));
         cached_nrow = n;
     }
 
@@ -86,7 +88,7 @@ struct r_df {
         if (rownames.length() != nrow()) [[unlikely]] {
             abort("(set_rownames): `length(rownames)` must match `nrow()`");
         }
-        attr::set_attr(value, symbol::row_names_sym, rownames);
+        attr::set_attr(value, cached_sym<"row.names">(), rownames);
     }
 
     template <RStringType U>
@@ -107,7 +109,7 @@ struct r_df {
         if (names.length() != ncol()) [[unlikely]] {
           abort("length of colnames must match `ncol()`");
         }
-        SEXP row_names = Rf_protect(Rf_getAttrib(value, symbol::row_names_sym));
+        SEXP row_names = Rf_protect(Rf_getAttrib(value, cached_sym<"row.names">()));
         if (TYPEOF(row_names) != INTSXP && TYPEOF(row_names) != STRSXP) [[unlikely]] {
             abort("rownames must be an integer or character vector");
         }

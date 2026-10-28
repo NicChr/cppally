@@ -523,7 +523,7 @@ struct r_vec {
     if (has_cached_names()){
       return;
     }
-    cache_names(r_vec<r_str_view>(Rf_getAttrib(*this, symbol::names_sym)));
+    cache_names(r_vec<r_str_view>(Rf_getAttrib(*this, cached_sym<"names">())));
   }
 
   public:
@@ -564,14 +564,14 @@ struct r_vec {
     maybe_ensure_exclusive();
 
     if (removing){
-      Rf_setAttrib(*this, symbol::names_sym, r_null);
+      Rf_setAttrib(*this, cached_sym<"names">(), r_null);
     } else {
       Rf_namesgets(*this, names);
     }
 
     invalidate_names_cache();
     // Re-get the attribute because we can't know if Rf_namesgets() copied the SEXP 
-    cache_names(r_vec<r_str_view>(r_sexp(Rf_getAttrib(*this, symbol::names_sym)), internal::no_checks_tag{}));
+    cache_names(r_vec<r_str_view>(r_sexp(Rf_getAttrib(*this, cached_sym<"names">())), internal::no_checks_tag{}));
   }
 
   // Remove vector names.
