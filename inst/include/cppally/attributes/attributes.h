@@ -24,11 +24,11 @@ inline void set_attr_impl(SEXP x, r_sym sym, SEXP value){
 
   safe[Rf_setAttrib](x, sym, value);
 
-  if (internal::ptrs_identical(sym, cached_sym<"names">())) [[unlikely]] {
+  if (internal::r_addresses_equal(sym, cached_sym<"names">())) [[unlikely]] {
     if (auto sp = internal::name_cache().try_lookup(x)){
       sp->invalidate();
     }
-  } else if (internal::ptrs_identical(sym, cached_sym<"levels">())) [[unlikely]] {
+  } else if (internal::r_addresses_equal(sym, cached_sym<"levels">())) [[unlikely]] {
     if (auto sp = internal::levels_cache().try_lookup(x)){
       sp->invalidate();
     }
@@ -117,10 +117,9 @@ template <RObject T>
 requires requires(T& x) { x.maybe_ensure_exclusive(); }
 void set_attr(T& x, r_sym sym, SEXP value){
   x.maybe_ensure_exclusive();
+  auto old = internal::get_core_attrs<T>(x);
   impl::set_attr_impl(x, sym, value);
-  if (unwrap(sym) == unwrap(cached_sym<"class">())){
-    internal::restore_immutable_class<T>(x);
-  }
+  internal::restore_core_attrs<T>(x, old);
 }
 // Do not use, use equivalent `set_names()` member.
 template <RObject T, RStringType U>
@@ -162,17 +161,19 @@ template <RObject T>
 requires requires(T& x) { x.maybe_ensure_exclusive(); }
 void clear_attrs(T& x){
   x.maybe_ensure_exclusive();
+  auto old = internal::get_core_attrs<T>(x);
   impl::clear_attrs_impl(x);
-  internal::restore_immutable_class<T>(x);
+  internal::restore_core_attrs<T>(x, old);
 }
 
 template <RObject T>
 requires requires(T& x) { x.maybe_ensure_exclusive(); }
 void set_attrs(T& x, const r_vec<r_sexp>& attrs){
   x.maybe_ensure_exclusive();
+  auto old = internal::get_core_attrs<T>(x);
   impl::clear_attrs_impl(x);
   impl::modify_attrs_impl(x, attrs);
-  internal::restore_immutable_class<T>(x);
+  internal::restore_core_attrs<T>(x, old);
 }
 
 }

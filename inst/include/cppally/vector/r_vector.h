@@ -483,8 +483,9 @@ struct r_vec {
     }
 
     maybe_ensure_exclusive();
+    auto old = internal::get_core_attrs<r_vec<T>>(*this);
     safe[SHALLOW_DUPLICATE_ATTRIB](*this, source);
-    internal::restore_immutable_class<r_vec<T>>(*this);
+    internal::restore_core_attrs<r_vec<T>>(*this, old);
     invalidate_names_cache();
 
     if (auto sp = internal::levels_cache().try_lookup(*this)) [[unlikely]] {

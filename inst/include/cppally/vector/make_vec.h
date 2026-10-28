@@ -52,8 +52,9 @@ requires requires(T& x) { x.maybe_ensure_exclusive(); }
 void modify_attrs(T& x, Args&&... args) {
   r_vec<r_sexp> attrs = make_vec<r_sexp>(std::forward<Args>(args)...);
   x.maybe_ensure_exclusive();
+  auto old = internal::get_core_attrs<T>(x);
   attr::impl::modify_attrs_impl(x, attrs);
-  internal::restore_immutable_class<T>(x);
+  internal::restore_core_attrs<T>(x, old);
 }
 
 }

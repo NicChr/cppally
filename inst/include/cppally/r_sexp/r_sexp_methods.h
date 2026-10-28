@@ -15,7 +15,7 @@ inline bool attrs_identical(const r_sexp& a, const r_sexp& b) {
     r_vec<r_sexp> a_attrs = attr::get_attrs(a);
     r_vec<r_sexp> b_attrs = attr::get_attrs(b);
 
-    if (internal::ptrs_identical(a_attrs, b_attrs)) return true;
+    if (internal::r_addresses_equal(a_attrs, b_attrs)) return true;
     if (a_attrs.length() != b_attrs.length()) return false;
     if (!identical_impl(a_attrs.names(), b_attrs.names())) return false;
 
@@ -32,7 +32,7 @@ inline bool attrs_identical(const r_sexp& a, const r_sexp& b) {
 template <RVector T>
 inline bool identical_impl(const T& a, const T& b) {
     
-    if (internal::ptrs_identical(a, b)) return true; // same pointer
+    if (internal::r_addresses_equal(a, b)) return true; // same pointer
     if (a.length() != b.length()) return false;
 
     bool x_has_attrs = attr::has_attrs(a);
@@ -61,7 +61,7 @@ inline bool identical_impl<r_df>(const r_df& a, const r_df& b) {
 
 inline bool identical_impl(const r_sexp& a, const r_sexp& b) {
 
-    if (internal::ptrs_identical(a, b)) return true;
+    if (internal::r_addresses_equal(a, b)) return true;
     
     if (a.is_null() || b.is_null()) return false; // If true it would have been caught by above ptr comparison
 

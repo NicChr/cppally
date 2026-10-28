@@ -191,59 +191,107 @@ inline unwrap_t<r_sexp> elt<r_sexp>(SEXP x, r_size_t i) {
 }
 
 
-// Immutable class (std::array) of r_vec<T>
+// Named-attribute as a pointer to a cached symbol and array of default values
+struct named_attr {
+  r_sym (*sym)();
+  std::array<const char*, 2> defaults{};
+};
+
+// Attributes that T must have for T to be valid.
+// For example, `r_factors` needs "factor" class & levels, `r_vector<r_date>` needs "Date" class.
+// Intentionally kept generic.
 template <typename T>
-constexpr auto immutable_class() noexcept {
+constexpr auto core_attrs() noexcept {
   if constexpr (RDataFrame<T>){
-    return std::array<const char*, 1>{"data.frame"};
+    return std::array<named_attr, 3>{{ {cached_sym<"class">, {"data.frame"}}, {cached_sym<"names">}, {cached_sym<"row.names">} }};
   } else if constexpr (RFactor<T>){
-    return std::array<const char*, 1>{"factor"};
+    return std::array<named_attr, 2>{{ {cached_sym<"class">, {"factor"}}, {cached_sym<"levels">} }};
   } else if constexpr (RVector<T>){
     using data_t = typename std::remove_cvref_t<T>::data_type;
     if constexpr (RDateType<data_t>){
-      return std::array<const char*, 1>{"Date"};
+      return std::array<named_attr, 1>{{ {cached_sym<"class">, {"Date"}} }};
     } else if constexpr (RPsxctType<data_t>){
-      return std::array<const char*, 2>{"POSIXct", "POSIXt"};
+      return std::array<named_attr, 2>{{ {cached_sym<"class">, {"POSIXct", "POSIXt"}}, {cached_sym<"tzone">, {"UTC"}} }};
     } else if constexpr (is<data_t, r_int64>){
-      return std::array<const char*, 1>{"integer64"};
+      return std::array<named_attr, 1>{{ {cached_sym<"class">, {"integer64"}} }};
     } else {
-      return std::array<const char*, 0>{};
+      return std::array<named_attr, 0>{};
     }
   } else {
-    return std::array<const char*, 0>{};
+    return std::array<named_attr, 0>{};
   }
 }
 
-// Immutable class (r_sexp) of r_vec<T>
 template <typename T>
-inline const r_sexp& immutable_class_sexp() {
-  static r_sexp& cls = *new r_sexp([]{
-    constexpr auto nms = immutable_class<T>();
-    r_sexp out = new_vec(STRSXP, static_cast<r_size_t>(nms.size()));
-    for (std::size_t i = 0; i < nms.size(); ++i){
-      SET_STRING_ELT(out, static_cast<r_size_t>(i), unwrap(r_str(nms[i])));
+using core_attr_values = std::array<r_sexp, core_attrs<T>().size()>;
+
+template <typename T>
+inline const core_attr_values<T>& core_attr_defaults() {
+  static constexpr auto attrs = core_attrs<T>();
+  static const core_attr_values<T>& defaults = *new core_attr_values<T>([]{
+    core_attr_values<T> out;
+    for (std::size_t i = 0; i < attrs.size(); ++i){
+      const auto& vals = attrs[i].defaults;
+      std::size_t n = 0;
+      while (n < vals.size() && vals[n] != nullptr){
+        ++n;
+      }
+      if (n > 0){
+        out[i] = new_vec(r_typeof_impl<r_vec<r_str>>, static_cast<r_size_t>(n));
+        for (std::size_t j = 0; j < n; ++j){
+          SET_STRING_ELT(out[i], static_cast<r_size_t>(j), unwrap(r_str(vals[j])));
+        }
+        MARK_NOT_MUTABLE(out[i]);
+      }
     }
-    MARK_NOT_MUTABLE(out);
     return out;
   }());
-  return cls;
+  return defaults;
 }
 
-// If an attribute replacement dropped any of T's required classes, reset them to their defaults
+// Current SEXP's core attributes
 template <typename T>
-inline void restore_immutable_class(SEXP x) {
-  
-  if (r_sexp(x, internal::view_tag{}).is_null()){
+inline core_attr_values<T> get_core_attrs(SEXP x) {
+  core_attr_values<T> out;
+  if constexpr (!core_attrs<T>().empty()){
+    static constexpr auto attrs = core_attrs<T>();
+    for (std::size_t i = 0; i < attrs.size(); ++i){
+      out[i] = r_sexp(Rf_getAttrib(x, attrs[i].sym()));
+    }
+  }
+  return out;
+}
+
+// Restore core attributes (after overriding them)
+inline void restore_core_attr(SEXP x, const named_attr& attr, SEXP old) {
+  if (is_null(old)){
     return;
   }
-
-  constexpr auto cls = immutable_class<T>();
-  if constexpr (!cls.empty()){
-    for (const char* c : cls){
-      if (!Rf_inherits(x, c)) [[unlikely]] {
-        safe[Rf_setAttrib](x, cached_sym<"class">(), immutable_class_sexp<T>());
-        return;
+  r_sym sym = attr.sym();
+  bool valid = true;
+  if (r_addresses_equal(sym, cached_sym<"class">())){
+    for (const char* cls : attr.defaults){
+      if (cls != nullptr && !Rf_inherits(x, cls)){
+        valid = false;
+        break;
       }
+    }
+  } else {
+    valid = !is_null(Rf_getAttrib(x, sym));
+  }
+  if (!valid) [[unlikely]] {
+    safe[Rf_setAttrib](x, sym, old);
+  }
+}
+
+// Restore possibly removed needed attributes.
+// e.g. Dates need "Date" class and factors need "factor" class and levels.
+template <typename T>
+inline void restore_core_attrs(SEXP x, const core_attr_values<T>& old) {
+  if constexpr (!core_attrs<T>().empty()){
+    static constexpr auto attrs = core_attrs<T>();
+    for (std::size_t i = 0; i < attrs.size(); ++i){
+      restore_core_attr(x, attrs[i], old[i]);
     }
   }
 }
@@ -253,14 +301,13 @@ template <RVal T>
 inline r_sexp new_vec_impl(r_size_t n, bool resizable = false) {
 
   r_sexp out = new_vec(r_typeof_impl<r_vec<T>>, n, resizable);
-  
-  if constexpr (RPsxctType<T>){
-    static r_sexp& utc_tz = *new r_sexp(safe[Rf_ScalarString](unwrap(r_str("UTC"))));
-    Rf_setAttrib(out, cached_sym<"tzone">(), utc_tz);
-  }
 
-  if constexpr (!immutable_class<r_vec<T>>().empty()){
-    Rf_setAttrib(out, cached_sym<"class">(), immutable_class_sexp<r_vec<T>>());
+  if constexpr (!core_attrs<r_vec<T>>().empty()){
+    static constexpr auto attrs = core_attrs<r_vec<T>>();
+    const auto& defaults = core_attr_defaults<r_vec<T>>();
+    for (std::size_t i = 0; i < attrs.size(); ++i){
+      Rf_setAttrib(out, attrs[i].sym(), defaults[i]);
+    }
   }
 
   return out;

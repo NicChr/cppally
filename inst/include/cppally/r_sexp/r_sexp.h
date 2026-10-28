@@ -127,7 +127,7 @@ inline bool is_altrep(SEXP x) noexcept {
 }
 
 namespace internal {
-inline bool ptrs_identical(SEXP x, SEXP y) noexcept {
+inline bool r_addresses_equal(SEXP x, SEXP y) noexcept {
   return x == y;
 }
 }
