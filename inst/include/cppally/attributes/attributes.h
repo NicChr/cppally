@@ -24,12 +24,12 @@ inline void set_attr_impl(SEXP x, r_sym sym, SEXP value){
 
   safe[Rf_setAttrib](x, sym, value);
 
-  if (internal::r_addresses_equal(sym, cached_sym<"names">())) [[unlikely]] {
-    if (auto sp = internal::name_cache().try_lookup(x)){
+  if (internal::r_addresses_equal(sym, cached_sym<"names">())) {
+    if (auto sp = internal::name_cache().try_lookup(x)) [[unlikely]] {
       sp->invalidate();
     }
-  } else if (internal::r_addresses_equal(sym, cached_sym<"levels">())) [[unlikely]] {
-    if (auto sp = internal::levels_cache().try_lookup(x)){
+  } else if (internal::r_addresses_equal(sym, cached_sym<"levels">())) {
+    if (auto sp = internal::levels_cache().try_lookup(x)) [[unlikely]] {
       sp->invalidate();
     }
   }
