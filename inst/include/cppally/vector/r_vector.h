@@ -426,14 +426,16 @@ struct r_vec {
 
   // data is copied but attributes are shallow copied, matching Rf_shallow_duplicate.
   [[nodiscard]] r_vec<T> copy() const {
-    if (is_null()) return *this;
+    if (is_null()){
+      return *this;
+    }
     r_size_t n = length();
-#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
-    // Keep capacity for resizable vectors
-    r_vec<T> new_vec = is_resizable() ? r_vec<T>(n, resizable{}, capacity()) : r_vec<T>(n);
-#else
-    r_vec<T> new_vec(n);
-#endif
+    #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+        // Keep capacity for resizable vectors
+        r_vec<T> new_vec = is_resizable() ? r_vec<T>(n, resizable{}, capacity()) : r_vec<T>(n);
+    #else
+        r_vec<T> new_vec(n);
+    #endif
 
     #if defined(CPPALLY_PRESERVE_ALTREP)
     r_copy_n(new_vec, *this, 0, n);
@@ -467,12 +469,17 @@ struct r_vec {
     #endif
   }
 
-  // Replace attributes of *this with a shallow copy of source's
+  // Replace attributes of *this with a shallow copy of source's.
+  // If *this is r_null then it is converted into a vector only if source has attributes.
   template <RVal U>
   void copy_attrs_from(const r_vec<U>& source) {
-    
+  
+    if (!has_attrs(source) && !has_attrs(*this)){
+      return;
+    }
+
     if (is_null()) [[unlikely]] {
-      abort("Cannot set attributes on `r_null`");
+      *this = r_vec<T>();
     }
 
     maybe_ensure_exclusive();
@@ -1086,18 +1093,26 @@ struct r_vec {
 
   // New vector resized to length `n`
   [[nodiscard]] r_vec<T> resize(r_size_t n) const {
+
+    if (is_null()){
+      return r_vec<T>(n);
+    }
+
     r_size_t vec_size = length();
-    if (n == vec_size || is_null()){
+
+    if (n == vec_size){
       return *this;
     } else {
-#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
-      r_vec<T> resized_vec = is_resizable() ? r_vec<T>(n, resizable{}, std::max(n, capacity())) : r_vec<T>(n);
-#else
-      r_vec<T> resized_vec(n);
-#endif
+    #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+          r_vec<T> resized_vec = is_resizable() ? r_vec<T>(n, resizable{}, std::max(n, capacity())) : r_vec<T>(n);
+    #else
+          r_vec<T> resized_vec(n);
+    #endif
       r_size_t n_to_copy = std::min(n, vec_size);
       r_copy_n(resized_vec, *this, 0, n_to_copy);
-      resized_vec.set_names(names().resize(n));
+      if (has_names()){
+        resized_vec.set_names(names().resize(n));
+      }
       return resized_vec;
     }
   }
@@ -1199,17 +1214,21 @@ struct r_vec {
   // Recycle vector elements to desired length
   [[nodiscard]] r_vec<T> rep_len(r_size_t n) const {
 
+    if (is_null()){
+      return r_vec<T>(n, na<T>());
+    }
+
     r_size_t size = length();
 
-    if (size == n || is_null()){
+    if (size == n){
       return *this;
     }
 
-#ifdef CPPALLY_HAS_RESIZABLE_VECTORS
-    r_vec<T> out = is_resizable() ? r_vec<T>(n, resizable{}, std::max(n, capacity())) : r_vec<T>(n);
-#else
-    r_vec<T> out(n);
-#endif
+    #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
+        r_vec<T> out = is_resizable() ? r_vec<T>(n, resizable{}, std::max(n, capacity())) : r_vec<T>(n);
+    #else
+        r_vec<T> out(n);
+    #endif
 
     if (size == 1){
       out.fill(view(0));
@@ -1232,7 +1251,9 @@ struct r_vec {
         out.fill(na<T>());
       }
     }
-    out.set_names(names().rep_len(n));
+    if (has_names()){
+      out.set_names(names().rep_len(n));
+    }
     return out;
   }
 
@@ -1317,13 +1338,26 @@ struct r_vec {
 
   void set_tzone(const char* tz) requires RPsxctType<T> {
     if (is_null()) [[unlikely]] {
-      return;
+      *this = r_vec<T>();
     }
     maybe_ensure_exclusive();
     safe[Rf_setAttrib](*this, cached_sym<"tzone">(), r_vec<r_str>({ r_str(tz) }));
   }
 
   private:
+
+  #if R_VERSION >= R_Version(4, 5, 0)
+    // Does *this have R attributes?
+    static bool has_attrs(SEXP x) noexcept {
+        return static_cast<bool>(ANY_ATTRIB(x));
+    }
+  #else
+    // Does *this have R attributes?
+    static bool has_attrs(SEXP x) {
+      static r_function& r_attrs_fn = *new r_function("attributes", env::base_env);
+      return !r_vec<r_sexp>(r_attrs_fn( {r_sexp(x, internal::view_tag{})} )).is_null();
+    }
+  #endif
 
   #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
     // n must be >= 0 and <= capacity
