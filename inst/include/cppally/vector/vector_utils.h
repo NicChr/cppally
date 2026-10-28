@@ -11,7 +11,7 @@ namespace cppally {
 
 namespace internal {
 
-inline r_sexp new_vec(SEXPTYPE type, r_size_t n, bool resizable = false){
+inline r_sexp new_vec(SEXPTYPE type, r_size_t n, [[maybe_unused]] bool resizable = false){
 #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
   if (resizable){
     return r_sexp(safe[R_allocResizableVector](type, n));
