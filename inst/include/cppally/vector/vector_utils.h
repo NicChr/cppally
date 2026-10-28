@@ -2,8 +2,10 @@
 #define CPPALLY_VECTOR_UTILS_H
 
 #include <cppally/scalar/scalars.h>
+#include <cppally/r_sexp/r_sexp_types.h>
 #include <cppally/r_sym.h>
 #include <cstring>
+#include <array>
 
 namespace cppally {
 
@@ -189,77 +191,51 @@ inline unwrap_t<r_sexp> elt<r_sexp>(SEXP x, r_size_t i) {
 }
 
 
+// Immutable class (std::array) of r_vec<T>
+template <typename T>
+constexpr auto immutable_class() noexcept {
+  if constexpr (RDateType<T>){
+    return std::array<const char*, 1>{"Date"};
+  } else if constexpr (RPsxctType<T>){
+    return std::array<const char*, 2>{"POSIXct", "POSIXt"};
+  } else if constexpr (is<T, r_int64>){
+    return std::array<const char*, 1>{"integer64"};
+  } else {
+    return std::array<const char*, 0>{};
+  }
+}
+
+// Immutable class (r_sexp) of r_vec<T>
+template <typename T>
+inline const r_sexp& immutable_class_sexp() {
+  static r_sexp& cls = *new r_sexp([]{
+    constexpr auto nms = immutable_class<T>();
+    r_sexp out = new_vec(STRSXP, static_cast<r_size_t>(nms.size()));
+    for (std::size_t i = 0; i < nms.size(); ++i){
+      SET_STRING_ELT(out, static_cast<r_size_t>(i), unwrap(r_str(nms[i])));
+    }
+    MARK_NOT_MUTABLE(out);
+    return out;
+  }());
+  return cls;
+}
+
 // Internal vec constructor
 template <RVal T>
 inline r_sexp new_vec_impl(r_size_t n, bool resizable = false) {
 
-  if constexpr (RDateType<T>){
-    static r_sexp& date_cls = *new r_sexp(safe[Rf_ScalarString](unwrap(r_str("Date"))));
-    r_sexp out = new_vec_impl<typename T::value_type>(n, resizable);
-    Rf_setAttrib(out, symbol::class_sym, date_cls);
-    return out;
-  } else if constexpr (RPsxctType<T>){
-
-    static r_sexp& psxct_cls = *new r_sexp([]{
-      r_sexp cls = new_vec_impl<r_str>(2);
-      SET_STRING_ELT(cls, 0, unwrap(r_str("POSIXct")));
-      SET_STRING_ELT(cls, 1, unwrap(r_str("POSIXt")));
-      return cls;
-    }());
-
+  r_sexp out = new_vec(r_typeof_impl<r_vec<T>>, n, resizable);
+  
+  if constexpr (RPsxctType<T>){
     static r_sexp& utc_tz = *new r_sexp(safe[Rf_ScalarString](unwrap(r_str("UTC"))));
-
-    r_sexp out = new_vec_impl<typename T::value_type>(n, resizable);
-    Rf_setAttrib(out, symbol::class_sym, psxct_cls);
     Rf_setAttrib(out, cached_sym<"tzone">(), utc_tz);
-    return out;
-  } else {
-    static_assert(
-      always_false<T>,
-      "Unimplemented `new_vec_impl` specialisation"
-    );
-    return r_null;
   }
-}
 
-template <>
-inline r_sexp new_vec_impl<r_lgl>(r_size_t n, bool resizable){
-  return internal::new_vec(LGLSXP, n, resizable);
-}
-template <>
-inline r_sexp new_vec_impl<r_int>(r_size_t n, bool resizable){
-  return internal::new_vec(INTSXP, n, resizable);
-}
-template <>
-inline r_sexp new_vec_impl<r_dbl>(r_size_t n, bool resizable){
-  return internal::new_vec(REALSXP, n, resizable);
-}
-template <>
-inline r_sexp new_vec_impl<r_int64>(r_size_t n, bool resizable){
-  static r_sexp& integer64_cls = *new r_sexp(safe[Rf_ScalarString](unwrap(r_str("integer64"))));
-  r_sexp out = internal::new_vec(REALSXP, n, resizable);
-  Rf_setAttrib(out, symbol::class_sym, integer64_cls);
+  if constexpr (!immutable_class<T>().empty()){
+    Rf_setAttrib(out, cached_sym<"class">(), immutable_class_sexp<T>());
+  }
+
   return out;
-}
-template <>
-inline r_sexp new_vec_impl<r_str_view>(r_size_t n, bool resizable){
-  return internal::new_vec(STRSXP, n, resizable);
-}
-template <>
-inline r_sexp new_vec_impl<r_str>(r_size_t n, bool resizable){
-  return internal::new_vec(STRSXP, n, resizable);
-}
-template <>
-inline r_sexp new_vec_impl<r_cplx>(r_size_t n, bool resizable){
-  return internal::new_vec(CPLXSXP, n, resizable);
-}
-template <>
-inline r_sexp new_vec_impl<r_raw>(r_size_t n, bool resizable){
-  return internal::new_vec(RAWSXP, n, resizable);
-}
-template <>
-inline r_sexp new_vec_impl<r_sexp>(r_size_t n, bool resizable){
-  return internal::new_vec(VECSXP, n, resizable);
 }
 
 }

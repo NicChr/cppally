@@ -484,6 +484,7 @@ struct r_vec {
 
     maybe_ensure_exclusive();
     safe[SHALLOW_DUPLICATE_ATTRIB](*this, source);
+    restore_immutable_attrs();
     invalidate_names_cache();
 
     if (auto sp = internal::levels_cache().try_lookup(*this)) [[unlikely]] {
@@ -1358,6 +1359,19 @@ struct r_vec {
       return !r_vec<r_sexp>(r_attrs_fn( {r_sexp(x, internal::view_tag{})} )).is_null();
     }
   #endif
+
+  // If an attribute replacement dropped any of T's required classes, reset them to their defaults
+  void restore_immutable_attrs() {
+    constexpr auto cls = internal::immutable_class<T>();
+    if constexpr (!cls.empty()){
+      for (const char* c : cls){
+        if (!Rf_inherits(*this, c)) [[unlikely]] {
+          safe[Rf_setAttrib](*this, cached_sym<"class">(), internal::immutable_class_sexp<T>());
+          return;
+        }
+      }
+    }
+  }
 
   #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
     // n must be >= 0 and <= capacity
