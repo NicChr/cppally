@@ -231,7 +231,7 @@ inline const r_sexp& immutable_class_sexp() {
 
 // If an attribute replacement dropped any of T's required classes, reset them to their defaults
 template <typename T>
-inline void restore_immutable_attrs(SEXP x) {
+inline void restore_immutable_class(SEXP x) {
   constexpr auto cls = immutable_class<T>();
   if constexpr (!cls.empty()){
     for (const char* c : cls){
