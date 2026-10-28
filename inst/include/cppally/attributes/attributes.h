@@ -118,6 +118,9 @@ requires requires(T& x) { x.maybe_ensure_exclusive(); }
 void set_attr(T& x, r_sym sym, SEXP value){
   x.maybe_ensure_exclusive();
   impl::set_attr_impl(x, sym, value);
+  if (unwrap(sym) == unwrap(cached_sym<"class">())){
+    internal::restore_immutable_class<T>(x);
+  }
 }
 // Do not use, use equivalent `set_names()` member.
 template <RObject T, RStringType U>
@@ -160,13 +163,16 @@ requires requires(T& x) { x.maybe_ensure_exclusive(); }
 void clear_attrs(T& x){
   x.maybe_ensure_exclusive();
   impl::clear_attrs_impl(x);
+  internal::restore_immutable_class<T>(x);
 }
 
 template <RObject T>
 requires requires(T& x) { x.maybe_ensure_exclusive(); }
 void set_attrs(T& x, const r_vec<r_sexp>& attrs){
-  clear_attrs(x);
+  x.maybe_ensure_exclusive();
+  impl::clear_attrs_impl(x);
   impl::modify_attrs_impl(x, attrs);
+  internal::restore_immutable_class<T>(x);
 }
 
 }
