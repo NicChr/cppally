@@ -193,7 +193,7 @@ inline unwrap_t<r_sexp> elt<r_sexp>(SEXP x, r_size_t i) {
 
 // Named-attribute as a pointer to a cached symbol and array of default values
 struct named_attr {
-  r_sym (*sym)();
+  r_sym (*sym)() = nullptr;
   std::array<const char*, 2> defaults{};
 };
 
