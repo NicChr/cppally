@@ -35,7 +35,7 @@ inline SEXP mk_char_utf8(const char* x, std::size_t n) {
 struct r_str {
   r_sexp value;
   using value_type = r_sexp;
-  r_str() : value{internal::lazy_str_impl<"">(), internal::view_tag{}} {}
+  r_str() : value{R_BlankString} {}
 
   explicit r_str(r_sexp x) : value(std::move(x)) {
     internal::check_valid_storage<r_str>(unwrap(value));
@@ -74,6 +74,10 @@ struct r_str {
 
   bool is_na() const noexcept {
     return unwrap(*this) == unwrap(na());
+  }
+
+  bool is_empty() const noexcept {
+    return unwrap(*this) == R_BlankString;
   }
 
   int n_bytes() const noexcept {
@@ -145,7 +149,7 @@ struct r_str_view {
   using value_type = SEXP;
 
   // Constructors
-  r_str_view() : value{static_cast<SEXP>(internal::lazy_str_impl<"">())} {}
+  r_str_view() : value{R_BlankString} {}
   explicit r_str_view(SEXP x) : value{x} {
     internal::check_valid_storage<r_str_view>(value);
   }
@@ -175,6 +179,10 @@ struct r_str_view {
 
   bool is_na() const noexcept {
     return unwrap(*this) == unwrap(na());
+  }
+
+  bool is_empty() const noexcept {
+    return unwrap(*this) == R_BlankString;
   }
 
   int n_bytes() const noexcept {
