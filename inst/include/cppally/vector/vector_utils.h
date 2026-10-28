@@ -222,14 +222,21 @@ constexpr auto core_attrs() noexcept {
   }
 }
 
-template <typename T>
-using core_attr_values = std::array<r_sexp, core_attrs<T>().size()>;
+// Named attribute and its associated SEXP
+struct attr_value {
+  const named_attr* attr = nullptr;
+  r_sexp value;
+};
 
 template <typename T>
-inline const core_attr_values<T>& core_attr_defaults() {
+using core_attr_values = std::array<attr_value, core_attrs<T>().size()>;
+
+template <typename T>
+inline const std::array<r_sexp, core_attrs<T>().size()>& core_attr_defaults() {
+  using defaults_t = std::array<r_sexp, core_attrs<T>().size()>;
   static constexpr auto attrs = core_attrs<T>();
-  static const core_attr_values<T>& defaults = *new core_attr_values<T>([]{
-    core_attr_values<T> out;
+  static const defaults_t& defaults = *new defaults_t([]{
+    defaults_t out;
     for (std::size_t i = 0; i < attrs.size(); ++i){
       const auto& vals = attrs[i].defaults;
       std::size_t n = 0;
@@ -256,21 +263,21 @@ inline core_attr_values<T> get_core_attrs(SEXP x) {
   if constexpr (!core_attrs<T>().empty()){
     static constexpr auto attrs = core_attrs<T>();
     for (std::size_t i = 0; i < attrs.size(); ++i){
-      out[i] = r_sexp(Rf_getAttrib(x, attrs[i].sym()));
+      out[i] = {&attrs[i], r_sexp(Rf_getAttrib(x, attrs[i].sym()))};
     }
   }
   return out;
 }
 
 // Restore core attributes (after overriding them)
-inline void restore_core_attr(SEXP x, const named_attr& attr, SEXP old) {
-  if (is_null(old)){
+inline void restore_core_attr(SEXP x, const attr_value& old) {
+  if (is_null(old.value)){
     return;
   }
-  r_sym sym = attr.sym();
+  r_sym sym = old.attr->sym();
   bool valid = true;
   if (r_addresses_equal(sym, cached_sym<"class">())){
-    for (const char* cls : attr.defaults){
+    for (const char* cls : old.attr->defaults){
       if (cls != nullptr && !Rf_inherits(x, cls)){
         valid = false;
         break;
@@ -280,7 +287,7 @@ inline void restore_core_attr(SEXP x, const named_attr& attr, SEXP old) {
     valid = !is_null(Rf_getAttrib(x, sym));
   }
   if (!valid) [[unlikely]] {
-    safe[Rf_setAttrib](x, sym, old);
+    safe[Rf_setAttrib](x, sym, old.value);
   }
 }
 
@@ -288,11 +295,8 @@ inline void restore_core_attr(SEXP x, const named_attr& attr, SEXP old) {
 // e.g. Dates need "Date" class and factors need "factor" class and levels.
 template <typename T>
 inline void restore_core_attrs(SEXP x, const core_attr_values<T>& old) {
-  if constexpr (!core_attrs<T>().empty()){
-    static constexpr auto attrs = core_attrs<T>();
-    for (std::size_t i = 0; i < attrs.size(); ++i){
-      restore_core_attr(x, attrs[i], old[i]);
-    }
+  for (const attr_value& v : old){
+    restore_core_attr(x, v);
   }
 }
 
