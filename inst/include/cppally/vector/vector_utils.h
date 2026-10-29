@@ -190,6 +190,15 @@ inline unwrap_t<r_sexp> elt<r_sexp>(SEXP x, r_size_t i) {
   return VECTOR_ELT(x, i);
 }
 
+// ----- Attribute handling -----
+// Attributes in R very often control object type.
+// A factor without its class and levels is just an integer vector.
+// C++ doesn't support type-replacement in-place since all types by design have to be declared, which is a problem for cppally types like
+// `r_vector<r_date>` and `r_factors` which wrap R's type-erased SEXP.
+// If `r_vector<r_date>` loses its "Date" class, R sees it as a plain numeric vector (`r_vector<r_date>`), but 
+// cppally still sees it as `r_vector<r_date>`. 
+// To solve this we need to make sure attributes fundamental for type-safety are never dropped.
+// `r_vector<r_date>` must never drop its "Date" class, `r_factors` must never drop its "factor" class or its levels, and so on.
 
 // Named-attribute as a pointer to a cached symbol and array of default values
 struct named_attr {
@@ -230,6 +239,7 @@ struct attr_value : named_attr {
 template <typename T>
 using core_attr_values = std::array<attr_value, core_attrs<T>().size()>;
 
+// Constructs defaults of T's core attributes
 template <typename T>
 inline const std::array<r_sexp, core_attrs<T>().size()>& core_attr_defaults() {
   using defaults_t = std::array<r_sexp, core_attrs<T>().size()>;
@@ -247,6 +257,7 @@ inline const std::array<r_sexp, core_attrs<T>().size()>& core_attr_defaults() {
         for (std::size_t j = 0; j < n; ++j){
           SET_STRING_ELT(out[i], static_cast<r_size_t>(j), unwrap(r_str(vals[j])));
         }
+        // Useful for copy-on-modify builds.
         MARK_NOT_MUTABLE(out[i]);
       }
     }
@@ -256,27 +267,32 @@ inline const std::array<r_sexp, core_attrs<T>().size()>& core_attr_defaults() {
 }
 
 // Current SEXP's core attributes
+// It returns the default values as well as what the SEXP actually has.
+// A factor might have class c("ordered", "factor"), while the default class attribute is just "factor".
 template <typename T>
-inline core_attr_values<T> get_core_attrs(SEXP x) {
+inline auto get_core_attrs(SEXP x) {
   core_attr_values<T> out;
-  if constexpr (!core_attrs<T>().empty()){
-    static constexpr auto attrs = core_attrs<T>();
-    for (std::size_t i = 0; i < attrs.size(); ++i){
-      out[i] = {attrs[i], r_sexp(Rf_getAttrib(x, attrs[i].sym()))};
-    }
+  static constexpr auto attrs = core_attrs<T>();
+  for (std::size_t i = 0; i < attrs.size(); ++i){
+    out[i] = {attrs[i], r_sexp(Rf_getAttrib(x, attrs[i].sym()))};
   }
   return out;
 }
 
 // Restore core attributes (after overriding them)
 inline void restore_core_attr(SEXP x, const attr_value& old) {
+  
+  // No attribute
   if (is_null(old.value)){
     return;
   }
+
   r_sym sym = old.sym();
   bool valid = true;
+  // Class is a "special-case" because we know what classes T should inherit
   if (r_addresses_equal(sym, cached_sym<"class">())){
     for (const char* cls : old.defaults){
+      // If target does not inherit default class then restore old's class
       if (cls != nullptr && !Rf_inherits(x, cls)){
         valid = false;
         break;
@@ -290,7 +306,7 @@ inline void restore_core_attr(SEXP x, const attr_value& old) {
   }
 }
 
-// Restore possibly removed needed attributes.
+// Restore possibly removed core attributes.
 // e.g. Dates need "Date" class and factors need "factor" class and levels.
 template <typename T>
 inline void restore_core_attrs(SEXP x, const core_attr_values<T>& old) {
