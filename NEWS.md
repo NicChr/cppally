@@ -43,6 +43,9 @@ to write their own `r_sexp` methods as and when they require them.
 - The `preserve_ties` argument of `order()` is deprecated and ignored. 
 Stable-sorting is now always used.
 
+- Default arguments are now explicitly rejected (before they were quietly ignored).
+They may be supported in a later package version.
+
 ## Bug fixes
 
 - Fixed a bug where matching on integer vectors with a non `NA` `nomatch` value
