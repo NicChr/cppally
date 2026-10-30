@@ -62,10 +62,10 @@ would produce a compiler error.
 - Fixed a rare bug where copying `r_str` elements with `r_copy_n()` would 
 let `CHARSXP` objects be prematurely garbage-collected.
 
-- Setting attributes (using cppally) now preserves immutable classes. 
-This includes the `Date` class for `r_vector<r_date>`, the `integer64` class 
+- Setting attributes (using cppally) now preserves immutable attributes. 
+This includes the `"Date"` class for `r_vector<r_date>`, the `"integer64"` class 
 for `r_vector<r_int64>`, and the `c("POSIXct", "POSIXt")` 
-class for `r_vector<r_psxct>`.
+class for `r_vector<r_psxct>`. `r_factors` now always keeps its levels as well. 
 
 ## r_function
 
