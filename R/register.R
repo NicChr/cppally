@@ -128,6 +128,7 @@ get_registered_functions <- function(decorations, tag, quiet = !is_interactive()
   out$functions <- lapply(out$context, parse_cpp_function, is_attribute = TRUE)
   is_template <- vapply(out$functions, \(x) attr(x, "cpp_template"), TRUE)
   out <- vctrs::vec_cbind(out, vctrs::vec_rbind(!!!out$functions))
+  check_no_default_args(out)
   out$is_template <- is_template
   out$template_params <- lapply(out$context, function(x) {
     # Combine context lines into one string for regex
@@ -190,6 +191,21 @@ generate_cpp_functions <- function(funs, package = "cppally") {
 
   out <- glue::glue_collapse(out, sep = "\n")
   unclass(out)
+}
+
+check_no_default_args <- function(funs) {
+  has_default <- vapply(funs$args, function(a) any(!is.na(a$default)), logical(1))
+  if (any(has_default)) {
+    bad <- vctrs::vec_slice(funs, has_default)
+    bad$defaulted <- vcapply(bad$args, function(a) paste(a$name[!is.na(a$default)], collapse = ", "))
+    msgs <- glue::glue_data(bad, "- `{name}` (args: {defaulted}) on line {line} in '{basename(file)}'.")
+    cli::cli_abort(
+      c(
+        "C++ default arguments are not supported in registered functions.",
+        {msgs}
+      )
+    )
+  }
 }
 
 check_init_signatures <- function(funs) {
