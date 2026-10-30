@@ -456,6 +456,18 @@ test_na_types <- function() {
   .Call(`_cppallytest_test_na_types`)
 }
 
+test_optional_add <- function(x, y = NULL) {
+  .Call(`_cppallytest_test_optional_add`, x, y)
+}
+
+test_optional_return <- function(x) {
+  .Call(`_cppallytest_test_optional_return`, x)
+}
+
+test_optional_add_template <- function(x, y = NULL) {
+  .Call(`_cppallytest_test_optional_add_template`, x, y)
+}
+
 test_protect_count_tracking <- function() {
   .Call(`_cppallytest_test_protect_count_tracking`)
 }

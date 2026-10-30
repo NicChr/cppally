@@ -7,6 +7,7 @@
 #include "test.h"
 #include "test_functionals.h"
 #include "test_nas.h"
+#include "test_optional.h"
 #include "test_refs.h"
 #include "test_rep.h"
 #include "test_replace_at.h"
@@ -1033,6 +1034,31 @@ extern "C" attribute_visible SEXP _cppallytest_test_na_types() {
   return cpp_to_r(::test_na_types());
   END_CPPALLY
 }
+// test_optional.h
+auto test_optional_add(r_dbl x, std::optional<r_int> y);
+extern "C" attribute_visible SEXP _cppallytest_test_optional_add(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_optional_add(r_to_cpp<r_dbl>(x), r_to_cpp<std::optional<r_int>>(y)));
+  END_CPPALLY
+}
+// test_optional.h
+std::optional<r_dbl> test_optional_return(r_dbl x);
+extern "C" attribute_visible SEXP _cppallytest_test_optional_return(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_optional_return(r_to_cpp<r_dbl>(x)));
+  END_CPPALLY
+}
+// test_optional.h
+extern "C" attribute_visible SEXP _cppallytest_test_optional_add_template(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return dispatch_template_impl<2, 2, std::array<int, 2>{0, 1}>(
+    []<typename T, typename U>(SEXP x_sexp, SEXP y_sexp) -> decltype(cpp_to_r(::test_optional_add_template(std::declval<T>(), std::declval<std::optional<U>>()))) {
+        return cpp_to_r(::test_optional_add_template(r_to_cpp<T>(x_sexp), r_to_cpp<std::optional<U>>(y_sexp)));
+    },
+    x, y
+  );
+  END_CPPALLY
+}
 // test_protect.cpp
 bool test_protect_count_tracking();
 extern "C" attribute_visible SEXP _cppallytest_test_protect_count_tracking() {
@@ -1436,6 +1462,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_names_sweep",                  (DL_FUNC) &_cppallytest_test_names_sweep,                  0},
     {"_cppallytest_test_nas",                          (DL_FUNC) &_cppallytest_test_nas,                          1},
     {"_cppallytest_test_null",                         (DL_FUNC) &_cppallytest_test_null,                         0},
+    {"_cppallytest_test_optional_add",                 (DL_FUNC) &_cppallytest_test_optional_add,                 2},
+    {"_cppallytest_test_optional_add_template",        (DL_FUNC) &_cppallytest_test_optional_add_template,        2},
+    {"_cppallytest_test_optional_return",              (DL_FUNC) &_cppallytest_test_optional_return,              1},
     {"_cppallytest_test_order",                        (DL_FUNC) &_cppallytest_test_order,                        1},
     {"_cppallytest_test_overflow",                     (DL_FUNC) &_cppallytest_test_overflow,                     0},
     {"_cppallytest_test_protect_burst_reserve",        (DL_FUNC) &_cppallytest_test_protect_burst_reserve,        0},
