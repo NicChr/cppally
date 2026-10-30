@@ -77,7 +77,7 @@ struct r_function {
     r_function() : r_function(internal::empty_fn(), internal::no_checks_tag{}) {}
     
     explicit r_function(r_sexp x) : value(std::move(x)) {
-      check_is_function(value);
+      internal::check_valid_storage<r_function>(value);
     }
 
     explicit r_function(SEXP x) : r_function(r_sexp(x)){}
@@ -118,12 +118,6 @@ struct r_function {
     
 
     private:
-
-    static void check_is_function(SEXP x) {
-      if (!Rf_isFunction(x)) [[unlikely]] {
-        abort("Bad construction from R type %s to C++ type r_function", Rf_type2char(TYPEOF(x)));
-      }
-    }
 
     r_sexp call_impl(const r_sexp& args, const r_sexp& env = env::global_env) const {
       r_sexp out = r_sexp(

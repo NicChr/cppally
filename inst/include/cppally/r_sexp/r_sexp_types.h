@@ -8,6 +8,7 @@
 #include <cppally/r_concepts.h>
 #include <cppally/r_sexp/protect.h>
 #include <cppally/string/string_literal.h>
+#include <array>
 
 namespace cppally {
 
@@ -110,42 +111,48 @@ constexpr const char* type_str(){
 
 // Mapping from C++ type to R TYPEOF
 
-template <typename T> inline constexpr uint16_t r_typeof_impl =             std::numeric_limits<uint16_t>::max();
-template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_lgl>> =          LGLSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_int>> =          INTSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_dbl>> =          REALSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_str_view>> =     STRSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_str>> =          STRSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_cplx>> =         CPLXSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_raw>> =          RAWSXP;
-template <RListVector T> inline constexpr uint16_t r_typeof_impl<T> =       VECSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_str_view> =            CHARSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_str> =                 CHARSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_sym> =                 SYMSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_int64>> =        REALSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_date>> =         REALSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_vec<r_psxct>> =        REALSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_factors> =             INTSXP;
-template<> inline constexpr uint16_t r_typeof_impl<r_df> =                  VECSXP;
+template <typename T> inline constexpr auto r_typeof_impl =                 std::array<uint16_t, 1> {std::numeric_limits<uint16_t>::max()};
+template<> inline constexpr auto r_typeof_impl<r_vec<r_lgl>> =              std::array<uint16_t, 1> {LGLSXP};
+template<> inline constexpr auto r_typeof_impl<r_vec<r_int>> =              std::array<uint16_t, 1> {INTSXP};
+template<> inline constexpr auto r_typeof_impl<r_vec<r_dbl>> =              std::array<uint16_t, 1> {REALSXP};
+template<> inline constexpr auto r_typeof_impl<r_vec<r_str_view>> =         std::array<uint16_t, 1> {STRSXP};
+template<> inline constexpr auto r_typeof_impl<r_vec<r_str>> =              std::array<uint16_t, 1> {STRSXP};
+template<> inline constexpr auto r_typeof_impl<r_vec<r_cplx>> =             std::array<uint16_t, 1> {CPLXSXP};
+template<> inline constexpr auto r_typeof_impl<r_vec<r_raw>> =              std::array<uint16_t, 1> {RAWSXP};
+template <RListVector T> inline constexpr auto r_typeof_impl<T> =           std::array<uint16_t, 1> {VECSXP};
+template<> inline constexpr auto r_typeof_impl<r_str_view> =                std::array<uint16_t, 1> {CHARSXP};
+template<> inline constexpr auto r_typeof_impl<r_str> =                     std::array<uint16_t, 1> {CHARSXP};
+template<> inline constexpr auto r_typeof_impl<r_sym> =                     std::array<uint16_t, 1> {SYMSXP};
+template<> inline constexpr auto r_typeof_impl<r_function> =                std::array<uint16_t, 3> {CLOSXP, BUILTINSXP, SPECIALSXP};
+template<> inline constexpr auto r_typeof_impl<r_vec<r_int64>> =            std::array<uint16_t, 1> {REALSXP};
+template<> inline constexpr auto r_typeof_impl<r_vec<r_date>> =             std::array<uint16_t, 1> {REALSXP};
+template<> inline constexpr auto r_typeof_impl<r_vec<r_psxct>> =            std::array<uint16_t, 1> {REALSXP};
+template<> inline constexpr auto r_typeof_impl<r_factors> =                 std::array<uint16_t, 1> {INTSXP};
+template<> inline constexpr auto r_typeof_impl<r_df> =                      std::array<uint16_t, 1> {VECSXP};
 
 
 // The above mappings represent the plain TYPEOF values of cppally objects, this enables r_vec<T> to check the primitive type id during construction
 // without rejecting objects such as `r_factors`
 // The below represents the actual cppally type id mapping
-template <typename T> constexpr uint16_t r_typeof =                         r_typeof_impl<T>;
-template<> inline constexpr uint16_t r_typeof<r_vec<r_int64>> =             CPPALLY_INT64SXP;
-template<> inline constexpr uint16_t r_typeof<r_vec<r_date>> =              CPPALLY_REALDATESXP;
-template<> inline constexpr uint16_t r_typeof<r_vec<r_psxct>> =             CPPALLY_REALPSXTSXP;
-template<> inline constexpr uint16_t r_typeof<r_factors> =                  CPPALLY_FCTSXP;
-template<> inline constexpr uint16_t r_typeof<r_df> =                       CPPALLY_DFSXP;
+template <typename T> constexpr uint16_t r_typeof =                             r_typeof_impl<T>[0];
+template<> inline constexpr uint16_t r_typeof<r_vec<r_int64>> =                 CPPALLY_INT64SXP;
+template<> inline constexpr uint16_t r_typeof<r_vec<r_date>> =                  CPPALLY_REALDATESXP;
+template<> inline constexpr uint16_t r_typeof<r_vec<r_psxct>> =                 CPPALLY_REALPSXTSXP;
+template<> inline constexpr uint16_t r_typeof<r_factors> =                      CPPALLY_FCTSXP;
+template<> inline constexpr uint16_t r_typeof<r_function> =                     CPPALLY_FUNCTIONSXP;
+template<> inline constexpr uint16_t r_typeof<r_df> =                           CPPALLY_DFSXP;
 
 // Low-level type ID check, primarily used in constructing cppally objects from SEXP
 // It checks storage via TYPEOF, hence does NOT check class
 template <typename T>
 inline void check_valid_storage(SEXP x){
-    if (r_typeof_impl<T> != TYPEOF(x)) [[unlikely]] {
-        abort("Bad construction from R type %s to C++ type %s", Rf_type2char(TYPEOF(x)), type_str<T>());
+    const uint16_t r_c_type = TYPEOF(x);
+    for (auto type : r_typeof_impl<T>){
+        if (type == r_c_type){
+            return;
+        }
     }
+    abort("Bad construction from R type %s to C++ type %s", Rf_type2char(r_c_type), type_str<T>());
 }
 
 }

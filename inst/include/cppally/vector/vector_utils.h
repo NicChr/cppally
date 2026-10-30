@@ -253,7 +253,7 @@ inline const std::array<r_sexp, core_attrs<T>().size()>& core_attr_defaults() {
         ++n;
       }
       if (n > 0){
-        out[i] = new_vec(r_typeof_impl<r_vec<r_str>>, static_cast<r_size_t>(n));
+        out[i] = new_vec(r_typeof_impl<r_vec<r_str>>[0], static_cast<r_size_t>(n));
         for (std::size_t j = 0; j < n; ++j){
           SET_STRING_ELT(out[i], static_cast<r_size_t>(j), unwrap(r_str(vals[j])));
         }
@@ -319,7 +319,7 @@ inline void restore_core_attrs(SEXP x, const core_attr_values<T>& old) {
 template <RVal T>
 inline r_sexp new_vec_impl(r_size_t n, bool resizable = false) {
 
-  r_sexp out = new_vec(r_typeof_impl<r_vec<T>>, n, resizable);
+  r_sexp out = new_vec(r_typeof_impl<r_vec<T>>[0], n, resizable);
 
   if constexpr (!core_attrs<r_vec<T>>().empty()){
     static constexpr auto attrs = core_attrs<r_vec<T>>();
