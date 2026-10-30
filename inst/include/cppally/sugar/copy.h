@@ -81,7 +81,7 @@ inline r_function deep_copy(const r_function& x){
 
 template<>
 inline r_sexp deep_copy(const r_sexp& x) {
-    return internal::view_sexp(x, []<typename vec_t>(const vec_t& vec) -> r_sexp {
+    return r_sexp_view(x, []<typename vec_t>(const vec_t& vec) -> r_sexp {
         if constexpr (!is<vec_t, r_sexp>){
             return r_sexp(deep_copy(vec));
         } else {
@@ -92,7 +92,7 @@ inline r_sexp deep_copy(const r_sexp& x) {
 
 template<>
 inline r_sexp shallow_copy(const r_sexp& x) {
-    return internal::view_sexp(x, []<typename vec_t>(const vec_t& vec) -> r_sexp {
+    return r_sexp_view(x, []<typename vec_t>(const vec_t& vec) -> r_sexp {
         if constexpr (!is<vec_t, r_sexp>){
             return r_sexp(shallow_copy(vec));
         } else {

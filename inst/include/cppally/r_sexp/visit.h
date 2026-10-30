@@ -56,31 +56,6 @@ inline void mutate_as(r_sexp& x, F&& f) {
 #define CPPALLY_CASE_VIEWING(LABELS, W) LABELS return f(W(x, view_tag{}, no_checks_tag{}));
 #define CPPALLY_CASE_MUTATE(LABELS, W)  LABELS mutate_as<W>(x, f); break;
 
-template <class F>
-decltype(auto) visit_sexp(const r_sexp& x, F&& f) {
-    switch (CPPALLY_TYPEOF(x)) {
-        CPPALLY_ALL_CASES(CPPALLY_CASE_OWNING)
-        default: return f(r_sexp(x));
-    }
-}
-
-template <class F>
-decltype(auto) view_sexp(const r_sexp& x, F&& f) {
-    switch (CPPALLY_TYPEOF(x)) {
-        CPPALLY_ALL_CASES(CPPALLY_CASE_VIEWING)
-        default: return f(r_sexp(x, view_tag{}));
-    }
-}
-
-// visit sexp and mutate underlying object in-place - for methods like free-function `fill()`
-template <class F>
-void mutate_sexp(r_sexp& x, F&& f) {
-    switch (CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
-        CPPALLY_ALL_CASES(CPPALLY_CASE_MUTATE)
-        default: mutate_as<r_sexp>(x, f); break;
-    }
-}
-
 // The reject path is deliberately not templated on F. F is a lambda, so it is unique
 // per call site; anything instantiated on it is emitted once per visit in the package.
 // Instead the set of wrappers F accepts is folded into a bitmask (probing a concept
@@ -208,13 +183,13 @@ void r_sexp_mutate(r_sexp& x, F&& f) {
 
 // Runtime predicate to check if r_sexp is visitable as a non-r_sexp
 inline bool is_visitable(const r_sexp& x){
-    return internal::view_sexp(x, []<typename T>(const T&) -> bool { return !is<T, r_sexp>; });
+    return internal::view_constrained(x, []<typename T>(const T&) -> bool { return !is<T, r_sexp>; });
 }
 
 template <typename T>
 requires (!is<T, r_sexp>)
 bool is_visitable(const r_sexp& x){
-    return internal::view_sexp(x, []<typename v>(const v&) -> bool { return is<v, T>; });
+    return internal::view_constrained(x, []<typename v>(const v&) -> bool { return is<v, T>; });
 }
 
 // // Visit the static-type that r_sexp holds, abort if it doesn't match.

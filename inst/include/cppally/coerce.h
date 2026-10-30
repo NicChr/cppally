@@ -47,12 +47,8 @@ inline T as_impl(const U& x) {
 template <NotSexp T, AnySexp U>
 inline T as_impl(const U& x) {
   if constexpr (is<U, r_sexp>){
-    return internal::visit_sexp(x, []<typename x_t> (const x_t& xvec) -> T {
-      if constexpr (is<x_t, r_sexp>){
-        abort("Don't know how to visit this `r_sexp`");
-      } else {
-        return as<T>(xvec);
-      }
+    return r_sexp_visit(x, []<typename x_t> requires (!is<x_t, r_sexp>) (const x_t& xvec) -> T {
+      return as<T>(xvec);
     });
   } else {
     return as<T>(static_cast<r_sexp>(x));
