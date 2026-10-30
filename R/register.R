@@ -74,6 +74,17 @@ is_lvalue_ref_arg <- function(x){
     !grepl("^\\s*const\\b", x, perl = TRUE)
 }
 
+# Is C++ arg a std::optional, e.g. std::optional<r_int> x
+is_optional_arg <- function(x){
+  grepl("^\\s*(const\\s+)?(::\\s*)?(std\\s*::\\s*)?optional\\s*<", x, perl = TRUE)
+}
+
+# std::optional args default to NULL in R, i.e. never supplied
+r_formals <- function(args){
+  args$formal <- ifelse(is_optional_arg(args$type), paste0(args$name, " = NULL"), args$name)
+  glue_collapse_data(args, "{formal}")
+}
+
 is_header <- function(x){
   file_extension(x) %in% c(".h", ".hpp")
 }
@@ -251,6 +262,7 @@ generate_r_functions <- function(funs, package = "cppally", use_package = FALSE)
 
   funs$package <- package
   funs$package_call <- package_call
+  funs$formals <- vcapply(funs$args, r_formals)
   funs$list_params <- vcapply(funs$args, glue_collapse_data, "{name}")
   funs$params <- vcapply(funs$list_params, function(x) if (nzchar(x)) paste0(", ", x) else x)
   is_void <- type_is_void(funs$return_type)
@@ -260,7 +272,7 @@ generate_r_functions <- function(funs, package = "cppally", use_package = FALSE)
   )
 
   out <- glue::glue_data(funs, '
-    {name} <- function({list_params}) {{
+    {name} <- function({formals}) {{
       {calls}
     }}
     ')

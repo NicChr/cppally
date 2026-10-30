@@ -18,6 +18,7 @@
 #include <cstring>
 #include <exception>
 #include <limits>
+#include <optional>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -63,26 +64,43 @@ inline CPPALLY_NOINLINE attribute_hidden const char* copy_error(const char* msg)
 
 // ── BOUNDARY CONVERSIONS ──────────────────────────────────────────────────────
 
-// RScalar -> RVector, everything else -> SEXP
+template <typename T>
+struct is_std_optional : std::false_type {};
+template <typename T>
+struct is_std_optional<std::optional<T>> : std::true_type {};
+template <typename T>
+inline constexpr bool is_std_optional_v = is_std_optional<std::remove_cvref_t<T>>::value;
+
+// RScalar -> RVector, nullopt -> NULL, everything else -> SEXP
 template <typename T>
 CPPALLY_NOINLINE SEXP cpp_to_r(const T& x) {
-    if constexpr (RScalar<T>){
+    if constexpr (is_std_optional_v<T>){
+      return x.has_value() ? cpp_to_r(*x) : static_cast<SEXP>(r_null);
+    } else if constexpr (RScalar<T>){
       return static_cast<SEXP>(r_vec<T>({ x }));
     } else {
       return as<SEXP>(x);
     }
 }
 
-// NULL is left alone where RComposite is concerned to allow passing optional arguments
+// NULL means the argument was never supplied: nullopt for std::optional, and left
+// alone where RComposite is concerned to allow passing optional arguments
 template <typename T>
 CPPALLY_NOINLINE auto r_to_cpp(SEXP x) {
     using out_t = std::remove_cvref_t<T>;
-    if constexpr (RComposite<out_t>){
-        if (x == R_NilValue){
-            return out_t(r_null);
+    if constexpr (is_std_optional_v<out_t>){
+        if (is_null(x)){
+            return out_t(std::nullopt);
         }
+        return out_t(as<typename out_t::value_type>(x));
+    } else {
+        if constexpr (RComposite<out_t>){
+            if (is_null(x)){
+                return out_t(r_null);
+            }
+        }
+        return as<out_t>(x);
     }
-    return as<out_t>(x);
 }
 
 
