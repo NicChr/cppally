@@ -8,8 +8,10 @@
 
 namespace cppally {
 
+namespace internal {
+
 template <RVector T>
-T unique(const T& x) {
+auto unique_impl(const T& x) {
 
   using data_t = typename T::data_type;
 
@@ -17,8 +19,6 @@ T unique(const T& x) {
   constexpr uint8_t one(1);
 
   r_size_t n = x.length();
-
-  T out = x;
 
   uint64_t cardinality_est = internal::get_hash_map_reserve_size<T>(x.data(), n);
 
@@ -35,19 +35,7 @@ T unique(const T& x) {
     }
   });
 
-  if (done) {
-
-    r_size_t n_unq = uniques.size();
-
-    if (n_unq < n) {
-      T res(n_unq);
-      for (r_size_t i = 0; i < n_unq; ++i) {
-        res.set(i, internal::unsafe_reconstruct_view<data_t>(uniques[i]));
-      }
-      out = std::move(res);
-    }
-
-  } else {
+  if (!done) {
 
     ankerl::unordered_dense::map<
       unwrap_t<data_t>,
@@ -62,16 +50,29 @@ T unique(const T& x) {
       seen.try_emplace(unwrap(x.view(i)), zero);
     }
 
-    r_size_t n_unq = seen.size();
-
-    if (n_unq < n) {
-      const auto& vals = seen.values();
-      T res(n_unq);
-      for (r_size_t i = 0; i < n_unq; ++i) {
-        res.set(i, internal::unsafe_reconstruct_view<data_t>(vals[i].first));
-      }
-      out = std::move(res);
+    const auto& vals = seen.values();
+    r_size_t n_unq = vals.size();
+    uniques.reserve(n_unq);
+    for (r_size_t i = 0; i < n_unq; ++i) {
+      uniques.push_back(vals[i].first);
     }
+  }
+  return uniques;
+}
+
+}
+
+template <RVector T>
+T unique(const T& x) {
+  using data_t = typename T::data_type;
+  auto uniques = internal::unique_impl(x);
+  r_size_t n_unq = uniques.size();
+  if (n_unq == x.length()) {
+    return x;
+  }
+  T out(n_unq);
+  for (r_size_t i = 0; i < n_unq; ++i) {
+    out.set(i, internal::unsafe_reconstruct_view<data_t>(uniques[i]));
   }
   return out;
 }
@@ -135,41 +136,7 @@ r_factors::r_factors(const T& x) : r_factors(x, unique(x)) {}
 // Helper to calculate n unique values - can be useful for various algorithms
 template <RVector T>
 r_size_t n_unique(const T& x) {
-
-  using data_t = typename T::data_type;
-
-  // Writing these in-line apparently prevents compiler-inlining, strange..
-  constexpr uint8_t zero(0);
-  constexpr uint8_t one(1);
-
-  r_size_t n = x.length();
-
-  // Try the dense int table first (For int with small range)
-
-  r_size_t n_unq = 0;
-
-  bool done = internal::try_dense_int_map(x, zero, [&n_unq, &x, one, n](auto&& try_emplace, auto&&) {
-    for (r_size_t i = 0; i < n; ++i) {
-      n_unq += try_emplace(x.view(i), one).second;
-    }
-  });
-
-  if (done) return n_unq;
-
-  ankerl::unordered_dense::map<
-    unwrap_t<data_t>,
-    int,
-    internal::r_hash_fn<data_t>,
-    internal::r_hash_eq<data_t>
-  > seen;
-
-  uint64_t cardinality_est = internal::get_hash_map_reserve_size<T>(x.data(), n);
-  seen.reserve(cardinality_est);
-
-  for (r_size_t i = 0; i < n; ++i) {
-    seen.try_emplace(unwrap(x.view(i)), zero);
-  }
-  return seen.size();
+  return internal::unique_impl(x).size();
 }
 
 inline r_size_t n_unique(const r_factors& x) {
