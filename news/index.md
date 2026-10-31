@@ -49,6 +49,9 @@
   [`order()`](https://bit64.r-lib.org/reference/bit64S3.html) is
   deprecated and ignored. Stable-sorting is now always used.
 
+- Default arguments are now explicitly rejected (before they were
+  quietly ignored). They may be supported in a later package version.
+
 ### Bug fixes
 
 - Fixed a bug where matching on integer vectors with a non `NA`
@@ -69,10 +72,11 @@
 - Fixed a rare bug where copying `r_str` elements with `r_copy_n()`
   would let `CHARSXP` objects be prematurely garbage-collected.
 
-- Setting attributes (using cppally) now preserves immutable classes.
-  This includes the `Date` class for `r_vector<r_date>`, the `integer64`
-  class for `r_vector<r_int64>`, and the `c("POSIXct", "POSIXt")` class
-  for `r_vector<r_psxct>`.
+- Setting attributes (using cppally) now preserves immutable attributes.
+  This includes the `"Date"` class for `r_vector<r_date>`, the
+  `"integer64"` class for `r_vector<r_int64>`, and the
+  `c("POSIXct", "POSIXt")` class for `r_vector<r_psxct>`. `r_factors`
+  now always keeps its levels as well.
 
 ### r_function
 
@@ -81,6 +85,50 @@
 - New helper `pkg_env` to return the environment of a package, allowing
   users to easily retrieve functions from specific packages,
   e.g. `r_function("foo", pkg_env<"bar">())`.
+
+### std::optional arguments
+
+- Registering functions with optional arguments is now fully supported
+  with `std::optional<T>`.
+
+- R’s `NULL` when passed to C++ becomes `std::nullopt`, and vice versa:
+  `std::nullopt` when passed to R becomes `NULL`.
+
+- Previously only `r_vector<T>` supported optional arguments via `NULL`,
+  but optional scalars are now supported, e.g. `std::optional<r_dbl>`.
+
+- `std::optional` arguments default to `NULL` in the registered R
+  function and so don’t need to be specified.
+
+C++ function with optional arg:
+
+``` cpp
+[[cppally::register]]
+r_dbl foo(r_dbl x, std::optional<r_dbl> y){
+  if (y.has_value()){
+    return x + y.value();
+  } else {
+    return x;
+  }
+}
+```
+
+This becomes the registered R function:
+
+``` r
+
+foo <- function(x, y = NULL) {
+  .Call(`_package_foo`, x, y)
+}
+```
+
+So both these are valid calls:
+
+``` r
+
+foo(100)
+foo(100, 200)
+```
 
 ### random_stream
 
