@@ -724,6 +724,44 @@ This will automatically add the necessary package content needed to start workin
 
 **Note:** We aim to integrate cppally registration into the `devtools` framework for ease-of-use.
 
+### Registering `std::optional` arguments
+
+cppally supports optional arguments via `std::optional`.
+
+``` cpp
+[[cppally::register]]
+r_vector<r_int> new_integers(int n, std::optional<r_int> fill){
+  if (fill.has_value()){
+    return r_vector<r_int>(n, fill.value()); // Filled with `fill`
+  } else {
+    return r_vector<r_int>(n, r_int(0)); // Filled with zeroes
+  }
+}
+```
+
+```{r, include=FALSE}
+cppally::cpp_source(code = '
+#include <cppally/vector/r_vector.h>
+using namespace cppally;
+
+[[cppally::register]]
+r_vector<r_int> new_integers(int n, std::optional<r_int> fill){
+  if (fill.has_value()){
+    return r_vector<r_int>(n, fill.value()); // Filled with `fill`
+  } else {
+    return r_vector<r_int>(n, r_int(0)); // Filled with zeroes
+  }
+}
+                    ', 
+  debug = TRUE)
+
+```
+
+```{r}
+new_integers(3)
+new_integers(3, fill = NA)
+```
+
 ## C++ types
 
 cppally offers a rich set of R types in C++ that are NA-aware. This means that common arithmetic and logical operations will account for `NA` in a similar fashion to R.
