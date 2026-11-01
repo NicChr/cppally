@@ -420,6 +420,7 @@ measure_ms <- function(expr){
 
 cost_per_hash_lookup <- numeric(250)
 nm <- names(large)[length(large) %/% 2]
+invisible(gc()) # Stop a pending GC landing in the first timed call
 for (i in 1:length(cost_per_hash_lookup)){
   cost_per_hash_lookup[i] <- measure_ms(do_lookup(large, nm, i)) / i
 }
