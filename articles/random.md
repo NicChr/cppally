@@ -33,7 +33,7 @@ builds a stream is reproducible from R.
 
 [[cppally::register]]
 r_dbl one_unif(){
-  return r_dbl(random_stream().uniform());
+  return r_dbl(random_stream().unif());
 }
 ```
 
@@ -85,7 +85,7 @@ r_vector<r_dbl> unif_deviates(int n){
   r_vector<r_dbl> out(n);
 
   for (r_size_t i = 0; i < n; ++i){
-    out.set(i, r.uniform());
+    out.set(i, r.unif());
   }
   return out;
 }
@@ -99,8 +99,8 @@ unif_deviates(10)
 #>  [8] 0.4336280 0.2818099 0.0432162
 ```
 
-`uniform()` returns a `double` in `[0, 1)` by default, but can return
-any range in `[a, b)`.
+`unif()` returns a `double` in `[0, 1)` by default, but can return any
+range in `[a, b)`.
 
 ## Explicit seeds
 
@@ -117,7 +117,7 @@ r_vector<r_dbl> unif_seeded(int n, uint64_t seed){
   r_vector<r_dbl> out(n);
 
   for (r_size_t i = 0; i < n; ++i){
-    out.set(i, r.uniform());
+    out.set(i, r.unif());
   }
   return out;
 }
@@ -200,8 +200,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression                           min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>                      <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_sample_int_with_replac…  236.4µs 389.25µs     2558.     391KB    19.1 
-#> 2 base_sample_int_with_replaceme…   2.23ms   2.35ms      423.     391KB     2.03
+#> 1 cppally_sample_int_with_replac… 237.42µs  385.7µs     2570.     391KB    19.2 
+#> 2 base_sample_int_with_replaceme…   2.28ms   2.37ms      420.     391KB     2.04
 ```
 
 In this simple benchmark we achieve a large speed improvement over base
@@ -249,11 +249,11 @@ be identical across platforms, compilers, or standard library versions.
 The same seed reproduces the same numbers on one machine, but not
 necessarily on somebody else’s. Relatedly, *Writing R Extensions* asks
 compiled code not to depend on the C++11 random number library - which
-is why `random_stream`’s own methods (`uniform()`, `index()`) are
+is why `random_stream`’s own methods (`unif()`, `index()`) are
 implemented directly rather than delegating to `<random>`.
 
-If cross-platform reproducibility matters, prefer `uniform()`/`index()`,
-or R’s own distribution functions via `draw_from_r()`.
+If cross-platform reproducibility matters, prefer `unif()`/`index()`, or
+R’s own distribution functions via `draw_from_r()`.
 
 ## Calling R C API RNG functions
 
@@ -407,8 +407,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally      23.4ms   23.5ms      41.4    15.4MB     27.6
-#> 2 base_r       61.7ms   61.8ms      16.2    23.1MB     48.6
+#> 1 cppally      23.6ms     24ms      40.6    15.4MB     23.7
+#> 2 base_r       62.8ms   62.8ms      15.9    23.1MB    112.
 ```
 
 The hand-tuned bootstrap mean naturally is faster.
@@ -423,8 +423,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression                      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>                 <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 boot_mean_cppally(x, 2000)  23.38ms  23.57ms      42.3    15.4MB     28.2
-#> 2 boot_mean(x, 2000)           4.36ms   4.36ms     229.     21.8KB      0
+#> 1 boot_mean_cppally(x, 2000)  23.78ms  24.09ms      41.3    15.4MB     22.2
+#> 2 boot_mean(x, 2000)           3.73ms   3.75ms     266.     21.8KB      0
 ```
 
 ### A flexible and fast bootstrapper
@@ -523,8 +523,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 boot_mean(x, 2000)    4.35ms   4.36ms      229.    15.7KB        0
-#> 2 boot_mean2(x, 2000)      5ms   5.01ms      199.    23.5KB        0
+#> 1 boot_mean(x, 2000)    3.73ms   3.75ms      266.    15.7KB        0
+#> 2 boot_mean2(x, 2000)   4.48ms   4.49ms      222.    23.5KB        0
 ```
 
 Almost as fast as the hand-tuned version, which is a nice result given
