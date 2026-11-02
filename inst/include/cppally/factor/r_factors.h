@@ -120,13 +120,16 @@ struct r_factors {
   // Methods that return factors
   FORWARD_FACTOR_METHOD(rep_len)
   FORWARD_FACTOR_METHOD(resize)
-  FORWARD_FACTOR_METHOD(copy)
 
   // Undefine the macros so they don't leak out of the struct
   #undef FORWARD_METHOD
   #undef FORWARD_MUTATING_METHOD
   #undef FORWARD_FACTOR_METHOD
 
+  [[nodiscard]] r_factors copy() const {
+    return r_factors(static_cast<r_sexp>(value.copy()), internal::no_checks_tag{});
+  }
+  
   r_vec<r_int> codes() const {
     r_vec<r_int> out(value.length());
     r_copy_n(out, value, 0, value.length());
