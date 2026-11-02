@@ -49,16 +49,19 @@ struct r_factors {
   }
 
   // For methods that return a factor
-  #define FORWARD_FACTOR_METHOD(NAME)                                     \
-      template <typename... Args>                                         \
-      requires requires(const r_vec<r_int>& v, Args&&... args) {          \
-          v.NAME(std::forward<Args>(args)...);                            \
-      }                                                                   \
-      [[nodiscard]] r_factors NAME(Args&&... args) const {                \
-          /* Call the method on the underlying r_vec<r_int> */            \
-          auto new_vec = value.NAME(std::forward<Args>(args)...);         \
-          /* Wrap it in a new r_factors and pass our current levels */    \
-          return r_factors(std::move(new_vec), this->levels(), false);    \
+  #define FORWARD_FACTOR_METHOD(NAME)                                           \
+      template <typename... Args>                                               \
+      requires requires(const r_vec<r_int>& v, Args&&... args) {                \
+          v.NAME(std::forward<Args>(args)...);                                  \
+      }                                                                         \
+      [[nodiscard]] r_factors NAME(Args&&... args) const {                      \
+          auto cls = attr::get_attr(*this, cached_sym<"class">());              \
+          /* Call the method on the underlying r_vec<r_int> */                  \
+          r_vec<r_int> codes = value.NAME(std::forward<Args>(args)...);         \
+          /* Wrap it in a new r_factors and pass our current levels */          \
+          r_factors out = r_factors(std::move(codes), this->levels(), false);   \
+          attr::set_attr(out, cached_sym<"class">(), cls);                      \
+          return out;                                                           \
       }
 
 
