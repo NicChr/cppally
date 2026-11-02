@@ -84,6 +84,14 @@ inline constexpr r_lgl operator||(r_lgl lhs, r_lgl rhs) noexcept {
   return internal::new_r_lgl(o & ~(o << 31));
 }
 
+inline constexpr r_lgl operator||(r_lgl lhs, bool rhs) noexcept {
+  return lhs || r_lgl(rhs);
+}
+
+inline constexpr r_lgl operator||(bool lhs, r_lgl rhs) noexcept {
+  return r_lgl(lhs) || rhs;
+}
+
 // ---------------------------------------------------------
 // OPTIMIZED AND (&&) for r_lgl
 // If either is 0, return 0.
@@ -100,11 +108,31 @@ inline constexpr r_lgl operator&&(r_lgl lhs, r_lgl rhs) noexcept {
   return internal::new_r_lgl(res);
 }
 
+inline constexpr r_lgl operator&&(r_lgl lhs, bool rhs) noexcept {
+  return lhs && r_lgl(rhs);
+}
+
+inline constexpr r_lgl operator&&(bool lhs, r_lgl rhs) noexcept {
+  return r_lgl(lhs) && rhs;
+}
+
 inline constexpr r_lgl operator|(r_lgl lhs, r_lgl rhs) noexcept {
   return lhs || rhs;
 }
+inline constexpr r_lgl operator|(r_lgl lhs, bool rhs) noexcept {
+  return lhs | r_lgl(rhs);
+}
+inline constexpr r_lgl operator|(bool lhs, r_lgl rhs) noexcept {
+  return r_lgl(lhs) | rhs;
+}
 inline constexpr r_lgl operator&(r_lgl lhs, r_lgl rhs) noexcept {
   return lhs && rhs;
+}
+inline constexpr r_lgl operator&(r_lgl lhs, bool rhs) noexcept {
+  return lhs & r_lgl(rhs);
+}
+inline constexpr r_lgl operator&(bool lhs, r_lgl rhs) noexcept {
+  return r_lgl(lhs) & rhs;
 }
 
 }
