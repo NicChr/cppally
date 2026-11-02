@@ -201,13 +201,15 @@ struct r_df {
     FORWARD_METHOD(address)
     FORWARD_METHOD(names)
     FORWARD_MUTATING_METHOD(set_names)
-
-    FORWARD_DATA_FRAME_METHOD(copy)
   
     // Undefine the macros so they don't leak out of the struct
     #undef FORWARD_METHOD
     #undef FORWARD_MUTATING_METHOD
     #undef FORWARD_DATA_FRAME_METHOD
+
+    [[nodiscard]] r_df copy() const {
+        return r_df(static_cast<r_sexp>(value.copy()), internal::no_checks_tag{});
+      }
 
     template <typename T>
     int col_index(const T& name) const {
