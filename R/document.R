@@ -11,7 +11,7 @@
 #' @export
 document <- function (pkg = ".", roclets = NULL, quiet = FALSE){
 
-  stop_unless_installed(c("rstudioapi", "withr", "roxygen2", "pkgload", "fs", "devtools"))
+  stop_unless_installed(c("rstudioapi", "withr", "roxygen2", "pkgload", "fs", "devtools", "cli"))
 
   pkg <- devtools::as.package(pkg)
 

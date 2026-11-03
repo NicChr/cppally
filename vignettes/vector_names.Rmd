@@ -17,6 +17,15 @@ knitr::opts_chunk$set(
 )
 ```
 
+```{r, include = FALSE}
+required <- c("bench", "brio", "callr", "cli", "decor",
+              "desc", "glue", "purrr", "readr", "stringr",
+              "usethis", "vctrs")
+if (!all(vapply(required, requireNamespace, logical(1), quietly = TRUE))) {
+  knitr::knit_exit()
+}
+```
+
 cppally vectors cache a hash map of their names. Doing this makes name-lookup 
 much faster, especially on repeated lookups.
 
