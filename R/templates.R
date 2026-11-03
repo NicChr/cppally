@@ -43,12 +43,19 @@ get_template_params <- function(context) {
   sub(".*\\s+(\\w+)$", "\\1", parts, perl = TRUE)
 }
 
-# decor cuts the signature at the first `{` and counts parens and `//` inside string
-# literals, so these are masked before parsing and restored in the parsed defaults.
+# decor cuts the signature at the first `{` or `;` line and counts parens, angle brackets
+# and `//` inside string literals, so these are masked before parsing and restored after.
 # Brace tokens carry parens so decor doesn't split on a comma inside braces
 brace_mask <- c(
   "{" = "CPPALLY_LBRACE_(",
   "}" = ")CPPALLY_RBRACE_"
+)
+
+# Commas inside nested parens are already protected, so `<` `>` there (e.g. `1 << 4`) are masked
+nested_mask <- c(
+  brace_mask,
+  "<" = "CPPALLY_LT_",
+  ">" = "CPPALLY_GT_"
 )
 
 literal_mask <- c(
@@ -56,7 +63,10 @@ literal_mask <- c(
   "}" = "CPPALLY_RBRACE_",
   "(" = "CPPALLY_LPAREN_",
   ")" = "CPPALLY_RPAREN_",
-  "/" = "CPPALLY_SLASH_"
+  "/" = "CPPALLY_SLASH_",
+  ";" = "CPPALLY_SEMI_",
+  "<" = "CPPALLY_LT_",
+  ">" = "CPPALLY_GT_"
 )
 
 # Masks up to the `)` that closes the parameter list, comments become a single space
@@ -106,7 +116,7 @@ mask_signature <- function(context) {
           return(context)
         }
       }
-      mask <- if (in_string) literal_mask else brace_mask
+      mask <- if (in_string) literal_mask else if (depth > 1L) nested_mask else brace_mask
       if (depth > 0L && ch %in% names(mask)) {
         chars[[j]] <- mask[[ch]]
       }
@@ -136,6 +146,7 @@ parse_cpp_function <- function(context, is_attribute = TRUE){
     context <- context[attr_idx:length(context)]
   }
   out <- decor::parse_cpp_function(mask_signature(context), is_attribute = is_attribute)
+  out$args[[1]]$type <- unmask_signature(out$args[[1]]$type)
   out$args[[1]]$default <- unmask_signature(out$args[[1]]$default)
   attr(out, "cpp_template") <- has_template
   out
