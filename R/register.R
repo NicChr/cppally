@@ -308,7 +308,6 @@ add_r_default_args <- function(args){
 
             `na<r_lgl>()` = NA,
             `na<r_int>()` = NA_integer_,
-            `na<r_int64>()` = quote(bit64::NA_integer64_),
             `na<r_dbl>()` = NA_real_,
             `na<r_str>()` = NA_character_,
             `na<r_str_view>()` = NA_character_,
@@ -318,7 +317,6 @@ add_r_default_args <- function(args){
 
             `r_lgl::na()` = NA,
             `r_int::na()` = NA_integer_,
-            `r_int64::na()` = quote(bit64::NA_integer64_),
             `r_dbl::na()` = NA_real_,
             `r_str::na()` = NA_character_,
             `r_str_view::na()` = NA_character_,
