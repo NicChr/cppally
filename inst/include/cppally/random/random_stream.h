@@ -1,6 +1,12 @@
 #ifndef CPPALLY_RANDOM_STREAM_H
 #define CPPALLY_RANDOM_STREAM_H
 
+// C++ random number generators.
+// random_stream() default construction uses R's current seed and hence is reproducible from R.
+// Every effort is being made to ensure that results are reproducible across platforms.
+// CURRENTLY EXPERIMENTAL - it is entirely possible that the API may be changed.
+// If an update knowingly results in changed reproducibility, it will be accompanied with a major version update, e.g. V1.X.X -> V2.0.0
+
 #include <cppally/r_setup.h>
 #include <cppally/utils.h> // for exp2
 #include <cppally/math/portable_log.h>
