@@ -66,6 +66,8 @@ and R integration.
 
 - Rich math library
 
+- `std::optional` arguments
+
 - Fast name-lookup via hash maps
 
 - Factor manipulation
