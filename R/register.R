@@ -90,12 +90,15 @@ r_formals <- function(args, fn_name, package, use_package = FALSE){
   r_defaults <- vcapply(args$r_default, deparse1)
   formals[has_r_default] <- paste0(args$name[has_r_default], " = ", r_defaults[has_r_default])
 
+  # The C++ default text is passed to the helper (which ignores it) so it shows in the signature
   helper <- needs_default_helper(args)
   helper_names <- default_helper_name(package, fn_name, args$name[helper])
+  cpp_defaults <- gsub("\\s+", " ", trimws(args$default[helper]))
+  cpp_defaults <- vcapply(cpp_defaults, deparse1)
   if (use_package) {
-    helper_calls <- glue::glue('.Call("{helper_names}", PACKAGE = "{package}")')
+    helper_calls <- glue::glue('.Call("{helper_names}", cpp_default = {cpp_defaults}, PACKAGE = "{package}")')
   } else {
-    helper_calls <- glue::glue('.Call(`{helper_names}`)')
+    helper_calls <- glue::glue('.Call(`{helper_names}`, cpp_default = {cpp_defaults})')
   }
   formals[helper] <- paste0(args$name[helper], " = ", helper_calls)
 
@@ -211,7 +214,7 @@ generate_cpp_functions <- function(funs, package = "cppally") {
   unclass(out)
 }
 
-# Each default without an R equivalent gets a 0-arg helper that evaluates it in C++
+# Each default without an R equivalent gets a helper that evaluates it in C++
 generate_default_helpers <- function(funs, package = "cppally") {
   helpers <- character()
   for (i in seq_len(NROW(funs))) {
@@ -223,7 +226,7 @@ generate_default_helpers <- function(funs, package = "cppally") {
       }
       helpers <- c(helpers, glue::glue('
         // {basename(funs$file[[i]])}
-        extern "C" attribute_visible SEXP {default_helper_name(package, fn_name, args$name[[j]])}() {{
+        extern "C" attribute_visible SEXP {default_helper_name(package, fn_name, args$name[[j]])}(SEXP /* cpp_default */) {{
           BEGIN_CPPALLY
           {args$type[[j]]} cppally_default = {args$default[[j]]};
           return cpp_to_r(cppally_default);
@@ -347,7 +350,7 @@ needs_default_helper <- function(args){
 }
 
 default_helper_name <- function(package, fn_name, arg_name){
-  glue::glue("_{package}_{fn_name}_default_{arg_name}")
+  glue::glue("_{package}_{fn_name}_arg_{arg_name}")
 }
 
 # The helper is a non-template function, so its default can't name a template param
