@@ -53,11 +53,24 @@ set.seed(42)
 
 ggplot2::theme_set(ggplot2::theme_grey())
 
+not_cran <- function(){
+ nzchar(Sys.getenv("CI")) || identical(Sys.getenv("NOT_CRAN"), "true") 
+}
 # Helpers to compile all examples in debug mode
 cpp_source <- function(..., code, debug = TRUE, env = parent.frame()){
   preamble <- c("#include <cppally.hpp>", "using namespace cppally;")
   code <- paste(c(preamble, code), collapse = "\n")
-  cppally::cpp_source(debug = debug, env = env, code = code, ...)
+  tryCatch(
+    cppally::cpp_source(
+      debug = debug, env = env, code = code, ...), 
+    error = function(e) {
+      
+      if (not_cran()){
+        stop(e)
+      }
+      knitr::knit_exit()
+    }
+  )
 }
 
 # Helpers to source and display C++/R code
