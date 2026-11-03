@@ -6,7 +6,7 @@
 #include <cppally/attributes/attributes.h>
 #include <cppally/identical.h>
 #include <cppally/random/random_stream.h>
-#include <bit>
+#include <cppally/std_compat.h>
 #include <algorithm>
 #include <cmath>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
@@ -19,11 +19,11 @@ namespace internal {
 
 // Different NaN have different bit representations so this normalises NaN hashing, and r_dbl::nan is guaranteed to not collide with r_dbl::na
 inline consteval uint64_t nan_bits() noexcept {
-    return std::bit_cast<uint64_t>(static_cast<double>(r_dbl::nan()));
+    return internal::bit_cast<uint64_t>(static_cast<double>(r_dbl::nan()));
 }
 
 inline consteval uint64_t na_real_bits() noexcept {
-    return std::bit_cast<uint64_t>(static_cast<double>(na<r_dbl>()));
+    return internal::bit_cast<uint64_t>(static_cast<double>(na<r_dbl>()));
 }
 
 // Hashing
@@ -76,7 +76,7 @@ inline uint64_t r_hash_impl(const r_dbl& x) noexcept {
     } else {
         // Hash normal double
         // +0.0 to normalise -0.0 and 0.0 
-        return mix_u64(std::bit_cast<uint64_t>(unwrap(x) + 0.0));
+        return mix_u64(internal::bit_cast<uint64_t>(unwrap(x) + 0.0));
     }
 };
 

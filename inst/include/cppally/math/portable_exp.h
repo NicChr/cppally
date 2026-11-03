@@ -4,7 +4,7 @@
 #define CPPALLY_PORTABLE_EXP_H
 
 #include <cppally/math/portable_log.h>
-#include <bit>
+#include <cppally/std_compat.h>
 
 namespace cppally {
 
@@ -52,7 +52,7 @@ namespace internal {
   if (ki < -1021) [[unlikely]] {
     return std::ldexp(v, static_cast<int>(ki));
   }
-  return std::bit_cast<double>(std::bit_cast<uint64_t>(v) + (static_cast<uint64_t>(ki) << 52));
+  return internal::bit_cast<double>(internal::bit_cast<uint64_t>(v) + (static_cast<uint64_t>(ki) << 52));
 }
 
 // The kernel compiled with hardware fma - only call when cpu_has_fma

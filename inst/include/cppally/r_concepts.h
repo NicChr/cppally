@@ -7,7 +7,7 @@
 #include <string_view>
 #include <complex> // For complex<double>
 #include <limits>
-#include <utility> // for cmp_less_equal
+#include <cppally/std_compat.h> // for cmp_less_equal
 
 
 // Forward declarations
@@ -290,11 +290,11 @@ inline consteval bool lossless_numeric_cast(){
         return false;
     } else {
         if constexpr (CppIntegerType<From> && CppIntegerType<To>){
-            return std::cmp_less_equal(
+            return internal::cmp_less_equal(
                 +std::numeric_limits<To>::min(),
                 +std::numeric_limits<From>::min()
             ) &&
-            std::cmp_greater_equal(
+            internal::cmp_greater_equal(
                 +std::numeric_limits<To>::max(),
                 +std::numeric_limits<From>::max()
             );

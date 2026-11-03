@@ -28,7 +28,7 @@
 #include <optional>
 #include <cmath>
 #include <algorithm> // For std::min
-#include <bit> // For std::bit_cast
+#include <cppally/std_compat.h> // For bit_cast
 
 namespace cppally {
 
@@ -110,7 +110,7 @@ inline auto to_radix_key(T x) noexcept {
             }
         }
 
-        const key_t u = std::bit_cast<key_t>(x + T(0)); // normalise -0.0 to 0.0
+        const key_t u = internal::bit_cast<key_t>(x + T(0)); // normalise -0.0 to 0.0
 
         constexpr int sign_shift = 8 * sizeof(T) - 1; // Position of sign bit
 

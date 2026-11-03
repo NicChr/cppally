@@ -4,7 +4,7 @@
 #include <cppally/r_concepts.h>
 #include <cppally/utils.h>
 #include <limits>
-#include <bit> // for std::bit_cast
+#include <cppally/std_compat.h> // for bit_cast
 
 namespace cppally {
 
@@ -15,7 +15,7 @@ namespace internal {
 // Checks the payload rather than the full bit pattern so NA survives FP operations
 // (add/sub/mul, negation) that quiet the signaling NaN or flip its sign bit.
 constexpr bool has_na_real_payload(double x) noexcept {
-  return (std::bit_cast<uint64_t>(x) & 0xFFFFFFFFULL) == 1954ULL;
+  return (internal::bit_cast<uint64_t>(x) & 0xFFFFFFFFULL) == 1954ULL;
 }
 
 }
@@ -34,14 +34,14 @@ struct r_dbl {
   // Bit 51 (quiet bit) = 0, so technically signaling NaN — a pattern R chose deliberately
   // Hex: 0x7ff00000 (Exp, bit51=0) << 32 | 0x7a2 (Payload).
   static constexpr r_dbl na() noexcept {
-    return r_dbl(std::bit_cast<double>(0x7ff00000000007a2ULL));
+    return r_dbl(internal::bit_cast<double>(0x7ff00000000007a2ULL));
   }
 
   static constexpr r_dbl nan() noexcept {
     constexpr double q = std::numeric_limits<double>::quiet_NaN();
     // If this NaN happens to contain 1954, convert it to 1955
     if constexpr (internal::has_na_real_payload(q)) {
-      return r_dbl(std::bit_cast<double>(std::bit_cast<uint64_t>(q) ^ 1ULL));
+      return r_dbl(internal::bit_cast<double>(internal::bit_cast<uint64_t>(q) ^ 1ULL));
     } else {
       return r_dbl(q);
     }
