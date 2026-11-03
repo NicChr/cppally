@@ -81,7 +81,13 @@ is_optional_arg <- function(x){
 
 # std::optional args default to NULL in R, i.e. never supplied
 r_formals <- function(args){
-  args$formal <- ifelse(is_optional_arg(args$type), paste0(args$name, " = NULL"), args$name)
+  has_default <- !vapply(args$r_default, inherits, logical(1), "cppally_no_default")
+  defaults <- vcapply(args$r_default, deparse1)
+  args$formal <- ifelse(
+    has_default,
+    paste0(args$name, " = ", defaults),
+    ifelse(is_optional_arg(args$type), paste0(args$name, " = NULL"), args$name)
+  )
   glue_collapse_data(args, "{formal}")
 }
 
@@ -128,7 +134,7 @@ get_registered_functions <- function(decorations, tag, quiet = !is_interactive()
   out$functions <- lapply(out$context, parse_cpp_function, is_attribute = TRUE)
   is_template <- vapply(out$functions, \(x) attr(x, "cpp_template"), TRUE)
   out <- vctrs::vec_cbind(out, vctrs::vec_rbind(!!!out$functions))
-  check_no_default_args(out)
+  out$args <- add_r_default_args(out$args)
   out$is_template <- is_template
   out$template_params <- lapply(out$context, function(x) {
     # Combine context lines into one string for regex
@@ -193,19 +199,103 @@ generate_cpp_functions <- function(funs, package = "cppally") {
   unclass(out)
 }
 
-check_no_default_args <- function(funs) {
-  has_default <- vapply(funs$args, function(a) any(!is.na(a$default)), logical(1))
-  if (any(has_default)) {
-    bad <- vctrs::vec_slice(funs, has_default)
-    bad$defaulted <- vcapply(bad$args, function(a) paste(a$name[!is.na(a$default)], collapse = ", "))
-    msgs <- glue::glue_data(bad, "- `{name}` (args: {defaulted}) on line {line} in '{basename(file)}'.")
-    cli::cli_abort(
-      c(
-        "C++ default arguments are not supported in registered functions.",
-        {msgs}
-      )
-    )
-  }
+no_default <- structure(list(), class = "cppally_no_default")
+
+add_r_default_args <- function(args){
+
+  lapply(
+    args,
+    \(arg){
+      cpp_defaults <- arg$default
+      r_defaults <- rep_len(list(no_default), length(cpp_defaults))
+
+      for (i in seq_along(cpp_defaults)){
+
+        cpp_default <- cpp_defaults[i]
+
+        if (is.na(cpp_default)){
+          next
+        }
+
+        # String literal defaults
+
+        str_literal <- sub('^\\s*(cppally::)?r_str\\s*\\(\\s*(".*")\\s*\\)\\s*$', "\\2", cpp_default)
+        if (str_literal != cpp_default){
+          parsed <- tryCatch(str2lang(str_literal), error = \(e) NULL)
+          r_defaults[i] <- list(if (is.character(parsed)) parsed else no_default)
+          next
+        }
+
+        # Strip cppally namespace and whitespace
+        cpp_default <- gsub("\\s+", "", gsub("cppally::", "", cpp_default, fixed = TRUE))
+
+        # Numeric literals
+
+        numeric_literal <- sub("^r_(int|int64|dbl)\\((.*)\\)$", "\\2", cpp_default)
+        if (!is.na(suppressWarnings(as.double(numeric_literal)))){
+          r_defaults[i] <- list(as.symbol(numeric_literal))
+          next
+        }
+
+        # Constants
+
+        r_defaults[i] <- list(
+          switch(
+            cpp_default,
+
+            # NULL
+
+            r_null = NULL,
+
+            # Logical constants
+
+            r_true = TRUE,
+            r_false = FALSE,
+            r_na = NA,
+            true = TRUE,
+            false = FALSE,
+            `r_lgl(true)` = TRUE,
+            `r_lgl(false)` = FALSE,
+
+            # NA
+
+            `na<r_lgl>()` = NA,
+            `na<r_int>()` = NA_integer_,
+            `na<r_int64>()` = quote(bit64::NA_integer64_),
+            `na<r_dbl>()` = NA_real_,
+            `na<r_str>()` = NA_character_,
+            `na<r_str_view>()` = NA_character_,
+            `na<r_cplx>()` = NA_complex_,
+            `na<r_date>()` = quote(as.Date(NA_real_)),
+            `na<r_psxct>()` = quote(as.POSIXct(NA_real_, tz = "")),
+
+            `r_lgl::na()` = NA,
+            `r_int::na()` = NA_integer_,
+            `r_int64::na()` = quote(bit64::NA_integer64_),
+            `r_dbl::na()` = NA_real_,
+            `r_str::na()` = NA_character_,
+            `r_str_view::na()` = NA_character_,
+            `r_cplx::na()` = NA_complex_,
+            `r_date::na()` = quote(as.Date(NA_real_)),
+            `r_psxct::na()` = quote(as.POSIXct(NA_real_, tz = "")),
+
+            # double constants NaN and Inf
+
+            `r_dbl::nan()` = NaN,
+            `r_dbl::inf()` = Inf,
+            `-r_dbl::inf()` = -Inf,
+
+            # Fallback to no default
+
+            no_default
+          )
+        )
+      }
+
+      arg$r_default <- r_defaults
+      arg
+    }
+  )
 }
 
 check_init_signatures <- function(funs) {
