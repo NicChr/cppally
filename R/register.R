@@ -211,6 +211,33 @@ generate_cpp_functions <- function(funs, package = "cppally") {
   unclass(out)
 }
 
+# Each default without an R equivalent gets a 0-arg helper that evaluates it in C++
+generate_default_helpers <- function(funs, package = "cppally") {
+  helpers <- character()
+  for (i in seq_len(NROW(funs))) {
+    args <- funs$args[[i]]
+    fn_name <- funs$name[[i]]
+    for (j in which(needs_default_helper(args))) {
+      if (funs$is_template[[i]]) {
+        check_default_template_param(fn_name, args$name[[j]], args$type[[j]], args$default[[j]], funs$template_params[[i]])
+      }
+      helpers <- c(helpers, glue::glue('
+        // {basename(funs$file[[i]])}
+        extern "C" attribute_visible SEXP {default_helper_name(package, fn_name, args$name[[j]])}() {{
+          BEGIN_CPPALLY
+          {args$type[[j]]} cppally_default = {args$default[[j]]};
+          return cpp_to_r(cppally_default);
+          END_CPPALLY
+        }}
+        '))
+    }
+  }
+  if (length(helpers) > 0) {
+    helpers <- c("", "// Default arguments", "", helpers)
+  }
+  helpers
+}
+
 no_default <- structure(list(), class = "cppally_no_default")
 
 add_r_default_args <- function(args){
@@ -339,30 +366,6 @@ check_default_template_param <- function(fn_name, arg_name, type, default, templ
     ))
   }
   invisible()
-}
-
-# Each default without an R equivalent gets a 0-arg helper that evaluates it in C++
-generate_default_helpers <- function(funs, package = "cppally") {
-  helpers <- character()
-  for (i in seq_len(NROW(funs))) {
-    args <- funs$args[[i]]
-    fn_name <- funs$name[[i]]
-    for (j in which(needs_default_helper(args))) {
-      if (funs$is_template[[i]]) {
-        check_default_template_param(fn_name, args$name[[j]], args$type[[j]], args$default[[j]], funs$template_params[[i]])
-      }
-      helpers <- c(helpers, glue::glue('
-        // {basename(funs$file[[i]])}
-        extern "C" attribute_visible SEXP {default_helper_name(package, fn_name, args$name[[j]])}() {{
-          BEGIN_CPPALLY
-          {args$type[[j]]} _default = {args$default[[j]]};
-          return cpp_to_r(_default);
-          END_CPPALLY
-        }}
-        '))
-    }
-  }
-  helpers
 }
 
 check_init_signatures <- function(funs) {
