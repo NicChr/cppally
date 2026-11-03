@@ -271,16 +271,24 @@ add_r_default_args <- function(args){
         # Strip cppally namespace and whitespace
         cpp_default <- gsub("\\s+", "", gsub("cppally::", "", cpp_default, fixed = TRUE))
 
-        # Numeric literals
+        # Numeric literals, translated so the R type matches the C++ type of the default
 
-        # Must start with a digit, and leading-zero integers are octal in C++ but decimal in R
-        numeric_literal <- sub("^r_(int|int64|dbl)\\((.*)\\)$", "\\2", cpp_default)
-        numeric_value <- suppressWarnings(as.double(numeric_literal))
-        is_numeric_literal <- grepl("^[-+]?\\.?[0-9]", numeric_literal) &&
-          !grepl("^[-+]?0[0-9]+$", numeric_literal) &&
-          !is.na(numeric_value) && abs(numeric_value) < 2^53
-        if (is_numeric_literal){
-          r_defaults[i] <- list(as.symbol(numeric_literal))
+        wrapper <- if (grepl("^r_(int|dbl)\\(.*\\)$", cpp_default)) sub("\\(.*", "", cpp_default) else ""
+        literal <- sub("^r_(int|dbl)\\((.*)\\)$", "\\2", cpp_default)
+        int_syntax <- grepl("^[-+]?([0-9]+|0[xX][0-9a-fA-F]+)$", literal)
+        # Leading-zero integers are octal in C++ but decimal in R
+        is_int_literal <- int_syntax && !grepl("^[-+]?0[0-9]+$", literal) &&
+          abs(as.double(literal)) <= .Machine$integer.max
+        # Must start with a digit, as as.double() also accepts names like INFINITY
+        is_dbl_literal <- !int_syntax && grepl("^[-+]?\\.?[0-9]", literal) &&
+          !is.na(suppressWarnings(as.double(literal)))
+
+        if (is_int_literal && wrapper != "r_dbl"){
+          r_defaults[i] <- list(as.symbol(paste0(literal, "L")))
+          next
+        }
+        if ((is_int_literal || is_dbl_literal) && wrapper != "r_int"){
+          r_defaults[i] <- list(as.symbol(literal))
           next
         }
 
