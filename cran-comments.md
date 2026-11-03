@@ -1,5 +1,5 @@
-## cppally 1.1.0
+## cppally 1.2.0
 
-Some bug fixes, improvements and API changes, listed in news.
+Bug fixes, improvements and API changes, listed in news.
 
 
