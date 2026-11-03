@@ -80,15 +80,26 @@ is_optional_arg <- function(x){
 }
 
 # std::optional args default to NULL in R, i.e. never supplied
-r_formals <- function(args){
-  has_default <- !vapply(args$r_default, inherits, logical(1), "cppally_no_default")
-  defaults <- vcapply(args$r_default, deparse1)
-  args$formal <- ifelse(
-    has_default,
-    paste0(args$name, " = ", defaults),
-    ifelse(is_optional_arg(args$type), paste0(args$name, " = NULL"), args$name)
-  )
-  glue_collapse_data(args, "{formal}")
+r_formals <- function(args, fn_name, package, use_package = FALSE){
+  formals <- args$name
+
+  optional <- is_optional_arg(args$type)
+  formals[optional] <- paste0(args$name[optional], " = NULL")
+
+  has_r_default <- !vapply(args$r_default, inherits, logical(1), "cppally_no_default")
+  r_defaults <- vcapply(args$r_default, deparse1)
+  formals[has_r_default] <- paste0(args$name[has_r_default], " = ", r_defaults[has_r_default])
+
+  helper <- needs_default_helper(args)
+  helper_names <- default_helper_name(package, fn_name, args$name[helper])
+  if (use_package) {
+    helper_calls <- glue::glue('.Call("{helper_names}", PACKAGE = "{package}")')
+  } else {
+    helper_calls <- glue::glue('.Call(`{helper_names}`)')
+  }
+  formals[helper] <- paste0(args$name[helper], " = ", helper_calls)
+
+  paste(formals, collapse = ", ")
 }
 
 is_header <- function(x){
@@ -195,6 +206,7 @@ generate_cpp_functions <- function(funs, package = "cppally") {
     )
   )
 
+  out <- c(out, generate_default_helpers(funs, package))
   out <- glue::glue_collapse(out, sep = "\n")
   unclass(out)
 }
@@ -231,8 +243,12 @@ add_r_default_args <- function(args){
 
         # Numeric literals
 
+        # Must start with a digit, and leading-zero integers are octal in C++ but decimal in R
         numeric_literal <- sub("^r_(int|int64|dbl)\\((.*)\\)$", "\\2", cpp_default)
-        if (!is.na(suppressWarnings(as.double(numeric_literal)))){
+        is_numeric_literal <- grepl("^[-+]?\\.?[0-9]", numeric_literal) &&
+          !grepl("^[-+]?0[0-9]+$", numeric_literal) &&
+          !is.na(suppressWarnings(as.double(numeric_literal)))
+        if (is_numeric_literal){
           r_defaults[i] <- list(as.symbol(numeric_literal))
           next
         }
@@ -246,6 +262,7 @@ add_r_default_args <- function(args){
             # NULL
 
             r_null = NULL,
+            `std::nullopt` = NULL,
 
             # Logical constants
 
@@ -285,7 +302,7 @@ add_r_default_args <- function(args){
             `r_dbl::inf()` = Inf,
             `-r_dbl::inf()` = -Inf,
 
-            # Fallback to no default
+            # No R equivalent, evaluated in C++ by a default helper instead
 
             no_default
           )
@@ -296,6 +313,56 @@ add_r_default_args <- function(args){
       arg
     }
   )
+}
+
+needs_default_helper <- function(args){
+  !is.na(args$default) & vapply(args$r_default, inherits, logical(1), "cppally_no_default")
+}
+
+default_helper_name <- function(package, fn_name, arg_name){
+  glue::glue("_{package}_{fn_name}_default_{arg_name}")
+}
+
+# The helper is a non-template function, so its default can't name a template param
+check_default_template_param <- function(fn_name, arg_name, type, default, template_params) {
+  # String literals blanked first, so `r_str("T")` is not read as naming `T`
+  code <- gsub('"([^"\\\\]|\\\\.)*"', '""', default, perl = TRUE)
+  refs <- vapply(template_params, function(p) {
+    is_template_arg(type, p) || grepl(paste0("\\b", p, "\\b"), code, perl = TRUE)
+  }, logical(1))
+  if (any(refs)) {
+    bad <- template_params[refs]
+    cli::cli_abort(c(
+      "Default arguments on template functions cannot depend on a template parameter.",
+      "x" = "Argument {.arg {arg_name}} of {.fn {fn_name}} depends on {.code {bad}}.",
+      "i" = "Defaults without an R equivalent are evaluated in a non-template C++ helper."
+    ))
+  }
+  invisible()
+}
+
+# Each default without an R equivalent gets a 0-arg helper that evaluates it in C++
+generate_default_helpers <- function(funs, package = "cppally") {
+  helpers <- character()
+  for (i in seq_len(NROW(funs))) {
+    args <- funs$args[[i]]
+    fn_name <- funs$name[[i]]
+    for (j in which(needs_default_helper(args))) {
+      if (funs$is_template[[i]]) {
+        check_default_template_param(fn_name, args$name[[j]], args$type[[j]], args$default[[j]], funs$template_params[[i]])
+      }
+      helpers <- c(helpers, glue::glue('
+        // {basename(funs$file[[i]])}
+        extern "C" attribute_visible SEXP {default_helper_name(package, fn_name, args$name[[j]])}() {{
+          BEGIN_CPPALLY
+          {args$type[[j]]} _default = {args$default[[j]]};
+          return cpp_to_r(_default);
+          END_CPPALLY
+        }}
+        '))
+    }
+  }
+  helpers
 }
 
 check_init_signatures <- function(funs) {
@@ -368,7 +435,9 @@ generate_r_functions <- function(funs, package = "cppally", use_package = FALSE)
 
   funs$package <- package
   funs$package_call <- package_call
-  funs$formals <- vcapply(funs$args, r_formals)
+  funs$formals <- mapply(r_formals, funs$args, funs$name,
+                         MoreArgs = list(package = package, use_package = use_package),
+                         SIMPLIFY = TRUE, USE.NAMES = FALSE)
   funs$list_params <- vcapply(funs$args, glue_collapse_data, "{name}")
   funs$params <- vcapply(funs$list_params, function(x) if (nzchar(x)) paste0(", ", x) else x)
   is_void <- type_is_void(funs$return_type)

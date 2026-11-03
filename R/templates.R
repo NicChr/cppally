@@ -43,6 +43,88 @@ get_template_params <- function(context) {
   sub(".*\\s+(\\w+)$", "\\1", parts, perl = TRUE)
 }
 
+# decor cuts the signature at the first `{` and counts parens and `//` inside string
+# literals, so these are masked before parsing and restored in the parsed defaults.
+# Brace tokens carry parens so decor doesn't split on a comma inside braces
+brace_mask <- c(
+  "{" = "CPPALLY_LBRACE_(",
+  "}" = ")CPPALLY_RBRACE_"
+)
+
+literal_mask <- c(
+  "{" = "CPPALLY_LBRACE_",
+  "}" = "CPPALLY_RBRACE_",
+  "(" = "CPPALLY_LPAREN_",
+  ")" = "CPPALLY_RPAREN_",
+  "/" = "CPPALLY_SLASH_"
+)
+
+# Masks up to the `)` that closes the parameter list, comments become a single space
+mask_signature <- function(context) {
+  depth <- 0L
+  in_string <- FALSE
+  in_comment <- FALSE
+  escaped <- FALSE
+  for (i in seq_along(context)) {
+    chars <- strsplit(context[[i]], "", fixed = TRUE)[[1]]
+    n <- length(chars)
+    for (j in seq_len(n)) {
+      ch <- chars[[j]]
+      nxt <- if (j < n) chars[[j + 1L]] else ""
+      if (in_comment) {
+        if (ch == "*" && nxt == "/") {
+          in_comment <- FALSE
+          chars[[j + 1L]] <- ""
+        }
+        chars[[j]] <- ""
+        next
+      }
+      if (in_string) {
+        if (escaped) {
+          escaped <- FALSE
+        } else if (ch == "\\") {
+          escaped <- TRUE
+        } else if (ch == '"') {
+          in_string <- FALSE
+        }
+      } else if (ch == '"') {
+        in_string <- TRUE
+      } else if (ch == "/" && nxt == "/") {
+        chars <- c(chars[seq_len(j - 1L)], " ")
+        break
+      } else if (ch == "/" && nxt == "*") {
+        # The `*` is consumed too, so `/*/` is not read as a closed comment
+        in_comment <- TRUE
+        chars[j:(j + 1L)] <- c(" ", "")
+        next
+      } else if (ch == "(") {
+        depth <- depth + 1L
+      } else if (ch == ")") {
+        depth <- depth - 1L
+        if (depth <= 0L) {
+          context[[i]] <- paste(chars, collapse = "")
+          return(context)
+        }
+      }
+      mask <- if (in_string) literal_mask else brace_mask
+      if (depth > 0L && ch %in% names(mask)) {
+        chars[[j]] <- mask[[ch]]
+      }
+    }
+    context[[i]] <- paste(chars, collapse = "")
+  }
+  context
+}
+
+# Paren-carrying brace tokens are restored first, before the bare ones
+unmask_signature <- function(x) {
+  masks <- c(brace_mask, literal_mask)
+  for (i in seq_along(masks)) {
+    x <- gsub(masks[[i]], names(masks)[[i]], x, fixed = TRUE)
+  }
+  x
+}
+
 parse_cpp_function <- function(context, is_attribute = TRUE){
   # Strip any template/requires preamble by dropping everything before the
   # [[ attribute line. Only called with is_attribute = TRUE (see register.R).
@@ -53,7 +135,8 @@ parse_cpp_function <- function(context, is_attribute = TRUE){
     has_template <- any(is_template_signature(preamble))
     context <- context[attr_idx:length(context)]
   }
-  out <- decor::parse_cpp_function(context, is_attribute = is_attribute)
+  out <- decor::parse_cpp_function(mask_signature(context), is_attribute = is_attribute)
+  out$args[[1]]$default <- unmask_signature(out$args[[1]]$default)
   attr(out, "cpp_template") <- has_template
   out
 }
