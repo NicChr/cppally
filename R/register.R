@@ -275,9 +275,10 @@ add_r_default_args <- function(args){
 
         # Must start with a digit, and leading-zero integers are octal in C++ but decimal in R
         numeric_literal <- sub("^r_(int|int64|dbl)\\((.*)\\)$", "\\2", cpp_default)
+        numeric_value <- suppressWarnings(as.double(numeric_literal))
         is_numeric_literal <- grepl("^[-+]?\\.?[0-9]", numeric_literal) &&
           !grepl("^[-+]?0[0-9]+$", numeric_literal) &&
-          !is.na(suppressWarnings(as.double(numeric_literal)))
+          !is.na(numeric_value) && abs(numeric_value) < 2^53
         if (is_numeric_literal){
           r_defaults[i] <- list(as.symbol(numeric_literal))
           next
