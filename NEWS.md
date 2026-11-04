@@ -1,4 +1,4 @@
-# cppally (development version)
+# cppally 1.2.0 (2026-11-04)
 
 ## Breaking changes
 
