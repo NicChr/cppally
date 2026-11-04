@@ -448,7 +448,7 @@ r_vec<r_str> group_names(const T& x, const groups& g) {
         int i = 0;
 
         while (i < n){
-            out.set(p_ids[i], r_str(as<r_str_view>(x.view(i)), internal::view_tag{}));
+            out.set(p_ids[i], r_str(internal::as_impl<r_str_view>(x.view(i)), internal::view_tag{}));
             i = internal::run_end(p_ids, i, n);
         }
 
@@ -463,7 +463,7 @@ r_vec<r_str> group_names(const T& x, const groups& g) {
             int curr_group = p_ids[i];
 
             if (!seen[curr_group]) {
-                out.set(curr_group, r_str(as<r_str_view>(x.view(i)), internal::view_tag{}));
+                out.set(curr_group, r_str(internal::as_impl<r_str_view>(x.view(i)), internal::view_tag{}));
                 seen[curr_group] = uint8_t(1);
                 ++n_seen;
             }

@@ -126,7 +126,7 @@ r_factors::r_factors(const T& x, const T& levels) : value(match(x, levels)){
   r_size_t n = levels.length();
   r_vec<r_str_view> str_levels(n);
   for (r_size_t i = 0; i < n; ++i) {
-      str_levels.set(i, as<r_str_view>(levels.view(i)));
+      str_levels.set(i, internal::as_impl<r_str_view>(levels.view(i)));
   }
   init_factor(str_levels, false);
 }
