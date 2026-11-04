@@ -65,6 +65,29 @@ r_vec<r_str_view> test_str2(r_str_view x){
   return as<r_vec<r_str_view>>(x);
 }
 
+static void churn_short_strings(){
+  R_gc();
+  r_vec<r_str> junk(100000);
+  char buf[8];
+  for (int i = 0; i < 100000; ++i){
+    std::snprintf(buf, sizeof(buf), "z%05d", i);
+    junk.set(i, r_str(buf));
+  }
+}
+
+// A coerced string-view argument must stay protected for the whole call
+[[cppally::register]]
+r_str test_str_view_gc(r_str_view x){
+  churn_short_strings();
+  return r_str(x);
+}
+
+[[cppally::register]]
+r_str test_c_str_gc(const char* x){
+  churn_short_strings();
+  return r_str(x);
+}
+
 [[cppally::register]]
 r_sexp test_null(){
   return r_null;

@@ -128,6 +128,9 @@ test_that("Simple registration tests", {
   expect_equal(test_str3("hi"), "hi")
   expect_equal(test_str4("hi"), "hi")
 
+  expect_equal(as.numeric(test_str_view_gc(3/8)), 3/8)
+  expect_equal(as.numeric(test_c_str_gc(3/8)), 3/8)
+
   # expect_equal(test_as_sym("hi"), as.symbol("hi"))
 
   expect_identical(test_sexp2(mean), test_sexp2(mean))

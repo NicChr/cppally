@@ -83,16 +83,26 @@ CPPALLY_NOINLINE SEXP cpp_to_r(const T& x) {
     }
 }
 
+struct str_arg {
+    r_str value;
+    operator r_str_view() const noexcept { return value; }
+    operator const char*() const noexcept { return value.c_str(); }
+};
+
 // NULL means the argument was never supplied: nullopt for std::optional, and left
 // alone where RComposite is concerned to allow passing optional arguments
 template <typename T>
 CPPALLY_NOINLINE auto r_to_cpp(SEXP x) {
     using out_t = std::remove_cvref_t<T>;
     if constexpr (is_std_optional_v<out_t>){
+        using arg_t = decltype(r_to_cpp<typename out_t::value_type>(x));
         if (is_null(x)){
-            return out_t(std::nullopt);
+            return std::optional<arg_t>(std::nullopt);
         }
-        return out_t(as<typename out_t::value_type>(x));
+        return std::optional<arg_t>(r_to_cpp<typename out_t::value_type>(x));
+    } else if constexpr (any<out_t, r_str_view, const char*>){
+        // Make sure the owner outlives the C++ call
+        return str_arg{as<r_str>(x)};
     } else {
         if constexpr (RComposite<out_t>){
             if (is_null(x)){

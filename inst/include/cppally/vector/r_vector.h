@@ -697,6 +697,7 @@ struct r_vec {
 
   template <IntegerNumber I, typename U>
   void set(I index, const U& val) {
+    maybe_ensure_exclusive();
     // Lists must not hold RScalar, only RComposite (e.g. vectors) and other SEXP types
     if constexpr (is<T, r_sexp>) {
       set(index, internal::as_list_element(val));

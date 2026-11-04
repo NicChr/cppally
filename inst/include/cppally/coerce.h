@@ -227,7 +227,9 @@ template <RComposite T, CastableToRScalar U>
 inline T as_impl(const U& x) {
   if constexpr (RVector<T>){
     using data_t = typename T::data_type;
-    return r_vec<data_t>({ as<data_t>(x) }); 
+    r_vec<data_t> out(1);
+    out.set(0, x);
+    return out;
   } else {
     using scalar_t = as_r_scalar_t<U>;
     return as<T>(r_vec<scalar_t>({ scalar_t(x) }));
