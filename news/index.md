@@ -1,11 +1,15 @@
 # Changelog
 
-## cppally (development version)
+## cppally 1.2.0 (2026-11-04)
 
 ### Breaking changes
 
 - `r_size_t` is now always `int64_t` on 64-bit platforms and so does not
   always align with R’s `R_xlen_t`.
+
+- `r_sexp::length` has been fully deprecated and removed. Use
+  [`cppally::length`](https://rdrr.io/r/base/length.html) for returning
+  object length.
 
 - Sequences no longer abort on overflow, but instead silently return
   `NA`.
@@ -22,10 +26,6 @@
 - `r_factors` member functions `get_codes`, `set_codes`, and `new_codes`
   have been removed. The functionality of these can be achieved with the
   existing members.
-
-- `r_sexp::length` has been fully deprecated and removed. Use
-  [`cppally::length`](https://rdrr.io/r/base/length.html) for returning
-  object length.
 
 - `as<r_str>(r_dbl::inf())` now returns title case `r_str("Inf")`
   instead of lower case `r_str("inf")`. Similarly
@@ -50,7 +50,8 @@
   deprecated and ignored. Stable-sorting is now always used.
 
 - Default arguments are now explicitly rejected (before they were
-  quietly ignored). They may be supported in a later package version.
+  quietly ignored). Default arguments will almost certainly be supported
+  in the next release.
 
 ### Bug fixes
 

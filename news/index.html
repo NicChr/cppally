@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cppally</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,25 +42,25 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="cppally-development-version">cppally (development version)<a class="anchor" aria-label="anchor" href="#cppally-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="1.2.0" id="cppally-120-2026-11-04">cppally 1.2.0 (2026-11-04)<a class="anchor" aria-label="anchor" href="#cppally-120-2026-11-04"></a></h2>
 <div class="section level3">
-<h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
+<h3 id="breaking-changes-1-2-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-1-2-0"></a></h3>
 <ul><li><p><code>r_size_t</code> is now always <code>int64_t</code> on 64-bit platforms and so does not always align with R’s <code>R_xlen_t</code>.</p></li>
+<li><p><code>r_sexp::length</code> has been fully deprecated and removed. Use <code><a href="https://rdrr.io/r/base/length.html" class="external-link">cppally::length</a></code> for returning object length.</p></li>
 <li><p>Sequences no longer abort on overflow, but instead silently return <code>NA</code>.</p></li>
 <li><p>Removed <code>r_vec::subset</code> and <code>r_factors::subset</code> as they didn’t thematically fit in with the rest of the members. The free <code>subset</code> function is still available.</p></li>
 <li><p>Renamed <code>common_length</code> to <code>list_common_length</code>. <code>common_length</code> now accepts variadic inputs.</p></li>
 <li><p>Relocated various headers to and from the sugar folder.</p></li>
 <li><p><code>r_factors</code> member functions <code>get_codes</code>, <code>set_codes</code>, and <code>new_codes</code> have been removed. The functionality of these can be achieved with the existing members.</p></li>
-<li><p><code>r_sexp::length</code> has been fully deprecated and removed. Use <code><a href="https://rdrr.io/r/base/length.html" class="external-link">cppally::length</a></code> for returning object length.</p></li>
 <li><p><code>as&lt;r_str&gt;(r_dbl::inf())</code> now returns title case <code>r_str("Inf")</code> instead of lower case <code>r_str("inf")</code>. Similarly <code>as&lt;r_str&gt;( -r_dbl::inf() )</code> returns <code>r_str("-Inf")</code>.</p></li>
 <li><p>C++ char types (except <code>const char*</code> and <code>unsigned char</code>) no longer satisfy <code>CastableToRScalar</code> and therefore cannot participate in R/C++ function registration.</p></li>
 <li><p>Many <code>r_sexp</code>-based free functions have been removed and there are a few reasons for doing so. The first being that cppally didn’t provide a complete set of <code>r_sexp</code> free functions anyway, and so providing an incomplete set felt lackluster. Another reason is that removing these methods speeds up compilation and makes the API more lightweight and predictable. Users are now encouraged to write their own <code>r_sexp</code> methods as and when they require them.</p></li>
 <li><p><code>r_sym::value_type</code> is now correctly <code>SEXP</code> and not <code>r_sexp</code>.</p></li>
 <li><p>The <code>preserve_ties</code> argument of <code><a href="https://bit64.r-lib.org/reference/bit64S3.html" class="external-link">order()</a></code> is deprecated and ignored. Stable-sorting is now always used.</p></li>
-<li><p>Default arguments are now explicitly rejected (before they were quietly ignored). They may be supported in a later package version.</p></li>
+<li><p>Default arguments are now explicitly rejected (before they were quietly ignored). Default arguments will almost certainly be supported in the next release.</p></li>
 </ul></div>
 <div class="section level3">
-<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<h3 id="bug-fixes-1-2-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-2-0"></a></h3>
 <ul><li><p>Fixed a bug where matching on integer vectors with a non <code>NA</code> <code>nomatch</code> value would still return <code>NA</code>.</p></li>
 <li><p>Fixed a bug where getting <code>r_df</code> rows would return CHARSXP instead of STRSXP.</p></li>
 <li><p>Fixed a bug where <code>r_vec::apply</code> would throw a compiler error when called on lists and character vectors.</p></li>
@@ -70,12 +70,12 @@
 <li><p>Setting attributes (using cppally) now preserves immutable attributes. This includes the <code>"Date"</code> class for <code>r_vector&lt;r_date&gt;</code>, the <code>"integer64"</code> class for <code>r_vector&lt;r_int64&gt;</code>, and the <code>c("POSIXct", "POSIXt")</code> class for <code>r_vector&lt;r_psxct&gt;</code>. <code>r_factors</code> now always keeps its levels as well.</p></li>
 </ul></div>
 <div class="section level3">
-<h3 id="r_function-development-version">r_function<a class="anchor" aria-label="anchor" href="#r_function-development-version"></a></h3>
+<h3 id="r_function-1-2-0">r_function<a class="anchor" aria-label="anchor" href="#r_function-1-2-0"></a></h3>
 <ul><li><p>New class <code>r_function</code> to safely call R functions from C++.</p></li>
 <li><p>New helper <code>pkg_env</code> to return the environment of a package, allowing users to easily retrieve functions from specific packages, e.g. <code>r_function("foo", pkg_env&lt;"bar"&gt;())</code>.</p></li>
 </ul></div>
 <div class="section level3">
-<h3 id="stdoptional-arguments-development-version">std::optional arguments<a class="anchor" aria-label="anchor" href="#stdoptional-arguments-development-version"></a></h3>
+<h3 id="stdoptional-arguments-1-2-0">std::optional arguments<a class="anchor" aria-label="anchor" href="#stdoptional-arguments-1-2-0"></a></h3>
 <ul><li><p>Registering functions with optional arguments is now fully supported with <code>std::optional&lt;T&gt;</code>.</p></li>
 <li><p>R’s <code>NULL</code> when passed to C++ becomes <code>std::nullopt</code>, and vice versa: <code>std::nullopt</code> when passed to R becomes <code>NULL</code>.</p></li>
 <li><p>Previously only <code>r_vector&lt;T&gt;</code> supported optional arguments via <code>NULL</code>, but optional scalars are now supported, e.g. <code>std::optional&lt;r_dbl&gt;</code>.</p></li>
@@ -100,7 +100,7 @@
 <span><span class="fu">foo</span><span class="op">(</span><span class="fl">100</span>, <span class="fl">200</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="random_stream-development-version">random_stream<a class="anchor" aria-label="anchor" href="#random_stream-development-version"></a></h3>
+<h3 id="random_stream-1-2-0">random_stream<a class="anchor" aria-label="anchor" href="#random_stream-1-2-0"></a></h3>
 <ul><li><p>A new class <code>random_stream</code>, allowing one to use C++ random number generators, while preserving reproducibility from R’s seed. This means that numbers drawn from <code>random_stream</code> are reproducible via <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code>.</p></li>
 <li><p><code>random_stream</code> is driven by xoshiro256++ (Blackman &amp; Vigna) via the bundled Xoshiro-cpp library (Ryo Suzuki, MIT), rather than a <code>&lt;random&gt;</code> engine. It still models <code>std::uniform_random_bit_generator</code>, so it can be handed to <code>&lt;random&gt;</code> distributions and algorithms such as <code>std::shuffle</code>.</p></li>
 <li><p>Default-constructing a <code>random_stream</code> seeds it from R’s RNG (via two <code>unif_rand()</code> draws), so <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> still determines every draw, while R’s RNG state is only touched once per stream rather than once per draw.</p></li>
@@ -111,7 +111,7 @@
 <li><p><code>draw_from_r</code> must be used if one wishes to call scalar RNG functions from the R C API header ‘Random.h’.</p></li>
 </ul></div>
 <div class="section level3">
-<h3 id="r_date--r_psxct-development-version">r_date &amp; r_psxct<a class="anchor" aria-label="anchor" href="#r_date--r_psxct-development-version"></a></h3>
+<h3 id="r_date--r_psxct-1-2-0">r_date &amp; r_psxct<a class="anchor" aria-label="anchor" href="#r_date--r_psxct-1-2-0"></a></h3>
 <p>A new complete set of fast and parallelisable thread-safe member and free functions for <code>r_date</code> and <code>r_psxct</code>, which respectively represent R dates and date-times. Currently, all <code>r_date</code> and <code>r_psxct</code> member functions are thread-safe except for <code>r_date::date_str()</code> and <code>r_psxct::datetime_str()</code>.</p>
 <ul><li><p>New field accessors like <code>year()</code>, <code>month()</code>, <code>week()</code>, <code>day()</code>, <code>hour()</code>, <code>minute()</code>, <code>second()</code>, <code>iso_week()</code> and <code>iso_year()</code>.</p></li>
 <li><p>New date arithmetic member template function <code>add&lt;&gt;</code>, allowing flexible addition with time units such as “years”, “months”, “weeks”, “days”, “hours”, “minutes”, and “seconds”.</p></li>
@@ -119,7 +119,7 @@
 <li><p>New static member functions <code>r_date::today()</code> and <code>r_psxct::now()</code> to get the current date or current time. <code>r_psxct::now()</code> returns the current time in fractional seconds to microsecond precision.</p></li>
 <li><p>New template function <code>time_diff&lt;&gt;</code> to calculate time differences between two dates or date-times.</p></li>
 </ul><div class="section level4">
-<h4 id="date-and-date-time-arithmetic-development-version">Date and date-time arithmetic<a class="anchor" aria-label="anchor" href="#date-and-date-time-arithmetic-development-version"></a></h4>
+<h4 id="date-and-date-time-arithmetic-1-2-0">Date and date-time arithmetic<a class="anchor" aria-label="anchor" href="#date-and-date-time-arithmetic-1-2-0"></a></h4>
 <p>To perform time arithmetic with dates and date-times, use <code>add&lt;&gt;</code>, e.g.  <code>x.add&lt;"days"&gt;(1)</code> adds 1 day to x, and <code>x.add&lt;"months"&gt;(-3)</code> subtracts 3 months from x.</p>
 <p>The <code>on_impossible_date</code> argument of <code>add&lt;&gt;</code> allows you to control how to handle impossible dates that arise when performing month-based arithmetic, e.g. 31 Jan + 1 month = ?</p>
 <p>All <code>roll</code> options:</p>
@@ -135,14 +135,14 @@
 <p>To add sub-second units such as milliseconds and microseconds, simply supply fractional seconds, e.g. <code>x.add&lt;"seconds"&gt;(1.0/1000.0)</code> adds 1 millisecond to x. It’s worth noting that loss in floating-point precision can occur when working with small microseconds, though this is inherent in R’s <code>POSIXct</code> class as well.</p>
 </div>
 <div class="section level4">
-<h4 id="date-and-date-time-rounding-development-version">Date and date-time rounding<a class="anchor" aria-label="anchor" href="#date-and-date-time-rounding-development-version"></a></h4>
+<h4 id="date-and-date-time-rounding-1-2-0">Date and date-time rounding<a class="anchor" aria-label="anchor" href="#date-and-date-time-rounding-1-2-0"></a></h4>
 <p>To round dates and date-times, use member functions <code>floor</code>, <code>ceiling</code> and <code>round</code>.</p>
 <p>For example, <code>x.floor&lt;"months"&gt;()</code> floors x to the start of the current month. <code>x.ceiling&lt;"months"&gt;()</code> advances x to the start of the next month, unless it is already at the start of the month.</p>
 <p>Rounding functions accept a <code>week_start</code> argument, which is only relevant for rounding “weeks”. It follows the same convention as <code>wday()</code>, where 1 is Monday and 7 is Sunday (the default). For example, <code>x.floor&lt;"weeks"&gt;()</code> floors x to the most recent past Sunday, whereas <code>x.floor&lt;"weeks"&gt;(1)</code> floors x to the most recent past Monday.</p>
 <p>When the date is exactly at the midpoint between boundaries, <code><a href="https://rdrr.io/r/base/Round.html" class="external-link">round()</a></code> will floor the date, so for example if we are rounding a date-time to the nearest day and the time is at noon, the date-time gets floored to midnight on the same day.</p>
 </div>
 <div class="section level4">
-<h4 id="date-and-date-time-differences-development-version">Date and date-time differences<a class="anchor" aria-label="anchor" href="#date-and-date-time-differences-development-version"></a></h4>
+<h4 id="date-and-date-time-differences-1-2-0">Date and date-time differences<a class="anchor" aria-label="anchor" href="#date-and-date-time-differences-1-2-0"></a></h4>
 <p>To calculate the time difference between two dates or date-times, use <code>time_diff&lt;&gt;</code>.</p>
 <p>For example, <code>time_diff&lt;"months"&gt;(x, y)</code> calculates the difference in months between x and y. If x and y do not share the same day-of-the-month, then a fractional difference is returned. Use <code><a href="https://rdrr.io/r/base/Round.html" class="external-link">cppally::floor()</a></code> to floor the result if you always need a whole difference.</p>
 <p>To return time differences using <code>n</code> time unit periods (the default is 1), just pass it to the <code>n</code> argument, e.g. <code>time_diff&lt;"months"&gt;(x, y, /*n=*/ 3)</code> returns the difference in quarters between x and y, and similarly <code>time_diff&lt;"days"&gt;(x, y, /*n=*/ 7)</code> is the same as <code>time_diff&lt;"weeks"&gt;(x, y)</code>.</p>
@@ -151,7 +151,7 @@
 </div>
 </div>
 <div class="section level3">
-<h3 id="resizable-vectors-development-version">Resizable vectors<a class="anchor" aria-label="anchor" href="#resizable-vectors-development-version"></a></h3>
+<h3 id="resizable-vectors-1-2-0">Resizable vectors<a class="anchor" aria-label="anchor" href="#resizable-vectors-1-2-0"></a></h3>
 <p>cppally now supports resizable vectors for R versions &gt;= 4.6.0.</p>
 <p>The R C API itself is still <strong>experimental</strong>, so the cppally API may evolve with it.</p>
 <p>To check whether resizable vectors are available, use this flag:</p>
@@ -197,7 +197,7 @@
 <p>Unlike <code>std::vector::resize()</code>, <code>resize()</code> does not modify the vector. It is an older member that always allocates a fresh vector. To resize in-place, use <code>set_length()</code>. If the vector is shared elsewhere, <code>set_length()</code> copies it first (regardless of <code>CPPALLY_COPY_ON_MODIFY</code>), so other references are never affected.</p>
 </div>
 <div class="section level3">
-<h3 id="improvements-development-version">Improvements<a class="anchor" aria-label="anchor" href="#improvements-development-version"></a></h3>
+<h3 id="improvements-1-2-0">Improvements<a class="anchor" aria-label="anchor" href="#improvements-1-2-0"></a></h3>
 <ul><li><p><code>cpp_source</code> now generates OpenMP flags by default, so its compiled functions can use both OpenMP SIMD vectorisation and multi-threaded execution (threads set via <code>set_threads()</code>).</p></li>
 <li><p><code>cpp_source</code> gains the <code>openmp</code> argument.</p></li>
 <li><p>Integer multiplication overflow handling is now more portable.</p></li>
@@ -215,7 +215,7 @@
 <li><p>Auto-generated C++ code for R function registration now uses a tidier naming convention for generated lambda arguments in registered template functions. Previously “_internal” was appended to each arg. Now “_sexp” is appended, reducing visual bloat and conveying a more accurate meaning. This should have no backwards compatibility consequences as it simply renames the auto-generated lambda argument names on re-registration.</p></li>
 </ul></div>
 <div class="section level3">
-<h3 id="other-new-features-development-version">Other new features<a class="anchor" aria-label="anchor" href="#other-new-features-development-version"></a></h3>
+<h3 id="other-new-features-1-2-0">Other new features<a class="anchor" aria-label="anchor" href="#other-new-features-1-2-0"></a></h3>
 <ul><li><p>New highly efficient stats function <code><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">cppally::quantile()</a></code>, a C++ implementation of R’s <code>stats:::quantile.default</code>.</p></li>
 <li><p><code>r_vec&lt;&gt;</code> gains two new <code>initializer_list</code> constructors, one for constructing unnamed vectors, and another for constructing named vectors.</p></li>
 <li><p>New function <code>scalar_coerce</code>. Use this with <code>allow_lossy = true</code> if you want to return <code>NA</code> instead of an error on a completely lossy scalar coercion. For example, converting a letter string to a double (e.g. <code>as&lt;r_dbl&gt;(r_str("a"))</code>) always results in an error by default whereas <code>scalar_coerce&lt;r_dbl&gt;(r_str("a"), /*allow_lossy=*/ true)</code> returns <code>na&lt;r_dbl&gt;()</code>.</p></li>

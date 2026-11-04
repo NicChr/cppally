@@ -15,7 +15,7 @@
   Author of bundled Xoshiro-cpp library
 
 - **Posit Software, PBC**. Copyright holder.  
-  SEXP protection mechanism in r_protect.h inspired by cpp11
+  SEXP protection mechanism in r_sexp.h inspired by cpp11
 
 ## Citation
 
@@ -23,12 +23,12 @@ Source:
 [`DESCRIPTION`](https://github.com/NicChr/cppally/blob/main/DESCRIPTION)
 
 Christofides N (2026). *cppally: A 'C++20' API for R*. R package version
-1.1.0.9000, <https://nicchr.github.io/cppally/>.
+1.2.0, <https://nicchr.github.io/cppally/>.
 
     @Manual{,
       title = {cppally: A 'C++20' API for R},
       author = {Nick Christofides},
       year = {2026},
-      note = {R package version 1.1.0.9000},
+      note = {R package version 1.2.0},
       url = {https://nicchr.github.io/cppally/},
     }
