@@ -301,16 +301,17 @@ inline auto as_scalar(const T& x){
 
 template <typename T, typename U>
 std::remove_cvref_t<T> as(const U& x) {
+  using out_t = std::remove_cvref_t<T>;
   if constexpr (is<T, U>){
     if constexpr (RComposite<U>){
       // Do NOT preserve r_null
       if (x.is_null()) [[unlikely]] {
-        return std::remove_cvref_t<T>();
+        return out_t();
       }
     }
     return x;
   } else {
-    return internal::as_impl<std::remove_cvref_t<T>>(x);
+    return internal::as_impl<out_t>(x);
   }
 }
 
