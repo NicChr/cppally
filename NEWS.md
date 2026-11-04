@@ -5,6 +5,9 @@
 - `r_size_t` is now always `int64_t` on 64-bit platforms and so does not 
 always align with R's `R_xlen_t`.
 
+- `r_sexp::length` has been fully deprecated and removed. 
+Use `cppally::length` for returning object length.
+
 - Sequences no longer abort on overflow, but instead silently return `NA`.
 
 - Removed `r_vec::subset` and `r_factors::subset` as they didn't thematically 
@@ -19,9 +22,6 @@ variadic inputs.
 - `r_factors` member functions `get_codes`, `set_codes`, and `new_codes` 
 have been removed. The functionality of these can be achieved with the existing
 members.
-
-- `r_sexp::length` has been fully deprecated and removed. 
-Use `cppally::length` for returning object length.
 
 - `as<r_str>(r_dbl::inf())` now returns title case `r_str("Inf")` instead 
 of lower case `r_str("inf")`. Similarly `as<r_str>( -r_dbl::inf() )` returns
@@ -44,7 +44,7 @@ to write their own `r_sexp` methods as and when they require them.
 Stable-sorting is now always used.
 
 - Default arguments are now explicitly rejected (before they were quietly ignored).
-They may be supported in a later package version.
+Default arguments will almost certainly be supported in the next release.
 
 ## Bug fixes
 
