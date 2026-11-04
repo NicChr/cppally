@@ -108,29 +108,27 @@ inline T as_impl(const U& x) {
   using to_data_t = typename T::data_type;
   using from_data_t = typename U::data_type;
 
-  if constexpr (RStringType<to_data_t> && RStringType<from_data_t>){
+  if constexpr (r_typeof<T> == r_typeof<U>){
     return T(static_cast<r_sexp>(x), internal::no_checks_tag{});
-  }
-
-  if constexpr (is<to_data_t, r_str>){
+  } else if constexpr (is<to_data_t, r_str>){
     return T(as<r_vec<r_str_view>>(x));
-  }
+  } else {
+    r_size_t n = x.length();
+    T out(n);
+    out.set_names(x.names());
 
-  r_size_t n = x.length();
-  T out(n);
-  out.set_names(x.names());
-
-  if constexpr (RAtomicVector<T> && (is<from_data_t, r_base_scalar_t<to_data_t>> || is<to_data_t, r_base_scalar_t<from_data_t>>) && !is<unwrap_t<from_data_t>, SEXP>){
-    if (x.is_materialised()){
-      std::copy_n(x.data(), n, out.data());
-      return out;
+    if constexpr (RAtomicVector<T> && (is<from_data_t, r_base_scalar_t<to_data_t>> || is<to_data_t, r_base_scalar_t<from_data_t>>) && !is<unwrap_t<from_data_t>, SEXP>){
+      if (x.is_materialised()){
+        std::copy_n(x.data(), n, out.data());
+        return out;
+      }
     }
-  }
 
-  for (r_size_t i = 0; i < n; ++i){
-    out.set(i, x.view(i));
+    for (r_size_t i = 0; i < n; ++i){
+      out.set(i, x.view(i));
+    }
+    return out;
   }
-  return out;
 }
 
 template <CastableToRScalar T, RVector U>
