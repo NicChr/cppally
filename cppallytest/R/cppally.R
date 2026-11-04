@@ -24,6 +24,14 @@ test_str2 <- function(x) {
   .Call(`_cppallytest_test_str2`, x)
 }
 
+test_str_view_gc <- function(x) {
+  .Call(`_cppallytest_test_str_view_gc`, x)
+}
+
+test_c_str_gc <- function(x) {
+  .Call(`_cppallytest_test_c_str_gc`, x)
+}
+
 test_null <- function() {
   .Call(`_cppallytest_test_null`)
 }

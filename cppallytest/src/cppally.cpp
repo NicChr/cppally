@@ -64,6 +64,20 @@ extern "C" attribute_visible SEXP _cppallytest_test_str2(SEXP x) {
   END_CPPALLY
 }
 // test.cpp
+r_str test_str_view_gc(r_str_view x);
+extern "C" attribute_visible SEXP _cppallytest_test_str_view_gc(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_str_view_gc(r_to_cpp<r_str_view>(x)));
+  END_CPPALLY
+}
+// test.cpp
+r_str test_c_str_gc(const char* x);
+extern "C" attribute_visible SEXP _cppallytest_test_c_str_gc(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_c_str_gc(r_to_cpp<const char*>(x)));
+  END_CPPALLY
+}
+// test.cpp
 r_sexp test_null();
 extern "C" attribute_visible SEXP _cppallytest_test_null() {
   BEGIN_CPPALLY
@@ -1402,6 +1416,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_by_lvalue_ref",                (DL_FUNC) &_cppallytest_test_by_lvalue_ref,                1},
     {"_cppallytest_test_by_rvalue_ref",                (DL_FUNC) &_cppallytest_test_by_rvalue_ref,                1},
     {"_cppallytest_test_by_value",                     (DL_FUNC) &_cppallytest_test_by_value,                     1},
+    {"_cppallytest_test_c_str_gc",                     (DL_FUNC) &_cppallytest_test_c_str_gc,                     1},
     {"_cppallytest_test_coerce",                       (DL_FUNC) &_cppallytest_test_coerce,                       2},
     {"_cppallytest_test_coerce1",                      (DL_FUNC) &_cppallytest_test_coerce1,                      1},
     {"_cppallytest_test_coerce_dbl_to_float_overflow", (DL_FUNC) &_cppallytest_test_coerce_dbl_to_float_overflow, 0},
@@ -1498,6 +1513,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_str2",                         (DL_FUNC) &_cppallytest_test_str2,                         1},
     {"_cppallytest_test_str3",                         (DL_FUNC) &_cppallytest_test_str3,                         1},
     {"_cppallytest_test_str4",                         (DL_FUNC) &_cppallytest_test_str4,                         1},
+    {"_cppallytest_test_str_view_gc",                  (DL_FUNC) &_cppallytest_test_str_view_gc,                  1},
     {"_cppallytest_test_subset",                       (DL_FUNC) &_cppallytest_test_subset,                       3},
     {"_cppallytest_test_sum",                          (DL_FUNC) &_cppallytest_test_sum,                          2},
     {"_cppallytest_test_sym",                          (DL_FUNC) &_cppallytest_test_sym,                          1},
