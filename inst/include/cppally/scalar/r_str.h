@@ -97,22 +97,29 @@ struct r_str {
     return static_cast<bool>(Rf_charIsLatin1(unwrap(*this)));
   }
 
-  // Convert to UTF-8 (ASCII is left alone)
+  // Convert to UTF-8. This matches `base::enc2utf8()`.
+  // ASCII and bytes are left as-is.
   r_str as_utf8() const {
-    // Rf_translateCharUTF8 does indeed check for UTF8-ness BUT
-    // We still need the CHARSXP and so we avoid the overhead of Rf_mkChar directly
-    if (is_na() || is_utf8()) {
+    if (is_na() || is_ascii()) {
       return *this;
     }
+    cetype_t enc = Rf_getCharCE(unwrap(*this));
+    if (enc == CE_UTF8 || enc == CE_BYTES) {
+      return *this;
+    }
+    // Valid UTF-8 but unmarked
+    if (is_utf8()) {
+      return r_str(internal::mk_char_utf8(c_str(), static_cast<std::size_t>(n_bytes())), internal::no_checks_tag{});
+    }
     // Latin-1 mapping is a (most of the time) fixed, locale-independent byte transform
-    // In the case that there is divergence, we fall back to Rf_translateCharUTF8
     if (is_latin1()) {
       const unsigned char *p = reinterpret_cast<const unsigned char *>(c_str());
       const int n = n_bytes();
       std::string out;
       // Most Latin-1 text is mostly ASCII, so n is a good guess; grows only if high bytes are dense
       out.reserve(static_cast<std::size_t>(n));
-      for (int i = 0; i < n; ++i) {
+      int i = 0;
+      for (; i < n; ++i) {
         const unsigned char b = p[i];
         // In Latin-1 the byte value IS the Unicode code point, so 0x00-0x7F is already UTF-8
         if (b < 0x80) {
@@ -124,14 +131,19 @@ struct r_str {
           out.push_back(static_cast<char>(0x80 | (b & 0x3F)));
         } else {
           // 0x80-0x9F: ISO-8859-1 (C1 controls) and CP1252 (€, smart quotes, dashes...) diverge,
-          // and R may interpret CE_LATIN1 as CP1252 (R >= 3.5.0, notably Windows). Defer to R
-          // so the platform-correct semantics are used rather than guessing.
-          return r_str(safe[Rf_translateCharUTF8](unwrap(*this)));
+          // and R may interpret CE_LATIN1 as CP1252 (notably Windows). Defer to R below.
+          break;
         }
       }
-      return r_str(internal::mk_char_utf8(out.data(), out.size()), internal::no_checks_tag{});
+      if (i == n) {
+        return r_str(internal::mk_char_utf8(out.data(), out.size()), internal::no_checks_tag{});
+      }
     }
-    return r_str(safe[Rf_translateCharUTF8](unwrap(*this)));
+    // translateCharUTF8 allocates with R_alloc so release it once mkChar has copied the bytes
+    const void *vmax = vmaxget();
+    r_str res(safe[Rf_translateCharUTF8](unwrap(*this)));
+    vmaxset(vmax);
+    return res;
   }
 
 };
