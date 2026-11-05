@@ -224,27 +224,8 @@ int cpp11_na_count(SEXP x){
 '
 )
 
-# Display-only snippets (no [[cppally::register]] tag, so not exposed to R).
-# Compiled in their own batch since they are illustrative rather than benchmarked.
-display_only <- c(
-  view_good = '
-bool good(r_str x){
-  r_str_view str = x;
-  return is_na(str); // str only used for temporary read-only context
-}
-',
-  view_bad = '
-r_str_view bad(){
-  r_str new_str("I will be destroyed at the end of `bad()`");
-  r_str_view bad_str = new_str; // A view of new_str
-  return bad_str; // Points to underlying CHARSXP but nothing protecting it
-}
-'
-)
-
 cpp_source(code = paste(examples, collapse = "\n"))
 cpp_source(code = paste(cpp11_examples, collapse = "\n"))
-cpp_source(code = paste(display_only, collapse = "\n"))
 ```
 
 ## Motivation and design
@@ -388,8 +369,11 @@ views can be used to eliminate the small overhead associated with automatic prot
 
 **DO**:
 
-```{r, echo=FALSE, comment="", results='asis'}
-as_cpp_chunk(display_only[["view_good"]])
+```cpp
+bool good(r_str x){
+  r_str_view str = x;
+  return is_na(str); // str only used for temporary read-only context
+}
 ```
 
 The above example is safe because `r_str_view str` is destroyed when it goes out of scope 
@@ -397,8 +381,12 @@ at the end of `good()`, meaning it does not outlive `r_str x`.
 
 **DON'T**:
 
-```{r, echo=FALSE, comment="", results='asis'}
-as_cpp_chunk(display_only[["view_bad"]])
+```cpp
+r_str_view bad(){
+  r_str new_str("I will be destroyed at the end of `bad()`");
+  r_str_view bad_str = new_str; // A view of new_str
+  return bad_str; // Points to underlying CHARSXP but nothing protecting it
+}
 ```
 
 The above is a classic example of what **not** to do with string views, which is to have the view outlive the owner. In this case `bad_str` is returned at the end of `bad()` at which point `new_str` goes out of scope and gets destroyed. This means nothing is protecting the underlying `CHARSXP` that `new_str` was protecting and once that `CHARSXP` is garbage-collected by R, `bad_str` will become a dangling-pointer, leading to use-after-free bugs (undefined behaviour, crashes, corrupted data, etc).
