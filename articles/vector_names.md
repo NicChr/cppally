@@ -80,12 +80,12 @@ mark(large[[1]])
 #> # A tibble: 1 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 large[[1]]    140ns    151ns  5991521.        0B        0
+#> 1 large[[1]]    140ns    151ns  5355819.        0B        0
 mark(large[[length(large)]])
 #> # A tibble: 1 × 6
 #>   expression                  min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>             <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 large[[length(large)]]    230ns    250ns  3669902.        0B        0
+#> 1 large[[length(large)]]    230ns    251ns  3294506.        0B        0
 ```
 
 Since R scans the names each time, lookup by name is O(n) and can be
@@ -100,8 +100,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 by_name       150ns    171ns  5330294.        0B        0
-#> 2 by_index      140ns    151ns  6012485.        0B        0
+#> 1 by_name       150ns    170ns  5381925.        0B        0
+#> 2 by_index      140ns    151ns  6099901.        0B        0
 
 mark(
     by_name = large[["name_100000"]], 
@@ -110,8 +110,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 by_name       527µs    566µs     1736.        0B        0
-#> 2 by_index      130ns    150ns  6314842.        0B        0
+#> 1 by_name       548µs    562µs     1778.        0B        0
+#> 2 by_index      140ns    151ns  6119588.        0B        0
 ```
 
 If we created a hash table of names-values, we could speedup repeated
@@ -143,9 +143,9 @@ mark(
 #> # A tibble: 3 × 6
 #>   expression          min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>     <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 by_name           534µs    565µs     1749.        0B        0
-#> 2 by_index          131ns    151ns  5913597.        0B        0
-#> 3 by_hashed_name    892ns    942ns   985021.        0B        0
+#> 1 by_name           548µs    563µs     1768.        0B      0  
+#> 2 by_index          140ns    151ns  5841899.        0B      0  
+#> 3 by_hashed_name    882ns    942ns   904371.        0B     90.4
 ```
 
 That worked! Extracting the value associated with the last name using
@@ -259,9 +259,8 @@ r_int c = x.get("c"); // O(1) lookup
 Let’s illustrate this by visualising the per call cost as the number of
 lookups increases, comparing R and cppally.
 
-``` r
+``` cpp
 
-cpp_source(code = '
 #include <cppally.hpp>
 using namespace cppally;
 
@@ -273,7 +272,6 @@ r_vec<r_sexp> do_lookup(r_vec<r_sexp> x, r_str name, int n_iterations){
   }
   return out;
 }
-')
 ```
 
 R equivalent using `[[`
@@ -305,8 +303,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 cppally_one_lookup   33.5µs     34µs    28284.   781.3KB        0
-#> 2 base_one_lookup     534.6µs    584µs     1694.    21.6KB        0
+#> 1 cppally_one_lookup   33.6µs   34.1µs    28589.   781.3KB        0
+#> 2 base_one_lookup     549.3µs  565.9µs     1759.    21.6KB        0
 ```
 
 While I’m not sure why cppally’s linear scan is faster than R’s, it may
@@ -319,7 +317,7 @@ We will now plot the per-call cost of doing many repeated lookups to see
 how many lookups we need to do before we start seeing the benefits of
 hashing
 
-![](vector_names_files/figure-html/unnamed-chunk-13-1.png)
+![](vector_names_files/figure-html/unnamed-chunk-14-1.png)
 
 The plot shows an interesting story - the first lookup (linear scan)
 sets a baseline cost. The second lookup pays the cost of the hash map
@@ -332,28 +330,26 @@ Let’s see how this compares to a pseudo hash-on-1st lookup method. To
 achieve this we will set the first lookup to be a fast linear scan of
 the first name which means the rest of real lookups use hashing.
 
-``` r
+``` cpp
 
-cpp_source(code = '
 #include <cppally.hpp>
 using namespace cppally;
 
 [[cppally::register]]
 r_vec<r_sexp> do_first_lookup_hashed(r_vec<r_sexp> x, r_str name, int n_iterations){
   r_vec<r_sexp> out(n_iterations);
-  
+
   // Initial lookup as fast linear scan to force all other lookups to be hashed
   static_cast<void>(x.get(x.names().get(0)));
-  
+
   for (int i = 0; i < n_iterations; ++i){
     out.set(i, x.get(name));
   }
   return out;
 }
-')
 ```
 
-![](vector_names_files/figure-html/unnamed-chunk-15-1.png)
+![](vector_names_files/figure-html/unnamed-chunk-16-1.png)
 
 The two lines are overlapping after a few lookups, signifying that there
 is little penalty to waiting until the 2nd lookup to build the hash map.
@@ -366,8 +362,10 @@ list.
 
 large <- as.list(sample.int(5e05))
 names(large) <- paste0("name_", seq_along(large))
+```
 
-cpp_source(code = '
+``` cpp
+
 #include <cppally.hpp>
 using namespace cppally;
 
@@ -375,22 +373,17 @@ using namespace cppally;
 r_vec<r_sexp> do_linear_lookup(r_vec<r_sexp> x, r_str name, int n_iterations){
   r_vec<r_sexp> out(n_iterations);
   r_vec<r_str> names = as<r_vec<r_str>>(x.names());
-  int n = names.length();
-  auto *p = names.data(); // Use ptr to allow O2 optimisations here for fair comparison
   for (int i = 0; i < n_iterations; ++i){
-    for (int j = 0; j < n; ++j){
-      if (unwrap(name) == p[j]){
-        out.set(i, x.view(j));
-        break;
-      }
+    auto first_match = names.find_first(name);
+    if (!is_na(first_match)){
+      out.set(i, x.view(first_match));
     }
   }
   return out;
 }
-')
 ```
 
-![](vector_names_files/figure-html/unnamed-chunk-17-1.png)
+![](vector_names_files/figure-html/unnamed-chunk-19-1.png)
 
 The best and worst case linear scans are presented for illustrative
 purposes even though they are not realistic with real data. The most

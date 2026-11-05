@@ -368,13 +368,13 @@ benchmark time.
 library(bench)
 library(ggplot2)
 
-x <- as.double(rpois(5e05, lambda = 10))
-y <- as.double(rpois(5e05, lambda = 15))
+x <- as.double(rpois(10^5, lambda = 10))
+y <- as.double(rpois(10^5, lambda = 15))
 
 (
   mark(
     single_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = 1),
-    multi_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = 4)
+    multi_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = n_threads)
   ) |> 
     autoplot(type = "violin") 
 ) +
@@ -397,7 +397,7 @@ y <- as.character(y)
 (
   mark(
     single_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = 1),
-    multi_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = 4)
+    multi_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = n_threads)
   ) |> 
     autoplot(type = "violin") 
 ) +
@@ -570,12 +570,12 @@ void cpp_set_threads(int n){
 
 ``` r
 
-cpp_set_threads(4) # Set 4 threads for the rest of the examples
+cpp_set_threads(n_threads) # Set threads for the rest of the examples
 ```
 
 ``` r
 
-x <- rnorm(5e05, mean = 50)
+x <- rnorm(10^5, mean = 50)
 
 (
   mark(
@@ -623,8 +623,8 @@ r_vector<T> cpp_multiply(r_vector<T> x, r_vector<T> y, r_vector<T> z){
 
 ``` r
 
-a <- sample(c(-1L, NA_integer_, 0L, 1L, -100L, 100L), 5e05, replace = TRUE)
-b <- sample(c(NA_real_, 0, -1/3, 1/3, -10^9, 10^9), 5e05, replace = TRUE)
+a <- sample(c(-1L, NA_integer_, 0L, 1L, -100L, 100L), 10^5, replace = TRUE)
+b <- sample(c(NA_real_, 0, -1/3, 1/3, -10^9, 10^9), 10^5, replace = TRUE)
 
 results <-
  mark(
@@ -744,7 +744,7 @@ for what can be achieved with a base R split-and-apply method.
 ``` r
 
 cpp_set_threads(1) # Run these benchmarks using a single thread
-n <- 5e05
+n <- 10^5
 x <- rnorm(n)
 
 # 3 groups

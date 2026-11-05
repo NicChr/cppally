@@ -134,12 +134,12 @@ index</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
 <span><span class="co">#&gt;   expression      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> large[[1]]    140ns    151ns  5<span style="text-decoration: underline;">991</span>521.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> large[[1]]    140ns    151ns  5<span style="text-decoration: underline;">355</span>819.        0B        0</span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span><span class="va">large</span><span class="op">[[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">large</span><span class="op">)</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
 <span><span class="co">#&gt;   expression                  min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> large[[length(large)]]    230ns    250ns  3<span style="text-decoration: underline;">669</span>902.        0B        0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> large[[length(large)]]    230ns    251ns  3<span style="text-decoration: underline;">294</span>506.        0B        0</span></span></code></pre></div>
 <p>Since R scans the names each time, lookup by name is O(n) and can be
 slow if names happen to be near the end of the vector</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -150,8 +150,8 @@ slow if names happen to be near the end of the vector</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> by_name       150ns    171ns  5<span style="text-decoration: underline;">330</span>294.        0B        0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> by_index      140ns    151ns  6<span style="text-decoration: underline;">012</span>485.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> by_name       150ns    170ns  5<span style="text-decoration: underline;">381</span>925.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> by_index      140ns    151ns  6<span style="text-decoration: underline;">099</span>901.        0B        0</span></span>
 <span></span>
 <span><span class="fu"><a href="https://bench.r-lib.org/reference/mark.html" class="external-link">mark</a></span><span class="op">(</span></span>
 <span>    by_name <span class="op">=</span> <span class="va">large</span><span class="op">[[</span><span class="st">"name_100000"</span><span class="op">]</span><span class="op">]</span>, </span>
@@ -160,8 +160,8 @@ slow if names happen to be near the end of the vector</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> by_name       527µs    566µs     <span style="text-decoration: underline;">1</span>736.        0B        0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> by_index      130ns    150ns  6<span style="text-decoration: underline;">314</span>842.        0B        0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> by_name       548µs    562µs     <span style="text-decoration: underline;">1</span>778.        0B        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> by_index      140ns    151ns  6<span style="text-decoration: underline;">119</span>588.        0B        0</span></span></code></pre></div>
 <p>If we created a hash table of names-values, we could speedup repeated
 lookups</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
@@ -185,9 +185,9 @@ hashed name</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 6</span></span></span>
 <span><span class="co">#&gt;   expression          min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> by_name           534µs    565µs     <span style="text-decoration: underline;">1</span>749.        0B        0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> by_index          131ns    151ns  5<span style="text-decoration: underline;">913</span>597.        0B        0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> by_hashed_name    892ns    942ns   <span style="text-decoration: underline;">985</span>021.        0B        0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> by_name           548µs    563µs     <span style="text-decoration: underline;">1</span>768.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> by_index          140ns    151ns  5<span style="text-decoration: underline;">841</span>899.        0B      0  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> by_hashed_name    882ns    942ns   <span style="text-decoration: underline;">904</span>371.        0B     90.4</span></span></code></pre></div>
 <p>That worked! Extracting the value associated with the last name using
 the hash table was almost as fast as looking it up by location.</p>
 <p>cppally uses this same approach internally, attaching a lazy hash map
@@ -279,20 +279,18 @@ second builds the hash map, and all subsequent lookups are O(1).</p>
 <span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>r_int c <span class="op">=</span> x<span class="op">.</span>get<span class="op">(</span><span class="st">"c"</span><span class="op">);</span> <span class="co">// O(1) lookup</span></span></code></pre></div>
 <p>Let’s illustrate this by visualising the per call cost as the number
 of lookups increases, comparing R and cppally.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/cpp_source.html">cpp_source</a></span><span class="op">(</span>code <span class="op">=</span> <span class="st">'</span></span>
-<span><span class="st">#include &lt;cppally.hpp&gt;</span></span>
-<span><span class="st">using namespace cppally;</span></span>
-<span><span class="st"></span></span>
-<span><span class="st">[[cppally::register]]</span></span>
-<span><span class="st">r_vec&lt;r_sexp&gt; do_lookup(r_vec&lt;r_sexp&gt; x, r_str name, int n_iterations){</span></span>
-<span><span class="st">  r_vec&lt;r_sexp&gt; out(n_iterations);</span></span>
-<span><span class="st">  for (int i = 0; i &lt; n_iterations; ++i){</span></span>
-<span><span class="st">    out.set(i, x.get(name));</span></span>
-<span><span class="st">  }</span></span>
-<span><span class="st">  return out;</span></span>
-<span><span class="st">}</span></span>
-<span><span class="st">'</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;cppally.hpp&gt;</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="kw">using</span> <span class="kw">namespace</span> cppally<span class="op">;</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> do_lookup<span class="op">(</span>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> x<span class="op">,</span> r_str name<span class="op">,</span> <span class="dt">int</span> n_iterations<span class="op">){</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>  r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> out<span class="op">(</span>n_iterations<span class="op">);</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="dt">int</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> n_iterations<span class="op">;</span> <span class="op">++</span>i<span class="op">){</span></span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a>    out<span class="op">.</span>set<span class="op">(</span>i<span class="op">,</span> x<span class="op">.</span>get<span class="op">(</span>name<span class="op">));</span></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a>  <span class="cf">return</span> out<span class="op">;</span></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>R equivalent using <code>[[</code></p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">r_do_lookup</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">name</span>, <span class="va">n_iterations</span><span class="op">)</span><span class="op">{</span></span>
@@ -319,8 +317,8 @@ R and C++</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression              min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_one_lookup   33.5µs     34µs    <span style="text-decoration: underline;">28</span>284.   781.3KB        0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_one_lookup     534.6µs    584µs     <span style="text-decoration: underline;">1</span>694.    21.6KB        0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cppally_one_lookup   33.6µs   34.1µs    <span style="text-decoration: underline;">28</span>589.   781.3KB        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> base_one_lookup     549.3µs  565.9µs     <span style="text-decoration: underline;">1</span>759.    21.6KB        0</span></span></code></pre></div>
 <p>While I’m not sure why cppally’s linear scan is faster than R’s, it
 may be due to the fact that direct data access is used to compare
 elements instead of <code>STRING_ELT()</code></p>
@@ -331,7 +329,7 @@ elements instead of <code>STRING_ELT()</code></p>
 <p>We will now plot the per-call cost of doing many repeated lookups to
 see how many lookups we need to do before we start seeing the benefits
 of hashing</p>
-<p><img src="vector_names_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" alt="" width="100%"></p>
+<p><img src="vector_names_files/figure-html/unnamed-chunk-14-1.png" class="r-plt" alt="" width="100%"></p>
 <p>The plot shows an interesting story - the first lookup (linear scan)
 sets a baseline cost. The second lookup pays the cost of the hash map
 build, making it the most expensive per-lookup. From there, each
@@ -341,25 +339,23 @@ baseline.</p>
 <p>Let’s see how this compares to a pseudo hash-on-1st lookup method. To
 achieve this we will set the first lookup to be a fast linear scan of
 the first name which means the rest of real lookups use hashing.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/cpp_source.html">cpp_source</a></span><span class="op">(</span>code <span class="op">=</span> <span class="st">'</span></span>
-<span><span class="st">#include &lt;cppally.hpp&gt;</span></span>
-<span><span class="st">using namespace cppally;</span></span>
-<span><span class="st"></span></span>
-<span><span class="st">[[cppally::register]]</span></span>
-<span><span class="st">r_vec&lt;r_sexp&gt; do_first_lookup_hashed(r_vec&lt;r_sexp&gt; x, r_str name, int n_iterations){</span></span>
-<span><span class="st">  r_vec&lt;r_sexp&gt; out(n_iterations);</span></span>
-<span><span class="st">  </span></span>
-<span><span class="st">  // Initial lookup as fast linear scan to force all other lookups to be hashed</span></span>
-<span><span class="st">  static_cast&lt;void&gt;(x.get(x.names().get(0)));</span></span>
-<span><span class="st">  </span></span>
-<span><span class="st">  for (int i = 0; i &lt; n_iterations; ++i){</span></span>
-<span><span class="st">    out.set(i, x.get(name));</span></span>
-<span><span class="st">  }</span></span>
-<span><span class="st">  return out;</span></span>
-<span><span class="st">}</span></span>
-<span><span class="st">'</span><span class="op">)</span></span></code></pre></div>
-<p><img src="vector_names_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" alt="" width="100%"></p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a></span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;cppally.hpp&gt;</span></span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a><span class="kw">using</span> <span class="kw">namespace</span> cppally<span class="op">;</span></span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a></span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> do_first_lookup_hashed<span class="op">(</span>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> x<span class="op">,</span> r_str name<span class="op">,</span> <span class="dt">int</span> n_iterations<span class="op">){</span></span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>  r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> out<span class="op">(</span>n_iterations<span class="op">);</span></span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a>  <span class="co">// Initial lookup as fast linear scan to force all other lookups to be hashed</span></span>
+<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a>  <span class="kw">static_cast</span><span class="op">&lt;</span><span class="dt">void</span><span class="op">&gt;(</span>x<span class="op">.</span>get<span class="op">(</span>x<span class="op">.</span>names<span class="op">().</span>get<span class="op">(</span><span class="dv">0</span><span class="op">)));</span></span>
+<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a></span>
+<span id="cb17-12"><a href="#cb17-12" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="dt">int</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> n_iterations<span class="op">;</span> <span class="op">++</span>i<span class="op">){</span></span>
+<span id="cb17-13"><a href="#cb17-13" tabindex="-1"></a>    out<span class="op">.</span>set<span class="op">(</span>i<span class="op">,</span> x<span class="op">.</span>get<span class="op">(</span>name<span class="op">));</span></span>
+<span id="cb17-14"><a href="#cb17-14" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb17-15"><a href="#cb17-15" tabindex="-1"></a>  <span class="cf">return</span> out<span class="op">;</span></span>
+<span id="cb17-16"><a href="#cb17-16" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><img src="vector_names_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" alt="" width="100%"></p>
 <p>The two lines are overlapping after a few lookups, signifying that
 there is little penalty to waiting until the 2nd lookup to build the
 hash map.</p>
@@ -368,30 +364,24 @@ against repeated linear scan lookups. At the same time we will also use
 a larger list.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">large</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">as.list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="fl">5e05</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">large</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"name_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">large</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/cpp_source.html">cpp_source</a></span><span class="op">(</span>code <span class="op">=</span> <span class="st">'</span></span>
-<span><span class="st">#include &lt;cppally.hpp&gt;</span></span>
-<span><span class="st">using namespace cppally;</span></span>
-<span><span class="st"></span></span>
-<span><span class="st">[[cppally::register]]</span></span>
-<span><span class="st">r_vec&lt;r_sexp&gt; do_linear_lookup(r_vec&lt;r_sexp&gt; x, r_str name, int n_iterations){</span></span>
-<span><span class="st">  r_vec&lt;r_sexp&gt; out(n_iterations);</span></span>
-<span><span class="st">  r_vec&lt;r_str&gt; names = as&lt;r_vec&lt;r_str&gt;&gt;(x.names());</span></span>
-<span><span class="st">  int n = names.length();</span></span>
-<span><span class="st">  auto *p = names.data(); // Use ptr to allow O2 optimisations here for fair comparison</span></span>
-<span><span class="st">  for (int i = 0; i &lt; n_iterations; ++i){</span></span>
-<span><span class="st">    for (int j = 0; j &lt; n; ++j){</span></span>
-<span><span class="st">      if (unwrap(name) == p[j]){</span></span>
-<span><span class="st">        out.set(i, x.view(j));</span></span>
-<span><span class="st">        break;</span></span>
-<span><span class="st">      }</span></span>
-<span><span class="st">    }</span></span>
-<span><span class="st">  }</span></span>
-<span><span class="st">  return out;</span></span>
-<span><span class="st">}</span></span>
-<span><span class="st">'</span><span class="op">)</span></span></code></pre></div>
-<p><img src="vector_names_files/figure-html/unnamed-chunk-17-1.png" class="r-plt" alt="" width="100%"></p>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">large</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"name_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">large</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a></span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;cppally.hpp&gt;</span></span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a><span class="kw">using</span> <span class="kw">namespace</span> cppally<span class="op">;</span></span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="op">[[</span><span class="at">cppally</span><span class="op">::</span><span class="at">register</span><span class="op">]]</span></span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> do_linear_lookup<span class="op">(</span>r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> x<span class="op">,</span> r_str name<span class="op">,</span> <span class="dt">int</span> n_iterations<span class="op">){</span></span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a>  r_vec<span class="op">&lt;</span>r_sexp<span class="op">&gt;</span> out<span class="op">(</span>n_iterations<span class="op">);</span></span>
+<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a>  r_vec<span class="op">&lt;</span>r_str<span class="op">&gt;</span> names <span class="op">=</span> as<span class="op">&lt;</span>r_vec<span class="op">&lt;</span>r_str<span class="op">&gt;&gt;(</span>x<span class="op">.</span>names<span class="op">());</span></span>
+<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="dt">int</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> n_iterations<span class="op">;</span> <span class="op">++</span>i<span class="op">){</span></span>
+<span id="cb19-10"><a href="#cb19-10" tabindex="-1"></a>    <span class="kw">auto</span> first_match <span class="op">=</span> names<span class="op">.</span>find_first<span class="op">(</span>name<span class="op">);</span></span>
+<span id="cb19-11"><a href="#cb19-11" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">(!</span>is_na<span class="op">(</span>first_match<span class="op">)){</span></span>
+<span id="cb19-12"><a href="#cb19-12" tabindex="-1"></a>      out<span class="op">.</span>set<span class="op">(</span>i<span class="op">,</span> x<span class="op">.</span>view<span class="op">(</span>first_match<span class="op">));</span></span>
+<span id="cb19-13"><a href="#cb19-13" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb19-14"><a href="#cb19-14" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb19-15"><a href="#cb19-15" tabindex="-1"></a>  <span class="cf">return</span> out<span class="op">;</span></span>
+<span id="cb19-16"><a href="#cb19-16" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><img src="vector_names_files/figure-html/unnamed-chunk-19-1.png" class="r-plt" alt="" width="100%"></p>
 <p>The best and worst case linear scans are presented for illustrative
 purposes even though they are not realistic with real data. The most
 informative comparison is between the trend of the hash lookup cost

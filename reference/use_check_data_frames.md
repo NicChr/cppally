@@ -1,6 +1,6 @@
 # Deprecated.
 
-Deprecated.
+Deprecated, do not use.
 
 ## Usage
 
@@ -17,7 +17,3 @@ use_check_data_frames(quiet = FALSE)
 ## Value
 
 Invisibly adds the `CPPALLY_CHECK_DATA_FRAMES` flag to Makevars.
-
-## 
-
-Deprecated, do not use.
