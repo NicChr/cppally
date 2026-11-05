@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r, include = FALSE}
-required <- c("bench", "brio", "callr", "cli", "decor",
+required <- c("brio", "callr", "cli", "decor",
               "desc", "glue", "purrr", "readr", "stringr",
               "usethis", "utils", "vctrs", "withr")
 if (!all(vapply(required, requireNamespace, logical(1), quietly = TRUE))) {
@@ -370,18 +370,24 @@ r_vector<r_lgl> cpp_not_in(r_vector<r_str> x, r_vector<r_str> table){
 }
 ',
 cpp_subset = '
-template <RVector T, typename subscript_t>
-requires any<subscript_t, r_lgl, r_int, r_str>
+template <typename T, typename subscript_t>
+requires (
+  any<subscript_t, r_lgl, r_int, r_str> &&
+  any<T, r_int, r_dbl, r_str>
+)
 [[cppally::register]]
-T cpp_subset(T x, r_vector<subscript_t> y){
+r_vector<T> cpp_subset(r_vector<T> x, r_vector<subscript_t> y){
     return subset(x, y);
 }
 ',
 cpp_negative_subset = '
-template <RVector T, typename subscript_t>
-requires any<subscript_t, r_lgl, r_int, r_str>
+template <typename T, typename subscript_t>
+requires (
+  any<subscript_t, r_lgl, r_int, r_str> &&
+  any<T, r_int, r_dbl, r_str>
+)
 [[cppally::register]]
-T cpp_negative_subset(T x, r_vector<subscript_t> y){
+r_vector<T> cpp_negative_subset(r_vector<T> x, r_vector<subscript_t> y){
     return subset(x, y, /*invert=*/ true);
 }
 ',
@@ -539,15 +545,12 @@ base_sum = '
 r_dbl base_sum(r_vector<r_dbl> x, bool na_rm){
   return as<r_dbl>(base_sum_fn()(x, arg("na.rm") = na_rm));
 }
-'
-)
-
-# Benchmarks need debug = FALSE
-benchmark_examples <- c(
-  cpp_unique = '
-template <RVector T>
+',
+cpp_unique = '
+template <typename T>
+requires (any<T, r_int, r_dbl, r_str>)
 [[cppally::register]]
-r_int cpp_n_unique(T x){
+r_int cpp_n_unique(r_vector<T> x){
   return as<r_int>(n_unique(x));
 }
 
@@ -559,30 +562,17 @@ T cpp_unique(T x, bool sort){
 
 ',
 cpp_sort = '
-
-template <RSortableVector T>
+template <typename T>
+requires (any<T, r_int, r_dbl, r_str>)
 [[cppally::register]]
-r_vector<r_int> cpp_order(T x){
-  
-  // Add 1 to return 1-indexed permutation to match base::order()
-  // In general C++ code, always use 0-indexed as cppally indexing is 
-  // always 0-indexed.
-  
-  return order(x) + 1; 
-}
-
-template <RSortableVector T>
-[[cppally::register]]
-T cpp_sort(T x){
+r_vector<T> cpp_sort(r_vector<T> x){
   return sort(x);
 }
 ',
 
 make_groups = '
-
-template <RVector T>
 [[cppally::register]]
-r_vector<r_sexp> group_info(T x){
+r_vector<r_sexp> group_info(r_vector<r_str> x){
   groups g = make_groups(x, /*ordered=*/ false);
   return make_vec<r_sexp>(
     arg("group_id") = g.ids,
@@ -597,9 +587,8 @@ r_vector<r_sexp> group_info(T x){
 }
 ',
 group_counts = '
-template <RVector T>
 [[cppally::register]]
-r_df group_counts(T x){
+r_df group_counts(r_vector<r_str> x){
   groups g = make_groups(x, /*ordered=*/ false);
   
   return make_df(
@@ -644,7 +633,6 @@ int cpp_get_threads(){
 )
 
 cpp_source(code = paste(examples, collapse = "\n"), debug = TRUE)
-cpp_source(code = paste(benchmark_examples, collapse = "\n"), debug = FALSE)
 
 # Single-line expressions, pre-registered as R functions of the same name.
 # Each can be invoked later as e.g. `r_true_val()` to get the evaluated result.
@@ -1826,7 +1814,7 @@ To see the number of currently available threads, use `cppally::get_threads()`.
 From R we can then register these C++ function and use them.
 
 ```{r, echo=FALSE, results = 'asis'}
-as_cpp_chunk(benchmark_examples[["cpp_set_threads"]])
+as_cpp_chunk(examples[["cpp_set_threads"]])
 ```
 
 ```{r}
@@ -1838,7 +1826,7 @@ cpp_set_threads(1) # Reset back to 1
 cpp_get_threads()  # Should return 1
 ```
 
-Because this is unique to each dll file, setting threads in one R package doesn't affect another. Once threads have been set, all cppally code that can make use of them, will use them. This means you should speed improvements across many cppally functions.
+Because this is unique to each dll file, setting threads in one R package doesn't affect another. Once threads have been set, all cppally code that can make use of them, will use them. This means you should see speed improvements across many cppally functions.
 
 ## Stats functions
 
@@ -1848,112 +1836,33 @@ cppally provides some stats functions which are both common and difficult to imp
 - `mean()` - Average of values
 - `range()` - Min and max range of values
 - `var()` - Variance
-- `quantile()` - Sample quantiles[^3]
-
-[^3]: Quantile is not multi-threaded
+- `quantile()` - Sample quantiles
 
 ```{r, echo=FALSE, results = 'asis'}
-as_cpp_chunk(benchmark_examples[["cpp_stats"]])
+as_cpp_chunk(examples[["cpp_stats"]])
 ```
 
 ```{r}
-library(bench)
-
 set.seed(1)
-x <- sample.int(10, 5e05, replace = TRUE)
-x[sample.int(10^5, 10^4)] <- NA # Add many NAs
+x <- sample.int(10, 10^4, replace = TRUE)
+x[sample.int(10^4, 10^3)] <- NA # Add many NAs
 
-# Sum (ignoring NAs)
-mark(
-  cppally_sum = cpp_sum(x, na_rm = TRUE),
-  base_sum = sum(x, na.rm = TRUE)
-)
+# Sum
+cpp_sum(x, na_rm = TRUE)
+cpp_sum(x, na_rm = FALSE)
 
-# Sum (not ignoring NAs)
-mark(
-  cppally_sum = cpp_sum(x, na_rm = FALSE),
-  base_sum = sum(x, na.rm = FALSE)
-)
+# Range
+cpp_range(x, na_rm = TRUE)
+cpp_range(x, na_rm = FALSE)
 
-# Range (ignoring NAs)
-mark(
-  cppally_range = cpp_range(x, na_rm = TRUE),
-  base_range = range(x, na.rm = TRUE)
-)
+# Variance
+cpp_var(x, na_rm = TRUE)
+cpp_var(x, na_rm = FALSE)
 
-# Range (not ignoring NAs)
-mark(
-  cppally_range = cpp_range(x, na_rm = FALSE),
-  base_range = range(x, na.rm = FALSE)
-)
+cpp_quantile(x, c(0.25, 0.75), na_rm = TRUE, names = TRUE)
 
-# Variance (ignoring NAs)
-mark(
-  cppally_var = cpp_var(x, na_rm = TRUE),
-  base_var = var(x, na.rm = TRUE)
-)
-
-# Variance (not ignoring NAs)
-mark(
-  cppally_var = cpp_var(x, na_rm = FALSE),
-  base_var = var(x, na.rm = FALSE)
-)
-
-# Quantile (ignoring NAs)
-# Since quantile(na.rm = F) errors when NAs are present, we can compare against it
-mark(
-  cppally_quantile = cpp_quantile(x, c(0.25, 0.75), na_rm = TRUE, names = FALSE), 
-  base_quantile = quantile(x, c(0.25, 0.75), na.rm = TRUE, names = FALSE)
-)
 # Many probabilities
-mark(
-  cppally_quantile = cpp_quantile(x, seq(0, 1, 0.001), na_rm = TRUE, names = FALSE), 
-  base_quantile = quantile(x, seq(0, 1, 0.001), na.rm = TRUE, names = FALSE)
-)
-
-# Using multiple threads
-
-cpp_set_threads(4)
-
-# Sum (ignoring NAs)
-mark(
-  cppally_sum = cpp_sum(x, na_rm = TRUE),
-  base_sum = sum(x, na.rm = TRUE)
-)
-
-# Sum (not ignoring NAs)
-mark(
-  cppally_sum = cpp_sum(x, na_rm = FALSE),
-  base_sum = sum(x, na.rm = FALSE)
-)
-
-# Range (ignoring NAs)
-mark(
-  cppally_range = cpp_range(x, na_rm = TRUE),
-  base_range = range(x, na.rm = TRUE)
-)
-
-# Range (not ignoring NAs)
-mark(
-  cppally_range = cpp_range(x, na_rm = FALSE),
-  base_range = range(x, na.rm = FALSE)
-)
-
-# Variance (ignoring NAs)
-mark(
-  cppally_var = cpp_var(x, na_rm = TRUE),
-  base_var = var(x, na.rm = TRUE)
-)
-
-# Variance (not ignoring NAs)
-mark(
-  cppally_var = cpp_var(x, na_rm = FALSE),
-  base_var = var(x, na.rm = FALSE)
-)
-
-# Reset to single-threaded
-cpp_set_threads(1)
-
+cpp_quantile(x, seq(0, 1, 0.05), na_rm = TRUE, names = FALSE)
 ```
 
 ### A note on cppally::sum
@@ -1962,29 +1871,21 @@ cpp_set_threads(1)
 
 ## Unique values
 
-`n_unique()` is a convenient helper to calculate the number of unique values. `unique()` is also highly performant.
-
 ```{r, echo=FALSE, results = 'asis'}
-as_cpp_chunk(benchmark_examples[["cpp_unique"]])
+as_cpp_chunk(examples[["cpp_unique"]])
 ```
 
 ```{r}
-x <- sample(1:100, 10^5, replace = TRUE)
+x <- sample(1:10, 10^4, replace = TRUE)
 
-mark(
-  base_n_unique = length(unique(x)),
-  cppally_n_unique = cpp_n_unique(x)
-)
+cpp_n_unique(x)
+length(unique(x))
 
-mark(
-  base_unique = unique(x),
-  cppally_unique = cpp_unique(x, sort = FALSE)
-)
+cpp_unique(x, sort = FALSE)
+unique(x)
 
-mark(
-  base_sorted_unique = sort(unique(x)),
-  cppally_sorted_unique = cpp_unique(x, sort = TRUE)
-)
+cpp_unique(x, sort = TRUE)
+sort(unique(x))
 ```
 
 ## Sorting
@@ -1994,42 +1895,26 @@ cppally also offers `order()` and `sort()` for sorting vectors.
 A hybrid approach is used, incorporating various sorting algorithms like counting sort, LSD radix sort, insertion sort, etc.
 
 ```{r, echo=FALSE, results = 'asis'}
-as_cpp_chunk(benchmark_examples[["cpp_sort"]])
+as_cpp_chunk(examples[["cpp_sort"]])
 ```
 
 `cppally::sort` always sorts `NA` values last and so is equivalent to `base::sort(..., method = "radix", na.last = TRUE)`.
 
 ```{r}
-r_radix_sort <- function(x){
-  sort(x, method = "radix", na.last = TRUE)
-}
-r_radix_order <- function(x){
-  order(x, method = "radix", na.last = TRUE)
-}
-
 # Small data
-mark(cpp_sort(c(3, 2, 1)), r_radix_sort(c(3, 2, 1)))
-mark(cpp_order(c(3, 2, 1)), r_radix_order(c(3, 2, 1)))
+cpp_sort(c(3, 2, NA, 1))
 
 # Integer data
-ints <- sample.int(20, 2e05, replace = TRUE)
-mark(cpp_sort(ints), r_radix_sort(ints))
-mark(cpp_order(ints), r_radix_order(ints))
+ints <- sample.int(10, 20, replace = TRUE)
+cpp_sort(ints)
 
 # Double-floating point precision data
 dbls <- as.double(ints)
-mark(cpp_sort(dbls), r_radix_sort(dbls))
-mark(cpp_order(dbls), r_radix_order(dbls))
-
-# Floating point data with decimals
-dcmls <- rnorm(length(dbls))
-mark(cpp_sort(dcmls), r_radix_sort(dcmls))
-mark(cpp_order(dcmls), r_radix_order(dcmls))
+cpp_sort(dbls)
 
 # String data
-strs <- round(dcmls, 2) |> paste0()
-mark(cpp_sort(strs), r_radix_sort(strs))
-mark(cpp_order(strs), r_radix_order(strs))
+strs <- dbls |> paste0()
+cpp_sort(strs)
 ```
 
 ## Grouping
@@ -2049,7 +1934,7 @@ The structure of `groups` is:
 **Note:** When the groups are in sorted-order (where `sorted` is true), member functions like `starts()` and `counts()` use a hybrid search strategy combining linear, gallop, and binary searching. This strategy ensures that search time complexity scales with the number of groups and not the size of the data.
 
 ```{r, echo=FALSE, results = 'asis'}
-as_cpp_chunk(benchmark_examples[["make_groups"]])
+as_cpp_chunk(examples[["make_groups"]])
 ```
 
 ```{r}
@@ -2073,22 +1958,11 @@ letter_groups$group_names # Names of unique groups
 In real analysis, you normally wouldn't need all of this metadata. For example, to return a data frame of unique groups (keys) and their associated counts, we only need `starts()` and `counts()`.
 
 ```{r, echo=FALSE, results = 'asis'}
-as_cpp_chunk(benchmark_examples[["group_counts"]])
+as_cpp_chunk(examples[["group_counts"]])
 ```
 
 ```{r}
 group_counts(x)
-```
-
-To illustrate how fast `make_groups()` is, let's compare cppally-derived group counts of a relatively large sample to base-R derived group counts.
-
-```{r}
-# 10k groups, 100k data points
-x <- sample.int(10^4, 10^5, replace = TRUE)
-mark(
-  cppally_group_counts = group_counts(x)$count,
-  base_table = table(factor(x, levels = unique(x))) |> as.integer()
-)
 ```
 
 ## Annex
