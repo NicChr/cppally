@@ -54,8 +54,11 @@ set.seed(42)
 ggplot2::theme_set(ggplot2::theme_grey())
 
 not_cran <- function(){
- nzchar(Sys.getenv("CI")) || identical(Sys.getenv("NOT_CRAN"), "true") 
+ nzchar(Sys.getenv("CI")) || identical(Sys.getenv("NOT_CRAN"), "true")
 }
+
+n_threads <- if (not_cran()) 4L else 2L # CRAN allows at most 2 threads
+
 # Helpers to compile all examples in debug mode
 cpp_source <- function(..., code, debug = TRUE, env = parent.frame()){
   preamble <- c("#include <cppally.hpp>", "using namespace cppally;")
@@ -501,20 +504,20 @@ We can detect whether or not multiple threads were used by observing benchmark t
 library(bench)
 library(ggplot2)
 
-x <- as.double(rpois(5e05, lambda = 10))
-y <- as.double(rpois(5e05, lambda = 15))
+x <- as.double(rpois(10^5, lambda = 10))
+y <- as.double(rpois(10^5, lambda = 15))
 
 (
   mark(
     single_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = 1),
-    multi_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = 4)
+    multi_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = n_threads)
   ) |> 
     autoplot(type = "violin") 
 ) +
   labs(title = "Numeric data")
 ```
 
-We can see that the same benchmarks on character vector data yield identical results between the one requesting 1 thread and the one requesting 4 threads. Even though we request 4 threads, it still gets executed as single-threaded.
+We can see that the same benchmarks on character vector data yield identical results between the one requesting 1 thread and the one requesting `r n_threads` threads. Even though we request `r n_threads` threads, it still gets executed as single-threaded.
 
 ```{r}
 
@@ -524,7 +527,7 @@ y <- as.character(y)
 (
   mark(
     single_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = 1),
-    multi_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = 4)
+    multi_threaded_pmax = cpp_parallel_pmax(x, y, n_threads = n_threads)
   ) |> 
     autoplot(type = "violin") 
 ) +
@@ -611,18 +614,18 @@ as_cpp_chunk(benchmark_examples[["cpp_sqrt"]])
 
 Here we are using `pmap_parallel_simd`, a variant of `pmap` that applies the supplied transformation under multiple threads and under an OpenMP SIMD directive. SIMD (single-instruction-multiple-data) is when the machine performs the same operation on multiple data points instead of one data point at time.
 
-Let's benchmark this against `base::sqrt()`, but first let's use 4 threads for the rest of the examples in this vignette.
+Let's benchmark this against `base::sqrt()`, but first let's use `r n_threads` threads for the rest of the examples in this vignette.
 
 ```{r, echo=FALSE, comment="", results='asis'}
 as_cpp_chunk(benchmark_examples[["cpp_set_threads"]])
 ```
 
 ```{r}
-cpp_set_threads(4) # Set 4 threads for the rest of the examples
+cpp_set_threads(n_threads) # Set threads for the rest of the examples
 ```
 
 ```{r}
-x <- rnorm(5e05, mean = 50)
+x <- rnorm(10^5, mean = 50)
 
 (
   mark(
@@ -651,8 +654,8 @@ as_cpp_chunk(benchmark_examples[["cpp_ops"]])
 ```
 
 ```{r}
-a <- sample(c(-1L, NA_integer_, 0L, 1L, -100L, 100L), 5e05, replace = TRUE)
-b <- sample(c(NA_real_, 0, -1/3, 1/3, -10^9, 10^9), 5e05, replace = TRUE)
+a <- sample(c(-1L, NA_integer_, 0L, 1L, -100L, 100L), 10^5, replace = TRUE)
+b <- sample(c(NA_real_, 0, -1/3, 1/3, -10^9, 10^9), 10^5, replace = TRUE)
 
 results <-
  mark(
@@ -732,7 +735,7 @@ split-and-apply method.
 
 ```{r}
 cpp_set_threads(1) # Run these benchmarks using a single thread
-n <- 5e05
+n <- 10^5
 x <- rnorm(n)
 
 # 3 groups
