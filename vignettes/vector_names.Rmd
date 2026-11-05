@@ -43,6 +43,15 @@ cpp_source <- function(..., code, debug = FALSE, env = parent.frame()){
     }
   )
 }
+chunk_impl <- function(x, language){
+  paste0("```", language, "\n", x, "\n```\n")
+}
+as_code_chunk <- function(x, language){
+  cat(chunk_impl(x, language))
+}
+as_cpp_chunk <- function(x){
+  as_code_chunk(x, "cpp")
+}
 ```
 
 cppally vectors cache a hash map of their names. Doing this makes name-lookup 
@@ -62,6 +71,57 @@ Let's first load cppally
 
 ```{r setup}
 library(cppally)
+```
+
+```{r, include=FALSE}
+examples <- c(
+  do_lookup = '
+#include <cppally.hpp>
+using namespace cppally;
+
+[[cppally::register]]
+r_vec<r_sexp> do_lookup(r_vec<r_sexp> x, r_str name, int n_iterations){
+  r_vec<r_sexp> out(n_iterations);
+  for (int i = 0; i < n_iterations; ++i){
+    out.set(i, x.get(name));
+  }
+  return out;
+}',
+  do_first_lookup_hashed = '
+#include <cppally.hpp>
+using namespace cppally;
+
+[[cppally::register]]
+r_vec<r_sexp> do_first_lookup_hashed(r_vec<r_sexp> x, r_str name, int n_iterations){
+  r_vec<r_sexp> out(n_iterations);
+
+  // Initial lookup as fast linear scan to force all other lookups to be hashed
+  static_cast<void>(x.get(x.names().get(0)));
+
+  for (int i = 0; i < n_iterations; ++i){
+    out.set(i, x.get(name));
+  }
+  return out;
+}',
+  do_linear_lookup = '
+#include <cppally.hpp>
+using namespace cppally;
+
+[[cppally::register]]
+r_vec<r_sexp> do_linear_lookup(r_vec<r_sexp> x, r_str name, int n_iterations){
+  r_vec<r_sexp> out(n_iterations);
+  r_vec<r_str> names = as<r_vec<r_str>>(x.names());
+  for (int i = 0; i < n_iterations; ++i){
+    auto first_match = names.find_first(name);
+    if (!is_na(first_match)){
+      out.set(i, x.view(first_match));
+    }
+  }
+  return out;
+}
+'
+)
+cpp_source(code = paste(examples, collapse = "\n"))
 ```
 
 Indexing into a vector by name is a useful idiom
@@ -259,21 +319,8 @@ r_int c = x.get("c"); // O(1) lookup
 Let's illustrate this by visualising the per call cost as the number of
 lookups increases, comparing R and cppally.
 
-```{r}
-cpp_source(code = '
-#include <cppally.hpp>
-using namespace cppally;
-
-[[cppally::register]]
-r_vec<r_sexp> do_lookup(r_vec<r_sexp> x, r_str name, int n_iterations){
-  r_vec<r_sexp> out(n_iterations);
-  for (int i = 0; i < n_iterations; ++i){
-    out.set(i, x.get(name));
-  }
-  return out;
-}
-')
-
+```{r, echo=FALSE, comment="", results='asis'}
+as_cpp_chunk(examples[["do_lookup"]])
 ```
 
 R equivalent using `[[`
@@ -359,24 +406,8 @@ Let's see how this compares to a pseudo hash-on-1st lookup method.
 To achieve this we will set the first lookup to be a fast linear scan of 
 the first name which means the rest of real lookups use hashing.
 
-```{r}
-cpp_source(code = '
-#include <cppally.hpp>
-using namespace cppally;
-
-[[cppally::register]]
-r_vec<r_sexp> do_first_lookup_hashed(r_vec<r_sexp> x, r_str name, int n_iterations){
-  r_vec<r_sexp> out(n_iterations);
-  
-  // Initial lookup as fast linear scan to force all other lookups to be hashed
-  static_cast<void>(x.get(x.names().get(0)));
-  
-  for (int i = 0; i < n_iterations; ++i){
-    out.set(i, x.get(name));
-  }
-  return out;
-}
-')
+```{r, echo=FALSE, comment="", results='asis'}
+as_cpp_chunk(examples[["do_first_lookup_hashed"]])
 ```
 
 ```{r, fig.width=11, fig.height=7, out.width="100%", echo=FALSE}
@@ -415,28 +446,10 @@ repeated linear scan lookups. At the same time we will also use a larger list.
 ```{r}
 large <- as.list(sample.int(5e05))
 names(large) <- paste0("name_", seq_along(large))
+```
 
-cpp_source(code = '
-#include <cppally.hpp>
-using namespace cppally;
-
-[[cppally::register]]
-r_vec<r_sexp> do_linear_lookup(r_vec<r_sexp> x, r_str name, int n_iterations){
-  r_vec<r_sexp> out(n_iterations);
-  r_vec<r_str> names = as<r_vec<r_str>>(x.names());
-  int n = names.length();
-  auto *p = names.data(); // Use ptr to allow O2 optimisations here for fair comparison
-  for (int i = 0; i < n_iterations; ++i){
-    for (int j = 0; j < n; ++j){
-      if (unwrap(name) == p[j]){
-        out.set(i, x.view(j));
-        break;
-      }
-    }
-  }
-  return out;
-}
-')
+```{r, echo=FALSE, comment="", results='asis'}
+as_cpp_chunk(examples[["do_linear_lookup"]])
 ```
 
 
