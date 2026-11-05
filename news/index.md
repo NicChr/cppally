@@ -2,6 +2,8 @@
 
 ## cppally 1.2.0 (2026-11-05)
 
+CRAN release: 2026-11-05
+
 ### Breaking changes
 
 - `r_size_t` is now always `int64_t` on 64-bit platforms and so does not
