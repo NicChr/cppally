@@ -1,4 +1,4 @@
-# cppally 1.2.0 (2026-11-04)
+# cppally 1.2.0 (2026-11-05)
 
 ## Breaking changes
 
