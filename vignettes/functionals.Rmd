@@ -59,6 +59,13 @@ not_cran <- function(){
 
 n_threads <- if (not_cran()) 4L else 2L # CRAN allows at most 2 threads
 
+# bench can report an extra gc row if a GC lands after the last iteration
+mark <- function(..., env = parent.frame()) {
+  out <- bench::mark(..., env = env)
+  out$gc <- Map(function(gc, time) gc[seq_along(time), ], out$gc, out$time)
+  out
+}
+
 # Helpers to compile all examples in debug mode
 cpp_source <- function(..., code, debug = TRUE, env = parent.frame()){
   preamble <- c("#include <cppally.hpp>", "using namespace cppally;")
