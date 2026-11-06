@@ -26,6 +26,13 @@ inline SEXP mk_char_utf8(const char* x, std::size_t n) {
   return Rf_mkCharLenCE(x, static_cast<int>(n), CE_UTF8);
 }
 
+inline SEXP mk_char_utf8(std::string_view x) {
+  if (x.find('\0') != std::string_view::npos) [[unlikely]] {
+    abort("string contains an embedded nul");
+  }
+  return mk_char_utf8(x.data(), x.size());
+}
+
 }
 
 // Unprotected read-only view of r_str.
@@ -110,6 +117,7 @@ struct r_str {
   explicit r_str(SEXP x, internal::view_tag, internal::no_checks_tag) noexcept : value(x, internal::view_tag{}) {}
 
   explicit r_str(const char *x) : r_str(internal::mk_char_utf8(x, internal::str_length(x)), internal::no_checks_tag{}) {}
+  explicit r_str(std::string_view x) : r_str(internal::mk_char_utf8(x), internal::no_checks_tag{}) {}
 
   // Implicit r_str -> SEXP 
   operator SEXP() const noexcept { return value; }
