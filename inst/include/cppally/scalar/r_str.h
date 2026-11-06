@@ -195,8 +195,8 @@ struct r_str {
     if (is_na() || is_ascii()) {
       return *this;
     }
-    cetype_t enc = Rf_getCharCE(unwrap(*this));
-    if (enc == CE_UTF8 || enc == CE_BYTES) {
+    str_encoding enc = encoding();
+    if (enc == str_encoding::utf8 || enc == str_encoding::bytes) {
       return *this;
     }
     // Valid UTF-8 but unmarked
