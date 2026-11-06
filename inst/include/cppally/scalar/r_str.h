@@ -27,18 +27,25 @@ inline constexpr std::size_t str_length(const char* x) noexcept {
   return std::string_view(x).size();
 }
 
-inline SEXP mk_char_utf8(const char* x, std::size_t n) {
+inline bool str_has_embedded_nul(std::string_view x) noexcept {
+  return x.find('\0') != std::string_view::npos;
+}
+
+inline SEXP mk_char(const char* x, std::size_t n, str_encoding enc = str_encoding::utf8) {
   if (n > static_cast<std::size_t>(std::numeric_limits<int>::max())) [[unlikely]] {
     abort("string is too large (>= 2^31 bytes long)");
   }
-  return Rf_mkCharLenCE(x, static_cast<int>(n), CE_UTF8);
+  if (enc == str_encoding::unsupported) [[unlikely]] {
+    abort("Unsupported string encoding, supported encodings: UTF-8, latin1, native, and bytes");
+  }
+  return Rf_mkCharLenCE(x, static_cast<int>(n), static_cast<cetype_t>(enc));
 }
 
-inline SEXP mk_char_utf8(std::string_view x) {
-  if (x.find('\0') != std::string_view::npos) [[unlikely]] {
+inline SEXP mk_char(std::string_view x, str_encoding enc = str_encoding::utf8, bool check_for_embedded_nul = true) {
+  if (check_for_embedded_nul && str_has_embedded_nul(x)) [[unlikely]] {
     abort("string contains an embedded nul");
   }
-  return mk_char_utf8(x.data(), x.size());
+  return mk_char(x.data(), x.size(), enc);
 }
 
 }
@@ -135,8 +142,8 @@ struct r_str {
   explicit r_str(SEXP x, internal::no_checks_tag) : r_str(r_sexp(x), internal::no_checks_tag{}) {}
   explicit r_str(SEXP x, internal::view_tag, internal::no_checks_tag) noexcept : value(x, internal::view_tag{}) {}
 
-  explicit r_str(const char *x) : r_str(internal::mk_char_utf8(x, internal::str_length(x)), internal::no_checks_tag{}) {}
-  explicit r_str(std::string_view x) : r_str(internal::mk_char_utf8(x), internal::no_checks_tag{}) {}
+  explicit r_str(const char* x, str_encoding enc = str_encoding::utf8) : r_str(internal::mk_char(x, internal::str_length(x), enc), internal::no_checks_tag{}) {}
+  explicit r_str(std::string_view x, str_encoding enc = str_encoding::utf8) : r_str(internal::mk_char(x, enc), internal::no_checks_tag{}) {}
 
   // Implicit r_str -> SEXP 
   operator SEXP() const noexcept { return value; }
@@ -201,7 +208,7 @@ struct r_str {
     }
     // Valid UTF-8 but unmarked
     if (is_utf8()) {
-      return r_str(internal::mk_char_utf8(c_str(), static_cast<std::size_t>(n_bytes())), internal::no_checks_tag{});
+      return r_str(internal::mk_char(c_str(), static_cast<std::size_t>(n_bytes())), internal::no_checks_tag{});
     }
     // Latin-1 mapping is a (most of the time) fixed, locale-independent byte transform
     if (is_latin1()) {
@@ -228,7 +235,7 @@ struct r_str {
         }
       }
       if (i == n) {
-        return r_str(internal::mk_char_utf8(out.data(), out.size()), internal::no_checks_tag{});
+        return r_str(internal::mk_char(out.data(), out.size()), internal::no_checks_tag{});
       }
     }
     // translateCharUTF8 allocates with R_alloc so release it once mkChar has copied the bytes
@@ -264,7 +271,7 @@ namespace internal {
 // e.g. by setting it as an element to r_vec<r_str_view>
 // Otherwise just use `r_str()` or `as<r_str>` 
 inline r_str_view c_str_to_r_str_view(const char* x){
-  return r_str_view(mk_char_utf8(x, str_length(x)), internal::no_checks_tag{});
+  return r_str_view(mk_char(x, str_length(x)), internal::no_checks_tag{});
 }
 
 }
