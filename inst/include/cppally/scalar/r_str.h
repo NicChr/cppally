@@ -13,6 +13,14 @@
 
 namespace cppally {
 
+enum class str_encoding {
+  native = CE_NATIVE,
+  utf8 = CE_UTF8,
+  latin1 = CE_LATIN1,
+  bytes = CE_BYTES,
+  unsupported = 127
+};
+
 namespace internal {
 
 inline constexpr std::size_t str_length(const char* x) noexcept {
