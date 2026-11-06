@@ -89,6 +89,17 @@ struct r_str_view {
     return LENGTH(unwrap(*this));
   }
 
+  str_encoding encoding() const noexcept {
+    auto r_encoding = Rf_getCharCE(unwrap(*this));
+    switch (r_encoding) {
+      case CE_NATIVE: return str_encoding::native;
+      case CE_UTF8: return str_encoding::utf8;
+      case CE_BYTES: return str_encoding::bytes;
+      case CE_LATIN1: return str_encoding::latin1;
+      default: return str_encoding::unsupported;
+    }
+  }
+
   // Is string valid UTF-8? (ASCII is also valid UTF8)
   bool is_utf8() const noexcept {
     return static_cast<bool>(Rf_charIsUTF8(unwrap(*this)));
@@ -172,6 +183,10 @@ struct r_str {
 
   bool is_latin1() const noexcept {
     return r_str_view(*this).is_latin1();
+  }
+
+  str_encoding encoding() const noexcept {
+    return r_str_view(*this).encoding();
   }
 
   // Convert to UTF-8. This matches `base::enc2utf8()`.
