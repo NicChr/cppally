@@ -366,6 +366,11 @@ benchmark time.
 ``` r
 
 library(bench)
+#> 
+#> Attaching package: 'bench'
+#> The following object is masked _by_ '.GlobalEnv':
+#> 
+#>     mark
 library(ggplot2)
 
 x <- as.double(rpois(10^5, lambda = 10))
@@ -800,6 +805,8 @@ g <- as.character(sample.int(10^5, n, replace = TRUE))
 ) + 
   labs(title = "R vs cppally sum by group - 100k groups") +
   bench::scale_x_bench_time(base = 2)
+#> Warning: Some expressions had a GC in every iteration; so filtering is
+#> disabled.
 ```
 
 ![](functionals_files/figure-html/unnamed-chunk-44-3.png)
