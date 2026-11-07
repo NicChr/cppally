@@ -32,32 +32,33 @@ inline bool str_bytes_comparable(r_str_view x, r_str_view y) noexcept {
   return enc_x == enc_y || enc_x == str_encoding::bytes || enc_y == str_encoding::bytes;
 }
 
-// Compares text (in C-locale) after UTF-8 conversion
-inline int str_compare_utf8(r_str_view x, r_str_view y) {
-  if (x.is_utf8() && y.is_utf8()){
+// Byte-wise (C-locale) comparison of the text after converting to UTF-8 if bytes cannot be compared immediately
+CPPALLY_NOINLINE inline int str_compare(r_str_view x, r_str_view y) {
+  if ( (x.is_utf8() && y.is_utf8()) || str_bytes_comparable(x, y) ){
     return std::strcmp(x.c_str(), y.c_str());
   }
   r_str x_utf8 = r_str(x, view_tag{}, no_checks_tag{}).as_utf8();
   r_str y_utf8 = r_str(y, view_tag{}, no_checks_tag{}).as_utf8();
   return std::strcmp(x_utf8.c_str(), y_utf8.c_str());
 }
-
-// Byte-wise (C-locale) comparison of the text
-inline int str_compare(r_str_view x, r_str_view y) {
-  return str_bytes_comparable(x, y) ? std::strcmp(x.c_str(), y.c_str()) : str_compare_utf8(x, y);
-}
-
-inline int str_compare(r_str_view x, std::string_view y) {
+CPPALLY_NOINLINE inline int str_compare(r_str_view x, std::string_view y) {
   if (x.is_utf8()){
     // C++ strings are assumed to be UTF-8 so compare bytes directly
     return x.cpp_str().compare(y);
+  } else {
+    return r_str(x, view_tag{}, no_checks_tag{}).as_utf8().cpp_str().compare(y);
   }
-  r_str x_utf8 = r_str(x, view_tag{}, no_checks_tag{}).as_utf8();
-  return x_utf8.cpp_str().compare(y);
+}
+
+CPPALLY_NOINLINE inline bool str_equal_impl(r_str_view x, r_str_view y) {
+  if (x.is_utf8() && y.is_utf8()){
+    return std::strcmp(x.c_str(), y.c_str()) == 0;
+  }
+  return !str_bytes_comparable(x, y) && str_compare(x, y) == 0;
 }
 
 inline bool str_equal(r_str_view x, r_str_view y) {
-  return r_addresses_equal(x, y) || (!str_bytes_comparable(x, y) && str_compare_utf8(x, y) == 0);
+  return r_addresses_equal(x, y) || str_equal_impl(x, y);
 }
 
 }
