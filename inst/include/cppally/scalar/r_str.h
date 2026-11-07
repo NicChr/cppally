@@ -64,7 +64,7 @@ struct r_str_view {
   explicit r_str_view(SEXP x, internal::view_tag) : r_str_view(x) {}
   explicit r_str_view(SEXP x, internal::no_checks_tag) noexcept : value{x} {}
   explicit r_str_view(SEXP x, internal::view_tag, internal::no_checks_tag) noexcept : r_str_view(x, internal::no_checks_tag{}) {}
-  // Can't construct `r_str_view` from `const char*` — use `r_str` instead
+  // Can't construct `r_str_view` from `const char*` - use `r_str` instead
   explicit r_str_view(const char *x) = delete;
   explicit r_str_view(std::string_view x) = delete;
   // Implicit r_str_view -> SEXP
@@ -114,14 +114,14 @@ struct r_str_view {
     return static_cast<bool>(Rf_charIsUTF8(unwrap(*this)));
   }
 
-  // Is string ASCII? The bytes ARE checked, so if they're true, they are also valid UTF-8 and Latin-1.
+  // Is string ASCII? The bytes ARE checked, so if true, they are also valid UTF-8 and Latin-1.
   bool is_ascii() const noexcept {
     return static_cast<bool>(Rf_charIsASCII(unwrap(*this)));
   }
 
   // Is string Latin-1?
   // True for ASCII, Latin-1 marked strings, and native (unmarked) strings in a Latin-1 locale.
-  // bytes are not checked, only the mark and locale decide the result.
+  // Bytes are not checked, only the mark and locale decide the result.
   bool is_latin1() const noexcept {
     return static_cast<bool>(Rf_charIsLatin1(unwrap(*this)));
   }
@@ -148,8 +148,12 @@ struct r_str {
   explicit r_str(SEXP x, internal::no_checks_tag) : r_str(r_sexp(x), internal::no_checks_tag{}) {}
   explicit r_str(SEXP x, internal::view_tag, internal::no_checks_tag) noexcept : value(x, internal::view_tag{}) {}
 
-  explicit r_str(const char* x, str_encoding enc = str_encoding::utf8) : r_str(internal::mk_char(x, internal::str_length(x), enc), internal::no_checks_tag{}) {}
-  explicit r_str(std::string_view x, str_encoding enc = str_encoding::utf8) : r_str(internal::mk_char(x, enc), internal::no_checks_tag{}) {}
+  explicit r_str(const char* x, str_encoding enc = str_encoding::utf8) :
+    r_str(internal::mk_char(x, internal::str_length(x), enc), internal::no_checks_tag{}) {}
+  
+  // check_for_embedded_nul = false skips checking for NUL bytes. Only use if you are certain the string is clean.
+  explicit r_str(std::string_view x, str_encoding enc = str_encoding::utf8, bool check_for_embedded_nul = true) :
+    r_str(internal::mk_char(x, enc, check_for_embedded_nul), internal::no_checks_tag{}) {}
 
   // Implicit r_str -> SEXP 
   operator SEXP() const noexcept { return value; }
@@ -192,14 +196,14 @@ struct r_str {
     return r_str_view(*this).is_utf8();
   }
 
-  // Is string ASCII? The bytes ARE checked, so if they're true, they are also valid UTF-8 and Latin-1.
+  // Is string ASCII? The bytes ARE checked, so if true, they are also valid UTF-8 and Latin-1.
   bool is_ascii() const noexcept {
     return r_str_view(*this).is_ascii();
   }
 
   // Is string Latin-1?
   // True for ASCII, Latin-1 marked strings, and native (unmarked) strings in a Latin-1 locale.
-  // bytes are not checked, only the mark and locale decide the result.
+  // Bytes are not checked, only the mark and locale decide the result.
   bool is_latin1() const noexcept {
     return r_str_view(*this).is_latin1();
   }
@@ -208,18 +212,19 @@ struct r_str {
     return r_str_view(*this).encoding();
   }
 
-  // Mark string with a new encoding (bytes are kept as-is).
+  // Mark string with a new encoding, keeping the bytes, so the text can change.
+  // To convert the text to UTF-8, use as_utf8().
   [[nodiscard]] r_str with_encoding(str_encoding new_encoding) const {
     if (is_na() || new_encoding == encoding()){
       return *this;
     } else {
-      return r_str(cpp_str(), new_encoding);
+      return r_str(cpp_str(), new_encoding, /*check_for_embedded_nul=*/ false);
     }
   }
 
   // Convert to UTF-8. This matches `base::enc2utf8()`.
   // ASCII and bytes are left as-is.
-  r_str as_utf8() const {
+  [[nodiscard]] r_str as_utf8() const {
     if (is_na() || is_ascii()) {
       return *this;
     }
@@ -227,9 +232,10 @@ struct r_str {
     if (enc == str_encoding::utf8 || enc == str_encoding::bytes) {
       return *this;
     }
-    // Is UTF-8?
+
     if (is_utf8()) {
-      return r_str(internal::mk_char(c_str(), static_cast<std::size_t>(n_bytes())), internal::no_checks_tag{});
+      // Construct utf8 marked str directly instead of using with_encoding() to avoid extra NA & encoding check branch
+      return r_str(cpp_str(), str_encoding::utf8, /*check_for_embedded_nul=*/ false);
     }
     // Latin-1 mapping is a (most of the time) fixed, locale-independent byte transform
     if (is_latin1()) {
@@ -256,7 +262,7 @@ struct r_str {
         }
       }
       if (i == n) {
-        return r_str(internal::mk_char(out.data(), out.size()), internal::no_checks_tag{});
+        return r_str(out, str_encoding::utf8, /*check_for_embedded_nul=*/ false);
       }
     }
     // translateCharUTF8 allocates with R_alloc so release it once mkChar has copied the bytes
