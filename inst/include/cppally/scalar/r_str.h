@@ -107,15 +107,21 @@ struct r_str_view {
     }
   }
 
-  // Is string valid UTF-8? (ASCII is also valid UTF8)
+  // Is string UTF-8?
+  // True for ASCII, UTF-8 marked strings, native (unmarked) strings in a UTF-8 locale, and NA.
+  // Does not check that the bytes are valid UTF-8.
   bool is_utf8() const noexcept {
     return static_cast<bool>(Rf_charIsUTF8(unwrap(*this)));
   }
 
+  // Is string ASCII? The bytes ARE checked, so if they're true, they are also valid UTF-8 and Latin-1.
   bool is_ascii() const noexcept {
     return static_cast<bool>(Rf_charIsASCII(unwrap(*this)));
   }
 
+  // Is string Latin-1?
+  // True for ASCII, Latin-1 marked strings, and native (unmarked) strings in a Latin-1 locale.
+  // bytes are not checked, only the mark and locale decide the result.
   bool is_latin1() const noexcept {
     return static_cast<bool>(Rf_charIsLatin1(unwrap(*this)));
   }
@@ -179,15 +185,21 @@ struct r_str {
     return r_str_view(*this).n_bytes();
   }
 
-  // Is string valid UTF-8? (ASCII is also valid UTF8)
+  // Is string UTF-8?
+  // True for ASCII, UTF-8 marked strings, native (unmarked) strings in a UTF-8 locale, and NA.
+  // Does not check that the bytes are valid UTF-8.
   bool is_utf8() const noexcept {
     return r_str_view(*this).is_utf8();
   }
 
+  // Is string ASCII? The bytes ARE checked, so if they're true, they are also valid UTF-8 and Latin-1.
   bool is_ascii() const noexcept {
     return r_str_view(*this).is_ascii();
   }
 
+  // Is string Latin-1?
+  // True for ASCII, Latin-1 marked strings, and native (unmarked) strings in a Latin-1 locale.
+  // bytes are not checked, only the mark and locale decide the result.
   bool is_latin1() const noexcept {
     return r_str_view(*this).is_latin1();
   }
@@ -215,7 +227,7 @@ struct r_str {
     if (enc == str_encoding::utf8 || enc == str_encoding::bytes) {
       return *this;
     }
-    // Valid UTF-8 but unmarked
+    // Is UTF-8?
     if (is_utf8()) {
       return r_str(internal::mk_char(c_str(), static_cast<std::size_t>(n_bytes())), internal::no_checks_tag{});
     }
