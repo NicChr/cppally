@@ -54,7 +54,11 @@ inline r_vec<r_str> str_paste_list(const std::vector<r_vec<r_str_view>>& x, cons
             if (i > 0){
                 buf += sep;
             }
-            buf += e.c_str();
+            if (e.is_utf8()){
+                buf += e.c_str();
+            } else {
+                buf += r_str(e, view_tag{}, no_checks_tag{}).as_utf8().c_str();
+            }
         }
         out.set(j, is_na(e) ? na<r_str_view>() : c_str_to_r_str_view(buf.c_str()));
         buf.clear();
@@ -94,7 +98,11 @@ inline r_str str_collapse(const r_vec<r_str>& x, const char* sep = ""){
         if (i > 0){
             res += sep;
         }
-        res += elem.c_str();
+        if (elem.is_utf8()){
+            res += elem.c_str();
+        } else {
+            res += elem.as_utf8().c_str();
+        }
     }
     return r_str(res.c_str());
 }
