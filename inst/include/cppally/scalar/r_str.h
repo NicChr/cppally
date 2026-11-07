@@ -196,6 +196,15 @@ struct r_str {
     return r_str_view(*this).encoding();
   }
 
+  // Mark string with a new encoding (bytes are kept as-is).
+  [[nodiscard]] r_str with_encoding(str_encoding new_encoding) const {
+    if (is_na() || new_encoding == encoding()){
+      return *this;
+    } else {
+      return r_str(cpp_str(), new_encoding);
+    }
+  }
+
   // Convert to UTF-8. This matches `base::enc2utf8()`.
   // ASCII and bytes are left as-is.
   r_str as_utf8() const {
