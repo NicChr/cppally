@@ -47,7 +47,7 @@ r_vec<r_int> order_cmp(const T& x) {
     pv.iota();
 
     auto* RESTRICT p = pv.data();
-    auto cmp = [&x](int i, int j) noexcept {
+    auto cmp = [&x](int i, int j) noexcept(noexcept(x.view(i) < x.view(j))) {
         return is_na(x.view(i)) ? false : !((x.view(i) < x.view(j)).is_false());
     };
 
