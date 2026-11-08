@@ -4,6 +4,7 @@
 #include <cppally/r_concepts.h>
 #include <cppally/na.h>
 #include <cppally/scalar/scalars.h>
+#include <cppally/scalar/relational_ops.h>
 #include <cppally/r_sym.h>
 #include <cppally/r_function.h>
 
@@ -56,6 +57,13 @@ inline constexpr bool identical_impl(const T& a, const T& b) noexcept {
     return identical_impl(r_t(a), r_t(b));
 }
 
+inline bool identical_impl(const r_str_view& a, const r_str_view& b) {
+    return str_equal(a, b);
+}
+inline bool identical_impl(const r_str& a, const r_str& b) {
+    return identical_impl(static_cast<r_str_view>(a), static_cast<r_str_view>(b));
+}
+
 inline bool identical_impl(const r_sym& a, const r_sym& b) noexcept {
     return unwrap(a) == unwrap(b);
 }
@@ -81,13 +89,14 @@ inline bool identical_impl<r_df>(const r_df& a, const r_df& b);
 }
 
 // Identical takes type into account
+template <typename T>
+inline constexpr bool identical(const T& a, const T& b) noexcept(noexcept(internal::identical_impl(a, b))) {
+    return internal::identical_impl(a, b);
+}
+
 template <typename T, typename U>
-inline constexpr bool identical(const T& a, const U& b) noexcept(RScalar<T>) {
-    if constexpr (is<T, U>){
-        return internal::identical_impl(a, b);
-    } else {
-        return false;
-    }
+inline constexpr bool identical(const T&, const U&) noexcept {
+    return false;
 }
 
 // Static tests
