@@ -8,6 +8,7 @@
 #include <cppally/sort/counting_order.h>
 #include <cppally/identical.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
+#include <functional>
 #include <vector>
 
 namespace cppally {
@@ -300,14 +301,13 @@ groups make_unordered_groups(const T& x) {
 
     if (!done) {
 
+        // Strings are grouped by CHARSXP first, then groups holding identical text are merged below
+        using hash_t = std::conditional_t<RStringType<data_t>, ankerl::unordered_dense::hash<SEXP>, internal::r_hash_fn<data_t>>;
+        using eq_t = std::conditional_t<RStringType<data_t>, std::equal_to<SEXP>, internal::r_hash_eq<data_t>>;
+
         uint64_t hash_map_reserve_guess = internal::get_hash_map_reserve_size<T>(p_x, n);
-        
-        ankerl::unordered_dense::map<
-        key_type,
-        int,
-        internal::r_hash_fn<data_t>,
-        internal::r_hash_eq<data_t>
-      > lookup;
+
+        ankerl::unordered_dense::map<key_type, int, hash_t, eq_t> lookup;
 
       lookup.reserve(hash_map_reserve_guess);
 
@@ -315,7 +315,7 @@ groups make_unordered_groups(const T& x) {
       for (r_size_t i = 0; i < n; ++i) {
 
         // Skip consecutive values that are the same (and avoid hash lookup)
-        if (i > 0 && internal::r_hash_eq<data_t>()(p_x[i], p_x[i - 1])) {
+        if (i > 0 && eq_t{}(p_x[i], p_x[i - 1])) {
             p_id[i] = prev_id;
             continue;
         }
@@ -327,6 +327,33 @@ groups make_unordered_groups(const T& x) {
         p_id[i] = prev_id;
       }
 
+      if constexpr (RStringType<data_t>) {
+        // Distinct CHARSXPs can hold identical text in different encodings (e.g. latin1 and UTF-8), so merge their groups
+        const auto& keys = lookup.values(); // In group ID order
+        ankerl::unordered_dense::map<key_type, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>> text_lookup;
+        std::vector<int> remap(next_id);
+        int n_text_groups = 0;
+        for (int g = 0; g < next_id; ++g) {
+            auto s = internal::unsafe_reconstruct_view<data_t>(keys[g].first);
+            // NA and ASCII text each have exactly one CHARSXP, so they can't merge with another group
+            if (s.is_na() || s.is_ascii()) {
+                remap[g] = n_text_groups++;
+            } else {
+                auto [it, inserted] = text_lookup.try_emplace(keys[g].first, n_text_groups);
+                if (inserted) {
+                    ++n_text_groups;
+                }
+                remap[g] = it->second;
+            }
+        }
+        if (n_text_groups < next_id) {
+            for (r_size_t i = 0; i < n; ++i) {
+                p_id[i] = remap[p_id[i]];
+            }
+            next_id = n_text_groups;
+        }
+      }
+
     }
     
     n_groups = next_id;
@@ -335,6 +362,7 @@ groups make_unordered_groups(const T& x) {
 
 // Make groups from cppally::order(x)
 template <RSortableType T>
+requires (!RStringType<T>)
 groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
     r_size_t n = x.length();
 
@@ -343,7 +371,7 @@ groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
     }
 
     if (n == 0) return groups(r_vec<r_int>(), 0, true, true);
-    
+
     r_vec<r_int> group_ids(n);
     int* RESTRICT p_group_ids = group_ids.data();
 
@@ -413,6 +441,34 @@ groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
     }
 
     return groups(group_ids, n_groups, /*ordered=*/ true);
+}
+
+template <RStringType T>
+groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
+    r_size_t n = x.length();
+
+    if (n != o.length()) [[unlikely]] {
+        abort("`x.length()` must match `o.length()`");
+    }
+
+    if (n == 0) {
+        return groups(r_vec<r_int>(), 0, true, true);
+    }
+
+    r_vec<r_int> group_ids(n);
+    int* RESTRICT p_group_ids = group_ids.data();
+    const int* RESTRICT p_o = o.data();
+
+    int id = 0;
+    p_group_ids[p_o[0]] = 0;
+    for (r_size_t i = 1; i < n; ++i) {
+        if (!identical(x.view(p_o[i]), x.view(p_o[i - 1]))) {
+            ++id;
+        }
+        p_group_ids[p_o[i]] = id;
+    }
+
+    return groups(group_ids, id + 1, /*ordered=*/ true);
 }
 
 }
