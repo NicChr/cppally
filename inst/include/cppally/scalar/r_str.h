@@ -125,6 +125,11 @@ struct r_str_view {
   bool is_latin1() const noexcept {
     return static_cast<bool>(Rf_charIsLatin1(unwrap(*this)));
   }
+  // Would converting to UTF-8 (via `as_utf8()`) change the bytes?
+  // NA and strings with `str_encoding::bytes` are not translated.
+  bool needs_utf8_translation() const noexcept {
+    return !is_na() && !is_utf8() && encoding() != str_encoding::bytes;
+  }
 
 };
 
@@ -250,6 +255,12 @@ struct r_str {
   // Bytes are not checked, only the mark and locale decide the result.
   bool is_latin1() const noexcept {
     return r_str_view(*this).is_latin1();
+  }
+
+  // Would converting to UTF-8 (via `as_utf8()`) change the bytes?
+  // NA and strings with `str_encoding::bytes` are not translated.
+  bool needs_utf8_translation() const noexcept {
+    return r_str_view(*this).needs_utf8_translation();
   }
 
   str_encoding encoding() const noexcept {
