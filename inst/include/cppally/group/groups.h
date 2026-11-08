@@ -263,11 +263,75 @@ void check_groups_span_data(const T& x, const groups& g){
     }
 }
 
+// Numbers groups by first appearance, returning the map so callers can reuse its keys
+template <typename hash_t, typename eq_t, RVector T>
+auto hash_group_ids(const T& x, int* RESTRICT p_id) {
+
+    using key_type = unwrap_t<typename T::data_type>;
+    r_size_t n = x.length();
+    auto* RESTRICT p_x = x.data();
+
+    uint64_t hash_map_reserve_guess = internal::get_hash_map_reserve_size<T>(p_x, n);
+
+    ankerl::unordered_dense::map<key_type, int, hash_t, eq_t> lookup;
+
+    lookup.reserve(hash_map_reserve_guess);
+
+    int next_id = 0;
+    int prev_id = -1;
+    for (r_size_t i = 0; i < n; ++i) {
+
+        // Skip consecutive values that are the same (and avoid hash lookup)
+        if (i > 0 && eq_t{}(p_x[i], p_x[i - 1])) {
+            p_id[i] = prev_id;
+            continue;
+        }
+        auto [id, inserted] = lookup.try_emplace(p_x[i], next_id);
+        if (inserted) {
+            ++next_id;
+        }
+        prev_id = id->second;
+        p_id[i] = prev_id;
+    }
+
+    return lookup;
+}
+
+// Distinct CHARSXPs can hold identical text in different encodings (e.g. latin1 and UTF-8), so merge their groups
+CPPALLY_NOINLINE inline int merge_identical_text(const std::vector<std::pair<SEXP, int>>& keys, int* RESTRICT p_id, r_size_t n) {
+
+    int n_groups = static_cast<int>(keys.size());
+    ankerl::unordered_dense::map<SEXP, int, internal::r_hash_fn<r_str>, internal::r_hash_eq<r_str>> text_lookup;
+    std::vector<int> remap(n_groups);
+    int n_text_groups = 0;
+
+    for (int g = 0; g < n_groups; ++g) {
+        auto s = internal::unsafe_reconstruct_view<r_str>(keys[g].first);
+        // NA and ASCII text each have exactly one CHARSXP, so they can't merge with another group
+        if (s.is_na() || s.is_ascii()) {
+            remap[g] = n_text_groups++;
+        } else {
+            auto [it, inserted] = text_lookup.try_emplace(keys[g].first, n_text_groups);
+            if (inserted) {
+                ++n_text_groups;
+            }
+            remap[g] = it->second;
+        }
+    }
+
+    if (n_text_groups < n_groups) {
+        for (r_size_t i = 0; i < n; ++i) {
+            p_id[i] = remap[p_id[i]];
+        }
+    }
+
+    return n_text_groups;
+}
+
 template <RVector T>
 groups make_unordered_groups(const T& x) {
 
     using data_t = typename T::data_type;
-    using key_type = unwrap_t<data_t>;
     r_size_t n = x.length();
 
     if (n == 0) return groups(r_vec<r_int>(), 0, false, true);
@@ -296,64 +360,16 @@ groups make_unordered_groups(const T& x) {
         }
     });
 
-    auto* RESTRICT p_x = x.data();
     auto* RESTRICT p_id = group_ids.data();
 
     if (!done) {
-
-        // Strings are grouped by CHARSXP first, then groups holding identical text are merged below
-        using hash_t = std::conditional_t<RStringType<data_t>, ankerl::unordered_dense::hash<SEXP>, internal::r_hash_fn<data_t>>;
-        using eq_t = std::conditional_t<RStringType<data_t>, std::equal_to<SEXP>, internal::r_hash_eq<data_t>>;
-
-        uint64_t hash_map_reserve_guess = internal::get_hash_map_reserve_size<T>(p_x, n);
-
-        ankerl::unordered_dense::map<key_type, int, hash_t, eq_t> lookup;
-
-      lookup.reserve(hash_map_reserve_guess);
-
-      int prev_id = -1;
-      for (r_size_t i = 0; i < n; ++i) {
-
-        // Skip consecutive values that are the same (and avoid hash lookup)
-        if (i > 0 && eq_t{}(p_x[i], p_x[i - 1])) {
-            p_id[i] = prev_id;
-            continue;
+        if constexpr (RStringType<data_t>) {
+            // Strings are grouped by CHARSXP first, then groups holding identical text are merged
+            auto lookup = hash_group_ids<ankerl::unordered_dense::hash<SEXP>, std::equal_to<SEXP>>(x, p_id);
+            next_id = merge_identical_text(lookup.values(), p_id, n); // values() are in group ID order
+        } else {
+            next_id = static_cast<int>(hash_group_ids<internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>>(x, p_id).size());
         }
-        auto [id, inserted] = lookup.try_emplace(p_x[i], next_id);
-        if (inserted) {
-            ++next_id;
-        }
-        prev_id = id->second;
-        p_id[i] = prev_id;
-      }
-
-      if constexpr (RStringType<data_t>) {
-        // Distinct CHARSXPs can hold identical text in different encodings (e.g. latin1 and UTF-8), so merge their groups
-        const auto& keys = lookup.values(); // In group ID order
-        ankerl::unordered_dense::map<key_type, int, internal::r_hash_fn<data_t>, internal::r_hash_eq<data_t>> text_lookup;
-        std::vector<int> remap(next_id);
-        int n_text_groups = 0;
-        for (int g = 0; g < next_id; ++g) {
-            auto s = internal::unsafe_reconstruct_view<data_t>(keys[g].first);
-            // NA and ASCII text each have exactly one CHARSXP, so they can't merge with another group
-            if (s.is_na() || s.is_ascii()) {
-                remap[g] = n_text_groups++;
-            } else {
-                auto [it, inserted] = text_lookup.try_emplace(keys[g].first, n_text_groups);
-                if (inserted) {
-                    ++n_text_groups;
-                }
-                remap[g] = it->second;
-            }
-        }
-        if (n_text_groups < next_id) {
-            for (r_size_t i = 0; i < n; ++i) {
-                p_id[i] = remap[p_id[i]];
-            }
-            next_id = n_text_groups;
-        }
-      }
-
     }
     
     n_groups = next_id;
