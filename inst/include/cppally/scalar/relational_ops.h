@@ -49,6 +49,7 @@ CPPALLY_NOINLINE inline int str_compare(r_str_view x, std::string_view y) {
 }
 
 CPPALLY_NOINLINE inline bool str_equal_impl(r_str_view x, r_str_view y) {
+  // x and y are different pointers (addresses), so comparable bytes cannot have identical text
   if (str_bytes_comparable(x, y)){
     return false;
   }
