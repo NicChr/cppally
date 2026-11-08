@@ -84,6 +84,25 @@ inline void insertion_sort(key_t* RESTRICT keys, int* RESTRICT idx, uint32_t n) 
     }
 }
 
+// Normalise strings as UTF-8
+CPPALLY_NOINLINE inline r_vec<r_str_view> as_utf8_strings(const r_vec<r_str_view>& x){
+    r_size_t n = x.length();
+
+    for (r_size_t i = 0; i < n; ++i){
+        r_str_view elem = x.view(i);
+        // If any need translating, convert all to UTF-8
+        if (elem.needs_utf8_translation()) [[unlikely]] {
+            r_vec<r_str_view> out(n);
+            for (r_size_t j = 0; j < n; ++j){
+                elem = x.view(j);
+                out.set(j, r_str_view(r_str(elem, internal::view_tag{}, internal::no_checks_tag{}).as_utf8()));
+            }
+            return out;
+        }
+    }
+    return x;
+}
+
 // Adapted from ska_sort's to_unsigned_or_bool (Malte Skarupke, Boost Software License 1.0)
 // Maps a number to an unsigned key with the same ordering.
 // -0.0 and 0.0 map to the same key
@@ -549,10 +568,10 @@ inline CPPALLY_NOINLINE r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
     static_assert(sizeof(r_str_view) == sizeof(SEXP) && std::is_standard_layout_v<r_str_view> && std::is_trivially_copyable_v<r_str_view>);
     uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<r_str>, internal::r_hash_eq<r_str>>(x.data(), n);
 
-    const r_str_view* strs = reinterpret_cast<const r_str_view*>(x.data());
-
     // High cardinality -> direct sort
     if (estimate >= n / 4) {
+        r_vec<r_str_view> utf8_strs = as_utf8_strings(r_vec<r_str_view>(x));
+        const r_str_view* strs = reinterpret_cast<const r_str_view*>(utf8_strs.data());
         r_vec<r_int> out(n);
         internal::sort::order_strings(strs, n, out.data());
         return out;
@@ -564,13 +583,13 @@ inline CPPALLY_NOINLINE r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
     r_vec<r_int> group_start_locations = g.starts();
     const int* RESTRICT p_starts = group_start_locations.data();
 
-    std::vector<r_str_view> unique_strs;
-    unique_strs.reserve(n_groups);
+    r_vec<r_str_view> uniques(n_groups);
     for (int i = 0; i < n_groups; ++i){
-        unique_strs.push_back(strs[p_starts[i]]);
+        uniques.set(i, r_str_view(x.view(p_starts[i])));
     }
+    r_vec<r_str_view> utf8_uniques = as_utf8_strings(uniques);
     std::unique_ptr<int[]> sorted_ids(new int[n_groups]);
-    internal::sort::order_strings(unique_strs.data(), n_groups, sorted_ids.get());
+    internal::sort::order_strings(reinterpret_cast<const r_str_view*>(utf8_uniques.data()), n_groups, sorted_ids.get());
 
     std::unique_ptr<int[]> rank(new int[n_groups]);
     int* RESTRICT p_rank = rank.get();
