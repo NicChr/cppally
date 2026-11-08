@@ -108,7 +108,7 @@ struct r_str_view {
   }
 
   // Is string UTF-8?
-  // True for ASCII, UTF-8 marked strings, native (unmarked) strings in a UTF-8 locale, and NA.
+  // True for ASCII, UTF-8 marked strings, and native (unmarked) strings in a UTF-8 locale.
   // Does not check that the bytes are valid UTF-8.
   bool is_utf8() const noexcept {
     return static_cast<bool>(Rf_charIsUTF8(unwrap(*this)));
@@ -127,6 +127,50 @@ struct r_str_view {
   }
 
 };
+
+namespace internal {
+
+// UTF-8 text of x as a std::string, called by r_str::as_utf8()
+CPPALLY_NOINLINE inline std::string utf8_string(r_str_view x) {
+  if (!x.needs_utf8_translation()) {
+    return std::string(x.cpp_str());
+  }
+  // Latin-1 mapping is a (most of the time) fixed, locale-independent byte transform
+  if (x.is_latin1()) {
+    const unsigned char *p = reinterpret_cast<const unsigned char *>(x.c_str());
+    const int n = x.n_bytes();
+    std::string out;
+    // Most Latin-1 text is mostly ASCII, so n is a good guess; grows only if high bytes are dense
+    out.reserve(static_cast<std::size_t>(n));
+    int i = 0;
+    for (; i < n; ++i) {
+      const unsigned char b = p[i];
+      // In Latin-1 the byte value IS the Unicode code point, so 0x00-0x7F is already UTF-8
+      if (b < 0x80) {
+        out.push_back(static_cast<char>(b));
+      } else if (b >= 0xA0) {
+        // 0xA0-0xFF: ISO-8859-1 and Windows CP1252 agree, byte == code point.
+        // 2-byte UTF-8: 110xxxxx 10xxxxxx (never wider, since max code point is 0xFF)
+        out.push_back(static_cast<char>(0xC0 | (b >> 6)));
+        out.push_back(static_cast<char>(0x80 | (b & 0x3F)));
+      } else {
+        // 0x80-0x9F: ISO-8859-1 (C1 controls) and CP1252 (€, smart quotes, dashes...) diverge,
+        // and R may interpret CE_LATIN1 as CP1252 (notably Windows). Defer to R below.
+        break;
+      }
+    }
+    if (i == n) {
+      return out;
+    }
+  }
+  // translateCharUTF8 allocates with R_alloc so release it once the bytes are copied
+  const void *vmax = vmaxget();
+  std::string out(safe[Rf_translateCharUTF8](unwrap(x)));
+  vmaxset(vmax);
+  return out;
+}
+
+}
 
 // R String - cppally version of CHARSXP
 // r_str must never be converted to `SEXP`/`r_sexp` except where cppally returns `r_str` to R.
@@ -190,7 +234,7 @@ struct r_str {
   }
 
   // Is string UTF-8?
-  // True for ASCII, UTF-8 marked strings, native (unmarked) strings in a UTF-8 locale, and NA.
+  // True for ASCII, UTF-8 marked strings and native (unmarked) strings in a UTF-8 locale.
   // Does not check that the bytes are valid UTF-8.
   bool is_utf8() const noexcept {
     return r_str_view(*this).is_utf8();
@@ -237,39 +281,7 @@ struct r_str {
       // Construct utf8 marked str directly instead of using with_encoding() to avoid extra NA & encoding check branch
       return r_str(cpp_str(), str_encoding::utf8, /*check_for_embedded_nul=*/ false);
     }
-    // Latin-1 mapping is a (most of the time) fixed, locale-independent byte transform
-    if (is_latin1()) {
-      const unsigned char *p = reinterpret_cast<const unsigned char *>(c_str());
-      const int n = n_bytes();
-      std::string out;
-      // Most Latin-1 text is mostly ASCII, so n is a good guess; grows only if high bytes are dense
-      out.reserve(static_cast<std::size_t>(n));
-      int i = 0;
-      for (; i < n; ++i) {
-        const unsigned char b = p[i];
-        // In Latin-1 the byte value IS the Unicode code point, so 0x00-0x7F is already UTF-8
-        if (b < 0x80) {
-          out.push_back(static_cast<char>(b));
-        } else if (b >= 0xA0) {
-          // 0xA0-0xFF: ISO-8859-1 and Windows CP1252 agree, byte == code point.
-          // 2-byte UTF-8: 110xxxxx 10xxxxxx (never wider, since max code point is 0xFF)
-          out.push_back(static_cast<char>(0xC0 | (b >> 6)));
-          out.push_back(static_cast<char>(0x80 | (b & 0x3F)));
-        } else {
-          // 0x80-0x9F: ISO-8859-1 (C1 controls) and CP1252 (€, smart quotes, dashes...) diverge,
-          // and R may interpret CE_LATIN1 as CP1252 (notably Windows). Defer to R below.
-          break;
-        }
-      }
-      if (i == n) {
-        return r_str(out, str_encoding::utf8, /*check_for_embedded_nul=*/ false);
-      }
-    }
-    // translateCharUTF8 allocates with R_alloc so release it once mkChar has copied the bytes
-    const void *vmax = vmaxget();
-    r_str res(safe[Rf_translateCharUTF8](unwrap(*this)));
-    vmaxset(vmax);
-    return res;
+    return r_str(internal::utf8_string(*this), str_encoding::utf8, /*check_for_embedded_nul=*/ false);
   }
 
 };
