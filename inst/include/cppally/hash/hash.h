@@ -86,15 +86,29 @@ inline uint64_t r_hash_impl(const r_cplx& x) noexcept {
         return hash_combine(r_hash_impl(x.re()), r_hash_impl(x.im()));
 };
 
-template<>
-inline uint64_t r_hash_impl(const r_str_view& x) noexcept {
-    // Cast pointer to integer (uintptr_t)
-    auto ptr_val = reinterpret_cast<uintptr_t>(unwrap(x));
-    
-    // Scramble the bits
-    // We use ankerl's built-in wyhash mixer. It's just a multiply + XOR.
-    return ankerl::unordered_dense::detail::hash_int(ptr_val);
-};
+
+CPPALLY_NOINLINE inline uint64_t hash_str_text(r_str_view x){
+    using str_hash = ankerl::unordered_dense::hash<std::string_view>;
+    if (!x.needs_utf8_translation()) {
+        return str_hash{}(x.cpp_str());
+    } else {
+        return str_hash{}(utf8_string(x));
+    }
+}
+
+// Hash the UTF-8 text
+inline uint64_t r_hash_impl(const r_str_view& x) {
+    // ASCII is unmarked, so ASCII-based CHARSXPs are unique and we can hash the pointer
+    if (x.is_na() || x.is_ascii()) {
+        return ankerl::unordered_dense::detail::hash_int(reinterpret_cast<uintptr_t>(unwrap(x)));
+    } else {
+        return hash_str_text(x);
+    }
+}
+
+inline uint64_t r_hash_impl(const r_str& x) {
+    return r_hash_impl(r_str_view(x));
+}
 
 inline uint64_t r_hash_impl(r_sym x) noexcept {
     auto ptr_val = reinterpret_cast<uintptr_t>(unwrap(x));
@@ -156,7 +170,7 @@ struct r_hash_fn_impl {
     using is_transparent = void;
     // For hash map memory efficiency we use the underlying type
     using base_t = unwrap_t<T>;
-    uint64_t operator()(const base_t& x) const noexcept(RScalar<T>) {
+    uint64_t operator()(const base_t& x) const noexcept(noexcept(r_hash_impl(internal::unsafe_reconstruct_view<T>(x)))) {
         return r_hash_impl(internal::unsafe_reconstruct_view<T>(x));
     }
 };
@@ -169,7 +183,7 @@ struct r_hash_eq_impl {
     using is_transparent = void;
     using base_t = unwrap_t<T>;
 
-    bool operator()(const base_t& a, const base_t& b) const noexcept(RScalar<T>) {
+    bool operator()(const base_t& a, const base_t& b) const noexcept(noexcept(identical(internal::unsafe_reconstruct_view<T>(a), internal::unsafe_reconstruct_view<T>(b)))) {
         return identical(internal::unsafe_reconstruct_view<T>(a), internal::unsafe_reconstruct_view<T>(b));
     }
 };
