@@ -3,6 +3,8 @@
 
 #include <cppally/r_sexp/r_sexp.h>
 #include <cppally/vector/vector_utils.h>
+#include <cppally/scalar/relational_ops.h>
+#include <cppally/scalar/hash_scalars.h>
 #include <ankerl/unordered_dense.h>
 #include <R_ext/Visibility.h>
 #include <limits>
@@ -64,10 +66,9 @@ struct sexp_index_table {
     std::size_t size() const noexcept { return size_; }
     bool empty() const noexcept { return size_ == 0; }
     
-    // Knuth multiplicative hash - the top (64 - shift) bits represent slot index
-    static std::size_t slot_of(SEXP p, int shift) noexcept {
-        constexpr std::uint64_t phi = 0x9E3779B97F4A7C15ull;
-        return static_cast<std::size_t>((reinterpret_cast<std::uintptr_t>(p) * phi) >> shift);
+    // Hashes the text so identical() names share a slot - the top (64 - shift) bits represent slot index
+    static std::size_t slot_of(SEXP p, int shift) {
+        return static_cast<std::size_t>(r_hash_impl(r_str_view(p, internal::no_checks_tag{})) >> shift);
     }
 
     void set_capacity(std::size_t cap) noexcept {
@@ -92,10 +93,13 @@ struct sexp_index_table {
     // or the first empty slot in the chain. Caller checks which by reading
     // slots_[pos]. Load factor ≤ 0.5 (enforced by insert) guarantees an
     // empty slot exists, so this always terminates.
-    std::size_t probe_for(SEXP key) const noexcept {
+    std::size_t probe_for(SEXP key) const {
+        r_str_view key_str(key, internal::no_checks_tag{});
         std::size_t pos = slot_of(key, shift_);
         while (slots_[pos] != EMPTY_SLOT) {
-            if (names_ptr_[from_slot(slots_[pos])] == key) break;
+            if (str_equal(r_str_view(names_ptr_[from_slot(slots_[pos])], internal::no_checks_tag{}), key_str)) {
+                break;
+            }
             pos = next_probe(pos, mask_);
         }
         return pos;
@@ -115,7 +119,7 @@ struct sexp_index_table {
         ++size_;
     }
 
-    int find(SEXP key) const noexcept {
+    int find(SEXP key) const {
         if (empty()) return -1;
         std::size_t pos = probe_for(key);
         return slots_[pos] == EMPTY_SLOT ? -1 : from_slot(slots_[pos]);
