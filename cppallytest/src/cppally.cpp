@@ -20,6 +20,20 @@ using internal::cpp_to_r;
 using internal::r_to_cpp;
 using internal::dispatch_template_impl;
 
+// test-encodings.cpp
+r_vec<r_lgl> str_eq(r_vec<r_str> x, r_vec<r_str> y);
+extern "C" attribute_visible SEXP _cppallytest_str_eq(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::str_eq(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_lgl> str_lt(r_vec<r_str> x, r_vec<r_str> y);
+extern "C" attribute_visible SEXP _cppallytest_str_lt(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::str_lt(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
+  END_CPPALLY
+}
 // test.cpp
 void cpp_set_threads(int n);
 extern "C" attribute_visible SEXP _cppallytest_cpp_set_threads(SEXP n) {
@@ -900,6 +914,13 @@ extern "C" attribute_visible SEXP _cppallytest_test_factor3(SEXP x) {
   return cpp_to_r(::test_factor3(r_to_cpp<r_factors>(x)));
   END_CPPALLY
 }
+// test_factor.cpp
+r_factors test_factor_from_strings(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_test_factor_from_strings(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_factor_from_strings(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
 // test_functionals.h
 extern "C" attribute_visible SEXP _cppallytest_reduce_sum(SEXP x, SEXP na_rm) {
   BEGIN_CPPALLY
@@ -1016,6 +1037,13 @@ r_lgl test_names_roundtrip_after_grow();
 extern "C" attribute_visible SEXP _cppallytest_test_names_roundtrip_after_grow() {
   BEGIN_CPPALLY
   return cpp_to_r(::test_names_roundtrip_after_grow());
+  END_CPPALLY
+}
+// test_names.cpp
+r_vec<r_int> test_name_index_twice(r_vec<r_int> x, r_str name);
+extern "C" attribute_visible SEXP _cppallytest_test_name_index_twice(SEXP x, SEXP name) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_name_index_twice(r_to_cpp<r_vec<r_int>>(x), r_to_cpp<r_str>(name)));
   END_CPPALLY
 }
 // test_nas.h
@@ -1405,6 +1433,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_scalar_vec1",                       (DL_FUNC) &_cppallytest_scalar_vec1,                       2},
     {"_cppallytest_scalar_vec2",                       (DL_FUNC) &_cppallytest_scalar_vec2,                       2},
     {"_cppallytest_scalar_vec3",                       (DL_FUNC) &_cppallytest_scalar_vec3,                       4},
+    {"_cppallytest_str_eq",                            (DL_FUNC) &_cppallytest_str_eq,                            2},
+    {"_cppallytest_str_lt",                            (DL_FUNC) &_cppallytest_str_lt,                            2},
     {"_cppallytest_test_arithmetic",                   (DL_FUNC) &_cppallytest_test_arithmetic,                   0},
     {"_cppallytest_test_arithmetic_edge_cases",        (DL_FUNC) &_cppallytest_test_arithmetic_edge_cases,        0},
     {"_cppallytest_test_as_dbl",                       (DL_FUNC) &_cppallytest_test_as_dbl,                       6},
@@ -1451,6 +1481,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_factor1",                      (DL_FUNC) &_cppallytest_test_factor1,                      1},
     {"_cppallytest_test_factor2",                      (DL_FUNC) &_cppallytest_test_factor2,                      1},
     {"_cppallytest_test_factor3",                      (DL_FUNC) &_cppallytest_test_factor3,                      1},
+    {"_cppallytest_test_factor_from_strings",          (DL_FUNC) &_cppallytest_test_factor_from_strings,          1},
     {"_cppallytest_test_find",                         (DL_FUNC) &_cppallytest_test_find,                         2},
     {"_cppallytest_test_group_counts",                 (DL_FUNC) &_cppallytest_test_group_counts,                 2},
     {"_cppallytest_test_group_id",                     (DL_FUNC) &_cppallytest_test_group_id,                     2},
@@ -1467,6 +1498,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_multiple_deduction",           (DL_FUNC) &_cppallytest_test_multiple_deduction,           2},
     {"_cppallytest_test_n_unique",                     (DL_FUNC) &_cppallytest_test_n_unique,                     1},
     {"_cppallytest_test_na_types",                     (DL_FUNC) &_cppallytest_test_na_types,                     0},
+    {"_cppallytest_test_name_index_twice",             (DL_FUNC) &_cppallytest_test_name_index_twice,             2},
     {"_cppallytest_test_names_empty",                  (DL_FUNC) &_cppallytest_test_names_empty,                  0},
     {"_cppallytest_test_names_growing",                (DL_FUNC) &_cppallytest_test_names_growing,                0},
     {"_cppallytest_test_names_inplace_mutation",       (DL_FUNC) &_cppallytest_test_names_inplace_mutation,       0},
