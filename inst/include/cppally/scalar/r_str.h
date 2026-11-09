@@ -98,6 +98,7 @@ struct r_str_view {
 
   str_encoding encoding() const noexcept {
     auto r_encoding = Rf_getCharCE(unwrap(*this));
+    // Default to unsupported so that even if R adds new encodings, our encoding() returns unspported until they are introduced.
     switch (r_encoding) {
       case CE_NATIVE: return str_encoding::native;
       case CE_UTF8: return str_encoding::utf8;
