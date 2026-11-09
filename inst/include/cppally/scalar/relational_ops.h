@@ -53,7 +53,7 @@ CPPALLY_NOINLINE inline bool str_equal_impl(r_str_view x, r_str_view y) {
   if (str_bytes_comparable(x, y)){
     return false;
   }
-  return utf8_string(x) == utf8_string(y);
+  return str_compare(x, y) == 0;
 }
 
 inline bool str_equal(r_str_view x, r_str_view y) {
