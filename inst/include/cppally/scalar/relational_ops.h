@@ -32,9 +32,9 @@ inline bool str_bytes_comparable(r_str_view x, r_str_view y) noexcept {
   return enc_x == enc_y || enc_x == str_encoding::bytes || enc_y == str_encoding::bytes;
 }
 
-// Byte-wise (C-locale) comparison of the text after converting to UTF-8 if bytes cannot be compared immediately
+// Byte-wise (C-locale) comparison of the UTF-8 text, strings marked as bytes are compared as-is
 CPPALLY_NOINLINE inline int str_compare(r_str_view x, r_str_view y) {
-  if ( (x.is_utf8() && y.is_utf8()) || str_bytes_comparable(x, y) ){
+  if (!x.needs_utf8_translation() && !y.needs_utf8_translation()) {
     return std::strcmp(x.c_str(), y.c_str());
   }
   return utf8_string(x).compare(utf8_string(y));
