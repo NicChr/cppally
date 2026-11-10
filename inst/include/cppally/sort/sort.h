@@ -84,23 +84,33 @@ inline void insertion_sort(key_t* RESTRICT keys, int* RESTRICT idx, uint32_t n) 
     }
 }
 
-// Normalise strings as UTF-8
-CPPALLY_NOINLINE inline r_vec<r_str_view> as_utf8_strings(const r_vec<r_str_view>& x){
+// Normalise strings as UTF-8, nullopt if any are marked as bytes since radix keys can't break their ties
+CPPALLY_NOINLINE inline std::optional<r_vec<r_str_view>> as_utf8_strings(const r_vec<r_str_view>& x){
     r_size_t n = x.length();
+    bool translate = false;
 
     for (r_size_t i = 0; i < n; ++i){
         r_str_view elem = x.view(i);
-        // If any need translating, convert all to UTF-8
-        if (elem.needs_utf8_translation()) [[unlikely]] {
-            r_vec<r_str_view> out(n);
-            for (r_size_t j = 0; j < n; ++j){
-                elem = x.view(j);
-                out.set(j, r_str_view(r_str(elem, internal::view_tag{}, internal::no_checks_tag{}).as_utf8()));
+        if (!elem.is_na() && !elem.is_utf8()) [[unlikely]] {
+            if (elem.encoding() == str_encoding::bytes) [[unlikely]] {
+                return std::nullopt;
             }
-            return out;
+            translate = true;
         }
     }
-    return x;
+
+    if (!translate){
+        return x;
+    }
+
+    // If any need translating, convert all to UTF-8
+    r_vec<r_str_view> out(n);
+    for (r_size_t i = 0; i < n; ++i){
+        r_str_view elem = x.view(i);
+        out.set(i, r_str_view(r_str(elem, internal::view_tag{}, internal::no_checks_tag{}).as_utf8()));
+        // out.set(i, elem.needs_utf8_translation() ? c_str_to_r_str_view(utf8_string(elem).c_str()) : elem);
+    }
+    return out;
 }
 
 // Adapted from ska_sort's to_unsigned_or_bool (Malte Skarupke, Boost Software License 1.0)
@@ -570,8 +580,11 @@ inline CPPALLY_NOINLINE r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
 
     // High cardinality -> direct sort
     if (estimate >= n / 4) {
-        r_vec<r_str_view> utf8_strs = as_utf8_strings(r_vec<r_str_view>(x));
-        const r_str_view* strs = reinterpret_cast<const r_str_view*>(utf8_strs.data());
+        std::optional<r_vec<r_str_view>> utf8_strs = as_utf8_strings(r_vec<r_str_view>(x));
+        if (!utf8_strs) [[unlikely]] {
+            return order_cmp(x);
+        }
+        const r_str_view* strs = reinterpret_cast<const r_str_view*>(utf8_strs->data());
         r_vec<r_int> out(n);
         internal::sort::order_strings(strs, n, out.data());
         return out;
@@ -587,9 +600,12 @@ inline CPPALLY_NOINLINE r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
     for (int i = 0; i < n_groups; ++i){
         uniques.set(i, r_str_view(x.view(p_starts[i])));
     }
-    r_vec<r_str_view> utf8_uniques = as_utf8_strings(uniques);
+    std::optional<r_vec<r_str_view>> utf8_uniques = as_utf8_strings(uniques);
+    if (!utf8_uniques) [[unlikely]] {
+        return order_cmp(x);
+    }
     std::unique_ptr<int[]> sorted_ids(new int[n_groups]);
-    internal::sort::order_strings(reinterpret_cast<const r_str_view*>(utf8_uniques.data()), n_groups, sorted_ids.get());
+    internal::sort::order_strings(reinterpret_cast<const r_str_view*>(utf8_uniques->data()), n_groups, sorted_ids.get());
 
     std::unique_ptr<int[]> rank(new int[n_groups]);
     int* RESTRICT p_rank = rank.get();
