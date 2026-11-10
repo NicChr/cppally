@@ -55,16 +55,6 @@ CPPALLY_NOINLINE inline bool str_equal_impl(r_str_view x, r_str_view y) {
     return false;
   }
   return str_compare(x, y) == 0;
-
-  // if (str_bytes_comparable(x, y)){
-  //   return std::strcmp(x.c_str(), y.c_str()) == 0;
-  // }
-  // str_encoding enc_x = x.encoding();
-  // str_encoding enc_y = y.encoding();
-  // if (enc_x == enc_y || enc_x == str_encoding::bytes || enc_y == str_encoding::bytes){
-  //   return false;
-  // }
-  // return utf8_string(x) == utf8_string(y);
 }
 
 inline bool str_equal(r_str_view x, r_str_view y) {
