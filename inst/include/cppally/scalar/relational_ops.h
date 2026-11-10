@@ -23,21 +23,15 @@ namespace cppally {
 namespace internal {
 
 // Can bytes be compared directly?
+// We only compare bytes for UTF-8 strings.
 inline bool str_bytes_comparable(r_str_view x, r_str_view y) noexcept {
-  if (x.is_ascii() || y.is_ascii()){
-    return true;
-  }
-  str_encoding enc_x = x.encoding();
-  str_encoding enc_y = y.encoding();
-  return enc_x == enc_y || enc_x == str_encoding::bytes || enc_y == str_encoding::bytes;
+  return x.is_utf8() && y.is_utf8();
 }
 
 // Byte-wise (C-locale) comparison of the UTF-8 text, strings marked as bytes are compared as-is
 CPPALLY_NOINLINE inline int str_compare(r_str_view x, r_str_view y) {
-  if (!x.needs_utf8_translation() && !y.needs_utf8_translation()) {
-    return std::strcmp(x.c_str(), y.c_str());
-  }
-  return utf8_string(x).compare(utf8_string(y));
+  int cmp = str_bytes_comparable(x, y) ? std::strcmp(x.c_str(), y.c_str()) : utf8_string(x).compare(utf8_string(y));
+  return cmp == 0 ? static_cast<int>(x.encoding() == str_encoding::bytes) - static_cast<int>(y.encoding() == str_encoding::bytes) : cmp;
 }
 CPPALLY_NOINLINE inline int str_compare(r_str_view x, std::string_view y) {
   if (x.is_utf8()){
@@ -48,12 +42,29 @@ CPPALLY_NOINLINE inline int str_compare(r_str_view x, std::string_view y) {
   }
 }
 
+// Assumes unwrap(x) != unwrap(y)
 CPPALLY_NOINLINE inline bool str_equal_impl(r_str_view x, r_str_view y) {
-  // x and y are different pointers (addresses), so comparable bytes cannot have identical text
-  if (str_bytes_comparable(x, y)){
+
+  // Since ASCII is always unmarked and this fn assumes different pointers/addresses, then no match here
+  if (x.is_ascii() || y.is_ascii()){
+    return false;
+  }
+
+  // The same encoding at different addresses is different text
+  if (x.encoding() == y.encoding()){
     return false;
   }
   return str_compare(x, y) == 0;
+
+  // if (str_bytes_comparable(x, y)){
+  //   return std::strcmp(x.c_str(), y.c_str()) == 0;
+  // }
+  // str_encoding enc_x = x.encoding();
+  // str_encoding enc_y = y.encoding();
+  // if (enc_x == enc_y || enc_x == str_encoding::bytes || enc_y == str_encoding::bytes){
+  //   return false;
+  // }
+  // return utf8_string(x) == utf8_string(y);
 }
 
 inline bool str_equal(r_str_view x, r_str_view y) {
