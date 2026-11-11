@@ -35,11 +35,13 @@ CPPALLY_NOINLINE inline int str_compare(r_str_view x, r_str_view y) {
 }
 CPPALLY_NOINLINE inline int str_compare(r_str_view x, std::string_view y) {
   if (x.is_utf8()){
-    // C++ strings are assumed to be UTF-8 so compare bytes directly
+    // C++ strings are assumed to be UTF-8
     return x.cpp_str().compare(y);
-  } else {
-    return utf8_string(x).compare(y);
   }
+  int cmp = utf8_string(x).compare(y);
+  // Bytes (non-text) and text should not be marked equal
+  // We are deciding to always order bytes AFTER text
+  return (cmp == 0 && x.encoding() == str_encoding::bytes) ? 1 : cmp;
 }
 
 // Assumes unwrap(x) != unwrap(y)

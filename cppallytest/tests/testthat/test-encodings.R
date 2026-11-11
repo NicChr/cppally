@@ -319,8 +319,8 @@ test_that("r_str compares with UTF-8 C++ strings", {
     enc_eq_utf8_literal(c(e_utf8, e_native, e_latin1, "e", NA)),
     c(TRUE, TRUE, TRUE, FALSE, NA)
   )
-  # A bytes string has no translation to do, so its raw bytes are compared
-  expect_true(enc_eq_utf8_literal(e_bytes))
+  # A bytes string never ties with the same bytes as text
+  expect_false(enc_eq_utf8_literal(e_bytes))
   expect_identical(
     enc_lt_utf8_literal(c("a", "z", e_latin1, with_encoding("\xff", "latin1"), NA)),
     c(TRUE, TRUE, FALSE, FALSE, NA)
