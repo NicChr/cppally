@@ -5,6 +5,7 @@
 #include <cppally/r_concepts.h>
 #include <cppally/r_sexp/r_sexp.h>
 #include <cppally/r_sexp/r_sexp_types.h>
+#include <cppally/scalar/r_int.h>
 #include <cppally/string/string_literal.h>
 #include <limits>
 #include <string>
@@ -96,6 +97,8 @@ struct r_str_view {
     return LENGTH(unwrap(*this));
   }
 
+  r_int n_chars() const;
+
   str_encoding encoding() const noexcept {
     auto r_encoding = Rf_getCharCE(unwrap(*this));
     // Default to unsupported so that even if R adds new encodings, our encoding() returns unspported until they are introduced.
@@ -178,6 +181,46 @@ CPPALLY_NOINLINE inline std::string utf8_string(r_str_view x) {
 
 }
 
+// Number of characters (code points).
+// `r_int::na()` is returned for `r_str::na()`.
+inline r_int r_str_view::n_chars() const {
+  
+  if (is_na()){
+    return r_int::na();
+  }
+
+  // ascii strings are 1 byte for each character so N bytes = N chars
+  if (is_ascii()){
+    return r_int(n_bytes());
+  }
+
+  if (encoding() == str_encoding::bytes) [[unlikely]] {
+    abort("Can't count chars for bytes-encoded strings");
+  }
+
+  // Translate to UTF-8.
+  // Text that R treats as UTF-8 isn't validated (i.e. text that isn't actually converted, isn't validated).
+  std::string utf8_str = internal::utf8_string(*this);
+
+  // https://en.wikipedia.org/wiki/UTF-8
+  // Assuming a valid UTF-8 string we simply count the bytes that start with a zero bit or two one bits.
+  // We skip continuation bytes.
+  constexpr unsigned char top_two_bits = 0b11000000;
+  constexpr unsigned char continuation_prefix = 0b10000000;
+
+  int nchars = 0;
+  for (const char c : utf8_str) {
+    // top_two_bits is 11000000
+    // continuation_prefix is 10000000
+    // X & top_two_bits will zero all bits except the top 2 leaving one of the following combinations:
+    // 11000000, 01000000, 00000000 (first byte of a character)
+    // 10000000 (continuation byte, which we skip)
+    bool is_continuation = (static_cast<unsigned char>(c) & top_two_bits) == continuation_prefix;
+    nchars += !is_continuation;
+  }
+  return r_int(nchars);
+}
+
 // R String - cppally version of CHARSXP
 // r_str must never be converted to `SEXP`/`r_sexp` except where cppally returns `r_str` to R.
 // All templates assume that `SEXP`/`r_sexp` is reserved for objects that can safely fit into an R list vector.
@@ -237,6 +280,10 @@ struct r_str {
 
   int n_bytes() const noexcept {
     return r_str_view(*this).n_bytes();
+  }
+  
+  r_int n_chars() const {
+    return r_str_view(*this).n_chars();
   }
 
   // Is string UTF-8?
