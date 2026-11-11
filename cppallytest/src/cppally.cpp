@@ -28,10 +28,213 @@ extern "C" attribute_visible SEXP _cppallytest_str_eq(SEXP x, SEXP y) {
   END_CPPALLY
 }
 // test-encodings.cpp
+r_vec<r_lgl> str_ne(r_vec<r_str> x, r_vec<r_str> y);
+extern "C" attribute_visible SEXP _cppallytest_str_ne(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::str_ne(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
+  END_CPPALLY
+}
+// test-encodings.cpp
 r_vec<r_lgl> str_lt(r_vec<r_str> x, r_vec<r_str> y);
 extern "C" attribute_visible SEXP _cppallytest_str_lt(SEXP x, SEXP y) {
   BEGIN_CPPALLY
   return cpp_to_r(::str_lt(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_lgl> str_le(r_vec<r_str> x, r_vec<r_str> y);
+extern "C" attribute_visible SEXP _cppallytest_str_le(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::str_le(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_lgl> str_gt(r_vec<r_str> x, r_vec<r_str> y);
+extern "C" attribute_visible SEXP _cppallytest_str_gt(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::str_gt(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_lgl> str_ge(r_vec<r_str> x, r_vec<r_str> y);
+extern "C" attribute_visible SEXP _cppallytest_str_ge(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::str_ge(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_lgl> enc_eq_utf8_literal(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_eq_utf8_literal(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_eq_utf8_literal(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_lgl> enc_lt_utf8_literal(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_lt_utf8_literal(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_lt_utf8_literal(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_str> enc_unique(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_unique(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_unique(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_lgl> enc_duplicated(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_duplicated(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_duplicated(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_int enc_n_unique(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_n_unique(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_n_unique(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_int> enc_match(r_vec<r_str> x, r_vec<r_str> table);
+extern "C" attribute_visible SEXP _cppallytest_enc_match(SEXP x, SEXP table) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_match(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(table)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_int> enc_group_ids(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_group_ids(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_group_ids(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_int> enc_ordered_group_ids(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_ordered_group_ids(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_ordered_group_ids(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_int enc_n_groups(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_n_groups(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_n_groups(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_str> enc_sort(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_sort(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_sort(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_factors enc_factor(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_factor(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_factor(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_factors enc_factor_levels(r_vec<r_str> x, r_vec<r_str> levels);
+extern "C" attribute_visible SEXP _cppallytest_enc_factor_levels(SEXP x, SEXP levels) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_factor_levels(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(levels)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_int> enc_get_code(r_factors x, r_vec<r_str> vals);
+extern "C" attribute_visible SEXP _cppallytest_enc_get_code(SEXP x, SEXP vals) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_get_code(r_to_cpp<r_factors>(x), r_to_cpp<r_vec<r_str>>(vals)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_int> enc_match_factors(r_factors x, r_factors table);
+extern "C" attribute_visible SEXP _cppallytest_enc_match_factors(SEXP x, SEXP table) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_match_factors(r_to_cpp<r_factors>(x), r_to_cpp<r_factors>(table)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_lgl> enc_factor_eq(r_factors x, r_factors y);
+extern "C" attribute_visible SEXP _cppallytest_enc_factor_eq(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_factor_eq(r_to_cpp<r_factors>(x), r_to_cpp<r_factors>(y)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_int> enc_name_index(r_vec<r_int> x, r_vec<r_str> keys);
+extern "C" attribute_visible SEXP _cppallytest_enc_name_index(SEXP x, SEXP keys) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_name_index(r_to_cpp<r_vec<r_int>>(x), r_to_cpp<r_vec<r_str>>(keys)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_str> enc_encoding(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_encoding(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_encoding(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_str> enc_with_encoding(r_vec<r_str> x, const char* encoding);
+extern "C" attribute_visible SEXP _cppallytest_enc_with_encoding(SEXP x, SEXP encoding) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_with_encoding(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<const char*>(encoding)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_str> enc_as_utf8(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_as_utf8(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_as_utf8(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_lgl> enc_is_ascii(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_is_ascii(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_is_ascii(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_lgl> enc_is_utf8(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_is_utf8(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_is_utf8(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_lgl> enc_is_latin1(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_is_latin1(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_is_latin1(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_lgl> enc_needs_translation(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_needs_translation(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_needs_translation(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_vec<r_str> enc_paste(r_vec<r_str> x, r_vec<r_str> y, const char* sep);
+extern "C" attribute_visible SEXP _cppallytest_enc_paste(SEXP x, SEXP y, SEXP sep) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_paste(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y), r_to_cpp<const char*>(sep)));
+  END_CPPALLY
+}
+// test-encodings.cpp
+r_str enc_collapse(r_vec<r_str> x, const char* sep);
+extern "C" attribute_visible SEXP _cppallytest_enc_collapse(SEXP x, SEXP sep) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_collapse(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<const char*>(sep)));
   END_CPPALLY
 }
 // test.cpp
@@ -914,13 +1117,6 @@ extern "C" attribute_visible SEXP _cppallytest_test_factor3(SEXP x) {
   return cpp_to_r(::test_factor3(r_to_cpp<r_factors>(x)));
   END_CPPALLY
 }
-// test_factor.cpp
-r_factors test_factor_from_strings(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_test_factor_from_strings(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::test_factor_from_strings(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
 // test_functionals.h
 extern "C" attribute_visible SEXP _cppallytest_reduce_sum(SEXP x, SEXP na_rm) {
   BEGIN_CPPALLY
@@ -1037,13 +1233,6 @@ r_lgl test_names_roundtrip_after_grow();
 extern "C" attribute_visible SEXP _cppallytest_test_names_roundtrip_after_grow() {
   BEGIN_CPPALLY
   return cpp_to_r(::test_names_roundtrip_after_grow());
-  END_CPPALLY
-}
-// test_names.cpp
-r_vec<r_int> test_name_index_twice(r_vec<r_int> x, r_str name);
-extern "C" attribute_visible SEXP _cppallytest_test_name_index_twice(SEXP x, SEXP name) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::test_name_index_twice(r_to_cpp<r_vec<r_int>>(x), r_to_cpp<r_str>(name)));
   END_CPPALLY
 }
 // test_nas.h
@@ -1420,6 +1609,31 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_cpp_get_threads",                   (DL_FUNC) &_cppallytest_cpp_get_threads,                   0},
     {"_cppallytest_cpp_set_threads",                   (DL_FUNC) &_cppallytest_cpp_set_threads,                   1},
     {"_cppallytest_cpp_typeof",                        (DL_FUNC) &_cppallytest_cpp_typeof,                        1},
+    {"_cppallytest_enc_as_utf8",                       (DL_FUNC) &_cppallytest_enc_as_utf8,                       1},
+    {"_cppallytest_enc_collapse",                      (DL_FUNC) &_cppallytest_enc_collapse,                      2},
+    {"_cppallytest_enc_duplicated",                    (DL_FUNC) &_cppallytest_enc_duplicated,                    1},
+    {"_cppallytest_enc_encoding",                      (DL_FUNC) &_cppallytest_enc_encoding,                      1},
+    {"_cppallytest_enc_eq_utf8_literal",               (DL_FUNC) &_cppallytest_enc_eq_utf8_literal,               1},
+    {"_cppallytest_enc_factor",                        (DL_FUNC) &_cppallytest_enc_factor,                        1},
+    {"_cppallytest_enc_factor_eq",                     (DL_FUNC) &_cppallytest_enc_factor_eq,                     2},
+    {"_cppallytest_enc_factor_levels",                 (DL_FUNC) &_cppallytest_enc_factor_levels,                 2},
+    {"_cppallytest_enc_get_code",                      (DL_FUNC) &_cppallytest_enc_get_code,                      2},
+    {"_cppallytest_enc_group_ids",                     (DL_FUNC) &_cppallytest_enc_group_ids,                     1},
+    {"_cppallytest_enc_is_ascii",                      (DL_FUNC) &_cppallytest_enc_is_ascii,                      1},
+    {"_cppallytest_enc_is_latin1",                     (DL_FUNC) &_cppallytest_enc_is_latin1,                     1},
+    {"_cppallytest_enc_is_utf8",                       (DL_FUNC) &_cppallytest_enc_is_utf8,                       1},
+    {"_cppallytest_enc_lt_utf8_literal",               (DL_FUNC) &_cppallytest_enc_lt_utf8_literal,               1},
+    {"_cppallytest_enc_match",                         (DL_FUNC) &_cppallytest_enc_match,                         2},
+    {"_cppallytest_enc_match_factors",                 (DL_FUNC) &_cppallytest_enc_match_factors,                 2},
+    {"_cppallytest_enc_n_groups",                      (DL_FUNC) &_cppallytest_enc_n_groups,                      1},
+    {"_cppallytest_enc_n_unique",                      (DL_FUNC) &_cppallytest_enc_n_unique,                      1},
+    {"_cppallytest_enc_name_index",                    (DL_FUNC) &_cppallytest_enc_name_index,                    2},
+    {"_cppallytest_enc_needs_translation",             (DL_FUNC) &_cppallytest_enc_needs_translation,             1},
+    {"_cppallytest_enc_ordered_group_ids",             (DL_FUNC) &_cppallytest_enc_ordered_group_ids,             1},
+    {"_cppallytest_enc_paste",                         (DL_FUNC) &_cppallytest_enc_paste,                         3},
+    {"_cppallytest_enc_sort",                          (DL_FUNC) &_cppallytest_enc_sort,                          1},
+    {"_cppallytest_enc_unique",                        (DL_FUNC) &_cppallytest_enc_unique,                        1},
+    {"_cppallytest_enc_with_encoding",                 (DL_FUNC) &_cppallytest_enc_with_encoding,                 2},
     {"_cppallytest_pmap2_add",                         (DL_FUNC) &_cppallytest_pmap2_add,                         2},
     {"_cppallytest_pmap_add",                          (DL_FUNC) &_cppallytest_pmap_add,                          1},
     {"_cppallytest_reduce_cumulative_sum",             (DL_FUNC) &_cppallytest_reduce_cumulative_sum,             2},
@@ -1434,7 +1648,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_scalar_vec2",                       (DL_FUNC) &_cppallytest_scalar_vec2,                       2},
     {"_cppallytest_scalar_vec3",                       (DL_FUNC) &_cppallytest_scalar_vec3,                       4},
     {"_cppallytest_str_eq",                            (DL_FUNC) &_cppallytest_str_eq,                            2},
+    {"_cppallytest_str_ge",                            (DL_FUNC) &_cppallytest_str_ge,                            2},
+    {"_cppallytest_str_gt",                            (DL_FUNC) &_cppallytest_str_gt,                            2},
+    {"_cppallytest_str_le",                            (DL_FUNC) &_cppallytest_str_le,                            2},
     {"_cppallytest_str_lt",                            (DL_FUNC) &_cppallytest_str_lt,                            2},
+    {"_cppallytest_str_ne",                            (DL_FUNC) &_cppallytest_str_ne,                            2},
     {"_cppallytest_test_arithmetic",                   (DL_FUNC) &_cppallytest_test_arithmetic,                   0},
     {"_cppallytest_test_arithmetic_edge_cases",        (DL_FUNC) &_cppallytest_test_arithmetic_edge_cases,        0},
     {"_cppallytest_test_as_dbl",                       (DL_FUNC) &_cppallytest_test_as_dbl,                       6},
@@ -1481,7 +1699,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_factor1",                      (DL_FUNC) &_cppallytest_test_factor1,                      1},
     {"_cppallytest_test_factor2",                      (DL_FUNC) &_cppallytest_test_factor2,                      1},
     {"_cppallytest_test_factor3",                      (DL_FUNC) &_cppallytest_test_factor3,                      1},
-    {"_cppallytest_test_factor_from_strings",          (DL_FUNC) &_cppallytest_test_factor_from_strings,          1},
     {"_cppallytest_test_find",                         (DL_FUNC) &_cppallytest_test_find,                         2},
     {"_cppallytest_test_group_counts",                 (DL_FUNC) &_cppallytest_test_group_counts,                 2},
     {"_cppallytest_test_group_id",                     (DL_FUNC) &_cppallytest_test_group_id,                     2},
@@ -1498,7 +1715,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_multiple_deduction",           (DL_FUNC) &_cppallytest_test_multiple_deduction,           2},
     {"_cppallytest_test_n_unique",                     (DL_FUNC) &_cppallytest_test_n_unique,                     1},
     {"_cppallytest_test_na_types",                     (DL_FUNC) &_cppallytest_test_na_types,                     0},
-    {"_cppallytest_test_name_index_twice",             (DL_FUNC) &_cppallytest_test_name_index_twice,             2},
     {"_cppallytest_test_names_empty",                  (DL_FUNC) &_cppallytest_test_names_empty,                  0},
     {"_cppallytest_test_names_growing",                (DL_FUNC) &_cppallytest_test_names_growing,                0},
     {"_cppallytest_test_names_inplace_mutation",       (DL_FUNC) &_cppallytest_test_names_inplace_mutation,       0},

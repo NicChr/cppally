@@ -4,8 +4,124 @@ str_eq <- function(x, y) {
   .Call(`_cppallytest_str_eq`, x, y)
 }
 
+str_ne <- function(x, y) {
+  .Call(`_cppallytest_str_ne`, x, y)
+}
+
 str_lt <- function(x, y) {
   .Call(`_cppallytest_str_lt`, x, y)
+}
+
+str_le <- function(x, y) {
+  .Call(`_cppallytest_str_le`, x, y)
+}
+
+str_gt <- function(x, y) {
+  .Call(`_cppallytest_str_gt`, x, y)
+}
+
+str_ge <- function(x, y) {
+  .Call(`_cppallytest_str_ge`, x, y)
+}
+
+enc_eq_utf8_literal <- function(x) {
+  .Call(`_cppallytest_enc_eq_utf8_literal`, x)
+}
+
+enc_lt_utf8_literal <- function(x) {
+  .Call(`_cppallytest_enc_lt_utf8_literal`, x)
+}
+
+enc_unique <- function(x) {
+  .Call(`_cppallytest_enc_unique`, x)
+}
+
+enc_duplicated <- function(x) {
+  .Call(`_cppallytest_enc_duplicated`, x)
+}
+
+enc_n_unique <- function(x) {
+  .Call(`_cppallytest_enc_n_unique`, x)
+}
+
+enc_match <- function(x, table) {
+  .Call(`_cppallytest_enc_match`, x, table)
+}
+
+enc_group_ids <- function(x) {
+  .Call(`_cppallytest_enc_group_ids`, x)
+}
+
+enc_ordered_group_ids <- function(x) {
+  .Call(`_cppallytest_enc_ordered_group_ids`, x)
+}
+
+enc_n_groups <- function(x) {
+  .Call(`_cppallytest_enc_n_groups`, x)
+}
+
+enc_sort <- function(x) {
+  .Call(`_cppallytest_enc_sort`, x)
+}
+
+enc_factor <- function(x) {
+  .Call(`_cppallytest_enc_factor`, x)
+}
+
+enc_factor_levels <- function(x, levels) {
+  .Call(`_cppallytest_enc_factor_levels`, x, levels)
+}
+
+enc_get_code <- function(x, vals) {
+  .Call(`_cppallytest_enc_get_code`, x, vals)
+}
+
+enc_match_factors <- function(x, table) {
+  .Call(`_cppallytest_enc_match_factors`, x, table)
+}
+
+enc_factor_eq <- function(x, y) {
+  .Call(`_cppallytest_enc_factor_eq`, x, y)
+}
+
+enc_name_index <- function(x, keys) {
+  .Call(`_cppallytest_enc_name_index`, x, keys)
+}
+
+enc_encoding <- function(x) {
+  .Call(`_cppallytest_enc_encoding`, x)
+}
+
+enc_with_encoding <- function(x, encoding) {
+  .Call(`_cppallytest_enc_with_encoding`, x, encoding)
+}
+
+enc_as_utf8 <- function(x) {
+  .Call(`_cppallytest_enc_as_utf8`, x)
+}
+
+enc_is_ascii <- function(x) {
+  .Call(`_cppallytest_enc_is_ascii`, x)
+}
+
+enc_is_utf8 <- function(x) {
+  .Call(`_cppallytest_enc_is_utf8`, x)
+}
+
+enc_is_latin1 <- function(x) {
+  .Call(`_cppallytest_enc_is_latin1`, x)
+}
+
+enc_needs_translation <- function(x) {
+  .Call(`_cppallytest_enc_needs_translation`, x)
+}
+
+enc_paste <- function(x, y, sep) {
+  .Call(`_cppallytest_enc_paste`, x, y, sep)
+}
+
+enc_collapse <- function(x, sep) {
+  .Call(`_cppallytest_enc_collapse`, x, sep)
 }
 
 cpp_set_threads <- function(n) {
@@ -404,10 +520,6 @@ test_factor3 <- function(x) {
   .Call(`_cppallytest_test_factor3`, x)
 }
 
-test_factor_from_strings <- function(x) {
-  .Call(`_cppallytest_test_factor_from_strings`, x)
-}
-
 reduce_sum <- function(x, na_rm) {
   .Call(`_cppallytest_reduce_sum`, x, na_rm)
 }
@@ -462,10 +574,6 @@ test_names_empty <- function() {
 
 test_names_roundtrip_after_grow <- function() {
   .Call(`_cppallytest_test_names_roundtrip_after_grow`)
-}
-
-test_name_index_twice <- function(x, name) {
-  .Call(`_cppallytest_test_name_index_twice`, x, name)
 }
 
 vec_is_na <- function(x) {
