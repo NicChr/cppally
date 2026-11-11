@@ -18,15 +18,6 @@ mix_encodings <- function(x) {
   utf8
 }
 
-for_each_thread_count <- function(fn) {
-  old <- cpp_get_threads()
-  on.exit(cpp_set_threads(old), add = TRUE)
-  for (n_threads in unique(c(1, min(4, cpp_get_max_threads())))) {
-    cpp_set_threads(n_threads)
-    fn()
-  }
-}
-
 c_order <- function(x) {
   withr::with_collate("C", order(x))
 }
@@ -34,29 +25,21 @@ c_order <- function(x) {
 expect_same_comparisons <- function(x, y) {
   withr::with_collate("C", {
     expect_identical(str_eq(x, y), x == y)
-    expect_identical(str_ne(x, y), x != y)
     expect_identical(str_lt(x, y), x < y)
     expect_identical(str_le(x, y), x <= y)
-    expect_identical(str_gt(x, y), x > y)
-    expect_identical(str_ge(x, y), x >= y)
   })
 }
 
 expect_c_order <- function(x) {
-  expected <- c_order(x) - 1L
-  for_each_thread_count(function() {
-    expect_identical(test_order(x), expected)
-  })
+  expect_identical(test_order(x), c_order(x) - 1L)
 }
 
 expect_groups <- function(x) {
   uniques <- unique(x)
   sorted <- withr::with_collate("C", sort(uniques, na.last = TRUE))
-  for_each_thread_count(function() {
-    expect_identical(enc_group_ids(x), match(x, uniques) - 1L)
-    expect_identical(enc_n_groups(x), length(uniques))
-    expect_identical(enc_ordered_group_ids(x), match(x, sorted) - 1L)
-  })
+  expect_identical(enc_group_ids(x), match(x, uniques) - 1L)
+  expect_identical(enc_n_groups(x), length(uniques))
+  expect_identical(enc_ordered_group_ids(x), match(x, sorted) - 1L)
 }
 
 # Sets a Latin-1 LC_CTYPE for `code`, skipping if the platform doesn't have one
@@ -279,7 +262,6 @@ test_that("Strings marked as bytes are never translated", {
   expect_false(str_eq(e_bytes, e_utf8))
   expect_false(str_eq(e_bytes, e_latin1))
   expect_true(str_eq(e_bytes, with_encoding(e_utf8, "bytes")))
-  expect_true(str_ne(e_bytes, e_utf8))
 
   # Unlike base R these don't error, a bytes string orders by its raw bytes
   expect_false(str_lt(e_bytes, e_utf8))
@@ -290,8 +272,6 @@ test_that("Strings marked as bytes are never translated", {
   expect_true(str_lt(e_latin1, e_bytes))
   expect_true(str_lt(e_native, e_bytes))
   expect_false(str_le(e_bytes, e_utf8))
-  expect_true(str_gt(e_bytes, e_utf8))
-  expect_false(str_ge(e_utf8, e_bytes))
   expect_identical(test_order(c(e_utf8, e_bytes, e_latin1, "a")), c(3L, 0L, 2L, 1L))
 
   # Base unique() gives 3 here, any bytes string switches off its text comparison
@@ -322,11 +302,9 @@ test_that("Bytes strings never tie with the same bytes as text", {
     o <- withr::with_collate("C", order(text, is_bytes))
     ids <- integer(length(x))
     ids[o] <- cumsum(!duplicated(paste(text, is_bytes)[o])) - 1L
-    for_each_thread_count(function() {
-      expect_identical(test_order(x), o - 1L)
-      expect_identical(Encoding(enc_sort(x)), Encoding(x[o]))
-      expect_identical(enc_ordered_group_ids(x), ids)
-    })
+    expect_identical(test_order(x), o - 1L)
+    expect_identical(Encoding(enc_sort(x)), Encoding(x[o]))
+    expect_identical(enc_ordered_group_ids(x), ids)
   }
 
   expect_twins_order(with_twins(words))

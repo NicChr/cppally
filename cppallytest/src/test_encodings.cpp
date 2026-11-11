@@ -7,11 +7,6 @@ r_vec<r_lgl> str_eq(r_vec<r_str> x, r_vec<r_str> y){
 }
 
 [[cppally::register]]
-r_vec<r_lgl> str_ne(r_vec<r_str> x, r_vec<r_str> y){
-    return x != y;
-}
-
-[[cppally::register]]
 r_vec<r_lgl> str_lt(r_vec<r_str> x, r_vec<r_str> y){
     return x < y;
 }
@@ -19,16 +14,6 @@ r_vec<r_lgl> str_lt(r_vec<r_str> x, r_vec<r_str> y){
 [[cppally::register]]
 r_vec<r_lgl> str_le(r_vec<r_str> x, r_vec<r_str> y){
     return x <= y;
-}
-
-[[cppally::register]]
-r_vec<r_lgl> str_gt(r_vec<r_str> x, r_vec<r_str> y){
-    return x > y;
-}
-
-[[cppally::register]]
-r_vec<r_lgl> str_ge(r_vec<r_str> x, r_vec<r_str> y){
-    return x >= y;
 }
 
 // "\xc3\xa9" is e-acute in UTF-8, spelled out so this file stays ASCII

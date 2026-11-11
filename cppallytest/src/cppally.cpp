@@ -20,223 +20,6 @@ using internal::cpp_to_r;
 using internal::r_to_cpp;
 using internal::dispatch_template_impl;
 
-// test-encodings.cpp
-r_vec<r_lgl> str_eq(r_vec<r_str> x, r_vec<r_str> y);
-extern "C" attribute_visible SEXP _cppallytest_str_eq(SEXP x, SEXP y) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::str_eq(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_lgl> str_ne(r_vec<r_str> x, r_vec<r_str> y);
-extern "C" attribute_visible SEXP _cppallytest_str_ne(SEXP x, SEXP y) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::str_ne(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_lgl> str_lt(r_vec<r_str> x, r_vec<r_str> y);
-extern "C" attribute_visible SEXP _cppallytest_str_lt(SEXP x, SEXP y) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::str_lt(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_lgl> str_le(r_vec<r_str> x, r_vec<r_str> y);
-extern "C" attribute_visible SEXP _cppallytest_str_le(SEXP x, SEXP y) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::str_le(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_lgl> str_gt(r_vec<r_str> x, r_vec<r_str> y);
-extern "C" attribute_visible SEXP _cppallytest_str_gt(SEXP x, SEXP y) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::str_gt(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_lgl> str_ge(r_vec<r_str> x, r_vec<r_str> y);
-extern "C" attribute_visible SEXP _cppallytest_str_ge(SEXP x, SEXP y) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::str_ge(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_lgl> enc_eq_utf8_literal(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_eq_utf8_literal(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_eq_utf8_literal(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_lgl> enc_lt_utf8_literal(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_lt_utf8_literal(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_lt_utf8_literal(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_str> enc_unique(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_unique(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_unique(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_lgl> enc_duplicated(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_duplicated(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_duplicated(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_int enc_n_unique(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_n_unique(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_n_unique(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_int> enc_match(r_vec<r_str> x, r_vec<r_str> table);
-extern "C" attribute_visible SEXP _cppallytest_enc_match(SEXP x, SEXP table) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_match(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(table)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_int> enc_group_ids(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_group_ids(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_group_ids(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_int> enc_ordered_group_ids(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_ordered_group_ids(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_ordered_group_ids(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_int enc_n_groups(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_n_groups(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_n_groups(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_str> enc_sort(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_sort(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_sort(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_factors enc_factor(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_factor(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_factor(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_factors enc_factor_levels(r_vec<r_str> x, r_vec<r_str> levels);
-extern "C" attribute_visible SEXP _cppallytest_enc_factor_levels(SEXP x, SEXP levels) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_factor_levels(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(levels)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_int> enc_get_code(r_factors x, r_vec<r_str> vals);
-extern "C" attribute_visible SEXP _cppallytest_enc_get_code(SEXP x, SEXP vals) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_get_code(r_to_cpp<r_factors>(x), r_to_cpp<r_vec<r_str>>(vals)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_int> enc_match_factors(r_factors x, r_factors table);
-extern "C" attribute_visible SEXP _cppallytest_enc_match_factors(SEXP x, SEXP table) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_match_factors(r_to_cpp<r_factors>(x), r_to_cpp<r_factors>(table)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_lgl> enc_factor_eq(r_factors x, r_factors y);
-extern "C" attribute_visible SEXP _cppallytest_enc_factor_eq(SEXP x, SEXP y) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_factor_eq(r_to_cpp<r_factors>(x), r_to_cpp<r_factors>(y)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_int> enc_name_index(r_vec<r_int> x, r_vec<r_str> keys);
-extern "C" attribute_visible SEXP _cppallytest_enc_name_index(SEXP x, SEXP keys) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_name_index(r_to_cpp<r_vec<r_int>>(x), r_to_cpp<r_vec<r_str>>(keys)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_str> enc_encoding(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_encoding(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_encoding(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_str> enc_with_encoding(r_vec<r_str> x, const char* encoding);
-extern "C" attribute_visible SEXP _cppallytest_enc_with_encoding(SEXP x, SEXP encoding) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_with_encoding(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<const char*>(encoding)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_str> enc_as_utf8(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_as_utf8(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_as_utf8(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_lgl> enc_is_ascii(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_is_ascii(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_is_ascii(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_lgl> enc_is_utf8(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_is_utf8(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_is_utf8(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_lgl> enc_is_latin1(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_is_latin1(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_is_latin1(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_lgl> enc_needs_translation(r_vec<r_str> x);
-extern "C" attribute_visible SEXP _cppallytest_enc_needs_translation(SEXP x) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_needs_translation(r_to_cpp<r_vec<r_str>>(x)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_vec<r_str> enc_paste(r_vec<r_str> x, r_vec<r_str> y, const char* sep);
-extern "C" attribute_visible SEXP _cppallytest_enc_paste(SEXP x, SEXP y, SEXP sep) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_paste(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y), r_to_cpp<const char*>(sep)));
-  END_CPPALLY
-}
-// test-encodings.cpp
-r_str enc_collapse(r_vec<r_str> x, const char* sep);
-extern "C" attribute_visible SEXP _cppallytest_enc_collapse(SEXP x, SEXP sep) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::enc_collapse(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<const char*>(sep)));
-  END_CPPALLY
-}
 // test.cpp
 void cpp_set_threads(int n);
 extern "C" attribute_visible SEXP _cppallytest_cpp_set_threads(SEXP n) {
@@ -1101,6 +884,223 @@ extern "C" attribute_visible SEXP _cppallytest_test_time_diff_round_trip() {
   BEGIN_CPPALLY
   ::test_time_diff_round_trip();
   return R_NilValue;
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_lgl> str_eq(r_vec<r_str> x, r_vec<r_str> y);
+extern "C" attribute_visible SEXP _cppallytest_str_eq(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::str_eq(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_lgl> str_ne(r_vec<r_str> x, r_vec<r_str> y);
+extern "C" attribute_visible SEXP _cppallytest_str_ne(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::str_ne(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_lgl> str_lt(r_vec<r_str> x, r_vec<r_str> y);
+extern "C" attribute_visible SEXP _cppallytest_str_lt(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::str_lt(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_lgl> str_le(r_vec<r_str> x, r_vec<r_str> y);
+extern "C" attribute_visible SEXP _cppallytest_str_le(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::str_le(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_lgl> str_gt(r_vec<r_str> x, r_vec<r_str> y);
+extern "C" attribute_visible SEXP _cppallytest_str_gt(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::str_gt(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_lgl> str_ge(r_vec<r_str> x, r_vec<r_str> y);
+extern "C" attribute_visible SEXP _cppallytest_str_ge(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::str_ge(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_lgl> enc_eq_utf8_literal(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_eq_utf8_literal(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_eq_utf8_literal(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_lgl> enc_lt_utf8_literal(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_lt_utf8_literal(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_lt_utf8_literal(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_str> enc_unique(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_unique(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_unique(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_lgl> enc_duplicated(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_duplicated(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_duplicated(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_int enc_n_unique(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_n_unique(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_n_unique(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_int> enc_match(r_vec<r_str> x, r_vec<r_str> table);
+extern "C" attribute_visible SEXP _cppallytest_enc_match(SEXP x, SEXP table) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_match(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(table)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_int> enc_group_ids(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_group_ids(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_group_ids(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_int> enc_ordered_group_ids(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_ordered_group_ids(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_ordered_group_ids(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_int enc_n_groups(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_n_groups(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_n_groups(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_str> enc_sort(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_sort(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_sort(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_factors enc_factor(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_factor(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_factor(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_factors enc_factor_levels(r_vec<r_str> x, r_vec<r_str> levels);
+extern "C" attribute_visible SEXP _cppallytest_enc_factor_levels(SEXP x, SEXP levels) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_factor_levels(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(levels)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_int> enc_get_code(r_factors x, r_vec<r_str> vals);
+extern "C" attribute_visible SEXP _cppallytest_enc_get_code(SEXP x, SEXP vals) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_get_code(r_to_cpp<r_factors>(x), r_to_cpp<r_vec<r_str>>(vals)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_int> enc_match_factors(r_factors x, r_factors table);
+extern "C" attribute_visible SEXP _cppallytest_enc_match_factors(SEXP x, SEXP table) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_match_factors(r_to_cpp<r_factors>(x), r_to_cpp<r_factors>(table)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_lgl> enc_factor_eq(r_factors x, r_factors y);
+extern "C" attribute_visible SEXP _cppallytest_enc_factor_eq(SEXP x, SEXP y) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_factor_eq(r_to_cpp<r_factors>(x), r_to_cpp<r_factors>(y)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_int> enc_name_index(r_vec<r_int> x, r_vec<r_str> keys);
+extern "C" attribute_visible SEXP _cppallytest_enc_name_index(SEXP x, SEXP keys) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_name_index(r_to_cpp<r_vec<r_int>>(x), r_to_cpp<r_vec<r_str>>(keys)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_str> enc_encoding(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_encoding(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_encoding(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_str> enc_with_encoding(r_vec<r_str> x, const char* encoding);
+extern "C" attribute_visible SEXP _cppallytest_enc_with_encoding(SEXP x, SEXP encoding) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_with_encoding(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<const char*>(encoding)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_str> enc_as_utf8(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_as_utf8(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_as_utf8(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_lgl> enc_is_ascii(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_is_ascii(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_is_ascii(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_lgl> enc_is_utf8(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_is_utf8(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_is_utf8(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_lgl> enc_is_latin1(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_is_latin1(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_is_latin1(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_lgl> enc_needs_translation(r_vec<r_str> x);
+extern "C" attribute_visible SEXP _cppallytest_enc_needs_translation(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_needs_translation(r_to_cpp<r_vec<r_str>>(x)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_vec<r_str> enc_paste(r_vec<r_str> x, r_vec<r_str> y, const char* sep);
+extern "C" attribute_visible SEXP _cppallytest_enc_paste(SEXP x, SEXP y, SEXP sep) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_paste(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y), r_to_cpp<const char*>(sep)));
+  END_CPPALLY
+}
+// test_encodings.cpp
+r_str enc_collapse(r_vec<r_str> x, const char* sep);
+extern "C" attribute_visible SEXP _cppallytest_enc_collapse(SEXP x, SEXP sep) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::enc_collapse(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<const char*>(sep)));
   END_CPPALLY
 }
 // test_factor.cpp
