@@ -22,6 +22,8 @@ namespace cppally {
 
 namespace internal {
 
+namespace string {
+
 // Can bytes be compared directly?
 // We only compare bytes for UTF-8 strings.
 inline bool str_bytes_comparable(r_str_view x, r_str_view y) noexcept {
@@ -65,13 +67,15 @@ inline bool str_equal(r_str_view x, r_str_view y) {
 
 }
 
+}
+
 // Operators for r_str_view
 
 inline r_lgl operator==(r_str_view lhs, r_str_view rhs) {
-  return (lhs.is_na() || rhs.is_na()) ? r_na : r_lgl{internal::str_equal(lhs, rhs)};
+  return (lhs.is_na() || rhs.is_na()) ? r_na : r_lgl{internal::string::str_equal(lhs, rhs)};
 }
 inline r_lgl operator!=(r_str_view lhs, r_str_view rhs) {
-  return (lhs.is_na() || rhs.is_na()) ? r_na : r_lgl{!internal::str_equal(lhs, rhs)};
+  return (lhs.is_na() || rhs.is_na()) ? r_na : r_lgl{!internal::string::str_equal(lhs, rhs)};
 }
 inline r_lgl operator<(r_str_view lhs, r_str_view rhs) {
   if (lhs.is_na() || rhs.is_na()){
@@ -79,7 +83,7 @@ inline r_lgl operator<(r_str_view lhs, r_str_view rhs) {
   } else if (internal::r_addresses_equal(lhs, rhs)){
     return r_false;
   } else {
-    return r_lgl{internal::str_compare(lhs, rhs) < 0};
+    return r_lgl{internal::string::str_compare(lhs, rhs) < 0};
   }
 }
 inline r_lgl operator<=(r_str_view lhs, r_str_view rhs) {
@@ -88,7 +92,7 @@ inline r_lgl operator<=(r_str_view lhs, r_str_view rhs) {
   } else if (internal::r_addresses_equal(lhs, rhs)){
     return r_true;
   } else {
-    return r_lgl{internal::str_compare(lhs, rhs) <= 0};
+    return r_lgl{internal::string::str_compare(lhs, rhs) <= 0};
   }
 }
 inline r_lgl operator>(r_str_view lhs, r_str_view rhs) {
@@ -97,7 +101,7 @@ inline r_lgl operator>(r_str_view lhs, r_str_view rhs) {
   } else if (internal::r_addresses_equal(lhs, rhs)){
     return r_false;
   } else {
-    return r_lgl{internal::str_compare(lhs, rhs) > 0};
+    return r_lgl{internal::string::str_compare(lhs, rhs) > 0};
   }
 }
 inline r_lgl operator>=(r_str_view lhs, r_str_view rhs) {
@@ -106,7 +110,7 @@ inline r_lgl operator>=(r_str_view lhs, r_str_view rhs) {
   } else if (internal::r_addresses_equal(lhs, rhs)){
     return r_true;
   } else {
-    return r_lgl{internal::str_compare(lhs, rhs) >= 0};
+    return r_lgl{internal::string::str_compare(lhs, rhs) >= 0};
   }
 }
 
@@ -132,22 +136,22 @@ inline r_lgl operator>=(const r_str& lhs, const r_str& rhs) {
 // r_str/C++ string operators
 
 inline r_lgl operator==(r_str_view lhs, std::string_view rhs) {
-  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::str_compare(lhs, rhs) == 0);
+  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::string::str_compare(lhs, rhs) == 0);
 }
 inline r_lgl operator!=(r_str_view lhs, std::string_view rhs) {
-  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::str_compare(lhs, rhs) != 0);
+  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::string::str_compare(lhs, rhs) != 0);
 }
 inline r_lgl operator<(r_str_view lhs, std::string_view rhs) {
-  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::str_compare(lhs, rhs) < 0);
+  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::string::str_compare(lhs, rhs) < 0);
 }
 inline r_lgl operator<=(r_str_view lhs, std::string_view rhs) {
-  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::str_compare(lhs, rhs) <= 0);
+  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::string::str_compare(lhs, rhs) <= 0);
 }
 inline r_lgl operator>(r_str_view lhs, std::string_view rhs) {
-  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::str_compare(lhs, rhs) > 0);
+  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::string::str_compare(lhs, rhs) > 0);
 }
 inline r_lgl operator>=(r_str_view lhs, std::string_view rhs) {
-  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::str_compare(lhs, rhs) >= 0);
+  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::string::str_compare(lhs, rhs) >= 0);
 }
 
 inline r_lgl operator==(std::string_view lhs, r_str_view rhs) {

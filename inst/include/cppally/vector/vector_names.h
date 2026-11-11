@@ -97,7 +97,7 @@ struct sexp_index_table {
         r_str_view key_str(key, internal::no_checks_tag{});
         std::size_t pos = slot_of(key, shift_);
         while (slots_[pos] != EMPTY_SLOT) {
-            if (str_equal(r_str_view(names_ptr_[from_slot(slots_[pos])], internal::no_checks_tag{}), key_str)) {
+            if (string::str_equal(r_str_view(names_ptr_[from_slot(slots_[pos])], internal::no_checks_tag{}), key_str)) {
                 break;
             }
             pos = next_probe(pos, mask_);

@@ -108,7 +108,7 @@ CPPALLY_NOINLINE inline std::optional<r_vec<r_str_view>> as_utf8_strings(const r
     for (r_size_t i = 0; i < n; ++i){
         r_str_view elem = x.view(i);
         out.set(i, r_str_view(r_str(elem, internal::view_tag{}, internal::no_checks_tag{}).as_utf8()));
-        // out.set(i, elem.needs_utf8_translation() ? c_str_to_r_str_view(utf8_string(elem).c_str()) : elem);
+        // out.set(i, elem.needs_utf8_translation() ? string::c_str_to_r_str_view(utf8_string(elem).c_str()) : elem);
     }
     return out;
 }

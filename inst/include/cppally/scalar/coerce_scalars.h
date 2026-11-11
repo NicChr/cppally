@@ -181,7 +181,7 @@ inline constexpr T scalar_coerce_impl(const U& x) {
     }
 
     *result.ptr = '\0';
-    return T(c_str_to_r_str_view(static_cast<const char*>(buffer)));
+    return T(string::c_str_to_r_str_view(static_cast<const char*>(buffer)));
   } else if constexpr (RComplexType<U>){
     
     if (is_na(x)){
@@ -203,11 +203,11 @@ inline constexpr T scalar_coerce_impl(const U& x) {
     pos = write_r_double(pos, pos + max_dbl_chars, im);
     *pos++ = 'i';
     *pos = '\0';
-    return T(c_str_to_r_str_view(static_cast<const char*>(buffer)));
+    return T(string::c_str_to_r_str_view(static_cast<const char*>(buffer)));
   } else if constexpr (is<U, r_raw>){
     char buffer[8];
     snprintf(buffer, sizeof(buffer), "%02x", x.value);
-    return T(c_str_to_r_str_view(static_cast<const char*>(buffer)));
+    return T(string::c_str_to_r_str_view(static_cast<const char*>(buffer)));
   } else if constexpr (RDateType<U>){
     return x.date_str();
   } else if constexpr (RPsxctType<U>){

@@ -49,7 +49,7 @@ inline r_vec<r_sexp> new_df_impl(const r_vec<r_sexp>& cols, bool recycle, int nr
         std::string col_str = "col_";
         for (r_size_t i = 0; i < n; ++i){
             col_str += std::to_string(i + 1);
-            names.set(i, internal::c_str_to_r_str_view(col_str.c_str()));
+            names.set(i, internal::string::c_str_to_r_str_view(col_str.c_str()));
             col_str.assign("col_");
         }
     }

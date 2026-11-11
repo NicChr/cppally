@@ -24,6 +24,8 @@ enum class str_encoding {
 
 namespace internal {
 
+namespace string {
+
 inline constexpr std::size_t str_length(const char* x) noexcept {
   return std::string_view(x).size();
 }
@@ -47,6 +49,8 @@ inline SEXP mk_char(std::string_view x, str_encoding enc = str_encoding::utf8, b
     abort("string contains an embedded nul");
   }
   return mk_char(x.data(), x.size(), enc);
+}
+
 }
 
 }
@@ -139,6 +143,8 @@ struct r_str_view {
 
 namespace internal {
 
+namespace string {
+
 // UTF-8 text of x as a std::string, called by r_str::as_utf8()
 CPPALLY_NOINLINE inline std::string utf8_string(r_str_view x) {
   if (!x.needs_utf8_translation()) {
@@ -179,6 +185,15 @@ CPPALLY_NOINLINE inline std::string utf8_string(r_str_view x) {
   return out;
 }
 
+// Result is UNPROTECTED! Ensure the result is immediately protected
+// e.g. by setting it as an element to r_vec<r_str_view>
+// Otherwise just use `r_str()` or `as<r_str>` 
+inline r_str_view c_str_to_r_str_view(const char* x){
+  return r_str_view(mk_char(x, str_length(x)), internal::no_checks_tag{});
+}
+
+}
+
 }
 
 // Number of characters (code points).
@@ -200,7 +215,7 @@ inline r_int r_str_view::n_chars() const {
 
   // Translate to UTF-8.
   // Text that R treats as UTF-8 isn't validated (i.e. text that isn't actually converted, isn't validated).
-  std::string utf8_str = internal::utf8_string(*this);
+  std::string utf8_str = internal::string::utf8_string(*this);
 
   // https://en.wikipedia.org/wiki/UTF-8
   // Assuming a valid UTF-8 string we simply count the bytes that start with a zero bit or two one bits.
@@ -242,11 +257,11 @@ struct r_str {
   explicit r_str(SEXP x, internal::view_tag, internal::no_checks_tag) noexcept : value(x, internal::view_tag{}) {}
 
   explicit r_str(const char* x, str_encoding enc = str_encoding::utf8) :
-    r_str(internal::mk_char(x, internal::str_length(x), enc), internal::no_checks_tag{}) {}
+    r_str(internal::string::mk_char(x, internal::string::str_length(x), enc), internal::no_checks_tag{}) {}
   
   // check_for_embedded_nul = false skips checking for NUL bytes. Only use if you are certain the string is clean.
   explicit r_str(std::string_view x, str_encoding enc = str_encoding::utf8, bool check_for_embedded_nul = true) :
-    r_str(internal::mk_char(x, enc, check_for_embedded_nul), internal::no_checks_tag{}) {}
+    r_str(internal::string::mk_char(x, enc, check_for_embedded_nul), internal::no_checks_tag{}) {}
 
   // Implicit r_str -> SEXP 
   operator SEXP() const noexcept { return value; }
@@ -340,7 +355,7 @@ struct r_str {
       // Construct utf8 marked str directly instead of using with_encoding() to avoid extra NA & encoding check branch
       return r_str(cpp_str(), str_encoding::utf8, /*check_for_embedded_nul=*/ false);
     }
-    return r_str(internal::utf8_string(*this), str_encoding::utf8, /*check_for_embedded_nul=*/ false);
+    return r_str(internal::string::utf8_string(*this), str_encoding::utf8, /*check_for_embedded_nul=*/ false);
   }
 
 };
@@ -361,17 +376,6 @@ inline r_str cached_str() {
 // Memory address
 inline r_str address(SEXP x) {
     return r_sexp(x, internal::view_tag{}).address();
-}
-
-namespace internal {
-
-// Result is UNPROTECTED! Ensure the result is immediately protected
-// e.g. by setting it as an element to r_vec<r_str_view>
-// Otherwise just use `r_str()` or `as<r_str>` 
-inline r_str_view c_str_to_r_str_view(const char* x){
-  return r_str_view(mk_char(x, str_length(x)), internal::no_checks_tag{});
-}
-
 }
 
 }

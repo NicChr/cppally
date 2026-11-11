@@ -58,7 +58,7 @@ inline constexpr bool identical_impl(const T& a, const T& b) noexcept {
 }
 
 inline bool identical_impl(const r_str_view& a, const r_str_view& b) {
-    return str_equal(a, b);
+    return string::str_equal(a, b);
 }
 inline bool identical_impl(const r_str& a, const r_str& b) {
     return identical_impl(static_cast<r_str_view>(a), static_cast<r_str_view>(b));

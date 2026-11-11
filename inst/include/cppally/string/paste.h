@@ -34,7 +34,7 @@ struct encoded_string {
             text += x.c_str();
         } else {
             set_encoding(x.encoding() == str_encoding::bytes ? str_encoding::bytes : str_encoding::utf8);
-            text += utf8_string(x);
+            text += string::utf8_string(x);
         }
     }
 };
@@ -87,7 +87,7 @@ inline r_vec<r_str> str_paste_list(const std::vector<r_vec<r_str_view>>& x, r_st
             }
             buf.append(e);
         }
-        out.set(j, is_na(e) ? na<r_str_view>() : r_str_view(mk_char(buf.text, buf.enc, false), no_checks_tag{}));
+        out.set(j, is_na(e) ? na<r_str_view>() : r_str_view(string::mk_char(buf.text, buf.enc, false), no_checks_tag{}));
         // Advance every counter, even on early break, to keep recycling aligned
         for (r_size_t i = 0; i < n_vecs; ++i){
             recycle_index(idx[i], lens[i]);

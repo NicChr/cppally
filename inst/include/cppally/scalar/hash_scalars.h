@@ -88,7 +88,7 @@ CPPALLY_NOINLINE inline uint64_t hash_str_text(r_str_view x){
     if (!x.needs_utf8_translation()) {
         return str_hash{}(x.cpp_str());
     } else {
-        return str_hash{}(utf8_string(x));
+        return str_hash{}(string::utf8_string(x));
     }
 }
 
