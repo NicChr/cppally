@@ -306,7 +306,7 @@ CPPALLY_NOINLINE inline int merge_identical_text(const std::vector<std::pair<SEX
     int n_text_groups = 0;
 
     for (int g = 0; g < n_groups; ++g) {
-        auto s = internal::unsafe_reconstruct_view<r_str>(keys[g].first);
+        auto s = internal::unsafe_reconstruct<r_str_view>(keys[g].first);
         // NA and ASCII text each have exactly one CHARSXP, so they can't merge with another group
         if (s.is_na() || s.is_ascii()) {
             remap[g] = n_text_groups++;
