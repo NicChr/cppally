@@ -22,8 +22,25 @@ class r_str_map {
 
     using charsxp_map = ankerl::unordered_dense::map<SEXP, V>;
 
+    // String + text-based hash so that growing the map doesn't re-read text.
+    struct text_key {
+        SEXP str;
+        uint64_t text_hash;
+    };
+    struct text_key_hash {
+        using is_avalanching = void;
+        uint64_t operator()(const text_key& k) const noexcept {
+            return k.text_hash;
+        }
+    };
+    struct text_key_eq {
+        bool operator()(const text_key& a, const text_key& b) const {
+            return a.text_hash == b.text_hash && r_hash_eq<r_str_view>{}(a.str, b.str);
+        }
+    };
+
     charsxp_map charsxp_lookup;
-    ankerl::unordered_dense::map<SEXP, V, r_hash_fn<r_str>, r_hash_eq<r_str>> text_lookup;
+    ankerl::unordered_dense::map<text_key, V, text_key_hash, text_key_eq> text_lookup;
 
     // ASCII and NA always have unique CHARSXP, so no need to check text for those ever.
     static bool ascii_or_na(SEXP key) {
@@ -69,7 +86,7 @@ public:
 private:
 
     CPPALLY_NOINLINE bool try_emplace_text(iterator it, SEXP key, V value) {
-        auto [first, inserted] = text_lookup.try_emplace(key, value);
+        auto [first, inserted] = text_lookup.try_emplace(text_key{key, r_hash_fn<r_str_view>{}(key)}, value);
         if (!inserted) {
             it->second = first->second;
         }
@@ -77,7 +94,7 @@ private:
     }
 
     CPPALLY_NOINLINE iterator find_text(SEXP key) {
-        auto first = text_lookup.find(key);
+        auto first = text_lookup.find(text_key{key, r_hash_fn<r_str_view>{}(key)});
         if (first == text_lookup.end()) {
             return charsxp_lookup.end();
         }
