@@ -16,7 +16,7 @@ This vignette compares the speed of the below sections against base R, 'data.tab
 - Grouped statistical summaries
 - Date manipulation
 
-This vignette was built on a laptop with an Intel Core Ultra 5 125H (14 cores: 4 performance and 10 efficiency, 18 threads) and 16 GB of RAM, running Windows 11 and R 4.6.0 on 23 Oct 2026.
+This vignette was built on a laptop with an Intel Core Ultra 5 125H (14 cores: 4 performance and 10 efficiency, 18 threads) and 16 GB of RAM, running Windows 11 and R 4.6.0 on 12 Nov 2026.
 
 ## Setup
 
@@ -1130,7 +1130,7 @@ data.frame(
 
 |package    |version    |
 |:----------|:----------|
-|cppally    |1.1.0.9000 |
+|cppally    |1.2.1.9000 |
 |data.table |1.18.6.1   |
 |collapse   |2.1.8      |
 |bit64      |4.8.6      |
