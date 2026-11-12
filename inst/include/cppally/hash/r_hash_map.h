@@ -76,7 +76,7 @@ public:
 
     [[gnu::always_inline]] iterator find(SEXP key) {
         auto it = charsxp_lookup.find(key);
-        if (it != charsxp_lookup.end() || ascii_or_na(key)) {
+        if (it != charsxp_lookup.end() || text_lookup.empty() || ascii_or_na(key)) {
             return it;
         }
         // A new CHARSXP whose text was already seen is added to `charsxp_lookup`, so repeats are a pointer hit
