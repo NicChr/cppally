@@ -894,13 +894,6 @@ extern "C" attribute_visible SEXP _cppallytest_str_eq(SEXP x, SEXP y) {
   END_CPPALLY
 }
 // test_encodings.cpp
-r_vec<r_lgl> str_ne(r_vec<r_str> x, r_vec<r_str> y);
-extern "C" attribute_visible SEXP _cppallytest_str_ne(SEXP x, SEXP y) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::str_ne(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
-  END_CPPALLY
-}
-// test_encodings.cpp
 r_vec<r_lgl> str_lt(r_vec<r_str> x, r_vec<r_str> y);
 extern "C" attribute_visible SEXP _cppallytest_str_lt(SEXP x, SEXP y) {
   BEGIN_CPPALLY
@@ -912,20 +905,6 @@ r_vec<r_lgl> str_le(r_vec<r_str> x, r_vec<r_str> y);
 extern "C" attribute_visible SEXP _cppallytest_str_le(SEXP x, SEXP y) {
   BEGIN_CPPALLY
   return cpp_to_r(::str_le(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
-  END_CPPALLY
-}
-// test_encodings.cpp
-r_vec<r_lgl> str_gt(r_vec<r_str> x, r_vec<r_str> y);
-extern "C" attribute_visible SEXP _cppallytest_str_gt(SEXP x, SEXP y) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::str_gt(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
-  END_CPPALLY
-}
-// test_encodings.cpp
-r_vec<r_lgl> str_ge(r_vec<r_str> x, r_vec<r_str> y);
-extern "C" attribute_visible SEXP _cppallytest_str_ge(SEXP x, SEXP y) {
-  BEGIN_CPPALLY
-  return cpp_to_r(::str_ge(r_to_cpp<r_vec<r_str>>(x), r_to_cpp<r_vec<r_str>>(y)));
   END_CPPALLY
 }
 // test_encodings.cpp
@@ -1648,11 +1627,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_scalar_vec2",                       (DL_FUNC) &_cppallytest_scalar_vec2,                       2},
     {"_cppallytest_scalar_vec3",                       (DL_FUNC) &_cppallytest_scalar_vec3,                       4},
     {"_cppallytest_str_eq",                            (DL_FUNC) &_cppallytest_str_eq,                            2},
-    {"_cppallytest_str_ge",                            (DL_FUNC) &_cppallytest_str_ge,                            2},
-    {"_cppallytest_str_gt",                            (DL_FUNC) &_cppallytest_str_gt,                            2},
     {"_cppallytest_str_le",                            (DL_FUNC) &_cppallytest_str_le,                            2},
     {"_cppallytest_str_lt",                            (DL_FUNC) &_cppallytest_str_lt,                            2},
-    {"_cppallytest_str_ne",                            (DL_FUNC) &_cppallytest_str_ne,                            2},
     {"_cppallytest_test_arithmetic",                   (DL_FUNC) &_cppallytest_test_arithmetic,                   0},
     {"_cppallytest_test_arithmetic_edge_cases",        (DL_FUNC) &_cppallytest_test_arithmetic_edge_cases,        0},
     {"_cppallytest_test_as_dbl",                       (DL_FUNC) &_cppallytest_test_as_dbl,                       6},

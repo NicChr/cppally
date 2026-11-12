@@ -392,24 +392,12 @@ str_eq <- function(x, y) {
   .Call(`_cppallytest_str_eq`, x, y)
 }
 
-str_ne <- function(x, y) {
-  .Call(`_cppallytest_str_ne`, x, y)
-}
-
 str_lt <- function(x, y) {
   .Call(`_cppallytest_str_lt`, x, y)
 }
 
 str_le <- function(x, y) {
   .Call(`_cppallytest_str_le`, x, y)
-}
-
-str_gt <- function(x, y) {
-  .Call(`_cppallytest_str_gt`, x, y)
-}
-
-str_ge <- function(x, y) {
-  .Call(`_cppallytest_str_ge`, x, y)
 }
 
 enc_eq_utf8_literal <- function(x) {
