@@ -1,5 +1,61 @@
 # cppally (development version)
 
+## Bug fixes
+
+- Fixed a bug where `str_paste()` and `str_collapse()` would garble latin1 
+strings (and native strings in a non-UTF-8 session) by copying their bytes 
+directly into a UTF-8 marked `r_str`. They are now translated to UTF-8 first.
+
+## Encoding-aware strings
+
+Strings are now compared by their text (like base R). This means that strings 
+containing the same text are now equal even if their bytes differ 
+(e.g. Latin-1 "é" vs UTF-8 "é").
+
+- New `enum` class `str_encoding` with values `native`, `utf8`, `latin1`, 
+`bytes` and `unsupported`.
+
+- `==`, `!=` and `identical()` now compare string text. Previously they 
+compared `CHARSXP` pointer addresses. This means that non-ASCII strings like 
+`"é"` will be considered equal, 
+whether they are encoded as Latin-1, native (unknown), or UTF-8.
+
+- `<`, `<=`, `>`, and `>=` compare string text using the C-locale after trying to 
+convert the text to UTF-8. Bytes-encoded strings are never converted to UTF-8, 
+so these are always ordered after non-bytes strings. Bytes-encoded strings 
+are compared to each other using their raw bytes.
+
+- New `r_str` member function `needs_utf8_translation()` which returns `true` 
+if `as_utf8()` were to perform a conversion if requested, i.e. it returns `true` 
+if the bytes would change upon UTF-8 conversion. 
+For ASCII and bytes-encoded strings this is always `false`.
+
+- New `r_str` member function `encoding()`.
+
+- New `r_str` member function `with_encoding()` which changes the 
+encoding label without changing the underlying raw bytes.
+
+- New `r_str` member function `n_chars()` returns the number of characters 
+(Unicode code points). It returns `r_int::na()` (`NA_integer_`) 
+for `r_str::na()` (`NA_character_`). `n_chars()` errors for bytes-encoded strings.
+
+- The `r_str` constructor from `const char*` now takes an optional 
+`str_encoding`. The default is now explicitly `str_encoding::utf8` whereas before it 
+was implicit.
+
+- New `r_str` constructor from `std::string_view`.
+
+- The underlying hash function for `r_str`/`r_str_view` now hashes text. 
+Specifically it uses a pointer-based hash for ASCII strings (and `r_str::na()`), 
+and a text-based hash for everything else. 
+
+- Functions like `unique()`, `match()`, `make_groups()`, 
+and anything that uses hashing now treat strings with equal text as one unique value, 
+consistent with cppally's `r_str` operator `==`. On mixed-encoding strings, 
+this can give fewer unique values than before. 
+Unlike `base::unique()`, text is compared even in the presence of 
+bytes-encoded strings.
+
 # cppally 1.2.1
 
 - Fix CRAN check result vignette error related to a GC issue in 
