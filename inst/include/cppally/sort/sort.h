@@ -587,16 +587,16 @@ inline CPPALLY_NOINLINE void order_strings(const r_vec<r_str_view>& x, int* REST
     string_radix_sort(strs, keys.get(), p_out, n_real);
 }
 
-inline CPPALLY_NOINLINE r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
+inline CPPALLY_NOINLINE r_vec<r_int> order_string_data(const r_vec<r_str_view>& x) {
 
     uint32_t n = x.length();
 
-    uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<r_str>, internal::r_hash_eq<r_str>>(x.data(), n);
+    uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<r_str_view>, internal::r_hash_eq<r_str_view>>(x.data(), n);
 
     // High cardinality -> direct sort
     if (estimate >= n / 4) {
         r_vec<r_int> out(n);
-        order_strings(r_vec<r_str_view>(x), out.data());
+        order_strings(x, out.data());
         return out;
     }
 
@@ -738,7 +738,7 @@ template <RSortableVector T>
         // Strings
         // ---------------------------------------------------------------------- 
 
-        return internal::sort::order_string_data(r_vec<r_str>(x));
+        return internal::sort::order_string_data(r_vec<r_str_view>(x));
     } else {
         return internal::sort::order_cmp(x);
     }
