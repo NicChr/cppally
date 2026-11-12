@@ -25,25 +25,33 @@ namespace internal {
 namespace string {
 
 // Can bytes be compared directly?
-// We only compare bytes for UTF-8 strings.
+// true when either both are UTF-8 or both are bytes-encoded.
 inline bool str_bytes_comparable(r_str_view x, r_str_view y) noexcept {
-  return x.is_utf8() && y.is_utf8();
+  return (x.is_utf8() && y.is_utf8()) || (x.encoding() == str_encoding::bytes && y.encoding() == str_encoding::bytes);
 }
 
-// Byte-wise (C-locale) comparison of the UTF-8 text, strings marked as bytes are compared as-is
+// Text orders before bytes strings. Text compares by its UTF-8 bytes (C-locale), bytes strings by their raw bytes
 CPPALLY_NOINLINE inline int str_compare(r_str_view x, r_str_view y) {
-  int cmp = str_bytes_comparable(x, y) ? std::strcmp(x.c_str(), y.c_str()) : utf8_string(x).compare(utf8_string(y));
-  return cmp == 0 ? static_cast<int>(x.encoding() == str_encoding::bytes) - static_cast<int>(y.encoding() == str_encoding::bytes) : cmp;
+  if (str_bytes_comparable(x, y)) {
+    return std::strcmp(x.c_str(), y.c_str());
+  }
+  bool x_bytes = x.encoding() == str_encoding::bytes;
+  bool y_bytes = y.encoding() == str_encoding::bytes;
+  if (x_bytes != y_bytes) [[unlikely]] {
+    return x_bytes ? 1 : -1;
+  }
+  return utf8_string(x).compare(utf8_string(y));
 }
 CPPALLY_NOINLINE inline int str_compare(r_str_view x, std::string_view y) {
   if (x.is_utf8()){
     // C++ strings are assumed to be UTF-8
     return x.cpp_str().compare(y);
   }
-  int cmp = utf8_string(x).compare(y);
-  // Bytes (non-text) and text should not be marked equal
-  // We are deciding to always order bytes AFTER text
-  return (cmp == 0 && x.encoding() == str_encoding::bytes) ? 1 : cmp;
+  // C++ strings are text, so bytes strings order after them
+  if (x.encoding() == str_encoding::bytes) {
+    return 1;
+  }
+  return utf8_string(x).compare(y);
 }
 
 // Assumes unwrap(x) != unwrap(y)

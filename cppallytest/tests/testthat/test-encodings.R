@@ -263,9 +263,13 @@ test_that("Strings marked as bytes are never translated", {
   expect_false(str_eq(e_bytes, e_latin1))
   expect_true(str_eq(e_bytes, with_encoding(e_utf8, "bytes")))
 
-  # Unlike base R these don't error, a bytes string orders by its raw bytes
+  # Unlike base R these don't error, bytes strings order after all text, then by their raw bytes
+  e_bytes_lower <- with_encoding("\xc3\xa0", "bytes")
   expect_false(str_lt(e_bytes, e_utf8))
   expect_true(str_lt(e_latin1, with_encoding("\xe9", "bytes")))
+  expect_true(str_lt(e_utf8, e_bytes_lower))
+  expect_true(str_lt(e_bytes_lower, e_bytes))
+  expect_identical(test_order(c(e_bytes, NA, e_bytes_lower, "z")), c(3L, 2L, 0L, 1L))
 
   # The same bytes marked as bytes are not identical, so they sort after the text
   expect_true(str_lt(e_utf8, e_bytes))
@@ -299,7 +303,7 @@ test_that("Bytes strings never tie with the same bytes as text", {
     text <- x
     text[is_bytes] <- with_encoding(x[is_bytes], "UTF-8")
     text <- enc2utf8(text)
-    o <- withr::with_collate("C", order(text, is_bytes))
+    o <- withr::with_collate("C", order(is_bytes, text))
     ids <- integer(length(x))
     ids[o] <- cumsum(!duplicated(paste(text, is_bytes)[o])) - 1L
     expect_identical(test_order(x), o - 1L)
@@ -322,8 +326,8 @@ test_that("r_str compares with UTF-8 C++ strings", {
   # A bytes string never ties with the same bytes as text
   expect_false(enc_eq_utf8_literal(e_bytes))
   expect_identical(
-    enc_lt_utf8_literal(c("a", "z", e_latin1, with_encoding("\xff", "latin1"), NA)),
-    c(TRUE, TRUE, FALSE, FALSE, NA)
+    enc_lt_utf8_literal(c("a", "z", e_latin1, with_encoding("\xff", "latin1"), with_encoding("\xc3\xa0", "bytes"), NA)),
+    c(TRUE, TRUE, FALSE, FALSE, FALSE, NA)
   )
 })
 
