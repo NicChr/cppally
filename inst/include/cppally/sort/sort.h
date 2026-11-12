@@ -84,8 +84,8 @@ inline void insertion_sort(key_t* RESTRICT keys, int* RESTRICT idx, uint32_t n) 
     }
 }
 
-// Normalise strings as UTF-8, nullopt if any are marked as bytes since radix keys can't break their ties
-CPPALLY_NOINLINE inline std::optional<r_vec<r_str_view>> as_utf8_strings(const r_vec<r_str_view>& x){
+// Normalise strings as UTF-8, nullopt if any are marked as bytes since radix keys can't break their ties.
+CPPALLY_NOINLINE inline std::optional<r_vec<r_str_view>> try_as_utf8_strings(const r_vec<r_str_view>& x){
     r_size_t n = x.length();
     bool translate = false;
 
@@ -550,8 +550,13 @@ inline CPPALLY_NOINLINE void string_radix_sort(const r_str_view* strs, uint64_t*
     }
 }
 
-// Order strings by radix sort, NAs last
-inline CPPALLY_NOINLINE void order_strings(const r_str_view* strs, uint32_t n, int* RESTRICT p_out) {
+// Order strings by radix sort, NAs last.
+// Fallback to comparison sort if strings can't be converted to UTF-8 (e.g. bytes-encoded).
+inline CPPALLY_NOINLINE void order_strings(const r_vec<r_str_view>& x, int* RESTRICT p_out) {
+    static_assert(sizeof(r_str_view) == sizeof(SEXP) && std::is_standard_layout_v<r_str_view> && std::is_trivially_copyable_v<r_str_view>);
+    uint32_t n = x.length();
+    const r_str_view* strs = reinterpret_cast<const r_str_view*>(x.data());
+    std::optional<r_vec<r_str_view>> utf8_strs; // If any strings are not UTF-8, this will hold the translated strings
 
     // ----- Build keys -----
     // Non-NA strings go to the front, NAs in the back
@@ -561,6 +566,17 @@ inline CPPALLY_NOINLINE void order_strings(const r_str_view* strs, uint32_t n, i
         if (strs[i].is_na()) {
             p_out[--back] = static_cast<int>(i);
         } else {
+            // Checked while the string is in cache, saving a separate pass over all strings
+            if (!strs[i].is_utf8()) [[unlikely]] {
+                utf8_strs = try_as_utf8_strings(x);
+                // Radix keys can't break ties between bytes strings and identical text
+                if (!utf8_strs.has_value()) {
+                    r_vec<r_int> o = order_cmp(x);
+                    std::copy_n(o.data(), n, p_out);
+                    return;
+                }
+                strs = reinterpret_cast<const r_str_view*>(utf8_strs->data());
+            }
             keys[n_real] = string_radix_key(strs[i].c_str(), 0);
             p_out[n_real++] = static_cast<int>(i);
         }
@@ -575,18 +591,12 @@ inline CPPALLY_NOINLINE r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
 
     uint32_t n = x.length();
 
-    static_assert(sizeof(r_str_view) == sizeof(SEXP) && std::is_standard_layout_v<r_str_view> && std::is_trivially_copyable_v<r_str_view>);
     uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<r_str>, internal::r_hash_eq<r_str>>(x.data(), n);
 
     // High cardinality -> direct sort
     if (estimate >= n / 4) {
-        std::optional<r_vec<r_str_view>> utf8_strs = as_utf8_strings(r_vec<r_str_view>(x));
-        if (!utf8_strs) [[unlikely]] {
-            return order_cmp(x);
-        }
-        const r_str_view* strs = reinterpret_cast<const r_str_view*>(utf8_strs->data());
         r_vec<r_int> out(n);
-        internal::sort::order_strings(strs, n, out.data());
+        order_strings(r_vec<r_str_view>(x), out.data());
         return out;
     }
 
@@ -600,12 +610,8 @@ inline CPPALLY_NOINLINE r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
     for (int i = 0; i < n_groups; ++i){
         uniques.set(i, r_str_view(x.view(p_starts[i])));
     }
-    std::optional<r_vec<r_str_view>> utf8_uniques = as_utf8_strings(uniques);
-    if (!utf8_uniques) [[unlikely]] {
-        return order_cmp(x);
-    }
     std::unique_ptr<int[]> sorted_ids(new int[n_groups]);
-    internal::sort::order_strings(reinterpret_cast<const r_str_view*>(utf8_uniques->data()), n_groups, sorted_ids.get());
+    order_strings(uniques, sorted_ids.get());
 
     std::unique_ptr<int[]> rank(new int[n_groups]);
     int* RESTRICT p_rank = rank.get();
