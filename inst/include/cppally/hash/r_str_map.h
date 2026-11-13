@@ -13,8 +13,8 @@
 // where pointer (CHARSXP) hash/equality is used for duplicate values.
 // The first time a new non-ASCII CHARSXP is seen, the text is used for hashing.
 // ASCII strings are never marked, so each ASCII text has exactly one CHARSXP and therefore we can always use pointer hashing/equality for those.
-// lazy_insert() - Fast map build, text is indexed once finds need it (good for large maps, not many lookups)
-// try_emplace() - Slower map build, fast lookups later (good for smaller maps, many lookups, or knowing about text duplicates on insert)
+// try_emplace() + find() - Slower map build, fast lookups later (good for smaller maps, many lookups, or knowing about text duplicates on insert)
+// lazy_insert() + lazy_find() - Fast map build, text is indexed once finds need it (good for large maps, not many lookups)
 
 namespace cppally {
 
@@ -74,9 +74,6 @@ public:
     }
 
     [[gnu::always_inline]] std::pair<iterator, bool> try_emplace(SEXP key, V value) {
-        if (n_unindexed != 0) [[unlikely]] {
-            index_text();
-        }
         auto result = charsxp_lookup.try_emplace(key, value);
         r_str_view str(key, no_checks_tag{});
         if (result.second && !ascii_or_na(str)) {
@@ -86,25 +83,29 @@ public:
         return result;
     }
 
-    // Pointer-only insert (first CHARSXP wins), text duplicates are resolved once finds need them
-    [[gnu::always_inline]] void lazy_insert(SEXP key, V value) {
-        n_unindexed += charsxp_lookup.try_emplace(key, value).second;
-    }
-
     [[gnu::always_inline]] iterator find(SEXP key) {
-        r_str_view str(key, no_checks_tag{});
-        if (n_unindexed != 0) [[unlikely]] {
-            // Non-ASCII keys need the text index, and ASCII ones switch to it once checking keys has cost as much (rent-or-buy)
-            if (!ascii_or_na(str) || ++n_key_checks >= n_unindexed) {
-                index_text();
-            }
-        }
         auto it = charsxp_lookup.find(key);
+        r_str_view str(key, no_checks_tag{});
         if (it != charsxp_lookup.end() || text_lookup.empty() || ascii_or_na(str)) {
             return it;
         }
         // A new CHARSXP whose text was already seen is added to `charsxp_lookup`, so repeats are a pointer hit
         return find_text(str);
+    }
+
+    // Pointer-only insert (first CHARSXP wins), text duplicates are resolved once lazy_find() needs them
+    [[gnu::always_inline]] void lazy_insert(SEXP key, V value) {
+        n_unindexed += charsxp_lookup.try_emplace(key, value).second;
+    }
+
+    [[gnu::always_inline]] iterator lazy_find(SEXP key) {
+        if (n_unindexed != 0) [[unlikely]] {
+            // Non-ASCII keys need the text index, and ASCII ones switch to it once checking keys has cost as much (rent-or-buy)
+            if (!ascii_or_na(r_str_view(key, no_checks_tag{})) || ++n_key_checks >= n_unindexed) {
+                index_text();
+            }
+        }
+        return find(key);
     }
 
 private:

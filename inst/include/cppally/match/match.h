@@ -77,15 +77,16 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack, U no_match = n
       for (r_size_t i = 0; i < n_haystack; ++i) {
         lookup.lazy_insert(p_haystack[i], int_t(i));
       }
-    } else {
-      for (r_size_t i = 0; i < n_haystack; ++i) {
-        lookup.try_emplace(p_haystack[i], int_t(i));
+      for (r_size_t i = 0; i < n_needles; ++i) {
+        auto it = lookup.lazy_find(p_needles[i]);
+        p_out[i] = (it != lookup.end() ? it->second : unwrap(no_match));
       }
+      return out;
     }
-  } else {
-    for (r_size_t i = 0; i < n_haystack; ++i) {
-      lookup.try_emplace(p_haystack[i], int_t(i));
-    }
+  }
+
+  for (r_size_t i = 0; i < n_haystack; ++i) {
+    lookup.try_emplace(p_haystack[i], int_t(i));
   }
 
   // Match needles

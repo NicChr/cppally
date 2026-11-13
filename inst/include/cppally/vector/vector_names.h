@@ -91,7 +91,7 @@ struct names_map {
     // Factor levels pass offset=1 to convert to R's 1-based factor codes.
     r_int find(r_str_view name, int offset = 0) const {
         lazy_build();
-        auto it = map->find(unwrap(name));
+        auto it = map->lazy_find(unwrap(name));
         if (it == map->end()) {
             return na<r_int>();
         }
