@@ -13,6 +13,8 @@
 // where pointer (CHARSXP) hash/equality is used for duplicate values.
 // The first time a new non-ASCII CHARSXP is seen, the text is used for hashing.
 // ASCII strings are never marked, so each ASCII text has exactly one CHARSXP and therefore we can always use pointer hashing/equality for those.
+// lazy_insert() - Fast map build, text is indexed once finds need it (good for large maps, not many lookups)
+// try_emplace() - Slower map build, fast lookups later (good for smaller maps, many lookups, or knowing about text duplicates on insert)
 
 namespace cppally {
 
@@ -42,6 +44,8 @@ class r_str_map {
 
     charsxp_map charsxp_lookup;
     ankerl::unordered_dense::map<text_key, V, text_key_hash, text_key_eq> text_lookup;
+    std::size_t n_unindexed = 0; // The last n_unindexed entries (from lazy_insert) aren't in `text_lookup` yet
+    std::size_t n_key_checks = 0; // Finds since then that checked their own key instead
 
     // ASCII and NA always have unique CHARSXP, so no need to check text for those ever.
     static bool ascii_or_na(SEXP key) {
@@ -71,6 +75,9 @@ public:
     }
 
     [[gnu::always_inline]] std::pair<iterator, bool> try_emplace(SEXP key, V value) {
+        if (n_unindexed != 0) [[unlikely]] {
+            index_text();
+        }
         auto result = charsxp_lookup.try_emplace(key, value);
         if (result.second && !ascii_or_na(key)) {
             // A new CHARSXP whose text was already seen counts as not inserted and refers to the existing value
@@ -79,7 +86,18 @@ public:
         return result;
     }
 
+    // Pointer-only insert (first CHARSXP wins), text duplicates are resolved once finds need them
+    [[gnu::always_inline]] void lazy_insert(SEXP key, V value) {
+        n_unindexed += charsxp_lookup.try_emplace(key, value).second;
+    }
+
     [[gnu::always_inline]] iterator find(SEXP key) {
+        if (n_unindexed != 0) [[unlikely]] {
+            // Non-ASCII keys need the text index, and ASCII ones switch to it once checking keys has cost as much (rent-or-buy)
+            if (!ascii_or_na(key) || ++n_key_checks >= n_unindexed) {
+                index_text();
+            }
+        }
         auto it = charsxp_lookup.find(key);
         if (it != charsxp_lookup.end() || text_lookup.empty() || ascii_or_na(key)) {
             return it;
@@ -104,6 +122,18 @@ private:
             return charsxp_lookup.end();
         }
         return charsxp_lookup.try_emplace(key, first->second).first;
+    }
+
+    // Index the unindexed entries' text in insertion order, so the first of any text duplicates wins
+    CPPALLY_NOINLINE void index_text() {
+        auto it = charsxp_lookup.end() - static_cast<std::ptrdiff_t>(n_unindexed);
+        for (; it != charsxp_lookup.end(); ++it) {
+            if (!ascii_or_na(it->first)) {
+                try_emplace_text(it, it->first, it->second);
+            }
+        }
+        n_unindexed = 0;
+        n_key_checks = 0;
     }
 };
 
