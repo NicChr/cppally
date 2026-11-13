@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cppally</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.1.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,11 +38,33 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NicChr/cppally/blob/v1.2.1/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NicChr/cppally/blob/string-encodings/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.2.1" id="cppally-121">cppally 1.2.1<a class="anchor" aria-label="anchor" href="#cppally-121"></a></h2>
+<h2 class="pkg-version" data-toc-text="development version" id="cppally-development-version">cppally (development version)<a class="anchor" aria-label="anchor" href="#cppally-development-version"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<ul><li>Fixed a bug where <code>str_paste()</code> and <code>str_collapse()</code> would garble latin1 strings (and native strings in a non-UTF-8 session) by copying their bytes directly into a UTF-8 marked <code>r_str</code>. They are now translated to UTF-8 first.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="encoding-aware-strings-development-version">Encoding-aware strings<a class="anchor" aria-label="anchor" href="#encoding-aware-strings-development-version"></a></h3>
+<p>Strings are now compared by their text (like base R). This means that strings containing the same text are now equal even if their bytes differ (e.g. Latin-1 “é” vs UTF-8 “é”).</p>
+<ul><li><p>New <code>enum</code> class <code>str_encoding</code> with values <code>native</code>, <code>utf8</code>, <code>latin1</code>, <code>bytes</code> and <code>unsupported</code>.</p></li>
+<li><p><code>==</code>, <code>!=</code> and <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code> now compare string text. Previously they compared <code>CHARSXP</code> pointer addresses. This means that non-ASCII strings like <code>"é"</code> will be considered equal, whether they are encoded as Latin-1, native (unknown), or UTF-8.</p></li>
+<li><p><code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, and <code>&gt;=</code> compare string text using the C-locale after trying to convert the text to UTF-8. Bytes-encoded strings are never converted to UTF-8, so these are always ordered after non-bytes strings. Bytes-encoded strings are compared to each other using their raw bytes.</p></li>
+<li><p>New <code>r_str</code> member function <code>needs_utf8_translation()</code> which returns <code>true</code> if <code>as_utf8()</code> were to perform a conversion if requested, i.e. it returns <code>true</code> if the bytes would change upon UTF-8 conversion. For ASCII and bytes-encoded strings this is always <code>false</code>.</p></li>
+<li><p>New <code>r_str</code> member function <code>encoding()</code>.</p></li>
+<li><p>New <code>r_str</code> member function <code>with_encoding()</code> which changes the encoding label without changing the underlying raw bytes.</p></li>
+<li><p>New <code>r_str</code> member function <code>n_chars()</code> returns the number of characters (Unicode code points). It returns <code>r_int::na()</code> (<code>NA_integer_</code>) for <code>r_str::na()</code> (<code>NA_character_</code>). <code>n_chars()</code> errors for bytes-encoded strings.</p></li>
+<li><p>The <code>r_str</code> constructor from <code>const char*</code> now takes an optional <code>str_encoding</code>. The default is now explicitly <code>str_encoding::utf8</code> whereas before it was implicit.</p></li>
+<li><p>New <code>r_str</code> constructor from <code>std::string_view</code>.</p></li>
+<li><p>The underlying hash function for <code>r_str</code>/<code>r_str_view</code> now hashes text. Specifically it uses a pointer-based hash for ASCII strings (and <code>r_str::na()</code>), and a text-based hash for everything else.</p></li>
+<li><p>Functions like <code><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique()</a></code>, <code><a href="https://bit64.r-lib.org/reference/bit64S3.html" class="external-link">match()</a></code>, <code>make_groups()</code>, and anything that uses hashing now treat strings with equal text as one unique value, consistent with cppally’s <code>r_str</code> operator <code>==</code>. On mixed-encoding strings, this can give fewer unique values than before. Unlike <code><a href="https://rdrr.io/r/base/unique.html" class="external-link">base::unique()</a></code>, text is compared even in the presence of bytes-encoded strings.</p></li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.2.1" id="cppally-121">cppally 1.2.1<a class="anchor" aria-label="anchor" href="#cppally-121"></a></h2><p class="text-muted">CRAN release: 2026-11-06</p>
 <ul><li>Fix CRAN check result vignette error related to a GC issue in <code>bench:::autoplot.bench_mark</code> + <code>tidyr:::unnest.data.frame</code>.</li>
 </ul></div>
     <div class="section level2">

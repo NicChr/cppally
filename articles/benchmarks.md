@@ -13,7 +13,7 @@ This vignette compares the speed of the below sections against base R,
 
 This vignette was built on a laptop with an Intel Core Ultra 5 125H (14
 cores: 4 performance and 10 efficiency, 18 threads) and 16 GB of RAM,
-running Windows 11 and R 4.6.0 on 23 Oct 2026.
+running Windows 11 and R 4.6.0 on 12 Nov 2026.
 
 ## Setup
 
@@ -22,9 +22,31 @@ running Windows 11 and R 4.6.0 on 23 Oct 2026.
 library(cppally)
 library(bench)
 library(ggplot2)
+#> Learn more about the underlying theory at https://ggplot2-book.org/
 library(purrr)
 library(data.table)
+#> Warning: package 'data.table' was built under R version 4.6.1
+#> data.table 1.18.6.1 using 9 threads (see ?getDTthreads).
+#> Latest news: r-datatable.com
+#> 
+#> Attaching package: 'data.table'
+#> The following object is masked from 'package:purrr':
+#> 
+#>     transpose
+#> The following object is masked from 'package:base':
+#> 
+#>     %notin%
 library(collapse)
+#> Warning: package 'collapse' was built under R version 4.6.1
+#> collapse 2.1.8, see ?`collapse-package` or ?`collapse-documentation`
+#> 
+#> Attaching package: 'collapse'
+#> The following object is masked from 'package:data.table':
+#> 
+#>     fdroplevels
+#> The following object is masked from 'package:stats':
+#> 
+#>     D
 ```
 
 ## C++ benchmark code
@@ -1158,7 +1180,7 @@ data.frame(
 
 | package    | version    |
 |:-----------|:-----------|
-| cppally    | 1.1.0.9000 |
+| cppally    | 1.2.1.9000 |
 | data.table | 1.18.6.1   |
 | collapse   | 2.1.8      |
 | bit64      | 4.8.6      |
