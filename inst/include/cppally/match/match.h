@@ -72,8 +72,20 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack, U no_match = n
   internal::r_hash_map<T, int_t> lookup;
   lookup.reserve(internal::get_hash_map_reserve_size<r_vec<T>>(p_haystack, n_haystack));
 
-  for (r_size_t i = 0; i < n_haystack; ++i) {
-    lookup.try_emplace(p_haystack[i], int_t(i));
+  if constexpr (RStringType<T>) {
+    if (n_needles < n_haystack) {
+      for (r_size_t i = 0; i < n_haystack; ++i) {
+        lookup.lazy_insert(p_haystack[i], int_t(i));
+      }
+    } else {
+      for (r_size_t i = 0; i < n_haystack; ++i) {
+        lookup.try_emplace(p_haystack[i], int_t(i));
+      }
+    }
+  } else {
+    for (r_size_t i = 0; i < n_haystack; ++i) {
+      lookup.try_emplace(p_haystack[i], int_t(i));
+    }
   }
 
   // Match needles

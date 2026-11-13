@@ -80,8 +80,7 @@ struct names_map {
             built.reserve(static_cast<std::size_t>(n));
             int n_ = static_cast<int>(n);
             for (int i = 0; i < n_; ++i){
-                // First match wins
-                built.try_emplace(p_names[i], i);
+                built.lazy_insert(p_names[i], i);
             }
         }
 
