@@ -8,9 +8,7 @@
 #include <R_ext/Visibility.h>
 #include <limits>
 #include <optional>
-#include <memory>
 #include <utility>
-#include <bit>
 #include <cstdint>
 
 namespace cppally {
