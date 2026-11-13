@@ -27,7 +27,7 @@ class r_str_map {
 
     // String + text-based hash so that growing the map doesn't re-read text.
     struct text_key {
-        SEXP str;
+        r_str_view str;
         uint64_t text_hash;
     };
     struct text_key_hash {
@@ -38,7 +38,7 @@ class r_str_map {
     };
     struct text_key_eq {
         bool operator()(const text_key& a, const text_key& b) const {
-            return a.text_hash == b.text_hash && string::str_equal(r_str_view(a.str, no_checks_tag{}), r_str_view(b.str, no_checks_tag{}));
+            return a.text_hash == b.text_hash && string::str_equal(a.str, b.str);
         }
     };
 
@@ -48,13 +48,12 @@ class r_str_map {
     std::size_t n_key_checks = 0; // Finds since then that checked their own key instead
 
     // ASCII and NA always have unique CHARSXP, so no need to check text for those ever.
-    static bool ascii_or_na(SEXP key) {
-        r_str_view s = r_str_view(key, no_checks_tag{});
-        return s.is_na() || s.is_ascii();
+    static bool ascii_or_na(r_str_view key) {
+        return key.is_na() || key.is_ascii();
     }
 
-    static uint64_t text_hash(SEXP key) {
-        return r_hash_impl(r_str_view(key, no_checks_tag{}));
+    static uint64_t text_hash(r_str_view key) {
+        return r_hash_impl(key);
     }
 
 public:
@@ -79,9 +78,10 @@ public:
             index_text();
         }
         auto result = charsxp_lookup.try_emplace(key, value);
-        if (result.second && !ascii_or_na(key)) {
+        r_str_view str(key, no_checks_tag{});
+        if (result.second && !ascii_or_na(str)) {
             // A new CHARSXP whose text was already seen counts as not inserted and refers to the existing value
-            result.second = try_emplace_text(result.first, key, value);
+            result.second = try_emplace_text(result.first, str, value);
         }
         return result;
     }
@@ -92,23 +92,24 @@ public:
     }
 
     [[gnu::always_inline]] iterator find(SEXP key) {
+        r_str_view str(key, no_checks_tag{});
         if (n_unindexed != 0) [[unlikely]] {
             // Non-ASCII keys need the text index, and ASCII ones switch to it once checking keys has cost as much (rent-or-buy)
-            if (!ascii_or_na(key) || ++n_key_checks >= n_unindexed) {
+            if (!ascii_or_na(str) || ++n_key_checks >= n_unindexed) {
                 index_text();
             }
         }
         auto it = charsxp_lookup.find(key);
-        if (it != charsxp_lookup.end() || text_lookup.empty() || ascii_or_na(key)) {
+        if (it != charsxp_lookup.end() || text_lookup.empty() || ascii_or_na(str)) {
             return it;
         }
         // A new CHARSXP whose text was already seen is added to `charsxp_lookup`, so repeats are a pointer hit
-        return find_text(key);
+        return find_text(str);
     }
 
 private:
 
-    CPPALLY_NOINLINE bool try_emplace_text(iterator it, SEXP key, V value) {
+    CPPALLY_NOINLINE bool try_emplace_text(iterator it, r_str_view key, V value) {
         auto [first, inserted] = text_lookup.try_emplace(text_key{key, text_hash(key)}, value);
         if (!inserted) {
             it->second = first->second;
@@ -116,20 +117,21 @@ private:
         return inserted;
     }
 
-    CPPALLY_NOINLINE iterator find_text(SEXP key) {
+    CPPALLY_NOINLINE iterator find_text(r_str_view key) {
         auto first = text_lookup.find(text_key{key, text_hash(key)});
         if (first == text_lookup.end()) {
             return charsxp_lookup.end();
         }
-        return charsxp_lookup.try_emplace(key, first->second).first;
+        return charsxp_lookup.try_emplace(unwrap(key), first->second).first;
     }
 
     // Index the unindexed entries' text in insertion order, so the first of any text duplicates wins
     CPPALLY_NOINLINE void index_text() {
         auto it = charsxp_lookup.end() - static_cast<std::ptrdiff_t>(n_unindexed);
         for (; it != charsxp_lookup.end(); ++it) {
-            if (!ascii_or_na(it->first)) {
-                try_emplace_text(it, it->first, it->second);
+            r_str_view str(it->first, no_checks_tag{});
+            if (!ascii_or_na(str)) {
+                try_emplace_text(it, str, it->second);
             }
         }
         n_unindexed = 0;
