@@ -130,8 +130,12 @@ struct names_map {
 
         static void release(names_map* p) noexcept {
             if (p && --p->refs == 0) {
-                delete p;
+                destroy(p);
             }
+        }
+        
+        CPPALLY_NOINLINE static void destroy(names_map* p) noexcept {
+            delete p;
         }
     };
 };
