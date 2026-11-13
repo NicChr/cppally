@@ -9,6 +9,7 @@
 #include <cppally/sort/counting_order.h>
 #include <cppally/identical.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
+#include <memory> // For std::unique_ptr
 #include <vector>
 
 namespace cppally {
