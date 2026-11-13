@@ -348,10 +348,6 @@ mark(
 )
 ```
 
-While I'm not sure why cppally's linear scan is faster than R's, it may
-be due to the fact that direct data access is used to compare elements
-instead of `STRING_ELT()`
-
 ## The cost of many lookups
 
 We will now plot the per-call cost of doing many repeated lookups to see how 
