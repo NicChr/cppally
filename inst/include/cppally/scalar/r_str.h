@@ -10,6 +10,7 @@
 #include <limits>
 #include <string>
 #include <string_view>
+#include <cstring> // For strcmp
 #include <cstdio> // For snprintf
 
 namespace cppally {
@@ -376,6 +377,65 @@ inline r_str cached_str() {
 // Memory address
 inline r_str address(SEXP x) {
     return r_sexp(x, internal::view_tag{}).address();
+}
+
+namespace internal {
+
+namespace string {
+
+// ----- String comparison -----
+
+// Can bytes be compared directly?
+// true when either both are UTF-8 or both are bytes-encoded.
+inline bool str_bytes_comparable(r_str_view x, r_str_view y) noexcept {
+  return (x.is_utf8() && y.is_utf8()) || (x.encoding() == str_encoding::bytes && y.encoding() == str_encoding::bytes);
+}
+
+// Text orders before bytes strings. Text compares by its UTF-8 bytes (C-locale), bytes strings by their raw bytes
+CPPALLY_NOINLINE inline int str_compare(r_str_view x, r_str_view y) {
+  if (str_bytes_comparable(x, y)) {
+    return std::strcmp(x.c_str(), y.c_str());
+  }
+  bool x_bytes = x.encoding() == str_encoding::bytes;
+  bool y_bytes = y.encoding() == str_encoding::bytes;
+  if (x_bytes != y_bytes) [[unlikely]] {
+    return x_bytes ? 1 : -1;
+  }
+  return utf8_string(x).compare(utf8_string(y));
+}
+CPPALLY_NOINLINE inline int str_compare(r_str_view x, std::string_view y) {
+  if (x.is_utf8()){
+    // C++ strings are assumed to be UTF-8
+    return x.cpp_str().compare(y);
+  }
+  // C++ strings are text, so bytes strings order after them
+  if (x.encoding() == str_encoding::bytes) {
+    return 1;
+  }
+  return utf8_string(x).compare(y);
+}
+
+// Assumes unwrap(x) != unwrap(y)
+CPPALLY_NOINLINE inline bool str_equal_impl(r_str_view x, r_str_view y) {
+
+  // Since ASCII is always unmarked and this fn assumes different pointers/addresses, then no match here
+  if (x.is_ascii() || y.is_ascii()){
+    return false;
+  }
+
+  // The same encoding at different addresses is different text
+  if (x.encoding() == y.encoding()){
+    return false;
+  }
+  return str_compare(x, y) == 0;
+}
+
+inline bool str_equal(r_str_view x, r_str_view y) {
+  return r_addresses_equal(x, y) || str_equal_impl(x, y);
+}
+
+}
+
 }
 
 }
