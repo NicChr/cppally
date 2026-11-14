@@ -7,6 +7,7 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h> // Concepts and forward declarations
+#include <cppally/aliases.h>
 #include <cppally/utils.h>
 #include <cppally/named_arg.h>
 #include <cppally/r_sexp/r_sexp.h>

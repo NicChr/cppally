@@ -1382,10 +1382,6 @@ struct r_vec {
 
 };
 
-// Alias of r_vec
-template <RVal T>
-using r_vector = r_vec<T>;
-
 template <RVector U>
 inline void r_copy_n(U& target, const unwrap_t<typename std::remove_cvref_t<U>::data_type>* source, r_size_t target_offset, r_size_t n) {
   
