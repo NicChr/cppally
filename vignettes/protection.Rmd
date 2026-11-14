@@ -209,14 +209,13 @@ int C_na_count(SEXP x){
 
 [[cppally::register]]
 int cpp11_na_count(SEXP x){
-  using namespace cpp11;
-  strings x_(x);
+  cpp11::strings x_(x);
   R_xlen_t n = x_.size();
 
   int na_count = 0;
 
   for (R_xlen_t i = 0; i < n; ++i){
-    r_string str = x_[i]; // r_string protects the underlying CHARSXP
+    cpp11::r_string str = x_[i]; // r_string protects the underlying CHARSXP
     na_count += cpp11::is_na(str);
   }
   return na_count;
