@@ -10,10 +10,8 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
-#include <cppally/utils.h>
 #include <cppally/scalar/scalars.h>
 #include <cppally/na.h>
-#include <cstring> // For strcmp
 #include <string_view>
 
 namespace cppally {
@@ -22,97 +20,110 @@ namespace cppally {
 
 // Operators for r_str_view
 
-inline r_lgl operator<(r_str_view lhs, r_str_view rhs) noexcept {
+inline r_lgl operator==(r_str_view lhs, r_str_view rhs) {
+  return (lhs.is_na() || rhs.is_na()) ? r_na : r_lgl{internal::string::str_equal(lhs, rhs)};
+}
+inline r_lgl operator!=(r_str_view lhs, r_str_view rhs) {
+  return (lhs.is_na() || rhs.is_na()) ? r_na : r_lgl{!internal::string::str_equal(lhs, rhs)};
+}
+inline r_lgl operator<(r_str_view lhs, r_str_view rhs) {
   if (lhs.is_na() || rhs.is_na()){
     return r_na;
-  } else if (unwrap(lhs) == unwrap(rhs)){
+  } else if (internal::r_addresses_equal(lhs, rhs)){
     return r_false;
   } else {
-    return r_lgl{std::strcmp(lhs.c_str(), rhs.c_str()) < 0};
+    return r_lgl{internal::string::str_compare(lhs, rhs) < 0};
   }
 }
-inline r_lgl operator<=(r_str_view lhs, r_str_view rhs) noexcept {
+inline r_lgl operator<=(r_str_view lhs, r_str_view rhs) {
   if (lhs.is_na() || rhs.is_na()){
     return r_na;
-  } else if (unwrap(lhs) == unwrap(rhs)){
+  } else if (internal::r_addresses_equal(lhs, rhs)){
     return r_true;
   } else {
-    return r_lgl{std::strcmp(lhs.c_str(), rhs.c_str()) < 0};
+    return r_lgl{internal::string::str_compare(lhs, rhs) <= 0};
   }
 }
-inline r_lgl operator>(r_str_view lhs, r_str_view rhs) noexcept {
+inline r_lgl operator>(r_str_view lhs, r_str_view rhs) {
   if (lhs.is_na() || rhs.is_na()){
     return r_na;
-  } else if (unwrap(lhs) == unwrap(rhs)){
+  } else if (internal::r_addresses_equal(lhs, rhs)){
     return r_false;
   } else {
-    return r_lgl{std::strcmp(lhs.c_str(), rhs.c_str()) > 0};
+    return r_lgl{internal::string::str_compare(lhs, rhs) > 0};
   }
 }
-inline r_lgl operator>=(r_str_view lhs, r_str_view rhs) noexcept {
+inline r_lgl operator>=(r_str_view lhs, r_str_view rhs) {
   if (lhs.is_na() || rhs.is_na()){
     return r_na;
-  } else if (unwrap(lhs) == unwrap(rhs)){
+  } else if (internal::r_addresses_equal(lhs, rhs)){
     return r_true;
   } else {
-    return r_lgl{std::strcmp(lhs.c_str(), rhs.c_str()) > 0};
+    return r_lgl{internal::string::str_compare(lhs, rhs) >= 0};
   }
 }
 
-inline r_lgl operator<(const r_str& lhs, const r_str& rhs) noexcept {
+inline r_lgl operator==(const r_str& lhs, const r_str& rhs) {
+  return static_cast<r_str_view>(lhs) == static_cast<r_str_view>(rhs);
+}
+inline r_lgl operator!=(const r_str& lhs, const r_str& rhs) {
+  return static_cast<r_str_view>(lhs) != static_cast<r_str_view>(rhs);
+}
+inline r_lgl operator<(const r_str& lhs, const r_str& rhs) {
   return static_cast<r_str_view>(lhs) < static_cast<r_str_view>(rhs);
 }
-inline r_lgl operator<=(const r_str& lhs, const r_str& rhs) noexcept {
+inline r_lgl operator<=(const r_str& lhs, const r_str& rhs) {
   return static_cast<r_str_view>(lhs) <= static_cast<r_str_view>(rhs);
 }
-inline r_lgl operator>(const r_str& lhs, const r_str& rhs) noexcept {
+inline r_lgl operator>(const r_str& lhs, const r_str& rhs) {
   return static_cast<r_str_view>(lhs) > static_cast<r_str_view>(rhs);
 }
-inline r_lgl operator>=(const r_str& lhs, const r_str& rhs) noexcept {
+inline r_lgl operator>=(const r_str& lhs, const r_str& rhs) {
   return static_cast<r_str_view>(lhs) >= static_cast<r_str_view>(rhs);
 }
 
 // r_str/C++ string operators
 
-inline r_lgl operator==(r_str_view lhs, std::string_view rhs) noexcept {
-  return lhs.is_na() ? r_lgl::na() : r_lgl(lhs.cpp_str() == rhs);
+inline r_lgl operator==(r_str_view lhs, std::string_view rhs) {
+  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::string::str_compare(lhs, rhs) == 0);
 }
-inline r_lgl operator==(std::string_view lhs, r_str_view rhs) noexcept {
-  return rhs.is_na() ? r_lgl::na() : r_lgl(rhs.cpp_str() == lhs);
+inline r_lgl operator!=(r_str_view lhs, std::string_view rhs) {
+  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::string::str_compare(lhs, rhs) != 0);
 }
-inline r_lgl operator!=(r_str_view lhs, std::string_view rhs) noexcept {
-  return lhs.is_na() ? r_lgl::na() : r_lgl(lhs.cpp_str() != rhs);
+inline r_lgl operator<(r_str_view lhs, std::string_view rhs) {
+  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::string::str_compare(lhs, rhs) < 0);
 }
-inline r_lgl operator!=(std::string_view lhs, r_str_view rhs) noexcept {
-  return rhs.is_na() ? r_lgl::na() : r_lgl(rhs.cpp_str() != lhs);
+inline r_lgl operator<=(r_str_view lhs, std::string_view rhs) {
+  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::string::str_compare(lhs, rhs) <= 0);
 }
-inline r_lgl operator<(r_str_view lhs, std::string_view rhs) noexcept {
-  return lhs.is_na() ? r_lgl::na() : r_lgl(lhs.cpp_str() < rhs);
+inline r_lgl operator>(r_str_view lhs, std::string_view rhs) {
+  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::string::str_compare(lhs, rhs) > 0);
 }
-inline r_lgl operator<(std::string_view lhs, r_str_view rhs) noexcept {
-  return rhs.is_na() ? r_lgl::na() : r_lgl(lhs < rhs.cpp_str());
+inline r_lgl operator>=(r_str_view lhs, std::string_view rhs) {
+  return lhs.is_na() ? r_lgl::na() : r_lgl(internal::string::str_compare(lhs, rhs) >= 0);
 }
-inline r_lgl operator<=(r_str_view lhs, std::string_view rhs) noexcept {
-  return lhs.is_na() ? r_lgl::na() : r_lgl(lhs.cpp_str() <= rhs);
+
+inline r_lgl operator==(std::string_view lhs, r_str_view rhs) {
+  return rhs == lhs;
 }
-inline r_lgl operator<=(std::string_view lhs, r_str_view rhs) noexcept {
-  return rhs.is_na() ? r_lgl::na() : r_lgl(lhs <= rhs.cpp_str());
+inline r_lgl operator!=(std::string_view lhs, r_str_view rhs) {
+  return rhs != lhs;
 }
-inline r_lgl operator>(r_str_view lhs, std::string_view rhs) noexcept {
-  return lhs.is_na() ? r_lgl::na() : r_lgl(lhs.cpp_str() > rhs);
+inline r_lgl operator<(std::string_view lhs, r_str_view rhs) {
+  return rhs > lhs;
 }
-inline r_lgl operator>(std::string_view lhs, r_str_view rhs) noexcept {
-  return rhs.is_na() ? r_lgl::na() : r_lgl(lhs > rhs.cpp_str());
+inline r_lgl operator<=(std::string_view lhs, r_str_view rhs) {
+  return rhs >= lhs;
 }
-inline r_lgl operator>=(r_str_view lhs, std::string_view rhs) noexcept {
-  return lhs.is_na() ? r_lgl::na() : r_lgl(lhs.cpp_str() >= rhs);
+inline r_lgl operator>(std::string_view lhs, r_str_view rhs) {
+  return rhs < lhs;
 }
-inline r_lgl operator>=(std::string_view lhs, r_str_view rhs) noexcept {
-  return rhs.is_na() ? r_lgl::na() : r_lgl(lhs >= rhs.cpp_str());
+inline r_lgl operator>=(std::string_view lhs, r_str_view rhs) {
+  return rhs <= lhs;
 }
 
 template <RScalar T, RScalar U>
-requires (requires (unwrap_t<T> a, unwrap_t<U> b) { a == b; })
+requires (!(RStringType<T> && RStringType<U>) && requires (unwrap_t<T> a, unwrap_t<U> b) { a == b; })
 inline constexpr r_lgl operator==(const T& lhs, const U& rhs) noexcept {
   return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) == unwrap(rhs)};
 }
@@ -132,7 +143,7 @@ inline constexpr r_lgl operator==(const T& lhs, const U& rhs) noexcept {
 // Need to have 3 overloads otherwise compiler complains about lhs != rhs
 
 template <RScalar T, RScalar U>
-requires (requires (unwrap_t<T> a, unwrap_t<U> b) { a != b; })
+requires (!(RStringType<T> && RStringType<U>) && requires (unwrap_t<T> a, unwrap_t<U> b) { a != b; })
 inline constexpr r_lgl operator!=(const T& lhs, const U& rhs) noexcept {
   return (internal::either_na(lhs, rhs)) ? r_na : r_lgl{unwrap(lhs) != unwrap(rhs)};
 }

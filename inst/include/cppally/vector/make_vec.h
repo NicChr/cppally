@@ -29,7 +29,7 @@ r_vec<T> make_vec(Args... args) {
     (([&]() {
       if constexpr (NamedArg<Args>) {
         out.set(i, args.value);
-        nms.set(i, internal::c_str_to_r_str_view(args.name));
+        nms.set(i, internal::string::c_str_to_r_str_view(args.name));
       } else {
         out.set(i, args);
       }

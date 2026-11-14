@@ -10,11 +10,12 @@ License: MIT + file LICENSE
 BugReports: https://github.com/NicChr/cppally/issues
 Suggests: 
     cppally,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    withr
 Config/testthat/edition: 3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 LinkingTo: 
     cppally
 SystemRequirements: C++20
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.1

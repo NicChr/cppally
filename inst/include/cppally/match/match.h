@@ -3,6 +3,7 @@
 
 #include <cppally/coerce.h>
 #include <cppally/hash/hash.h>
+#include <cppally/hash/r_hash_map.h>
 #include <cppally/group/dense_int_map.h>
 #include <cppally/functional/pmap.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
@@ -23,7 +24,6 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack, U no_match = n
     }
   }
 
-  using key_t = unwrap_t<T>;
   using int_t = unwrap_t<U>;
 
   r_vec<U> out(n_needles);
@@ -69,8 +69,21 @@ r_vec<U> match(const r_vec<T>& needles, const r_vec<T>& haystack, U no_match = n
   auto* RESTRICT p_out = out.data();
 
   // Build hash table
-  ankerl::unordered_dense::map<key_t, int_t, internal::r_hash_fn<T>, internal::r_hash_eq<T>> lookup;
+  internal::r_hash_map<T, int_t> lookup;
   lookup.reserve(internal::get_hash_map_reserve_size<r_vec<T>>(p_haystack, n_haystack));
+
+  if constexpr (RStringType<T>) {
+    if (n_needles < n_haystack) {
+      for (r_size_t i = 0; i < n_haystack; ++i) {
+        lookup.lazy_insert(p_haystack[i], int_t(i));
+      }
+      for (r_size_t i = 0; i < n_needles; ++i) {
+        auto it = lookup.lazy_find(p_needles[i]);
+        p_out[i] = (it != lookup.end() ? it->second : unwrap(no_match));
+      }
+      return out;
+    }
+  }
 
   for (r_size_t i = 0; i < n_haystack; ++i) {
     lookup.try_emplace(p_haystack[i], int_t(i));

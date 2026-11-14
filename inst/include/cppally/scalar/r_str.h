@@ -5,27 +5,236 @@
 #include <cppally/r_concepts.h>
 #include <cppally/r_sexp/r_sexp.h>
 #include <cppally/r_sexp/r_sexp_types.h>
+#include <cppally/scalar/r_int.h>
 #include <cppally/string/string_literal.h>
 #include <limits>
 #include <string>
 #include <string_view>
+#include <cstring> // For strcmp
 #include <cstdio> // For snprintf
 
 namespace cppally {
 
+enum class str_encoding {
+  native = CE_NATIVE,
+  utf8 = CE_UTF8,
+  latin1 = CE_LATIN1,
+  bytes = CE_BYTES,
+  unsupported = 127
+};
+
 namespace internal {
+
+namespace string {
 
 inline constexpr std::size_t str_length(const char* x) noexcept {
   return std::string_view(x).size();
 }
 
-inline SEXP mk_char_utf8(const char* x, std::size_t n) {
+inline bool str_has_embedded_nul(std::string_view x) noexcept {
+  return x.find('\0') != std::string_view::npos;
+}
+
+inline SEXP mk_char(const char* x, std::size_t n, str_encoding enc = str_encoding::utf8) {
   if (n > static_cast<std::size_t>(std::numeric_limits<int>::max())) [[unlikely]] {
     abort("string is too large (>= 2^31 bytes long)");
   }
-  return Rf_mkCharLenCE(x, static_cast<int>(n), CE_UTF8);
+  if (enc == str_encoding::unsupported) [[unlikely]] {
+    abort("Unsupported string encoding, supported encodings: UTF-8, latin1, native, and bytes");
+  }
+  return Rf_mkCharLenCE(x, static_cast<int>(n), static_cast<cetype_t>(enc));
 }
 
+inline SEXP mk_char(std::string_view x, str_encoding enc = str_encoding::utf8, bool check_for_embedded_nul = true) {
+  if (check_for_embedded_nul && str_has_embedded_nul(x)) [[unlikely]] {
+    abort("string contains an embedded nul");
+  }
+  return mk_char(x.data(), x.size(), enc);
+}
+
+}
+
+}
+
+// Unprotected read-only view of r_str.
+// Similar to std::string_view, it is a view of an r_str/CHARSXP whose lifetime must be shorter than the object it's viewing.
+struct r_str_view {
+  SEXP value; 
+  using value_type = SEXP;
+
+  // Constructors
+  r_str_view() : value{static_cast<SEXP>(internal::lazy_str_impl<"">())} {}
+  explicit r_str_view(SEXP x) : value{x} {
+    internal::check_valid_storage<r_str_view>(value);
+  }
+  explicit r_str_view(SEXP x, internal::view_tag) : r_str_view(x) {}
+  explicit r_str_view(SEXP x, internal::no_checks_tag) noexcept : value{x} {}
+  explicit r_str_view(SEXP x, internal::view_tag, internal::no_checks_tag) noexcept : r_str_view(x, internal::no_checks_tag{}) {}
+  // Can't construct `r_str_view` from `const char*` - use `r_str` instead
+  explicit r_str_view(const char *x) = delete;
+  explicit r_str_view(std::string_view x) = delete;
+  // Implicit r_str_view -> SEXP
+  operator SEXP() const noexcept { return value; }
+  
+  // Implicit r_str -> r_str_view
+  r_str_view(const r_str& x) noexcept;
+  
+  const char* c_str() const noexcept { return CHAR(value); }
+  std::string_view cpp_str() const noexcept { return std::string_view{c_str(), static_cast<std::size_t>(n_bytes())}; }
+
+  // Explicit conversions
+  explicit operator const char*() const noexcept { return c_str(); }
+  explicit operator std::string_view() const noexcept { return cpp_str(); }
+
+  static r_str_view na() noexcept {
+    return r_str_view(NA_STRING, internal::no_checks_tag{});
+  }
+
+  bool is_na() const noexcept {
+    return unwrap(*this) == unwrap(na());
+  }
+
+  bool is_empty() const noexcept {
+    return unwrap(*this) == R_BlankString;
+  }
+
+  int n_bytes() const noexcept {
+    return LENGTH(unwrap(*this));
+  }
+
+  r_int n_chars() const;
+
+  str_encoding encoding() const noexcept {
+    auto r_encoding = Rf_getCharCE(unwrap(*this));
+    // Default to unsupported so that even if R adds new encodings, our encoding() returns unspported until they are introduced.
+    switch (r_encoding) {
+      case CE_NATIVE: return str_encoding::native;
+      case CE_UTF8: return str_encoding::utf8;
+      case CE_BYTES: return str_encoding::bytes;
+      case CE_LATIN1: return str_encoding::latin1;
+      default: return str_encoding::unsupported;
+    }
+  }
+
+  // Is string UTF-8?
+  // True for ASCII, UTF-8 marked strings, and native (unmarked) strings in a UTF-8 locale.
+  // Does not check that the bytes are valid UTF-8.
+  bool is_utf8() const noexcept {
+    return static_cast<bool>(Rf_charIsUTF8(unwrap(*this)));
+  }
+
+  // Is string ASCII? The bytes ARE checked, so if true, they are also valid UTF-8 and Latin-1.
+  bool is_ascii() const noexcept {
+    return static_cast<bool>(Rf_charIsASCII(unwrap(*this)));
+  }
+
+  // Is string Latin-1?
+  // True for ASCII, Latin-1 marked strings, and native (unmarked) strings in a Latin-1 locale.
+  // Bytes are not checked, only the mark and locale decide the result.
+  bool is_latin1() const noexcept {
+    return static_cast<bool>(Rf_charIsLatin1(unwrap(*this)));
+  }
+  // Would converting to UTF-8 (via `as_utf8()`) change the bytes?
+  // NA and strings with `str_encoding::bytes` are not translated.
+  bool needs_utf8_translation() const noexcept {
+    return !is_na() && !is_utf8() && encoding() != str_encoding::bytes;
+  }
+
+};
+
+namespace internal {
+
+namespace string {
+
+// UTF-8 text of x as a std::string, called by r_str::as_utf8()
+CPPALLY_NOINLINE inline std::string utf8_string(r_str_view x) {
+  if (!x.needs_utf8_translation()) {
+    return std::string(x.cpp_str());
+  }
+  // Latin-1 mapping is a (most of the time) fixed, locale-independent byte transform
+  if (x.is_latin1()) {
+    const unsigned char *p = reinterpret_cast<const unsigned char *>(x.c_str());
+    const int n = x.n_bytes();
+    std::string out;
+    // Most Latin-1 text is mostly ASCII, so n is a good guess; grows only if high bytes are dense
+    out.reserve(static_cast<std::size_t>(n));
+    int i = 0;
+    for (; i < n; ++i) {
+      const unsigned char b = p[i];
+      // In Latin-1 the byte value IS the Unicode code point, so 0x00-0x7F is already UTF-8
+      if (b < 0x80) {
+        out.push_back(static_cast<char>(b));
+      } else if (b >= 0xA0) {
+        // 0xA0-0xFF: ISO-8859-1 and Windows CP1252 agree, byte == code point.
+        // 2-byte UTF-8: 110xxxxx 10xxxxxx (never wider, since max code point is 0xFF)
+        out.push_back(static_cast<char>(0xC0 | (b >> 6)));
+        out.push_back(static_cast<char>(0x80 | (b & 0x3F)));
+      } else {
+        // 0x80-0x9F: ISO-8859-1 (C1 controls) and CP1252 (€, smart quotes, dashes...) diverge,
+        // and R may interpret CE_LATIN1 as CP1252 (notably Windows). Defer to R below.
+        break;
+      }
+    }
+    if (i == n) {
+      return out;
+    }
+  }
+  // translateCharUTF8 allocates with R_alloc so release it once the bytes are copied
+  const void *vmax = vmaxget();
+  std::string out(safe[Rf_translateCharUTF8](unwrap(x)));
+  vmaxset(vmax);
+  return out;
+}
+
+// Result is UNPROTECTED! Ensure the result is immediately protected
+// e.g. by setting it as an element to r_vec<r_str_view>
+// Otherwise just use `r_str()` or `as<r_str>` 
+inline r_str_view c_str_to_r_str_view(const char* x){
+  return r_str_view(mk_char(x, str_length(x)), internal::no_checks_tag{});
+}
+
+}
+
+}
+
+// Number of characters (code points).
+// `r_int::na()` is returned for `r_str::na()`.
+inline r_int r_str_view::n_chars() const {
+  
+  if (is_na()){
+    return r_int::na();
+  }
+
+  // ascii strings are 1 byte for each character so N bytes = N chars
+  if (is_ascii()){
+    return r_int(n_bytes());
+  }
+
+  if (encoding() == str_encoding::bytes) [[unlikely]] {
+    abort("Can't count chars for bytes-encoded strings");
+  }
+
+  // Translate to UTF-8.
+  // Text that R treats as UTF-8 isn't validated (i.e. text that isn't actually converted, isn't validated).
+  std::string utf8_str = internal::string::utf8_string(*this);
+
+  // https://en.wikipedia.org/wiki/UTF-8
+  // Assuming a valid UTF-8 string we simply count the bytes that start with a zero bit or two one bits.
+  // We skip continuation bytes.
+  constexpr unsigned char top_two_bits = 0b11000000;
+  constexpr unsigned char continuation_prefix = 0b10000000;
+
+  int nchars = 0;
+  for (const char c : utf8_str) {
+    // top_two_bits is 11000000
+    // continuation_prefix is 10000000
+    // X & top_two_bits will zero all bits except the top 2 leaving one of the following combinations:
+    // 11000000, 01000000, 00000000 (first byte of a character)
+    // 10000000 (continuation byte, which we skip)
+    bool is_continuation = (static_cast<unsigned char>(c) & top_two_bits) == continuation_prefix;
+    nchars += !is_continuation;
+  }
+  return r_int(nchars);
 }
 
 // R String - cppally version of CHARSXP
@@ -48,20 +257,25 @@ struct r_str {
   explicit r_str(SEXP x, internal::no_checks_tag) : r_str(r_sexp(x), internal::no_checks_tag{}) {}
   explicit r_str(SEXP x, internal::view_tag, internal::no_checks_tag) noexcept : value(x, internal::view_tag{}) {}
 
-  explicit r_str(const char *x) : r_str(internal::mk_char_utf8(x, internal::str_length(x)), internal::no_checks_tag{}) {}
+  explicit r_str(const char* x, str_encoding enc = str_encoding::utf8) :
+    r_str(internal::string::mk_char(x, internal::string::str_length(x), enc), internal::no_checks_tag{}) {}
+  
+  // check_for_embedded_nul = false skips checking for NUL bytes. Only use if you are certain the string is clean.
+  explicit r_str(std::string_view x, str_encoding enc = str_encoding::utf8, bool check_for_embedded_nul = true) :
+    r_str(internal::string::mk_char(x, enc, check_for_embedded_nul), internal::no_checks_tag{}) {}
 
   // Implicit r_str -> SEXP 
   operator SEXP() const noexcept { return value; }
 
   // Explicit r_str_view -> r_str
-  explicit r_str(r_str_view x);
+  explicit r_str(r_str_view x) : value(static_cast<SEXP>(x)) {}
 
   const char *c_str() const noexcept {
-    return CHAR(unwrap(*this));
+    return r_str_view(*this).c_str();
   }
 
   std::string_view cpp_str() const noexcept {
-    return std::string_view{c_str(), static_cast<std::size_t>(n_bytes())};
+    return r_str_view(*this).cpp_str();
   }
 
   // Explicit conversions
@@ -69,154 +283,91 @@ struct r_str {
   explicit operator std::string_view() const noexcept { return cpp_str(); }
 
   static r_str na() noexcept {
-    return r_str(NA_STRING, internal::view_tag{}, internal::no_checks_tag{});
+    return r_str(r_str_view::na(), internal::view_tag{}, internal::no_checks_tag{});
   }
 
   bool is_na() const noexcept {
-    return unwrap(*this) == unwrap(na());
+    return r_str_view(*this).is_na();
   }
 
   bool is_empty() const noexcept {
-    return unwrap(*this) == R_BlankString;
+    return r_str_view(*this).is_empty();
   }
 
   int n_bytes() const noexcept {
-    return LENGTH(unwrap(*this));
+    return r_str_view(*this).n_bytes();
+  }
+  
+  r_int n_chars() const {
+    return r_str_view(*this).n_chars();
   }
 
-  // Is string valid UTF-8? (ASCII is also valid UTF8)
+  // Is string UTF-8?
+  // True for ASCII, UTF-8 marked strings and native (unmarked) strings in a UTF-8 locale.
+  // Does not check that the bytes are valid UTF-8.
   bool is_utf8() const noexcept {
-    return static_cast<bool>(Rf_charIsUTF8(unwrap(*this)));
+    return r_str_view(*this).is_utf8();
   }
 
+  // Is string ASCII? The bytes ARE checked, so if true, they are also valid UTF-8 and Latin-1.
   bool is_ascii() const noexcept {
-    return static_cast<bool>(Rf_charIsASCII(unwrap(*this)));
+    return r_str_view(*this).is_ascii();
   }
 
+  // Is string Latin-1?
+  // True for ASCII, Latin-1 marked strings, and native (unmarked) strings in a Latin-1 locale.
+  // Bytes are not checked, only the mark and locale decide the result.
   bool is_latin1() const noexcept {
-    return static_cast<bool>(Rf_charIsLatin1(unwrap(*this)));
+    return r_str_view(*this).is_latin1();
+  }
+
+  // Would converting to UTF-8 (via `as_utf8()`) change the bytes?
+  // NA and strings with `str_encoding::bytes` are not translated.
+  bool needs_utf8_translation() const noexcept {
+    return r_str_view(*this).needs_utf8_translation();
+  }
+
+  str_encoding encoding() const noexcept {
+    return r_str_view(*this).encoding();
+  }
+
+  // Mark string with a new encoding, keeping the bytes, so the text can change.
+  // To convert the text to UTF-8, use as_utf8().
+  [[nodiscard]] r_str with_encoding(str_encoding new_encoding) const {
+    if (is_na() || new_encoding == encoding()){
+      return *this;
+    } else {
+      return r_str(cpp_str(), new_encoding, /*check_for_embedded_nul=*/ false);
+    }
   }
 
   // Convert to UTF-8. This matches `base::enc2utf8()`.
   // ASCII and bytes are left as-is.
-  r_str as_utf8() const {
+  [[nodiscard]] r_str as_utf8() const {
     if (is_na() || is_ascii()) {
       return *this;
     }
-    cetype_t enc = Rf_getCharCE(unwrap(*this));
-    if (enc == CE_UTF8 || enc == CE_BYTES) {
+    str_encoding enc = encoding();
+    if (enc == str_encoding::utf8 || enc == str_encoding::bytes) {
       return *this;
     }
-    // Valid UTF-8 but unmarked
+
     if (is_utf8()) {
-      return r_str(internal::mk_char_utf8(c_str(), static_cast<std::size_t>(n_bytes())), internal::no_checks_tag{});
+      // Construct utf8 marked str directly instead of using with_encoding() to avoid extra NA & encoding check branch
+      return r_str(cpp_str(), str_encoding::utf8, /*check_for_embedded_nul=*/ false);
     }
-    // Latin-1 mapping is a (most of the time) fixed, locale-independent byte transform
-    if (is_latin1()) {
-      const unsigned char *p = reinterpret_cast<const unsigned char *>(c_str());
-      const int n = n_bytes();
-      std::string out;
-      // Most Latin-1 text is mostly ASCII, so n is a good guess; grows only if high bytes are dense
-      out.reserve(static_cast<std::size_t>(n));
-      int i = 0;
-      for (; i < n; ++i) {
-        const unsigned char b = p[i];
-        // In Latin-1 the byte value IS the Unicode code point, so 0x00-0x7F is already UTF-8
-        if (b < 0x80) {
-          out.push_back(static_cast<char>(b));
-        } else if (b >= 0xA0) {
-          // 0xA0-0xFF: ISO-8859-1 and Windows CP1252 agree, byte == code point.
-          // 2-byte UTF-8: 110xxxxx 10xxxxxx (never wider, since max code point is 0xFF)
-          out.push_back(static_cast<char>(0xC0 | (b >> 6)));
-          out.push_back(static_cast<char>(0x80 | (b & 0x3F)));
-        } else {
-          // 0x80-0x9F: ISO-8859-1 (C1 controls) and CP1252 (€, smart quotes, dashes...) diverge,
-          // and R may interpret CE_LATIN1 as CP1252 (notably Windows). Defer to R below.
-          break;
-        }
-      }
-      if (i == n) {
-        return r_str(internal::mk_char_utf8(out.data(), out.size()), internal::no_checks_tag{});
-      }
-    }
-    // translateCharUTF8 allocates with R_alloc so release it once mkChar has copied the bytes
-    const void *vmax = vmaxget();
-    r_str res(safe[Rf_translateCharUTF8](unwrap(*this)));
-    vmaxset(vmax);
-    return res;
+    return r_str(internal::string::utf8_string(*this), str_encoding::utf8, /*check_for_embedded_nul=*/ false);
   }
 
 };
+
+inline r_str_view::r_str_view(const r_str& x) noexcept : value(static_cast<SEXP>(x)) {}
 
 inline r_str r_sexp::address() const {
   char buf[32];
   std::snprintf(buf, 32, "%p", static_cast<void*>(value));
   return r_str(buf);
 }
-
-// Unsafe (but fast) r_str type
-// Similar to std::string_view, it is a view of an r_str/CHARSXP whose lifetime must be shorter than the object it's viewing
-struct r_str_view {
-  SEXP value; 
-  using value_type = SEXP;
-
-  // Constructors
-  r_str_view() : value{static_cast<SEXP>(internal::lazy_str_impl<"">())} {}
-  explicit r_str_view(SEXP x) : value{x} {
-    internal::check_valid_storage<r_str_view>(value);
-  }
-  explicit r_str_view(SEXP x, internal::view_tag) : r_str_view(x) {}
-  explicit r_str_view(SEXP x, internal::no_checks_tag) noexcept : value{x} {}
-  explicit r_str_view(SEXP x, internal::view_tag, internal::no_checks_tag) noexcept : r_str_view(x, internal::no_checks_tag{}) {}
-  // Can't construct `r_str_view` from `const char*` — use `r_str` instead
-  explicit r_str_view(const char *x) = delete;
-  explicit r_str_view(std::string_view x) = delete;
-  // Implicit r_str_view -> SEXP
-  operator SEXP() const noexcept { return value; }
-  
-  // Implicit r_str -> r_str_view
-  r_str_view(const r_str& x) noexcept : value(static_cast<SEXP>(x)) {}
-  
-  const char* c_str() const noexcept { return CHAR(value); }
-  std::string_view cpp_str() const noexcept { return std::string_view{c_str(), static_cast<std::size_t>(n_bytes())}; }
-
-
-  // Explicit conversions
-  explicit operator const char*() const noexcept { return c_str(); }
-  explicit operator std::string_view() const noexcept { return cpp_str(); }
-
-  static r_str_view na() noexcept {
-    return r_str_view(NA_STRING, internal::no_checks_tag{});
-  }
-
-  bool is_na() const noexcept {
-    return unwrap(*this) == unwrap(na());
-  }
-
-  bool is_empty() const noexcept {
-    return unwrap(*this) == R_BlankString;
-  }
-
-  int n_bytes() const noexcept {
-    return LENGTH(unwrap(*this));
-  }
-
-  // Is string valid UTF-8? (ASCII is also valid UTF8)
-  bool is_utf8() const noexcept {
-    return static_cast<bool>(Rf_charIsUTF8(unwrap(*this)));
-  }
-
-  bool is_ascii() const noexcept {
-    return static_cast<bool>(Rf_charIsASCII(unwrap(*this)));
-  }
-
-  bool is_latin1() const noexcept {
-    return static_cast<bool>(Rf_charIsLatin1(unwrap(*this)));
-  }
-
-};
-
-inline r_str::r_str(r_str_view x) : value(static_cast<SEXP>(x)) {}
 
 template <string_literal T>
 inline r_str cached_str() {
@@ -230,11 +381,59 @@ inline r_str address(SEXP x) {
 
 namespace internal {
 
-// Result is UNPROTECTED! Ensure the result is immediately protected
-// e.g. by setting it as an element to r_vec<r_str_view>
-// Otherwise just use `r_str()` or `as<r_str>` 
-inline r_str_view c_str_to_r_str_view(const char* x){
-  return r_str_view(mk_char_utf8(x, str_length(x)), internal::no_checks_tag{});
+namespace string {
+
+// ----- String comparison -----
+
+// Can bytes be compared directly?
+// true when either both are UTF-8 or both are bytes-encoded.
+inline bool str_bytes_comparable(r_str_view x, r_str_view y) noexcept {
+  return (x.is_utf8() && y.is_utf8()) || (x.encoding() == str_encoding::bytes && y.encoding() == str_encoding::bytes);
+}
+
+// Text orders before bytes strings. Text compares by its UTF-8 bytes (C-locale), bytes strings by their raw bytes
+CPPALLY_NOINLINE inline int str_compare(r_str_view x, r_str_view y) {
+  if (str_bytes_comparable(x, y)) {
+    return std::strcmp(x.c_str(), y.c_str());
+  }
+  bool x_bytes = x.encoding() == str_encoding::bytes;
+  bool y_bytes = y.encoding() == str_encoding::bytes;
+  if (x_bytes != y_bytes) [[unlikely]] {
+    return x_bytes ? 1 : -1;
+  }
+  return utf8_string(x).compare(utf8_string(y));
+}
+CPPALLY_NOINLINE inline int str_compare(r_str_view x, std::string_view y) {
+  if (x.is_utf8()){
+    // C++ strings are assumed to be UTF-8
+    return x.cpp_str().compare(y);
+  }
+  // C++ strings are text, so bytes strings order after them
+  if (x.encoding() == str_encoding::bytes) {
+    return 1;
+  }
+  return utf8_string(x).compare(y);
+}
+
+// Assumes unwrap(x) != unwrap(y)
+CPPALLY_NOINLINE inline bool str_equal_impl(r_str_view x, r_str_view y) {
+
+  // Since ASCII is always unmarked and this fn assumes different pointers/addresses, then no match here
+  if (x.is_ascii() || y.is_ascii()){
+    return false;
+  }
+
+  // The same encoding at different addresses is different text
+  if (x.encoding() == y.encoding()){
+    return false;
+  }
+  return str_compare(x, y) == 0;
+}
+
+inline bool str_equal(r_str_view x, r_str_view y) {
+  return r_addresses_equal(x, y) || str_equal_impl(x, y);
+}
+
 }
 
 }

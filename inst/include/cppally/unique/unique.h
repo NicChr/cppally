@@ -4,6 +4,7 @@
 #include <cppally/factor/r_factors.h>
 #include <cppally/group/dense_int_map.h>
 #include <cppally/hash/hash.h>
+#include <cppally/hash/r_hash_map.h>
 #include <ankerl/unordered_dense.h> // Hash maps for unique + duplicated
 
 namespace cppally {
@@ -37,24 +38,15 @@ auto unique_impl(const T& x) {
 
   if (!done) {
 
-    ankerl::unordered_dense::map<
-      unwrap_t<data_t>,
-      int,
-      internal::r_hash_fn<data_t>,
-      internal::r_hash_eq<data_t>
-    > seen;
+    internal::r_hash_map<data_t, int> seen;
 
     seen.reserve(cardinality_est);
 
     for (r_size_t i = 0; i < n; ++i) {
-      seen.try_emplace(unwrap(x.view(i)), zero);
-    }
-
-    const auto& vals = seen.values();
-    r_size_t n_unq = vals.size();
-    uniques.reserve(n_unq);
-    for (r_size_t i = 0; i < n_unq; ++i) {
-      uniques.push_back(vals[i].first);
+      auto val = unwrap(x.view(i));
+      if (seen.try_emplace(val, zero).second) {
+        uniques.push_back(val);
+      }
     }
   }
   return uniques;
@@ -103,12 +95,7 @@ r_vec<r_lgl> duplicated(const T& x, bool all = false){
 
   if (!done) {
 
-    ankerl::unordered_dense::map<
-      unwrap_t<data_t>,
-      r_size_t,
-      internal::r_hash_fn<data_t>,
-      internal::r_hash_eq<data_t>
-    > seen;
+    internal::r_hash_map<data_t, r_size_t> seen;
 
     seen.reserve(internal::get_hash_map_reserve_size<T>(x.data(), n));
 

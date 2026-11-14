@@ -4,10 +4,12 @@
 #include <cppally/vector/r_vector.h>
 #include <cppally/coerce.h>
 #include <cppally/hash/hash.h>
+#include <cppally/hash/r_hash_map.h>
 #include <cppally/group/dense_int_map.h>
 #include <cppally/sort/counting_order.h>
 #include <cppally/identical.h>
 #include <ankerl/unordered_dense.h> // Hash maps for group IDs + unique + match
+#include <memory> // For std::unique_ptr
 #include <vector>
 
 namespace cppally {
@@ -262,11 +264,11 @@ void check_groups_span_data(const T& x, const groups& g){
     }
 }
 
+// Groups by order-of-first-appearance
 template <RVector T>
 groups make_unordered_groups(const T& x) {
 
     using data_t = typename T::data_type;
-    using key_type = unwrap_t<data_t>;
     r_size_t n = x.length();
 
     if (n == 0) return groups(r_vec<r_int>(), 0, false, true);
@@ -295,38 +297,31 @@ groups make_unordered_groups(const T& x) {
         }
     });
 
-    auto* RESTRICT p_x = x.data();
     auto* RESTRICT p_id = group_ids.data();
 
     if (!done) {
 
-        uint64_t hash_map_reserve_guess = internal::get_hash_map_reserve_size<T>(p_x, n);
-        
-        ankerl::unordered_dense::map<
-        key_type,
-        int,
-        internal::r_hash_fn<data_t>,
-        internal::r_hash_eq<data_t>
-      > lookup;
+        auto* RESTRICT p_x = x.data();
 
-      lookup.reserve(hash_map_reserve_guess);
+        r_hash_map<data_t, int> lookup;
+        lookup.reserve(internal::get_hash_map_reserve_size<T>(p_x, n));
+        auto eq = lookup.key_eq();
 
-      int prev_id = -1;
-      for (r_size_t i = 0; i < n; ++i) {
+        int prev_id = -1;
+        for (r_size_t i = 0; i < n; ++i) {
 
-        // Skip consecutive values that are the same (and avoid hash lookup)
-        if (i > 0 && internal::r_hash_eq<data_t>()(p_x[i], p_x[i - 1])) {
+            // Skip consecutive values that are the same (and avoid hash lookup)
+            if (i > 0 && eq(p_x[i], p_x[i - 1])) {
+                p_id[i] = prev_id;
+                continue;
+            }
+            auto [id, inserted] = lookup.try_emplace(p_x[i], next_id);
+            if (inserted) {
+                ++next_id;
+            }
+            prev_id = id->second;
             p_id[i] = prev_id;
-            continue;
         }
-        auto [id, inserted] = lookup.try_emplace(p_x[i], next_id);
-        if (inserted) {
-            ++next_id;
-        }
-        prev_id = id->second;
-        p_id[i] = prev_id;
-      }
-
     }
     
     n_groups = next_id;
@@ -335,6 +330,7 @@ groups make_unordered_groups(const T& x) {
 
 // Make groups from cppally::order(x)
 template <RSortableType T>
+requires (!RStringType<T>)
 groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
     r_size_t n = x.length();
 
@@ -343,7 +339,7 @@ groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
     }
 
     if (n == 0) return groups(r_vec<r_int>(), 0, true, true);
-    
+
     r_vec<r_int> group_ids(n);
     int* RESTRICT p_group_ids = group_ids.data();
 
@@ -413,6 +409,34 @@ groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
     }
 
     return groups(group_ids, n_groups, /*ordered=*/ true);
+}
+
+template <RStringType T>
+groups make_groups_from_order(const r_vec<T>& x, const r_vec<r_int>& o) {
+    r_size_t n = x.length();
+
+    if (n != o.length()) [[unlikely]] {
+        abort("`x.length()` must match `o.length()`");
+    }
+
+    if (n == 0) {
+        return groups(r_vec<r_int>(), 0, true, true);
+    }
+
+    r_vec<r_int> group_ids(n);
+    int* RESTRICT p_group_ids = group_ids.data();
+    const int* RESTRICT p_o = o.data();
+
+    int id = 0;
+    p_group_ids[p_o[0]] = 0;
+    for (r_size_t i = 1; i < n; ++i) {
+        if (!identical(x.view(p_o[i]), x.view(p_o[i - 1]))) {
+            ++id;
+        }
+        p_group_ids[p_o[i]] = id;
+    }
+
+    return groups(group_ids, id + 1, /*ordered=*/ true);
 }
 
 }

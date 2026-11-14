@@ -1016,7 +1016,7 @@ struct r_vec {
   r_int64 find_first(const T& val) const {
     r_size_t n = length();
     for (r_size_t i = 0; i < n; ++i) {
-      if (identical(view(i), val)) {
+      if (identical(val, view(i))) {
         return r_int64(static_cast<int64_t>(i));
       }
     }

@@ -47,7 +47,7 @@ r_vec<r_int> order_cmp(const T& x) {
     pv.iota();
 
     auto* RESTRICT p = pv.data();
-    auto cmp = [&x](int i, int j) noexcept {
+    auto cmp = [&x](int i, int j) noexcept(noexcept(x.view(i) < x.view(j))) {
         return is_na(x.view(i)) ? false : !((x.view(i) < x.view(j)).is_false());
     };
 
@@ -82,6 +82,17 @@ inline void insertion_sort(key_t* RESTRICT keys, int* RESTRICT idx, uint32_t n) 
         keys[j] = curr_key;
         idx[j] = curr_index;
     }
+}
+
+// Strings translated to UTF-8, bytes strings are left as they are
+CPPALLY_NOINLINE inline r_vec<r_str_view> as_utf8_strings(const r_vec<r_str_view>& x){
+    r_size_t n = x.length();
+    r_vec<r_str_view> out(n);
+    for (r_size_t i = 0; i < n; ++i){
+        r_str_view elem = x.view(i);
+        out.set(i, elem.is_utf8() ? elem : r_str_view(r_str(elem, internal::view_tag{}, internal::no_checks_tag{}).as_utf8()));
+    }
+    return out;
 }
 
 // Adapted from ska_sort's to_unsigned_or_bool (Malte Skarupke, Boost Software License 1.0)
@@ -521,56 +532,76 @@ inline CPPALLY_NOINLINE void string_radix_sort(const r_str_view* strs, uint64_t*
     }
 }
 
-// Order strings by radix sort, NAs last
-inline CPPALLY_NOINLINE void order_strings(const r_str_view* strs, uint32_t n, int* RESTRICT p_out) {
+// Order strings by radix sort: text by its UTF-8 bytes, then bytes strings by their raw bytes, then NAs
+inline CPPALLY_NOINLINE void order_strings(const r_vec<r_str_view>& x, int* RESTRICT p_out) {
+    static_assert(sizeof(r_str_view) == sizeof(SEXP) && std::is_standard_layout_v<r_str_view> && std::is_trivially_copyable_v<r_str_view>);
+    uint32_t n = x.length();
+    const r_str_view* strs = reinterpret_cast<const r_str_view*>(x.data());
+    std::optional<r_vec<r_str_view>> utf8_strs; // If any strings are not UTF-8, this will hold the translated strings
+    std::vector<int> bytes_idx; // Bytes strings order after all text, so they're sorted separately
 
     // ----- Build keys -----
-    // Non-NA strings go to the front, NAs in the back
+    // Text goes to the front, NAs in the back
     std::unique_ptr<uint64_t[]> keys(new uint64_t[n]);
-    uint32_t n_real = 0, back = n;
+    uint32_t n_text = 0, back = n;
     for (uint32_t i = 0; i < n; ++i) {
         if (strs[i].is_na()) {
             p_out[--back] = static_cast<int>(i);
         } else {
-            keys[n_real] = string_radix_key(strs[i].c_str(), 0);
-            p_out[n_real++] = static_cast<int>(i);
+            // Checked while the string is in cache, saving a separate pass over all strings
+            if (!strs[i].is_utf8()) [[unlikely]] {
+                if (strs[i].encoding() == str_encoding::bytes) {
+                    bytes_idx.push_back(static_cast<int>(i));
+                    continue;
+                }
+                if (!utf8_strs.has_value()) {
+                    utf8_strs = as_utf8_strings(x);
+                    strs = reinterpret_cast<const r_str_view*>(utf8_strs->data());
+                }
+            }
+            keys[n_text] = string_radix_key(strs[i].c_str(), 0);
+            p_out[n_text++] = static_cast<int>(i);
         }
     }
     // NAs were written in reverse order, so reverse that segment to get the correct order
-    std::reverse(p_out + n_real, p_out + n);
-    // Only sort the non-NAs
-    string_radix_sort(strs, keys.get(), p_out, n_real);
+    std::reverse(p_out + back, p_out + n);
+    string_radix_sort(strs, keys.get(), p_out, n_text);
+
+    // Bytes strings fill the gap between the text and the NAs
+    uint32_t n_bytes = bytes_idx.size();
+    int* p_bytes = p_out + n_text;
+    uint64_t* bytes_keys = keys.get() + n_text;
+    for (uint32_t k = 0; k < n_bytes; ++k) {
+        p_bytes[k] = bytes_idx[k];
+        bytes_keys[k] = string_radix_key(strs[bytes_idx[k]].c_str(), 0);
+    }
+    string_radix_sort(strs, bytes_keys, p_bytes, n_bytes);
 }
 
-inline CPPALLY_NOINLINE r_vec<r_int> order_string_data(const r_vec<r_str>& x) {
+inline CPPALLY_NOINLINE r_vec<r_int> order_string_data(const r_vec<r_str_view>& x) {
 
     uint32_t n = x.length();
-
-    static_assert(sizeof(r_str_view) == sizeof(SEXP) && std::is_standard_layout_v<r_str_view> && std::is_trivially_copyable_v<r_str_view>);
-    uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<r_str>, internal::r_hash_eq<r_str>>(x.data(), n);
-
-    const r_str_view* strs = reinterpret_cast<const r_str_view*>(x.data());
+    uint64_t cardinality_estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<r_str>, internal::r_hash_eq<r_str>>(x.data(), n);
 
     // High cardinality -> direct sort
-    if (estimate >= n / 4) {
+    if (cardinality_estimate >= n / 4) {
         r_vec<r_int> out(n);
-        internal::sort::order_strings(strs, n, out.data());
+        order_strings(x, out.data());
         return out;
     }
 
     // Low cardinality -> sort unique strings (NA last), then counting sort by group rank
-    groups g = make_groups(x);
+    groups g = make_groups(r_vec<r_str>(static_cast<r_sexp>(x), internal::no_checks_tag{}));
     int n_groups = g.n_groups;
     r_vec<r_int> group_start_locations = g.starts();
     const int* RESTRICT p_starts = group_start_locations.data();
 
-    std::vector<r_str_view> unique_strs;
-    unique_strs.reserve(n_groups);
+    r_vec<r_str_view> uniques(n_groups);
     for (int i = 0; i < n_groups; ++i){
-        unique_strs.push_back(strs[p_starts[i]]);
+        uniques.set(i, r_str_view(x.view(p_starts[i])));
     }
     std::unique_ptr<int[]> sorted_ids(new int[n_groups]);
-    internal::sort::order_strings(unique_strs.data(), n_groups, sorted_ids.get());
+    order_strings(uniques, sorted_ids.get());
 
     std::unique_ptr<int[]> rank(new int[n_groups]);
     int* RESTRICT p_rank = rank.get();
@@ -697,7 +728,7 @@ template <RSortableVector T>
         // Strings
         // ---------------------------------------------------------------------- 
 
-        return internal::sort::order_string_data(r_vec<r_str>(x));
+        return internal::sort::order_string_data(r_vec<r_str_view>(x));
     } else {
         return internal::sort::order_cmp(x);
     }
