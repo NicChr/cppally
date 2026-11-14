@@ -755,6 +755,7 @@ r_vector<r_int> new_integers(int n, std::optional<r_int> fill){
 ```{r, include=FALSE}
 cppally::cpp_source(code = '
 #include <cppally/vector/r_vector.h>
+#include <cppally/aliases.h>
 using namespace cppally;
 
 [[cppally::register]]
