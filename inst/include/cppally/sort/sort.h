@@ -581,18 +581,17 @@ inline CPPALLY_NOINLINE void order_strings(const r_vec<r_str_view>& x, int* REST
 inline CPPALLY_NOINLINE r_vec<r_int> order_string_data(const r_vec<r_str_view>& x) {
 
     uint32_t n = x.length();
-
-    uint64_t estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<r_str_view>, internal::r_hash_eq<r_str_view>>(x.data(), n);
+    uint64_t cardinality_estimate = internal::unique_count_estimate<SEXP, int, internal::r_hash_fn<r_str>, internal::r_hash_eq<r_str>>(x.data(), n);
 
     // High cardinality -> direct sort
-    if (estimate >= n / 4) {
+    if (cardinality_estimate >= n / 4) {
         r_vec<r_int> out(n);
         order_strings(x, out.data());
         return out;
     }
 
     // Low cardinality -> sort unique strings (NA last), then counting sort by group rank
-    groups g = make_groups(x);
+    groups g = make_groups(r_vec<r_str>(static_cast<r_sexp>(x), internal::no_checks_tag{}));
     int n_groups = g.n_groups;
     r_vec<r_int> group_start_locations = g.starts();
     const int* RESTRICT p_starts = group_start_locations.data();
