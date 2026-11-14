@@ -60,6 +60,11 @@ public:
 
     using iterator = typename charsxp_map::iterator;
 
+    r_str_map() = default;
+    r_str_map(r_str_map&&) = default;
+    r_str_map& operator=(r_str_map&&) = default;
+    CPPALLY_NOINLINE ~r_str_map() = default;
+
     void reserve(std::size_t n) {
         charsxp_lookup.reserve(n);
     }
