@@ -44,43 +44,45 @@ get_template_params <- function(context) {
 }
 
 # decor cuts the signature at the first `{` or `;` line and counts parens, angle brackets
-# and `//` inside string literals, so these are masked before parsing and restored after.
+# and `//` even inside string literals. So literals are swapped whole for placeholders,
+# and the remaining characters decor misreads are masked, both restored after parsing.
 # Brace tokens carry parens so decor doesn't split on a comma inside braces
 brace_mask <- c(
   "{" = "CPPALLY_LBRACE_(",
   "}" = ")CPPALLY_RBRACE_"
 )
 
+# A `;` in a lambda body would otherwise end the signature early
+top_mask <- c(
+  brace_mask,
+  ";" = "CPPALLY_SEMI_"
+)
+
 # Commas inside nested parens are already protected, so `<` `>` there (e.g. `1 << 4`) are masked
 nested_mask <- c(
-  brace_mask,
+  top_mask,
   "<" = "CPPALLY_LT_",
   ">" = "CPPALLY_GT_"
 )
 
-literal_mask <- c(
-  "{" = "CPPALLY_LBRACE_",
-  "}" = "CPPALLY_RBRACE_",
-  "(" = "CPPALLY_LPAREN_",
-  ")" = "CPPALLY_RPAREN_",
-  "/" = "CPPALLY_SLASH_",
-  ";" = "CPPALLY_SEMI_",
-  "<" = "CPPALLY_LT_",
-  ">" = "CPPALLY_GT_"
-)
-
-# Masks up to the `)` that closes the parameter list, comments become a single space
+# Masks up to the `)` that closes the parameter list, comments become a single space.
+# String and char literals become `CPPALLY_LIT_<i>_`, the originals kept in attr "literals"
 mask_signature <- function(context) {
   depth <- 0L
   in_string <- FALSE
+  in_char <- FALSE
   in_comment <- FALSE
   escaped <- FALSE
+  literals <- character()
   for (i in seq_along(context)) {
     chars <- strsplit(context[[i]], "", fixed = TRUE)[[1]]
+    original <- chars
     n <- length(chars)
+    literal_start <- 0L
     for (j in seq_len(n)) {
       ch <- chars[[j]]
       nxt <- if (j < n) chars[[j + 1L]] else ""
+      prev <- if (j > 1L) original[[j - 1L]] else ""
       if (in_comment) {
         if (ch == "*" && nxt == "/") {
           in_comment <- FALSE
@@ -89,16 +91,29 @@ mask_signature <- function(context) {
         chars[[j]] <- ""
         next
       }
-      if (in_string) {
+      if (in_string || in_char) {
         if (escaped) {
           escaped <- FALSE
         } else if (ch == "\\") {
           escaped <- TRUE
-        } else if (ch == '"') {
+        } else if ((in_string && ch == '"') || (in_char && ch == "'")) {
           in_string <- FALSE
+          in_char <- FALSE
+          if (depth > 0L) {
+            literals <- c(literals, paste(original[literal_start:j], collapse = ""))
+            chars[literal_start:j] <- ""
+            chars[[literal_start]] <- paste0("CPPALLY_LIT_", length(literals), "_")
+          }
         }
-      } else if (ch == '"') {
+        next
+      }
+      if (ch == '"') {
         in_string <- TRUE
+        literal_start <- j
+      } else if (ch == "'" && !grepl("[[:alnum:]_]", prev)) {
+        # After an alphanumeric `'` is a digit separator, e.g. `10'000`
+        in_char <- TRUE
+        literal_start <- j
       } else if (ch == "/" && nxt == "/") {
         chars <- c(chars[seq_len(j - 1L)], " ")
         break
@@ -113,24 +128,30 @@ mask_signature <- function(context) {
         depth <- depth - 1L
         if (depth <= 0L) {
           context[[i]] <- paste(chars, collapse = "")
-          return(context)
+          return(structure(context, literals = literals))
         }
       }
-      mask <- if (in_string) literal_mask else if (depth > 1L) nested_mask else brace_mask
+      mask <- if (depth > 1L) nested_mask else top_mask
       if (depth > 0L && ch %in% names(mask)) {
         chars[[j]] <- mask[[ch]]
       }
     }
+    # C++ literals can't span lines, so an unterminated one was misread, e.g. a raw string
+    if (in_string || in_char) {
+      stop("Unterminated string or char literal (raw strings aren't supported).", call. = FALSE)
+    }
     context[[i]] <- paste(chars, collapse = "")
   }
-  context
+  structure(context, literals = literals)
 }
 
-# Paren-carrying brace tokens are restored first, before the bare ones
-unmask_signature <- function(x) {
-  masks <- c(brace_mask, literal_mask)
-  for (i in seq_along(masks)) {
-    x <- gsub(masks[[i]], names(masks)[[i]], x, fixed = TRUE)
+# Literals are restored last, so their contents are never unmasked
+unmask_signature <- function(x, literals) {
+  for (i in seq_along(nested_mask)) {
+    x <- gsub(nested_mask[[i]], names(nested_mask)[[i]], x, fixed = TRUE)
+  }
+  for (i in seq_along(literals)) {
+    x <- gsub(paste0("CPPALLY_LIT_", i, "_"), literals[[i]], x, fixed = TRUE)
   }
   x
 }
@@ -145,9 +166,23 @@ parse_cpp_function <- function(context, is_attribute = TRUE){
     has_template <- any(is_template_signature(preamble))
     context <- context[attr_idx:length(context)]
   }
-  out <- decor::parse_cpp_function(mask_signature(context), is_attribute = is_attribute)
-  out$args[[1]]$type <- unmask_signature(out$args[[1]]$type)
-  out$args[[1]]$default <- unmask_signature(out$args[[1]]$default)
+  out <- tryCatch(
+    {
+      masked <- mask_signature(context)
+      decor::parse_cpp_function(masked, is_attribute = is_attribute)
+    },
+    error = function(e) {
+      signature <- trimws(sub("^\\s*\\[\\[.*?\\]\\]", "", context, perl = TRUE))
+      signature <- signature[nzchar(signature)][1]
+      cli::cli_abort(
+        c("Can't parse the signature of a registered function.", "x" = "{.code {signature}}"),
+        parent = e
+      )
+    }
+  )
+  literals <- attr(masked, "literals")
+  out$args[[1]]$type <- unmask_signature(out$args[[1]]$type, literals)
+  out$args[[1]]$default <- unmask_signature(out$args[[1]]$default, literals)
   attr(out, "cpp_template") <- has_template
   out
 }
