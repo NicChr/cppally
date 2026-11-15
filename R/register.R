@@ -264,15 +264,16 @@ add_r_default_args <- function(args){
 
         # String literal defaults
 
-        str_literal <- sub('^\\s*(cppally::)?r_str\\s*\\(\\s*(".*")\\s*\\)\\s*$', "\\2", cpp_default)
+        str_literal <- sub('^\\s*(cppally::)?r_str\\s*[({]\\s*(".*")\\s*[)}]\\s*$', "\\2", cpp_default)
         if (str_literal != cpp_default){
           parsed <- tryCatch(str2lang(str_literal), error = \(e) NULL)
           r_defaults[i] <- list(if (is.character(parsed)) parsed else no_default)
           next
         }
 
-        # Strip cppally namespace and whitespace
+        # Strip cppally namespace and whitespace, and read `r_int{5}` as `r_int(5)`
         cpp_default <- gsub("\\s+", "", gsub("cppally::", "", cpp_default, fixed = TRUE))
+        cpp_default <- sub("^(r_[[:alnum:]_]+)\\{(.*)\\}$", "\\1(\\2)", cpp_default)
 
         # Numeric literals, translated so the R type matches the C++ type of the default
 
