@@ -697,6 +697,7 @@ struct r_vec {
 
   template <IntegerNumber I, typename U>
   void set(I index, const U& val) {
+    maybe_ensure_exclusive();
     // Lists must not hold RScalar, only RComposite (e.g. vectors) and other SEXP types
     if constexpr (is<T, r_sexp>) {
       set(index, internal::as_list_element(val));
@@ -1015,7 +1016,7 @@ struct r_vec {
   r_int64 find_first(const T& val) const {
     r_size_t n = length();
     for (r_size_t i = 0; i < n; ++i) {
-      if (identical(view(i), val)) {
+      if (identical(val, view(i))) {
         return r_int64(static_cast<int64_t>(i));
       }
     }
@@ -1380,10 +1381,6 @@ struct r_vec {
   #endif
 
 };
-
-// Alias of r_vec
-template <RVal T>
-using r_vector = r_vec<T>;
 
 template <RVector U>
 inline void r_copy_n(U& target, const unwrap_t<typename std::remove_cvref_t<U>::data_type>* source, r_size_t target_offset, r_size_t n) {

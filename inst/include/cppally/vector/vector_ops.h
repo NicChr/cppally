@@ -30,12 +30,12 @@ namespace cppally {
 using lhs_t = decltype(lhs);                                                                                                    \
 using rhs_t = decltype(rhs);                                                                                                    \
 if constexpr (RAtomicVector<lhs_t> && RAtomicVector<rhs_t>){                                                                    \
-  return pmap_parallel_simd([](auto a, auto b) noexcept { return a OP b; }, lhs, rhs);                                          \
+  return pmap_parallel_simd([](auto a, auto b) noexcept(noexcept(a OP b)) { return a OP b; }, lhs, rhs);                        \
   /*Cases where one is a scalar*/                                                                                               \
 } else if constexpr (RAtomicVector<lhs_t>) {                                                                                    \
-  return pmap_parallel_simd([rhs](auto a) noexcept { return a OP rhs; }, lhs);                                                  \
+  return pmap_parallel_simd([rhs](auto a) noexcept(noexcept(a OP rhs)) { return a OP rhs; }, lhs);                              \
 } else {                                                                                                                        \
-  return pmap_parallel_simd([lhs](auto b) noexcept { return lhs OP b; }, rhs);                                                  \
+  return pmap_parallel_simd([lhs](auto b) noexcept(noexcept(lhs OP b)) { return lhs OP b; }, rhs);                              \
 }
 
 #define CPPALLY_BINARY_OP_IN_PLACE(lhs, rhs, OP)                                                                                                        \

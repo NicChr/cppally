@@ -109,41 +109,52 @@ inline constexpr uint32_t accepted_mask = mask_of<F, CPPALLY_ALL_CASES(CPPALLY_C
 // Guarded arms: hand `f` the wrapper only if it accepts it, else reject.
 #define CPPALLY_CASE_OWNING_G(LABELS, W)                                     \
     LABELS if constexpr (requires { f(W(x, no_checks_tag{})); }) return f(W(x, no_checks_tag{}));             \
-           else internal::reject(internal::type_str<W>(), internal::accepted_mask<F&>);
+           else reject(type_str<W>(), accepted_mask<F&>);
 #define CPPALLY_CASE_VIEWING_G(LABELS, W)                                    \
     LABELS if constexpr (requires { f(W(x, view_tag{}, no_checks_tag{})); }) return f(W(x, view_tag{}, no_checks_tag{})); \
-           else internal::reject(internal::type_str<W>(), internal::accepted_mask<F&>);
+           else reject(type_str<W>(), accepted_mask<F&>);
 #define CPPALLY_CASE_MUTATE_G(LABELS, W)                                     \
     LABELS if constexpr (requires (W& w) { f(w); }) { mutate_as<W>(x, f); break; } \
-           else internal::reject(internal::type_str<W>(), internal::accepted_mask<F&>);
+           else reject(type_str<W>(), accepted_mask<F&>);
 
-// Constrained owning visit: dispatch to `f` only for the types it accepts.
+}
+
+// Constrained visit/view: dispatch to `f` only for the wrapped types it accepts,
+// e.g. r_sexp_visit(x, [&]<RVector V>(const V& v){ ... }) — the concept rides on the
+// lambda's template parameter. r_sexp_visit produces owning SEXP wrappers and r_sexp_view produces view-only SEXP wrappers.
+// Aborts at runtime if x's type isn't one the visitor accepts.
 template <class F>
-decltype(auto) visit_constrained(const r_sexp& x, F&& f) {
+decltype(auto) r_sexp_visit(const r_sexp& x, F&& f) {
+    using namespace internal;
     switch (CPPALLY_TYPEOF(x)) {
         CPPALLY_ALL_CASES(CPPALLY_CASE_OWNING_G)
         default: if constexpr (requires { f(r_sexp(x)); }) return f(r_sexp(x));
-                 else internal::reject(internal::type_str<r_sexp>(), internal::accepted_mask<F&>);
+                 else reject(type_str<r_sexp>(), accepted_mask<F&>);
     }
 }
 
 // Constrained viewing visit
 template <class F>
-decltype(auto) view_constrained(const r_sexp& x, F&& f) {
+decltype(auto) r_sexp_view(const r_sexp& x, F&& f) {
+    using namespace internal;
     switch (CPPALLY_TYPEOF(x)) {
         CPPALLY_ALL_CASES(CPPALLY_CASE_VIEWING_G)
         default: if constexpr (requires { f(r_sexp(x, view_tag{})); }) return f(r_sexp(x, view_tag{}));
-                 else internal::reject(internal::type_str<r_sexp>(), internal::accepted_mask<F&>);
+                 else reject(type_str<r_sexp>(), accepted_mask<F&>);
     }
 }
 
-// Constrained in-place mutation (move-in / write-back per arm via mutate_as).
+// Constrained in-place mutation — the mutating sibling of r_sexp_visit/r_sexp_view. `f`
+// receives a sole-owning, mutable wrapper (move-in / write-back), e.g.
+// r_sexp_mutate(x, []<RVector V>(V& v){ ... }). Aborts at runtime if x's type isn't
+// one the visitor accepts. Takes x by r_sexp& — write-back needs ownership.
 template <class F>
-void mutate_constrained(r_sexp& x, F&& f) {
+void r_sexp_mutate(r_sexp& x, F&& f) {
+    using namespace internal;
     switch (CPPALLY_TYPEOF(static_cast<SEXP>(x))) {
         CPPALLY_ALL_CASES(CPPALLY_CASE_MUTATE_G)
         default: if constexpr (requires (r_sexp& s) { f(s); }) { mutate_as<r_sexp>(x, f); break; }
-                 else internal::reject(internal::type_str<r_sexp>(), internal::accepted_mask<F&>);
+                 else reject(type_str<r_sexp>(), accepted_mask<F&>);
     }
 }
 
@@ -157,39 +168,15 @@ void mutate_constrained(r_sexp& x, F&& f) {
 #undef CPPALLY_ALL_CASES
 #undef CPPALLY_VECTOR_CASES
 
-}
-
-// Constrained visit/view: dispatch to `f` only for the wrapped types it accepts,
-// e.g. r_sexp_visit(x, [&]<RVector V>(const V& v){ ... }) — the concept rides on the
-// lambda's template parameter. r_sexp_visit produces owning SEXP wrappers and r_sexp_view produces view-only SEXP wrappers.
-// Aborts at runtime if x's type isn't one the visitor accepts.
-template <class F>
-decltype(auto) r_sexp_visit(const r_sexp& x, F&& f) {
-    return internal::visit_constrained(x, std::forward<F>(f));
-}
-template <class F>
-decltype(auto) r_sexp_view(const r_sexp& x, F&& f) {
-    return internal::view_constrained(x, std::forward<F>(f));
-}
-
-// Constrained in-place mutation — the mutating sibling of r_sexp_visit/r_sexp_view. `f`
-// receives a sole-owning, mutable wrapper (move-in / write-back), e.g.
-// r_sexp_mutate(x, []<RVector V>(V& v){ ... }). Aborts at runtime if x's type isn't
-// one the visitor accepts. Takes x by r_sexp& — write-back needs ownership.
-template <class F>
-void r_sexp_mutate(r_sexp& x, F&& f) {
-    internal::mutate_constrained(x, std::forward<F>(f));
-}
-
 // Runtime predicate to check if r_sexp is visitable as a non-r_sexp
 inline bool is_visitable(const r_sexp& x){
-    return internal::view_constrained(x, []<typename T>(const T&) -> bool { return !is<T, r_sexp>; });
+    return r_sexp_view(x, []<typename T>(const T&) -> bool { return !is<T, r_sexp>; });
 }
 
 template <typename T>
 requires (!is<T, r_sexp>)
 bool is_visitable(const r_sexp& x){
-    return internal::view_constrained(x, []<typename v>(const v&) -> bool { return is<v, T>; });
+    return r_sexp_view(x, []<typename v>(const v&) -> bool { return is<v, T>; });
 }
 
 // // Visit the static-type that r_sexp holds, abort if it doesn't match.

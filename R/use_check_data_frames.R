@@ -1,6 +1,6 @@
 #' Deprecated.
 #'
-#' @description#
+#' @description
 #' Deprecated, do not use.
 #'
 #' @param quiet `[logical(1)]` - Should messages be suppressed?

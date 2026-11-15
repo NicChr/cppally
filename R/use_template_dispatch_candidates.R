@@ -97,6 +97,8 @@ use_template_dispatch_candidates <- function(scalar_types = cppally_scalar_types
                                              r_sexp = TRUE,
                                              quiet = FALSE) {
 
+  stop_unless_installed(c("brio", "cli", "stringr", "usethis"))
+
   check_scalar_types(scalar_types)
 
   # Keep consistent order

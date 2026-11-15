@@ -1,6 +1,6 @@
 
 generate_cpp_regular_example <- function(){
-  stop_unless_installed("usethis")
+  stop_unless_installed(c("usethis", "brio"))
   proj_path <- usethis::proj_get()
   utils::getFromNamespace("use_src", "usethis")()
   cpp_path <- file.path(proj_path, "src", "code.cpp")
@@ -32,7 +32,7 @@ cpp_path
 
 
 generate_cpp_template_example <- function(){
-  stop_unless_installed("usethis")
+  stop_unless_installed(c("usethis", "brio"))
   proj_path <- usethis::proj_get()
   utils::getFromNamespace("use_src", "usethis")()
   h_path <- file.path(proj_path, "src", "code.h")

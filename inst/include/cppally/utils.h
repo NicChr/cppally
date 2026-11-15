@@ -3,6 +3,7 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
+#include <cppally/std_compat.h>
 #include <utility>
 #include <limits>
 #include <cmath>
@@ -73,7 +74,7 @@ constexpr bool numeric_can_be_cast_without_complete_loss(From x) noexcept {
     return true;
   } else if constexpr (CppIntegerType<From> && CppIntegerType<To>){
     constexpr To lower = std::numeric_limits<To>::min();
-    return std::cmp_greater_equal(+x, +lower) && std::cmp_less_equal(+x, +upper);
+    return internal::cmp_greater_equal(+x, +lower) && internal::cmp_less_equal(+x, +upper);
   } else if constexpr (CppIntegerType<From> && CppFloatType<To>){
     // int -> float: magnitude always fits; only precision is lost (tolerated)
     return true;

@@ -6,7 +6,7 @@
 #include <cppally/scalar/r_dbl.h>
 #include <cppally/scalar/r_limits.h>
 #include <cppally/math/fma.h>
-#include <bit>
+#include <cppally/std_compat.h>
 #include <cmath>
 #include <cstdint>
 
@@ -41,9 +41,9 @@ inline constexpr double ln2_lo = 0x1.fdf473de6af28p-22;
 
   // x = m * 2^k with m in [sqrt(0.5), sqrt(2)): offsetting the bits by sqrt(0.5) makes the exponent tick over there
   constexpr double sqrt_half = 0x1.6a09e667f3bcdp-1;
-  uint64_t ix = std::bit_cast<uint64_t>(x) + (std::bit_cast<uint64_t>(1.0) - std::bit_cast<uint64_t>(sqrt_half));
+  uint64_t ix = internal::bit_cast<uint64_t>(x) + (internal::bit_cast<uint64_t>(1.0) - internal::bit_cast<uint64_t>(sqrt_half));
   k += static_cast<int>(ix >> 52) - 1023;
-  double m = std::bit_cast<double>((ix & 0x000fffffffffffffULL) + std::bit_cast<uint64_t>(sqrt_half));
+  double m = internal::bit_cast<double>((ix & 0x000fffffffffffffULL) + internal::bit_cast<uint64_t>(sqrt_half));
 
   double f = m - 1.0;
   double half_f = 0.5 * f;

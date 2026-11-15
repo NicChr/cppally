@@ -14,9 +14,5 @@ Default is \code{FALSE}.}
 Invisibly adds the \code{CPPALLY_CHECK_DATA_FRAMES} flag to Makevars.
 }
 \description{
-Deprecated.
-}
-\section{}{
 Deprecated, do not use.
 }
-

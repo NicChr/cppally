@@ -17,6 +17,8 @@ makevars_var_pattern <- function(variable) {
 # Modifies the RHS of a makevars variable
 set_makevars_value <- function(variable, prefix, value, op = "=", quiet = FALSE) {
 
+  stop_unless_installed(c("brio", "cli", "stringr", "usethis"))
+
   pattern <- makevars_var_pattern(variable)
 
   if (is.null(prefix)){
@@ -133,7 +135,7 @@ use_symbol_visibility <- function(quiet = FALSE) {
 #'
 #' @export
 use_cppally <- function(quiet = FALSE){
-  stop_unless_installed(c("usethis", "desc", "purrr", "brio", "cli", "rstudioapi"))
+  stop_unless_installed(c("usethis", "desc", "purrr", "brio", "cli", "rstudioapi", "stringr"))
   utils::getFromNamespace("check_is_package", "usethis")("use_cppally()")
   stop_unless_installed("cppally")
   d <- desc::desc()

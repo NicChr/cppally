@@ -108,29 +108,27 @@ inline T as_impl(const U& x) {
   using to_data_t = typename T::data_type;
   using from_data_t = typename U::data_type;
 
-  if constexpr (RStringType<to_data_t> && RStringType<from_data_t>){
+  if constexpr (r_typeof<T> == r_typeof<U>){
     return T(static_cast<r_sexp>(x), internal::no_checks_tag{});
-  }
-
-  if constexpr (is<to_data_t, r_str>){
+  } else if constexpr (is<to_data_t, r_str>){
     return T(as<r_vec<r_str_view>>(x));
-  }
+  } else {
+    r_size_t n = x.length();
+    T out(n);
+    out.set_names(x.names());
 
-  r_size_t n = x.length();
-  T out(n);
-  out.set_names(x.names());
-
-  if constexpr (RAtomicVector<T> && (is<from_data_t, r_base_scalar_t<to_data_t>> || is<to_data_t, r_base_scalar_t<from_data_t>>) && !is<unwrap_t<from_data_t>, SEXP>){
-    if (x.is_materialised()){
-      std::copy_n(x.data(), n, out.data());
-      return out;
+    if constexpr (RAtomicVector<T> && (is<from_data_t, r_base_scalar_t<to_data_t>> || is<to_data_t, r_base_scalar_t<from_data_t>>) && !is<unwrap_t<from_data_t>, SEXP>){
+      if (x.is_materialised()){
+        std::copy_n(x.data(), n, out.data());
+        return out;
+      }
     }
-  }
 
-  for (r_size_t i = 0; i < n; ++i){
-    out.set(i, x.view(i));
+    for (r_size_t i = 0; i < n; ++i){
+      out.set(i, x.view(i));
+    }
+    return out;
   }
-  return out;
 }
 
 template <CastableToRScalar T, RVector U>
@@ -229,7 +227,9 @@ template <RComposite T, CastableToRScalar U>
 inline T as_impl(const U& x) {
   if constexpr (RVector<T>){
     using data_t = typename T::data_type;
-    return r_vec<data_t>({ as<data_t>(x) }); 
+    r_vec<data_t> out(1);
+    out.set(0, x);
+    return out;
   } else {
     using scalar_t = as_r_scalar_t<U>;
     return as<T>(r_vec<scalar_t>({ scalar_t(x) }));
@@ -303,16 +303,17 @@ inline auto as_scalar(const T& x){
 
 template <typename T, typename U>
 std::remove_cvref_t<T> as(const U& x) {
+  using out_t = std::remove_cvref_t<T>;
   if constexpr (is<T, U>){
     if constexpr (RComposite<U>){
       // Do NOT preserve r_null
       if (x.is_null()) [[unlikely]] {
-        return std::remove_cvref_t<T>();
+        return out_t();
       }
     }
     return x;
   } else {
-    return internal::as_impl<std::remove_cvref_t<T>>(x);
+    return internal::as_impl<out_t>(x);
   }
 }
 
