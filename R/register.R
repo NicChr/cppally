@@ -13,8 +13,9 @@ glue_collapse_data <- function(data, ..., sep = ", ", last = "") {
   unclass(res)
 }
 
-viapply <- function(x, f, ...) vapply(x, f, integer(1), ...)
-vcapply <- function(x, f, ...) vapply(x, f, character(1), ...)
+lgl_apply <- function(x, f, ...) vapply(x, f, logical(1), ...)
+int_apply <- function(x, f, ...) vapply(x, f, integer(1), ...)
+char_apply <- function(x, f, ...) vapply(x, f, character(1), ...)
 
 stop_unless_installed <- function(pkgs) {
   has_pkg <- logical(length(pkgs))
@@ -86,15 +87,15 @@ r_formals <- function(args, fn_name, package, use_package = FALSE){
   optional <- is_optional_arg(args$type)
   formals[optional] <- paste0(args$name[optional], " = NULL")
 
-  has_r_default <- !vapply(args$r_default, inherits, logical(1), "cppally_no_default")
-  r_defaults <- vcapply(args$r_default, deparse1)
+  has_r_default <- !lgl_apply(args$r_default, inherits, "cppally_no_default")
+  r_defaults <- char_apply(args$r_default, deparse1)
   formals[has_r_default] <- paste0(args$name[has_r_default], " = ", r_defaults[has_r_default])
 
   # The C++ default text is passed to the helper (which ignores it) so it shows in the signature
   helper <- needs_default_helper(args)
   helper_names <- default_helper_name(package, fn_name, args$name[helper])
   cpp_defaults <- gsub("\\s+", " ", trimws(args$default[helper]))
-  cpp_defaults <- vcapply(cpp_defaults, deparse1)
+  cpp_defaults <- char_apply(cpp_defaults, deparse1)
   if (use_package) {
     helper_calls <- glue::glue('.Call("{helper_names}", cpp_default = {cpp_defaults}, PACKAGE = "{package}")')
   } else {
@@ -146,7 +147,7 @@ get_registered_functions <- function(decorations, tag, quiet = !is_interactive()
     return(empty)
   }
   out$functions <- lapply(out$context, parse_cpp_function, is_attribute = TRUE)
-  is_template <- vapply(out$functions, \(x) attr(x, "cpp_template"), TRUE)
+  is_template <- lgl_apply(out$functions, \(x) attr(x, "cpp_template"))
   out <- vctrs::vec_cbind(out, vctrs::vec_rbind(!!!out$functions))
   out$args <- add_r_default_args(out$args)
   out$is_template <- is_template
@@ -174,8 +175,8 @@ generate_cpp_functions <- function(funs, package = "cppally") {
     return(character())
   }
   funs <- funs[c("name", "return_type", "args", "file", "line", "decoration", "is_template", "template_params")]
-  funs$real_params <- vcapply(funs$args, glue_collapse_data, "{type} {name}")
-  funs$sexp_params <- vcapply(funs$args, glue_collapse_data, "SEXP {name}")
+  funs$real_params <- char_apply(funs$args, glue_collapse_data, "{type} {name}")
+  funs$sexp_params <- char_apply(funs$args, glue_collapse_data, "SEXP {name}")
 
   funs$calls <- mapply(wrap_call, funs$name, funs$return_type, funs$args, funs$is_template, funs$template_params, SIMPLIFY = TRUE)
   funs$package <- package
@@ -355,7 +356,7 @@ add_r_default_args <- function(args){
 }
 
 needs_default_helper <- function(args){
-  !is.na(args$default) & vapply(args$r_default, inherits, logical(1), "cppally_no_default")
+  !is.na(args$default) & lgl_apply(args$r_default, inherits, "cppally_no_default")
 }
 
 default_helper_name <- function(package, fn_name, arg_name){
@@ -363,7 +364,7 @@ default_helper_name <- function(package, fn_name, arg_name){
 }
 
 used_template_params <- function(type, template_params){
-  template_params[vapply(template_params, \(p) is_template_arg(type, p), logical(1))]
+  template_params[lgl_apply(template_params, \(p) is_template_arg(type, p))]
 }
 
 check_init_signatures <- function(funs) {
@@ -439,8 +440,8 @@ generate_r_functions <- function(funs, package = "cppally", use_package = FALSE)
   funs$formals <- mapply(r_formals, funs$args, funs$name,
                          MoreArgs = list(package = package, use_package = use_package),
                          SIMPLIFY = TRUE, USE.NAMES = FALSE)
-  funs$list_params <- vcapply(funs$args, glue_collapse_data, "{name}")
-  funs$params <- vcapply(funs$list_params, function(x) if (nzchar(x)) paste0(", ", x) else x)
+  funs$list_params <- char_apply(funs$args, glue_collapse_data, "{name}")
+  funs$params <- char_apply(funs$list_params, function(x) if (nzchar(x)) paste0(", ", x) else x)
   is_void <- type_is_void(funs$return_type)
   funs$calls <- ifelse(is_void,
                        glue::glue_data(funs, 'invisible(.Call({package_names}{params}{package_call}))'),
@@ -733,7 +734,7 @@ cpp_register <- function(
 
   cpp_function_registration <- glue::glue_data(funs, '    {{
     "_cppally_{name}", (DL_FUNC) &_{package}_{name}, {n_args}}}, ',
-                                               n_args = viapply(funs$args, nrow)
+                                               n_args = int_apply(funs$args, nrow)
   )
 
   cpp_function_registration <- glue::glue_collapse(cpp_function_registration, sep = "\n")

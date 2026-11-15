@@ -528,7 +528,7 @@ cpp_eval <- function(code, env = curr_env(), clean = TRUE,
   fns <- mget(fn_names, envir = env)
   names(fns) <- paste0("res", seq_along(fns))
   results <- lapply(fns, \(fn) fn())
-  is_void <- vapply(results, \(x) x[["is_void"]], logical(1))
+  is_void <- lgl_apply(results, \(x) x[["is_void"]])
   results <- lapply(results, \(x) x[["result"]])[!is_void]
 
   if (!simplify){
