@@ -89,6 +89,22 @@ struct str_arg {
     operator const char*() const noexcept { return value.c_str(); }
 };
 
+// A helper to ensure that default argument types and lifetimes are handled as they would be in a real call.
+// Its param is literally `T x`, so the default is copy-initialised to the exact param type
+// (implicit conversions only, brace lists, reference binding), which `auto`, casts or as<T>() don't reproduce.
+// Used inside a single statement, e.g. `return cpp_to_r(default_arg_copy_init<T>(default_expr));`, C++ keeps the
+// default's temporaries (e.g. an owning r_str) alive until the statement ends, after cpp_to_r() returns.
+// This avoids a situation like `foo(r_str_view x = as<r_str>(r_int(5)))`, whereby if we wrote the default arg like this:
+//   r_str_view default_arg = as<r_str>(r_int(5));
+//   return cpp_to_r(default_arg);
+// then the temporary r_str would be destroyed by the end of the first statement. default_arg would then be pointing to 
+// an r_str that doesn't exist, and hence its underlying CHARSXP may get garbage-collected before cpp_to_r() even had a chance to finish.
+template <typename T>
+T default_arg_copy_init(T x) {
+    // std::forward to support rvalue ref
+    return std::forward<T>(x);
+}
+
 // NULL means the argument was never supplied: nullopt for std::optional, and left
 // alone where RComposite is concerned to allow passing optional arguments
 template <typename T>

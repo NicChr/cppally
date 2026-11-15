@@ -222,17 +222,18 @@ generate_default_helpers <- function(funs, package = "cppally") {
     args <- funs$args[[i]]
     fn_name <- funs$name[[i]]
     for (j in which(needs_default_helper(args))) {
-      # A template-typed default is evaluated as its own type, which then deduces the param
+      # One expression, so the default's temporaries outlive cpp_to_r() as they would the real call
       type <- args$type[[j]]
+      value <- glue::glue("default_arg_copy_init<{type}>({args$default[[j]]})")
+      # A template-typed default is evaluated as its own type, which then deduces the param
       if (funs$is_template[[i]] && length(used_template_params(type, funs$template_params[[i]])) > 0) {
-        type <- "auto"
+        value <- args$default[[j]]
       }
       helpers <- c(helpers, glue::glue('
         // {basename(funs$file[[i]])}
         extern "C" attribute_visible SEXP {default_helper_name(package, fn_name, args$name[[j]])}(SEXP /* cpp_default */) {{
           BEGIN_CPPALLY
-          {type} cppally_default = {args$default[[j]]};
-          return cpp_to_r(cppally_default);
+          return cpp_to_r({value});
           END_CPPALLY
         }}
         '))
@@ -768,6 +769,7 @@ cpp_register <- function(
       using internal::cpp_to_r;
       using internal::r_to_cpp;
       using internal::dispatch_template_impl;
+      using internal::default_arg_copy_init;
 
       {cpp_functions_definitions}
 
