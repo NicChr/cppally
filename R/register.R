@@ -221,14 +221,16 @@ generate_default_helpers <- function(funs, package = "cppally") {
     args <- funs$args[[i]]
     fn_name <- funs$name[[i]]
     for (j in which(needs_default_helper(args))) {
-      if (funs$is_template[[i]]) {
-        check_default_template_param(fn_name, args$name[[j]], args$type[[j]], args$default[[j]], funs$template_params[[i]])
+      # A template-typed default is evaluated as its own type, which then deduces the param
+      type <- args$type[[j]]
+      if (funs$is_template[[i]] && length(used_template_params(type, funs$template_params[[i]])) > 0) {
+        type <- "auto"
       }
       helpers <- c(helpers, glue::glue('
         // {basename(funs$file[[i]])}
         extern "C" attribute_visible SEXP {default_helper_name(package, fn_name, args$name[[j]])}(SEXP /* cpp_default */) {{
           BEGIN_CPPALLY
-          {args$type[[j]]} cppally_default = {args$default[[j]]};
+          {type} cppally_default = {args$default[[j]]};
           return cpp_to_r(cppally_default);
           END_CPPALLY
         }}
@@ -360,22 +362,8 @@ default_helper_name <- function(package, fn_name, arg_name){
   glue::glue("_{package}_{fn_name}_arg_{arg_name}")
 }
 
-# The helper is a non-template function, so its default can't name a template param
-check_default_template_param <- function(fn_name, arg_name, type, default, template_params) {
-  # String literals blanked first, so `r_str("T")` is not read as naming `T`
-  code <- gsub('"([^"\\\\]|\\\\.)*"', '""', default, perl = TRUE)
-  refs <- vapply(template_params, function(p) {
-    is_template_arg(type, p) || grepl(paste0("\\b", p, "\\b"), code, perl = TRUE)
-  }, logical(1))
-  if (any(refs)) {
-    bad <- template_params[refs]
-    cli::cli_abort(c(
-      "Default arguments on template functions cannot depend on a template parameter.",
-      "x" = "Argument {.arg {arg_name}} of {.fn {fn_name}} depends on {.code {bad}}.",
-      "i" = "Defaults without an R equivalent are evaluated in a non-template C++ helper."
-    ))
-  }
-  invisible()
+used_template_params <- function(type, template_params){
+  template_params[vapply(template_params, \(p) is_template_arg(type, p), logical(1))]
 }
 
 check_init_signatures <- function(funs) {
