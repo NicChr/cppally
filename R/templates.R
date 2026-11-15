@@ -68,35 +68,70 @@ nested_mask <- c(
 # Masks up to the `)` that closes the parameter list, comments become a single space.
 # String and char literals become `CPPALLY_LIT_<i>_`, the originals kept in attr "literals"
 mask_signature <- function(context) {
+
+  # depth goes up at each ( and down at each )
   depth <- 0L
+
+  # Are we currently in a string, e.g. "string"
   in_string <- FALSE
+
+  # Are we currently in a char, e.g. 'char'
   in_char <- FALSE
+
+  # Are we currently in a C++ block comment, e.g. /* comment */
   in_comment <- FALSE
+
+  # Is the character escaped?
   escaped <- FALSE
+
+  # Original text of each literal swapped for a placeholder
   literals <- character()
+
   for (i in seq_along(context)) {
     chars <- strsplit(context[[i]], "", fixed = TRUE)[[1]]
+
+    # Unmasked copy, for the previous char and the literal text
     original <- chars
+
     n <- length(chars)
     literal_start <- 0L
+
     for (j in seq_len(n)) {
-      ch <- chars[[j]]
-      nxt <- if (j < n) chars[[j + 1L]] else ""
-      prev <- if (j > 1L) original[[j - 1L]] else ""
+
+      curr_char <- chars[[j]] # Current char
+
+      if (j < n){
+        next_char <- chars[[j + 1L]]
+      } else {
+        next_char <- ""
+      }
+      if (j > 1L){
+        prev_char <- original[[j - 1L]]
+      } else {
+        prev_char <- ""
+      }
+
+      # ----- Inside a C++ block comment -----
+
       if (in_comment) {
-        if (ch == "*" && nxt == "/") {
+
+        # Block comment chars are dropped, the opening `/*` already left a space
+        if (curr_char == "*" && next_char == "/") {
           in_comment <- FALSE
           chars[[j + 1L]] <- ""
         }
         chars[[j]] <- ""
         next
       }
+
+      # ----- Inside a C++ string or char -----
+
       if (in_string || in_char) {
         if (escaped) {
           escaped <- FALSE
-        } else if (ch == "\\") {
+        } else if (curr_char == "\\") {
           escaped <- TRUE
-        } else if ((in_string && ch == '"') || (in_char && ch == "'")) {
+        } else if ((in_string && curr_char == '"') || (in_char && curr_char == "'")) {
           in_string <- FALSE
           in_char <- FALSE
           if (depth > 0L) {
@@ -107,36 +142,55 @@ mask_signature <- function(context) {
         }
         next
       }
-      if (ch == '"') {
+
+      # ----- Start of a C++ string -----
+
+      if (curr_char == '"') {
         in_string <- TRUE
         literal_start <- j
-      } else if (ch == "'" && !grepl("[[:alnum:]_]", prev)) {
-        # After an alphanumeric `'` is a digit separator, e.g. `10'000`
+
+        # ----- Start of a C++ char -----
+
+        # C++ treats ' as either the start/end of a char or a digit separator (e.g. 10'000)
+        # If the char before ' is a letter, digit or underscore it's a separator, otherwise it starts a char
+
+      } else if (curr_char == "'" && !grepl("[[:alnum:]_]", prev_char)) {
         in_char <- TRUE
         literal_start <- j
-      } else if (ch == "/" && nxt == "/") {
+
+        # ----- Start of a C++ line comment -----
+
+      } else if (curr_char == "/" && next_char == "/") {
         chars <- c(chars[seq_len(j - 1L)], " ")
         break
-      } else if (ch == "/" && nxt == "*") {
+
+        # ----- Start of a C++ block comment -----
+
+      } else if (curr_char == "/" && next_char == "*") {
         # The `*` is consumed too, so `/*/` is not read as a closed comment
         in_comment <- TRUE
         chars[j:(j + 1L)] <- c(" ", "")
         next
-      } else if (ch == "(") {
+      } else if (curr_char == "(") {
         depth <- depth + 1L
-      } else if (ch == ")") {
+      } else if (curr_char == ")") {
         depth <- depth - 1L
+        # If we're at the top then we are at the end of the arguments list
         if (depth <= 0L) {
           context[[i]] <- paste(chars, collapse = "")
           return(structure(context, literals = literals))
         }
       }
-      mask <- if (depth > 1L) nested_mask else top_mask
-      if (depth > 0L && ch %in% names(mask)) {
-        chars[[j]] <- mask[[ch]]
+      if (depth > 1L){
+        mask <- nested_mask
+      } else {
+        mask <- top_mask
+      }
+      if (depth > 0L && curr_char %in% names(mask)) {
+        chars[[j]] <- mask[[curr_char]]
       }
     }
-    # C++ literals can't span lines, so an unterminated one was misread, e.g. a raw string
+    # C++ literals can't span lines, so an un-terminated one was misread, e.g. a raw string
     if (in_string || in_char) {
       stop("Unterminated string or char literal (raw strings aren't supported).", call. = FALSE)
     }
