@@ -210,7 +210,7 @@ generate_cpp_functions <- function(funs, package = "cppally") {
   unclass(out)
 }
 
-# Each default without an R equivalent gets a helper that evaluates it in C++
+# Generate C++ routines for default args that do not have a 1-to-1 R equivalent
 generate_default_helpers <- function(funs, package = "cppally") {
   helpers <- character()
   for (i in seq_len(NROW(funs))) {
@@ -277,7 +277,7 @@ add_r_default_args <- function(args){
         cpp_default <- sub("^(r_[[:alnum:]_]+)\\{(.*)\\}$", "\\1(\\2)", cpp_default)
         cpp_default <- sub("^(r_[[:alnum:]_]+)::na\\(\\)$", "na<\\1>()", cpp_default)
 
-        # Numeric literals, translated so the R type matches the C++ type of the default
+        # Numeric literals
 
         wrapper <- if (grepl("^r_(int|dbl)\\(.*\\)$", cpp_default)) sub("\\(.*", "", cpp_default) else ""
         literal <- sub("^r_(int|dbl)\\((.*)\\)$", "\\2", cpp_default)
@@ -357,7 +357,7 @@ default_helper_name <- function(package, fn_name, arg_name){
   glue::glue("_{package}_{fn_name}_arg_{arg_name}")
 }
 
-# Every .Call routine cppally generates, the function wrappers and the default helpers
+# Names of all generated .Call routines
 generated_routines <- function(funs, package){
   helpers <- Map(\(name, args) default_helper_name(package, name, args$name[needs_default_helper(args)]), funs$name, funs$args)
   as.character(c(glue::glue("_{package}_{funs$name}"), unlist(helpers)))
@@ -582,7 +582,8 @@ get_call_entries <- function(path, routines) {
     return("")
   }
 
-  # cppally defines these itself, so the skeleton's declarations are dropped
+  # Routines generated above are already defined in the generated file 
+  # A package's other routines are kept
   if (length(routines) > 0) {
     redundant <- paste0("^extern SEXP (", paste(routines, collapse = "|"), ")\\(")
     res <- res[!grepl(redundant, res)]

@@ -43,8 +43,8 @@ get_template_params <- function(context) {
   sub(".*\\s+(\\w+)$", "\\1", parts, perl = TRUE)
 }
 
-# decor cuts the signature at the first `{` or `;` line and counts parens, angle brackets
-# and `//` even inside string literals. So literals are swapped whole for placeholders,
+# decor cuts the signature at the first `{` or `;` line and counts parens, angle brackets and `//` even inside string literals.
+# So literals are swapped whole for placeholders,
 # and the remaining characters decor misreads are masked, both restored after parsing.
 # Brace tokens carry parens so decor doesn't split on a comma inside braces
 brace_mask <- c(
