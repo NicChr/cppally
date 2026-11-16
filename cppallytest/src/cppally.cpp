@@ -1657,12 +1657,6 @@ extern "C" attribute_visible SEXP _cppallytest_test_default_dbls_arg_xx(SEXP /* 
   END_CPPALLY
 }
 // test_defaults.h
-extern "C" attribute_visible SEXP _cppallytest_test_default_dbls_arg_zz(SEXP /* cpp_default */) {
-  BEGIN_CPPALLY
-  return cpp_to_r(default_arg_copy_init<double>(std::numeric_limits<double>::max()));
-  END_CPPALLY
-}
-// test_defaults.h
 extern "C" attribute_visible SEXP _cppallytest_test_default_dbls_arg_zzz(SEXP /* cpp_default */) {
   BEGIN_CPPALLY
   return cpp_to_r(default_arg_copy_init<double>(std::sqrt(std::numeric_limits<double>::epsilon())));
@@ -1809,7 +1803,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_default_args_templated_arg_x", (DL_FUNC) &_cppallytest_test_default_args_templated_arg_x, 1},
     {"_cppallytest_test_default_dbls",                 (DL_FUNC) &_cppallytest_test_default_dbls,                 7},
     {"_cppallytest_test_default_dbls_arg_xx",          (DL_FUNC) &_cppallytest_test_default_dbls_arg_xx,          1},
-    {"_cppallytest_test_default_dbls_arg_zz",          (DL_FUNC) &_cppallytest_test_default_dbls_arg_zz,          1},
     {"_cppallytest_test_default_dbls_arg_zzz",         (DL_FUNC) &_cppallytest_test_default_dbls_arg_zzz,         1},
     {"_cppallytest_test_default_ints",                 (DL_FUNC) &_cppallytest_test_default_ints,                 6},
     {"_cppallytest_test_default_ints_arg_xx",          (DL_FUNC) &_cppallytest_test_default_ints_arg_xx,          1},

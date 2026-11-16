@@ -40,10 +40,7 @@ test_that("Default args", {
       z = 3,
       xx = .Call(`_cppallytest_test_default_dbls_arg_xx`, cpp_default = "1 + 3"),
       yy = 1e+10,
-      zz = .Call(
-        `_cppallytest_test_default_dbls_arg_zz`,
-        cpp_default = "std::numeric_limits<double>::max()"
-      ),
+      zz = .Machine$double.xmax,
       zzz = .Call(
         `_cppallytest_test_default_dbls_arg_zzz`,
         cpp_default = "std::sqrt(std::numeric_limits<double>::epsilon())"

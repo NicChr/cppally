@@ -300,47 +300,60 @@ add_r_default_args <- function(args){
 
         # Constants
 
-        r_defaults[i] <- list(
-          switch(
-            cpp_default,
+        cpp_default <- switch(
+          cpp_default,
 
-            # NULL
+          # NULL
 
-            r_null = NULL,
-            `std::nullopt` = NULL,
+          r_null = NULL,
+          `std::nullopt` = NULL,
 
-            # Logical constants
+          # Logical constants
 
-            r_true = TRUE,
-            r_false = FALSE,
-            r_na = NA,
-            true = TRUE,
-            false = FALSE,
-            `r_lgl(true)` = TRUE,
-            `r_lgl(false)` = FALSE,
+          r_true = TRUE,
+          r_false = FALSE,
+          r_na = NA,
+          true = TRUE,
+          false = FALSE,
+          `r_lgl(true)` = TRUE,
+          `r_lgl(false)` = FALSE,
 
-            # NA
+          # NA
 
-            `na<r_lgl>()` = NA,
-            `na<r_int>()` = NA_integer_,
-            `na<r_dbl>()` = NA_real_,
-            `na<r_str>()` = NA_character_,
-            `na<r_str_view>()` = NA_character_,
-            `na<r_cplx>()` = NA_complex_,
-            `na<r_date>()` = quote(as.Date(NA_real_)),
-            `na<r_psxct>()` = quote(as.POSIXct(NA_real_, tz = "")),
+          `na<r_lgl>()` = NA,
+          `na<r_int>()` = NA_integer_,
+          `na<r_dbl>()` = NA_real_,
+          `na<r_str>()` = NA_character_,
+          `na<r_str_view>()` = NA_character_,
+          `na<r_cplx>()` = NA_complex_,
+          `na<r_date>()` = quote(as.Date(NA_real_)),
+          `na<r_psxct>()` = quote(as.POSIXct(NA_real_, tz = "")),
 
-            # double constants NaN and Inf
+          # double constants NaN and Inf
 
-            `r_dbl::nan()` = NaN,
-            `r_dbl::inf()` = Inf,
-            `-r_dbl::inf()` = -Inf,
+          `r_dbl::nan()` = NaN,
+          `r_dbl::inf()` = Inf,
+          `-r_dbl::inf()` = -Inf,
 
-            # No R equivalent, evaluated in C++ by a default helper instead
+          # Limits
 
-            no_default
-          )
+          `r_limits<r_int>::max()` = quote(.Machine$integer.max),
+          `r_limits<r_int>::min()` = quote(-.Machine$integer.max),
+          `r_limits<r_dbl>::max()` = Inf,
+          `r_limits<r_dbl>::min()` = -Inf,
+          `std::numeric_limits<int>::max()` = quote(.Machine$integer.max),
+          `std::numeric_limits<double>::max()` = quote(.Machine$double.xmax),
+          `std::numeric_limits<double>::min()` = quote(.Machine$double.xmin),
+          `std::numeric_limits<double>::infinity()` = Inf,
+          `-std::numeric_limits<double>::infinity()` = -Inf,
+
+          # No R equivalent, evaluated in C++ by a default helper instead
+
+          no_default
         )
+
+        r_defaults[i] <- list(cpp_default)
+
       }
 
       arg$r_default <- r_defaults

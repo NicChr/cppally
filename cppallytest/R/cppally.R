@@ -396,7 +396,7 @@ test_default_ints <- function(x = -1L, y = 2L, z = 0L, xx = .Call(`_cppallytest_
   .Call(`_cppallytest_test_default_ints`, x, y, z, xx, yy, zz)
 }
 
-test_default_dbls <- function(x = -1, y = 2.5, z = 3., xx = .Call(`_cppallytest_test_default_dbls_arg_xx`, cpp_default = "1 + 3"), yy = 1e10, zz = .Call(`_cppallytest_test_default_dbls_arg_zz`, cpp_default = "std::numeric_limits<double>::max()"), zzz = .Call(`_cppallytest_test_default_dbls_arg_zzz`, cpp_default = "std::sqrt(std::numeric_limits<double>::epsilon())")) {
+test_default_dbls <- function(x = -1, y = 2.5, z = 3., xx = .Call(`_cppallytest_test_default_dbls_arg_xx`, cpp_default = "1 + 3"), yy = 1e10, zz = .Machine$double.xmax, zzz = .Call(`_cppallytest_test_default_dbls_arg_zzz`, cpp_default = "std::sqrt(std::numeric_limits<double>::epsilon())")) {
   .Call(`_cppallytest_test_default_dbls`, x, y, z, xx, yy, zz, zzz)
 }
 
