@@ -42,6 +42,10 @@ and R integration.
 
 - NA-aware scalar algebra
 
+- Default arguments
+
+- `std::optional` arguments
+
 - C++ style R vectors with `r_vector<T>`
 
 - C++ class `r_sym` for R symbols
@@ -65,8 +69,6 @@ and R integration.
 - Random number generation with `random_stream`
 
 - Rich math library
-
-- `std::optional` arguments
 
 - Fast name-lookup via hash maps
 
@@ -578,7 +580,6 @@ bit64 by marking them with the “integer64” class.
 
 ``` r
 library(bit64)
-#> Warning: package 'bit64' was built under R version 4.6.1
 ```
 
 ``` cpp
