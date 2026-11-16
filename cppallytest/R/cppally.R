@@ -388,6 +388,30 @@ test_time_diff_round_trip <- function() {
   invisible(.Call(`_cppallytest_test_time_diff_round_trip`))
 }
 
+test_default_lgls <- function(x = FALSE, y = TRUE, xx = FALSE, yy = TRUE, zz = .Call(`_cppallytest_test_default_lgls_arg_zz`, cpp_default = "true || false")) {
+  .Call(`_cppallytest_test_default_lgls`, x, y, xx, yy, zz)
+}
+
+test_default_ints <- function(x = -1L, y = 2L, z = 0L, xx = .Call(`_cppallytest_test_default_ints_arg_xx`, cpp_default = "1 + 2"), yy = .Call(`_cppallytest_test_default_ints_arg_yy`, cpp_default = "r_int(2) + 3"), zz = 2.5) {
+  .Call(`_cppallytest_test_default_ints`, x, y, z, xx, yy, zz)
+}
+
+test_default_dbls <- function(x = -1, y = 2.5, z = 3., xx = .Call(`_cppallytest_test_default_dbls_arg_xx`, cpp_default = "1 + 3"), yy = 1e10, zz = .Call(`_cppallytest_test_default_dbls_arg_zz`, cpp_default = "std::numeric_limits<double>::max()"), zzz = .Call(`_cppallytest_test_default_dbls_arg_zzz`, cpp_default = "std::sqrt(std::numeric_limits<double>::epsilon())")) {
+  .Call(`_cppallytest_test_default_dbls`, x, y, z, xx, yy, zz, zzz)
+}
+
+test_default_strs <- function(a = .Call(`_cppallytest_test_default_strs_arg_a`, cpp_default = "\"a\""), b = "b", c = "c") {
+  .Call(`_cppallytest_test_default_strs`, a, b, c)
+}
+
+test_default_args_templated <- function(x = .Call(`_cppallytest_test_default_args_templated_arg_x`, cpp_default = "r_dbl(1) / r_dbl(2)"), a = .Call(`_cppallytest_test_default_args_templated_arg_a`, cpp_default = "r_int(1) + 2"), b = .Call(`_cppallytest_test_default_args_templated_arg_b`, cpp_default = "r_dbl(1) / r_dbl(4)"), c = .Call(`_cppallytest_test_default_args_templated_arg_c`, cpp_default = "r_int64(5)"), d = 2L, e = NA, f = .Call(`_cppallytest_test_default_args_templated_arg_f`, cpp_default = "as<r_str>(r_int(42))"), g = .Call(`_cppallytest_test_default_args_templated_arg_g`, cpp_default = "as<r_str>(r_dbl(0.5))"), h = 7L) {
+  .Call(`_cppallytest_test_default_args_templated`, x, a, b, c, d, e, f, g, h)
+}
+
+test_optional_default <- function(x = 10L) {
+  .Call(`_cppallytest_test_optional_default`, x)
+}
+
 str_eq <- function(x, y) {
   .Call(`_cppallytest_str_eq`, x, y)
 }
