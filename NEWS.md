@@ -6,6 +6,109 @@
 strings (and native strings in a non-UTF-8 session) by copying their bytes 
 directly into a UTF-8 marked `r_str`. They are now translated to UTF-8 first.
 
+## Default arguments
+
+Registering C++ functions to R with default arguments is now supported.
+
+```cpp
+#include <cppally.hpp>
+using namespace cppally;
+
+[[cppally::register]]
+r_dbl cpp_sum(r_vec<r_dbl> x, bool na_rm = true){
+  return sum(x, /*na_rm=*/ na_rm);
+}
+```
+
+Generated R function
+
+```r
+cpp_sum
+function(x, na_rm = TRUE) {
+  .Call(`_mypkg_cpp_sum`, x, na_rm)
+}
+```
+
+This is useful because the generated R function already has the `na_rm` default 
+value as part of the signature, so we don't have to go through the hassle of 
+writing an extra wrapper on top to have that default argument.
+
+```r
+cpp_sum(c(1, NA, 2, 3)) # na_rm = TRUE by default
+[1] 6
+cpp_sum(c(1, NA, 2, 3), na_rm = FALSE)
+[1] NA
+```
+
+Many C++ constants can become R defaults, including `r_null`, 
+literals (logical, numeric, string), and `NA` values.
+
+```cpp
+[[cppally::register]]
+r_lgl foo(r_lgl x = r_lgl(true), bool y = false, r_lgl z = na<r_lgl>()){
+    return x || y || z;
+}
+[[cppally::register]]
+r_dbl bar(double x = 1, r_dbl y = r_dbl(-1)){
+    return x + y;
+}
+[[cppally::register]]
+r_str foobar(r_str x = r_str("default_string")){
+    return x;
+}
+```
+
+R-registered functions with R-mapped defaults
+
+```r
+foo
+function(x = TRUE, y = FALSE, z = NA) {
+  .Call(`_mypkg_foo`, x, y, z)
+}
+foo()
+[1] TRUE
+bar
+function(x = 1L, y = -1) {
+  .Call(`_mypkg_bar`, x, y)
+}
+bar()
+[1] 0
+foobar
+function(x = "default_string") {
+  .Call(`_mypkg_foobar`, x)
+}
+foobar()
+[1] "default_string"
+```
+
+Example with a more complicated default argument.
+
+```cpp
+[[cppally::register]]
+r_lgl eq(r_dbl x, r_dbl y, r_dbl tol = sqrt(r_limits<r_dbl>::epsilon())){
+  return abs(x - y) <= tol;
+}
+```
+
+If the default argument can't be mapped to an R equivalent, a small C++ routine is generated for it.
+
+```r
+eq
+function(x, y, tol = .Call(`_mypkg_eq_arg_tol`, cpp_default = "sqrt(r_limits<r_dbl>::epsilon())")) {
+  .Call(`_mypkg_eq`, x, y, tol)
+}
+```
+
+The default argument's C++ expression is captured in the `.Call()` signature as
+the `cpp_default` parameter: `cpp_default = "sqrt(r_limits<r_dbl>::epsilon())"`.
+This parameter is ignored by `.Call()` and only shows which C++ expression 
+will be evaluated to generate the default value.
+
+```r
+eq(2, sqrt(2)^2) # `tol = sqrt(.Machine$double.eps)` by default
+[1] TRUE
+```
+
 ## Encoding-aware strings
 
 Strings are now compared by their text (like base R). This means that strings 
