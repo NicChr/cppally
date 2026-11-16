@@ -87,7 +87,7 @@ r_formals <- function(args, fn_name, package, use_package = FALSE){
   optional <- is_optional_arg(args$type)
   formals[optional] <- paste0(args$name[optional], " = NULL")
 
-  has_r_default <- !lgl_apply(args$r_default, inherits, "cppally_no_default")
+  has_r_default <- !lgl_apply(args$r_default, is_cppally_no_default)
   r_defaults <- char_apply(args$r_default, deparse1)
   formals[has_r_default] <- paste0(args$name[has_r_default], " = ", r_defaults[has_r_default])
 
@@ -247,6 +247,10 @@ generate_default_helpers <- function(funs, package = "cppally") {
 
 no_default <- structure(list(), class = "cppally_no_default")
 
+is_cppally_no_default <- function(x){
+  inherits(x, "cppally_no_default")
+}
+
 add_r_default_args <- function(args){
 
   lapply(
@@ -358,7 +362,7 @@ add_r_default_args <- function(args){
 }
 
 needs_default_helper <- function(args){
-  !is.na(args$default) & lgl_apply(args$r_default, inherits, "cppally_no_default")
+  !is.na(args$default) & lgl_apply(args$r_default, is_cppally_no_default)
 }
 
 default_helper_name <- function(package, fn_name, arg_name){
