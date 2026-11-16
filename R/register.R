@@ -734,11 +734,6 @@ cpp_register <- function(
 
   call_entries <- get_call_entries(path, funs$name, package)
 
-  cpp_function_registration <- glue::glue_data(funs, '    {{
-    "_cppally_{name}", (DL_FUNC) &_{package}_{name}, {n_args}}}, ',
-                                               n_args = int_apply(funs$args, nrow)
-  )
-
   cpp_function_registration <- glue::glue_collapse(cpp_function_registration, sep = "\n")
 
   user_header_files <- unique(funs$file[is_header(funs$file)])
