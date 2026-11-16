@@ -364,12 +364,7 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
   funs <- get_registered_functions(all_decorations, "cppally::register", quiet = quiet)
   cpp_functions_definitions <- generate_cpp_functions(funs, package = package)
   cpp_path <- file.path(dirname(new_file_path), "cppally.cpp")
-  brio::write_lines(c("#include <cppally/r_dispatch.h>",
-                      glue::glue('#include "{new_file_name}"'),
-                      "using namespace cppally;",
-                      "using internal::cpp_to_r;",
-                      "using internal::r_to_cpp;",
-                      "using internal::dispatch_template_impl;",
+  brio::write_lines(c(generate_cpp_preamble(glue::glue('#include "{new_file_name}"')),
                       cpp_functions_definitions),
                     cpp_path)
   linking_to <- union(get_linking_to(all_decorations), "cppally")
