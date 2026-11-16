@@ -81,7 +81,7 @@ foobar()
 [1] "default_string"
 ```
 
-Example with a more complicated default argument.
+Example with a more complicated default argument:
 
 ```cpp
 [[cppally::register]]
