@@ -95,7 +95,7 @@ r_formals <- function(args, fn_name, package, use_package = FALSE){
   optional <- is_optional_arg(args$type)
   formals[optional] <- paste0(args$name[optional], " = NULL")
 
-  has_r_default <- !lgl_apply(args$r_default, is_cppally_no_default)
+  has_r_default <- !lgl_apply(args$r_default, is_no_r_mapping)
   r_defaults <- char_apply(args$r_default, deparse1)
   formals[has_r_default] <- paste0(args$name[has_r_default], " = ", r_defaults[has_r_default])
 
@@ -210,7 +210,7 @@ generate_cpp_functions <- function(funs, package = "cppally") {
   unclass(out)
 }
 
-# Generate C++ routines for default args that do not have a 1-to-1 R equivalent
+# Generate C++ routines for default args that do not have a 1-to-1 R mapping
 generate_default_helpers <- function(funs, package = "cppally") {
   helpers <- character()
   for (i in seq_len(NROW(funs))) {
@@ -241,10 +241,108 @@ generate_default_helpers <- function(funs, package = "cppally") {
   helpers
 }
 
-no_default <- structure(list(), class = "cppally_no_default")
+no_r_mapping <- structure(list(), class = "cppally_no_r_mapping")
 
-is_cppally_no_default <- function(x){
-  inherits(x, "cppally_no_default")
+is_no_r_mapping <- function(x){
+  inherits(x, "cppally_no_r_mapping")
+}
+
+parse_cpp_expr_as_r_expr <- function(expr){
+
+  if (length(expr) != 1 || !is.character(expr) || is.na(expr)){
+    stop("expr must be a length 1 character vector")
+  }
+
+  # String literal defaults
+
+  str_literal <- sub('^\\s*(cppally::)?r_str\\s*[({]\\s*(".*")\\s*[)}]\\s*$', "\\2", expr)
+  if (str_literal != expr){
+    parsed <- tryCatch(str2lang(str_literal), error = \(e) NULL)
+    if (is.character(parsed)){
+      return(parsed)
+    } else {
+      return(no_r_mapping)
+    }
+  }
+
+  # Strip cppally namespace and whitespace, read `r_int{5}` as `r_int(5)` and `r_int::na()` as `na<r_int>()`
+  expr <- gsub("\\s+", "", gsub("cppally::", "", expr, fixed = TRUE))
+  expr <- sub("^(r_[[:alnum:]_]+)\\{(.*)\\}$", "\\1(\\2)", expr)
+  expr <- sub("^(r_[[:alnum:]_]+)::na\\(\\)$", "na<\\1>()", expr)
+
+  # Numeric literals
+
+  wrapper <- if (grepl("^r_(int|dbl)\\(.*\\)$", expr)) sub("\\(.*", "", expr) else ""
+  literal <- sub("^r_(int|dbl)\\((.*)\\)$", "\\2", expr)
+  int_syntax <- grepl("^[-+]?([0-9]+|0[xX][0-9a-fA-F]+)$", literal)
+  # Leading-zero integers are octal in C++ but decimal in R
+  is_int_literal <- int_syntax && !grepl("^[-+]?0[0-9]+$", literal) &&
+    abs(as.double(literal)) <= .Machine$integer.max
+  # Must start with a digit, as as.double() also accepts names like INFINITY
+  is_dbl_literal <- !int_syntax && grepl("^[-+]?\\.?[0-9]", literal) &&
+    !is.na(suppressWarnings(as.double(literal)))
+
+  if (is_int_literal && wrapper != "r_dbl"){
+    return(as.symbol(paste0(literal, "L")))
+  }
+  if ((is_int_literal || is_dbl_literal) && wrapper != "r_int"){
+    return(as.symbol(literal))
+  }
+
+  # Constants
+
+  switch(
+    expr,
+
+    # NULL
+
+    r_null = NULL,
+    `std::nullopt` = NULL,
+
+    # Logical constants
+
+    r_true = TRUE,
+    r_false = FALSE,
+    r_na = NA,
+    true = TRUE,
+    false = FALSE,
+    `r_lgl(true)` = TRUE,
+    `r_lgl(false)` = FALSE,
+
+    # NA
+
+    `na<r_lgl>()` = NA,
+    `na<r_int>()` = NA_integer_,
+    `na<r_dbl>()` = NA_real_,
+    `na<r_str>()` = NA_character_,
+    `na<r_str_view>()` = NA_character_,
+    `na<r_cplx>()` = NA_complex_,
+    `na<r_date>()` = quote(as.Date(NA_real_)),
+    `na<r_psxct>()` = quote(as.POSIXct(NA_real_, tz = "")),
+
+    # double constants NaN and Inf
+
+    `r_dbl::nan()` = NaN,
+    `r_dbl::inf()` = Inf,
+    `-r_dbl::inf()` = -Inf,
+
+    # Limits
+
+    `r_limits<r_int>::max()` = quote(.Machine$integer.max),
+    `r_limits<r_int>::min()` = quote(-.Machine$integer.max),
+    `r_limits<r_dbl>::max()` = Inf,
+    `r_limits<r_dbl>::min()` = -Inf,
+    `std::numeric_limits<int>::max()` = quote(.Machine$integer.max),
+    `std::numeric_limits<double>::max()` = quote(.Machine$double.xmax),
+    `std::numeric_limits<double>::min()` = quote(.Machine$double.xmin),
+    `std::numeric_limits<double>::infinity()` = Inf,
+    `-std::numeric_limits<double>::infinity()` = -Inf,
+
+    # No R mapping, use a fallback
+    no_r_mapping
+
+  )
+
 }
 
 add_r_default_args <- function(args){
@@ -253,7 +351,7 @@ add_r_default_args <- function(args){
     args,
     \(arg){
       cpp_defaults <- arg$default
-      r_defaults <- rep_len(list(no_default), length(cpp_defaults))
+      r_defaults <- rep_len(list(no_r_mapping), length(cpp_defaults))
 
       for (i in seq_along(cpp_defaults)){
 
@@ -263,97 +361,8 @@ add_r_default_args <- function(args){
           next
         }
 
-        # String literal defaults
-
-        str_literal <- sub('^\\s*(cppally::)?r_str\\s*[({]\\s*(".*")\\s*[)}]\\s*$', "\\2", cpp_default)
-        if (str_literal != cpp_default){
-          parsed <- tryCatch(str2lang(str_literal), error = \(e) NULL)
-          r_defaults[i] <- list(if (is.character(parsed)) parsed else no_default)
-          next
-        }
-
-        # Strip cppally namespace and whitespace, read `r_int{5}` as `r_int(5)` and `r_int::na()` as `na<r_int>()`
-        cpp_default <- gsub("\\s+", "", gsub("cppally::", "", cpp_default, fixed = TRUE))
-        cpp_default <- sub("^(r_[[:alnum:]_]+)\\{(.*)\\}$", "\\1(\\2)", cpp_default)
-        cpp_default <- sub("^(r_[[:alnum:]_]+)::na\\(\\)$", "na<\\1>()", cpp_default)
-
-        # Numeric literals
-
-        wrapper <- if (grepl("^r_(int|dbl)\\(.*\\)$", cpp_default)) sub("\\(.*", "", cpp_default) else ""
-        literal <- sub("^r_(int|dbl)\\((.*)\\)$", "\\2", cpp_default)
-        int_syntax <- grepl("^[-+]?([0-9]+|0[xX][0-9a-fA-F]+)$", literal)
-        # Leading-zero integers are octal in C++ but decimal in R
-        is_int_literal <- int_syntax && !grepl("^[-+]?0[0-9]+$", literal) &&
-          abs(as.double(literal)) <= .Machine$integer.max
-        # Must start with a digit, as as.double() also accepts names like INFINITY
-        is_dbl_literal <- !int_syntax && grepl("^[-+]?\\.?[0-9]", literal) &&
-          !is.na(suppressWarnings(as.double(literal)))
-
-        if (is_int_literal && wrapper != "r_dbl"){
-          r_defaults[i] <- list(as.symbol(paste0(literal, "L")))
-          next
-        }
-        if ((is_int_literal || is_dbl_literal) && wrapper != "r_int"){
-          r_defaults[i] <- list(as.symbol(literal))
-          next
-        }
-
-        # Constants
-
-        cpp_default <- switch(
-          cpp_default,
-
-          # NULL
-
-          r_null = NULL,
-          `std::nullopt` = NULL,
-
-          # Logical constants
-
-          r_true = TRUE,
-          r_false = FALSE,
-          r_na = NA,
-          true = TRUE,
-          false = FALSE,
-          `r_lgl(true)` = TRUE,
-          `r_lgl(false)` = FALSE,
-
-          # NA
-
-          `na<r_lgl>()` = NA,
-          `na<r_int>()` = NA_integer_,
-          `na<r_dbl>()` = NA_real_,
-          `na<r_str>()` = NA_character_,
-          `na<r_str_view>()` = NA_character_,
-          `na<r_cplx>()` = NA_complex_,
-          `na<r_date>()` = quote(as.Date(NA_real_)),
-          `na<r_psxct>()` = quote(as.POSIXct(NA_real_, tz = "")),
-
-          # double constants NaN and Inf
-
-          `r_dbl::nan()` = NaN,
-          `r_dbl::inf()` = Inf,
-          `-r_dbl::inf()` = -Inf,
-
-          # Limits
-
-          `r_limits<r_int>::max()` = quote(.Machine$integer.max),
-          `r_limits<r_int>::min()` = quote(-.Machine$integer.max),
-          `r_limits<r_dbl>::max()` = Inf,
-          `r_limits<r_dbl>::min()` = -Inf,
-          `std::numeric_limits<int>::max()` = quote(.Machine$integer.max),
-          `std::numeric_limits<double>::max()` = quote(.Machine$double.xmax),
-          `std::numeric_limits<double>::min()` = quote(.Machine$double.xmin),
-          `std::numeric_limits<double>::infinity()` = Inf,
-          `-std::numeric_limits<double>::infinity()` = -Inf,
-
-          # No R equivalent, evaluated in C++ by a default helper instead
-
-          no_default
-        )
-
-        r_defaults[i] <- list(cpp_default)
-
+        r_default <- parse_cpp_expr_as_r_expr(cpp_default)
+        r_defaults[i] <- list(r_default)
       }
 
       arg$r_default <- r_defaults
@@ -363,7 +372,7 @@ add_r_default_args <- function(args){
 }
 
 needs_default_helper <- function(args){
-  !is.na(args$default) & lgl_apply(args$r_default, is_cppally_no_default)
+  !is.na(args$default) & lgl_apply(args$r_default, is_no_r_mapping)
 }
 
 default_helper_name <- function(package, fn_name, arg_name){
