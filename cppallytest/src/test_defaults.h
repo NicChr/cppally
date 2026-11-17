@@ -9,7 +9,7 @@ r_vec<r_lgl> test_default_lgls(r_lgl x = r_lgl{false}, r_lgl y = r_lgl(true), bo
 }
 
 [[cppally::register]]
-r_vec<r_int> test_default_ints(r_int x = r_int{-1}, r_int y = r_int(2), int z = 0, int xx = 1 + 2, r_int yy = r_int(2) + 3, int zz = 2.5){ 
+r_vec<r_int> test_default_ints(r_int x = r_int{-1}, r_int y = r_int(2), int z = 0, int xx = 1 + 2, r_int yy = r_int(2) + 3, int zz = 2.0){ 
     return r_vec<r_int>( {x, y, r_int(z), r_int(xx), yy, r_int(zz)} );
 } 
 

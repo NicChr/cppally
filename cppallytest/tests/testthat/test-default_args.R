@@ -28,7 +28,7 @@ test_that("Default args", {
         `_cppallytest_test_default_ints_arg_yy`,
         cpp_default = "r_int(2) + 3"
       ),
-      zz = 2.5
+      zz = 2.0
     )
   )
 
