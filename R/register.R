@@ -241,7 +241,7 @@ generate_default_helpers <- function(funs, package = "cppally") {
   helpers
 }
 
-no_r_mapping <- structure(list(), class = "cppally_no_r_mapping")
+no_r_mapping <- structure("", class = "cppally_no_r_mapping")
 
 is_no_r_mapping <- function(x){
   inherits(x, "cppally_no_r_mapping")
@@ -253,16 +253,18 @@ parse_cpp_expr_as_r_expr <- function(expr){
     stop("expr must be a length 1 character vector")
   }
 
+  out <- list(no_r_mapping)
+  names(out) <- expr
+
   # String literal defaults
 
   str_literal <- sub('^\\s*(cppally::)?r_str\\s*[({]\\s*(".*")\\s*[)}]\\s*$', "\\2", expr)
   if (str_literal != expr){
     parsed <- tryCatch(str2lang(str_literal), error = \(e) NULL)
     if (is.character(parsed)){
-      return(parsed)
-    } else {
-      return(no_r_mapping)
+      out[[1]] <- parsed
     }
+    return(out)
   }
 
   # Strip cppally namespace and whitespace, read `r_int{5}` as `r_int(5)` and `r_int::na()` as `na<r_int>()`
@@ -283,65 +285,69 @@ parse_cpp_expr_as_r_expr <- function(expr){
     !is.na(suppressWarnings(as.double(literal)))
 
   if (is_int_literal && wrapper != "r_dbl"){
-    return(as.symbol(paste0(literal, "L")))
+    out[[1]] <- as.symbol(paste0(literal, "L"))
+    return(out)
   }
   if ((is_int_literal || is_dbl_literal) && wrapper != "r_int"){
-    return(as.symbol(literal))
+    out[[1]] <- as.symbol(literal)
+    return(out)
   }
 
   # Constants
+  out[1] <- list(
+    switch(
+      expr,
 
-  switch(
-    expr,
+      # NULL
 
-    # NULL
+      r_null = NULL,
+      `std::nullopt` = NULL,
 
-    r_null = NULL,
-    `std::nullopt` = NULL,
+      # Logical constants
 
-    # Logical constants
+      r_true = TRUE,
+      r_false = FALSE,
+      r_na = NA,
+      true = TRUE,
+      false = FALSE,
+      `r_lgl(true)` = TRUE,
+      `r_lgl(false)` = FALSE,
 
-    r_true = TRUE,
-    r_false = FALSE,
-    r_na = NA,
-    true = TRUE,
-    false = FALSE,
-    `r_lgl(true)` = TRUE,
-    `r_lgl(false)` = FALSE,
+      # NA
 
-    # NA
+      `na<r_lgl>()` = NA,
+      `na<r_int>()` = NA_integer_,
+      `na<r_dbl>()` = NA_real_,
+      `na<r_str>()` = NA_character_,
+      `na<r_str_view>()` = NA_character_,
+      `na<r_cplx>()` = NA_complex_,
+      `na<r_date>()` = quote(as.Date(NA_real_)),
+      `na<r_psxct>()` = quote(as.POSIXct(NA_real_, tz = "")),
 
-    `na<r_lgl>()` = NA,
-    `na<r_int>()` = NA_integer_,
-    `na<r_dbl>()` = NA_real_,
-    `na<r_str>()` = NA_character_,
-    `na<r_str_view>()` = NA_character_,
-    `na<r_cplx>()` = NA_complex_,
-    `na<r_date>()` = quote(as.Date(NA_real_)),
-    `na<r_psxct>()` = quote(as.POSIXct(NA_real_, tz = "")),
+      # double constants NaN and Inf
 
-    # double constants NaN and Inf
+      `r_dbl::nan()` = NaN,
+      `r_dbl::inf()` = Inf,
+      `-r_dbl::inf()` = -Inf,
 
-    `r_dbl::nan()` = NaN,
-    `r_dbl::inf()` = Inf,
-    `-r_dbl::inf()` = -Inf,
+      # Limits
 
-    # Limits
+      `r_limits<r_int>::max()` = quote(.Machine$integer.max),
+      `r_limits<r_int>::min()` = quote(-.Machine$integer.max),
+      `r_limits<r_dbl>::max()` = Inf,
+      `r_limits<r_dbl>::min()` = -Inf,
+      `std::numeric_limits<int>::max()` = quote(.Machine$integer.max),
+      `std::numeric_limits<double>::max()` = quote(.Machine$double.xmax),
+      `std::numeric_limits<double>::min()` = quote(.Machine$double.xmin),
+      `std::numeric_limits<double>::infinity()` = Inf,
+      `-std::numeric_limits<double>::infinity()` = -Inf,
 
-    `r_limits<r_int>::max()` = quote(.Machine$integer.max),
-    `r_limits<r_int>::min()` = quote(-.Machine$integer.max),
-    `r_limits<r_dbl>::max()` = Inf,
-    `r_limits<r_dbl>::min()` = -Inf,
-    `std::numeric_limits<int>::max()` = quote(.Machine$integer.max),
-    `std::numeric_limits<double>::max()` = quote(.Machine$double.xmax),
-    `std::numeric_limits<double>::min()` = quote(.Machine$double.xmin),
-    `std::numeric_limits<double>::infinity()` = Inf,
-    `-std::numeric_limits<double>::infinity()` = -Inf,
-
-    # No R mapping, use a fallback
-    no_r_mapping
-
+      # No R mapping, use a fallback
+      no_r_mapping
+    )
   )
+
+  out
 
 }
 
@@ -361,8 +367,7 @@ add_r_default_args <- function(args){
           next
         }
 
-        r_default <- parse_cpp_expr_as_r_expr(cpp_default)
-        r_defaults[i] <- list(r_default)
+        r_defaults[i] <- parse_cpp_expr_as_r_expr(cpp_default)
       }
 
       arg$r_default <- r_defaults
