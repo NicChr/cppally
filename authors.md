@@ -20,7 +20,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/NicChr/cppally/blob/string-encodings/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/NicChr/cppally/blob/feature/default-arguments/DESCRIPTION)
 
 Christofides N (2026). *cppally: A 'C++20' API for R*. R package version
 1.2.1.9000, <https://nicchr.github.io/cppally/>.

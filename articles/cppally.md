@@ -93,6 +93,72 @@ world function.
 **Note:** We aim to integrate cppally registration into the `devtools`
 framework for ease-of-use.
 
+### Registering default arguments
+
+cppally supports registering functions with default arguments.
+
+``` cpp
+[[cppally::register]]
+r_dbl cpp_sum(r_vec<r_dbl> x, bool na_rm = true){
+  return sum(x, /*na_rm=*/ na_rm);
+}
+```
+
+Generated R function
+
+``` r
+
+cpp_sum
+function(x, na_rm = TRUE) {
+  .Call(`_mypkg_cpp_sum`, x, na_rm)
+}
+```
+
+This is useful because the generated R function already has the `na_rm`
+default value as part of the signature, so we don’t have to go through
+the hassle of writing an extra wrapper on top to have that default
+argument.
+
+``` r
+cpp_sum(c(1, NA, 2, 3)) # na_rm = TRUE by default
+[1] 6
+cpp_sum(c(1, NA, 2, 3), na_rm = FALSE)
+[1] NA
+```
+
+Example with a more complicated default argument:
+
+``` cpp
+[[cppally::register]]
+r_lgl approx_equal(r_dbl x, r_dbl y, r_dbl tol = sqrt(r_limits<r_dbl>::epsilon())){
+  return abs(x - y) <= tol;
+}
+```
+
+If the default argument can’t be mapped to an R equivalent, a small C++
+routine is generated for it.
+
+``` r
+
+approx_equal
+function(x, y, tol = .Call(`_mypkg_approx_equal_arg_tol`, cpp_default = "sqrt(r_limits<r_dbl>::epsilon())")) {
+  .Call(`_mypkg_approx_equal`, x, y, tol)
+}
+```
+
+The default argument’s C++ expression is captured in the
+[`.Call()`](https://rdrr.io/r/base/CallExternal.html) signature as the
+`cpp_default` parameter:
+`cpp_default = "sqrt(r_limits<r_dbl>::epsilon())"`. This parameter is
+ignored by [`.Call()`](https://rdrr.io/r/base/CallExternal.html) and
+only shows which C++ expression will be evaluated to generate the
+default value.
+
+``` r
+approx_equal(2, sqrt(2)^2) # `tol = sqrt(.Machine$double.eps)` by default
+[1] TRUE
+```
+
 ### Registering `std::optional` arguments
 
 cppally supports optional arguments via `std::optional`.
@@ -884,9 +950,9 @@ r_psxct get_now(){
 ``` r
 
 get_today()
-#> [1] "2026-11-14"
+#> [1] "2026-11-17"
 get_now()
-#> [1] "2026-11-14 08:15:41 UTC"
+#> [1] "2026-11-17 11:43:34 UTC"
 ```
 
 **Note:** `r_psxct` currently only supports UTC and no other time-zones.
@@ -1277,7 +1343,7 @@ r_date r_get_today(){
 ``` r
 
 r_get_today()
-#> [1] "2026-11-14"
+#> [1] "2026-11-17"
 ```
 
 To get a function from a specific package, use `pkg_env`, a helper that
