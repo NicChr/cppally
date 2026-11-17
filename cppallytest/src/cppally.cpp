@@ -5,6 +5,7 @@
 #include <cppally.hpp>
 #include <R_ext/Visibility.h>
 #include "test.h"
+#include "test_defaults.h"
 #include "test_functionals.h"
 #include "test_nas.h"
 #include "test_optional.h"
@@ -19,6 +20,7 @@ using namespace cppally;
 using internal::cpp_to_r;
 using internal::r_to_cpp;
 using internal::dispatch_template_impl;
+using internal::default_arg_copy_init;
 
 // test.cpp
 void cpp_set_threads(int n);
@@ -886,6 +888,52 @@ extern "C" attribute_visible SEXP _cppallytest_test_time_diff_round_trip() {
   return R_NilValue;
   END_CPPALLY
 }
+// test_defaults.h
+r_vec<r_lgl> test_default_lgls(r_lgl x, r_lgl y, bool xx, bool yy, bool zz);
+extern "C" attribute_visible SEXP _cppallytest_test_default_lgls(SEXP x, SEXP y, SEXP xx, SEXP yy, SEXP zz) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_default_lgls(r_to_cpp<r_lgl>(x), r_to_cpp<r_lgl>(y), r_to_cpp<bool>(xx), r_to_cpp<bool>(yy), r_to_cpp<bool>(zz)));
+  END_CPPALLY
+}
+// test_defaults.h
+r_vec<r_int> test_default_ints(r_int x, r_int y, int z, int xx, r_int yy, int zz);
+extern "C" attribute_visible SEXP _cppallytest_test_default_ints(SEXP x, SEXP y, SEXP z, SEXP xx, SEXP yy, SEXP zz) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_default_ints(r_to_cpp<r_int>(x), r_to_cpp<r_int>(y), r_to_cpp<int>(z), r_to_cpp<int>(xx), r_to_cpp<r_int>(yy), r_to_cpp<int>(zz)));
+  END_CPPALLY
+}
+// test_defaults.h
+auto test_default_dbls(r_dbl x, r_dbl y, double z, double xx, double yy, double zz, double zzz);
+extern "C" attribute_visible SEXP _cppallytest_test_default_dbls(SEXP x, SEXP y, SEXP z, SEXP xx, SEXP yy, SEXP zz, SEXP zzz) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_default_dbls(r_to_cpp<r_dbl>(x), r_to_cpp<r_dbl>(y), r_to_cpp<double>(z), r_to_cpp<double>(xx), r_to_cpp<double>(yy), r_to_cpp<double>(zz), r_to_cpp<double>(zzz)));
+  END_CPPALLY
+}
+// test_defaults.h
+r_vec<r_str> test_default_strs(const char* a, r_str b, r_str_view c);
+extern "C" attribute_visible SEXP _cppallytest_test_default_strs(SEXP a, SEXP b, SEXP c) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_default_strs(r_to_cpp<const char*>(a), r_to_cpp<r_str>(b), r_to_cpp<r_str_view>(c)));
+  END_CPPALLY
+}
+// test_defaults.h
+extern "C" attribute_visible SEXP _cppallytest_test_default_args_templated(SEXP x, SEXP a, SEXP b, SEXP c, SEXP d, SEXP e, SEXP f, SEXP g, SEXP h) {
+  BEGIN_CPPALLY
+  return dispatch_template_impl<1, 9, std::array<int, 9>{0, -1, -1, -1, -1, -1, -1, -1, -1}>(
+    []<typename T>(SEXP x_sexp, SEXP a_sexp, SEXP b_sexp, SEXP c_sexp, SEXP d_sexp, SEXP e_sexp, SEXP f_sexp, SEXP g_sexp, SEXP h_sexp) -> decltype(cpp_to_r(::test_default_args_templated(std::declval<T>(), std::declval<r_int>(), std::declval<const r_dbl&>(), std::declval<r_int64&&>(), std::declval<bool>(), std::declval<r_lgl>(), std::declval<r_str_view>(), std::declval<const r_str_view&>(), std::declval<std::optional<r_int>>()))) {
+        return cpp_to_r(::test_default_args_templated(r_to_cpp<T>(x_sexp), r_to_cpp<r_int>(a_sexp), r_to_cpp<const r_dbl&>(b_sexp), r_to_cpp<r_int64&&>(c_sexp), r_to_cpp<bool>(d_sexp), r_to_cpp<r_lgl>(e_sexp), r_to_cpp<r_str_view>(f_sexp), r_to_cpp<const r_str_view&>(g_sexp), r_to_cpp<std::optional<r_int>>(h_sexp)));
+    },
+    x, a, b, c, d, e, f, g, h
+  );
+  END_CPPALLY
+}
+// test_defaults.h
+r_int test_optional_default(std::optional<r_int> x);
+extern "C" attribute_visible SEXP _cppallytest_test_optional_default(SEXP x) {
+  BEGIN_CPPALLY
+  return cpp_to_r(::test_optional_default(r_to_cpp<std::optional<r_int>>(x)));
+  END_CPPALLY
+}
 // test_encodings.cpp
 r_vec<r_lgl> str_eq(r_vec<r_str> x, r_vec<r_str> y);
 extern "C" attribute_visible SEXP _cppallytest_str_eq(SEXP x, SEXP y) {
@@ -1582,6 +1630,81 @@ extern "C" attribute_visible SEXP _cppallytest_test_valgrind() {
   END_CPPALLY
 }
 
+// Default arguments
+
+// test_defaults.h
+extern "C" attribute_visible SEXP _cppallytest_test_default_lgls_arg_zz(SEXP /* cpp_default */) {
+  BEGIN_CPPALLY
+  return cpp_to_r(default_arg_copy_init<bool>(true || false));
+  END_CPPALLY
+}
+// test_defaults.h
+extern "C" attribute_visible SEXP _cppallytest_test_default_ints_arg_xx(SEXP /* cpp_default */) {
+  BEGIN_CPPALLY
+  return cpp_to_r(default_arg_copy_init<int>(1 + 2));
+  END_CPPALLY
+}
+// test_defaults.h
+extern "C" attribute_visible SEXP _cppallytest_test_default_ints_arg_yy(SEXP /* cpp_default */) {
+  BEGIN_CPPALLY
+  return cpp_to_r(default_arg_copy_init<r_int>(r_int(2) + 3));
+  END_CPPALLY
+}
+// test_defaults.h
+extern "C" attribute_visible SEXP _cppallytest_test_default_dbls_arg_xx(SEXP /* cpp_default */) {
+  BEGIN_CPPALLY
+  return cpp_to_r(default_arg_copy_init<double>(1 + 3));
+  END_CPPALLY
+}
+// test_defaults.h
+extern "C" attribute_visible SEXP _cppallytest_test_default_dbls_arg_zzz(SEXP /* cpp_default */) {
+  BEGIN_CPPALLY
+  return cpp_to_r(default_arg_copy_init<double>(std::sqrt(std::numeric_limits<double>::epsilon())));
+  END_CPPALLY
+}
+// test_defaults.h
+extern "C" attribute_visible SEXP _cppallytest_test_default_strs_arg_a(SEXP /* cpp_default */) {
+  BEGIN_CPPALLY
+  return cpp_to_r(default_arg_copy_init<const char*>("a"));
+  END_CPPALLY
+}
+// test_defaults.h
+extern "C" attribute_visible SEXP _cppallytest_test_default_args_templated_arg_x(SEXP /* cpp_default */) {
+  BEGIN_CPPALLY
+  return cpp_to_r(r_dbl(1) / r_dbl(2));
+  END_CPPALLY
+}
+// test_defaults.h
+extern "C" attribute_visible SEXP _cppallytest_test_default_args_templated_arg_a(SEXP /* cpp_default */) {
+  BEGIN_CPPALLY
+  return cpp_to_r(default_arg_copy_init<r_int>(r_int(1) + 2));
+  END_CPPALLY
+}
+// test_defaults.h
+extern "C" attribute_visible SEXP _cppallytest_test_default_args_templated_arg_b(SEXP /* cpp_default */) {
+  BEGIN_CPPALLY
+  return cpp_to_r(default_arg_copy_init<const r_dbl&>(r_dbl(1) / r_dbl(4)));
+  END_CPPALLY
+}
+// test_defaults.h
+extern "C" attribute_visible SEXP _cppallytest_test_default_args_templated_arg_c(SEXP /* cpp_default */) {
+  BEGIN_CPPALLY
+  return cpp_to_r(default_arg_copy_init<r_int64&&>(r_int64(5)));
+  END_CPPALLY
+}
+// test_defaults.h
+extern "C" attribute_visible SEXP _cppallytest_test_default_args_templated_arg_f(SEXP /* cpp_default */) {
+  BEGIN_CPPALLY
+  return cpp_to_r(default_arg_copy_init<r_str_view>(as<r_str>(r_int(42))));
+  END_CPPALLY
+}
+// test_defaults.h
+extern "C" attribute_visible SEXP _cppallytest_test_default_args_templated_arg_g(SEXP /* cpp_default */) {
+  BEGIN_CPPALLY
+  return cpp_to_r(default_arg_copy_init<const r_str_view&>(as<r_str>(r_dbl(0.5))));
+  END_CPPALLY
+}
+
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_cpp_get_max_threads",               (DL_FUNC) &_cppallytest_cpp_get_max_threads,               0},
@@ -1671,6 +1794,23 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_deduced_scalar_type2",         (DL_FUNC) &_cppallytest_test_deduced_scalar_type2,         1},
     {"_cppallytest_test_deduced_type",                 (DL_FUNC) &_cppallytest_test_deduced_type,                 1},
     {"_cppallytest_test_deduced_vec_type",             (DL_FUNC) &_cppallytest_test_deduced_vec_type,             1},
+    {"_cppallytest_test_default_args_templated",       (DL_FUNC) &_cppallytest_test_default_args_templated,       9},
+    {"_cppallytest_test_default_args_templated_arg_a", (DL_FUNC) &_cppallytest_test_default_args_templated_arg_a, 1},
+    {"_cppallytest_test_default_args_templated_arg_b", (DL_FUNC) &_cppallytest_test_default_args_templated_arg_b, 1},
+    {"_cppallytest_test_default_args_templated_arg_c", (DL_FUNC) &_cppallytest_test_default_args_templated_arg_c, 1},
+    {"_cppallytest_test_default_args_templated_arg_f", (DL_FUNC) &_cppallytest_test_default_args_templated_arg_f, 1},
+    {"_cppallytest_test_default_args_templated_arg_g", (DL_FUNC) &_cppallytest_test_default_args_templated_arg_g, 1},
+    {"_cppallytest_test_default_args_templated_arg_x", (DL_FUNC) &_cppallytest_test_default_args_templated_arg_x, 1},
+    {"_cppallytest_test_default_dbls",                 (DL_FUNC) &_cppallytest_test_default_dbls,                 7},
+    {"_cppallytest_test_default_dbls_arg_xx",          (DL_FUNC) &_cppallytest_test_default_dbls_arg_xx,          1},
+    {"_cppallytest_test_default_dbls_arg_zzz",         (DL_FUNC) &_cppallytest_test_default_dbls_arg_zzz,         1},
+    {"_cppallytest_test_default_ints",                 (DL_FUNC) &_cppallytest_test_default_ints,                 6},
+    {"_cppallytest_test_default_ints_arg_xx",          (DL_FUNC) &_cppallytest_test_default_ints_arg_xx,          1},
+    {"_cppallytest_test_default_ints_arg_yy",          (DL_FUNC) &_cppallytest_test_default_ints_arg_yy,          1},
+    {"_cppallytest_test_default_lgls",                 (DL_FUNC) &_cppallytest_test_default_lgls,                 5},
+    {"_cppallytest_test_default_lgls_arg_zz",          (DL_FUNC) &_cppallytest_test_default_lgls_arg_zz,          1},
+    {"_cppallytest_test_default_strs",                 (DL_FUNC) &_cppallytest_test_default_strs,                 3},
+    {"_cppallytest_test_default_strs_arg_a",           (DL_FUNC) &_cppallytest_test_default_strs_arg_a,           1},
     {"_cppallytest_test_df",                           (DL_FUNC) &_cppallytest_test_df,                           1},
     {"_cppallytest_test_factor1",                      (DL_FUNC) &_cppallytest_test_factor1,                      1},
     {"_cppallytest_test_factor2",                      (DL_FUNC) &_cppallytest_test_factor2,                      1},
@@ -1703,6 +1843,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cppallytest_test_null",                         (DL_FUNC) &_cppallytest_test_null,                         0},
     {"_cppallytest_test_optional_add",                 (DL_FUNC) &_cppallytest_test_optional_add,                 2},
     {"_cppallytest_test_optional_add_template",        (DL_FUNC) &_cppallytest_test_optional_add_template,        2},
+    {"_cppallytest_test_optional_default",             (DL_FUNC) &_cppallytest_test_optional_default,             1},
     {"_cppallytest_test_optional_return",              (DL_FUNC) &_cppallytest_test_optional_return,              1},
     {"_cppallytest_test_order",                        (DL_FUNC) &_cppallytest_test_order,                        1},
     {"_cppallytest_test_overflow",                     (DL_FUNC) &_cppallytest_test_overflow,                     0},

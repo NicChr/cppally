@@ -13,8 +13,9 @@ glue_collapse_data <- function(data, ..., sep = ", ", last = "") {
   unclass(res)
 }
 
-viapply <- function(x, f, ...) vapply(x, f, integer(1), ...)
-vcapply <- function(x, f, ...) vapply(x, f, character(1), ...)
+lgl_apply <- function(x, f, ...) vapply(x, f, logical(1), ...)
+int_apply <- function(x, f, ...) vapply(x, f, integer(1), ...)
+char_apply <- function(x, f, ...) vapply(x, f, character(1), ...)
 
 stop_unless_installed <- function(pkgs) {
   has_pkg <- logical(length(pkgs))
@@ -79,10 +80,39 @@ is_optional_arg <- function(x){
   grepl("^\\s*(const\\s+)?(::\\s*)?(std\\s*::\\s*)?optional\\s*<", x, perl = TRUE)
 }
 
+dot_call <- function(routine, args, package, use_package = FALSE){
+  if (use_package) {
+    glue::glue('.Call("{routine}"{args}, PACKAGE = "{package}")')
+  } else {
+    glue::glue('.Call(`{routine}`{args})')
+  }
+}
+
 # std::optional args default to NULL in R, i.e. never supplied
-r_formals <- function(args){
-  args$formal <- ifelse(is_optional_arg(args$type), paste0(args$name, " = NULL"), args$name)
-  glue_collapse_data(args, "{formal}")
+r_formals <- function(args, fn_name, package, use_package = FALSE){
+  formals <- args$name
+
+  optional <- is_optional_arg(args$type)
+  formals[optional] <- paste0(args$name[optional], " = NULL")
+
+  has_r_default <- !lgl_apply(args$r_default, is_no_r_mapping)
+  r_defaults <- char_apply(args$r_default, deparse1)
+  formals[has_r_default] <- paste0(args$name[has_r_default], " = ", r_defaults[has_r_default])
+
+  # The C++ default text is passed to the helper (which ignores it) so it shows in the signature
+  helper <- needs_default_helper(args)
+  helper_names <- default_helper_name(package, fn_name, args$name[helper])
+  cpp_defaults <- gsub("\\s+", " ", trimws(args$default[helper]))
+  cpp_defaults <- char_apply(cpp_defaults, deparse1)
+  helper_calls <- dot_call(
+  routine = helper_names,
+  args = glue::glue(", cpp_default = {cpp_defaults}"),
+  package = package,
+  use_package = use_package
+)
+  formals[helper] <- paste0(args$name[helper], " = ", helper_calls)
+
+  paste(formals, collapse = ", ")
 }
 
 is_header <- function(x){
@@ -126,9 +156,9 @@ get_registered_functions <- function(decorations, tag, quiet = !is_interactive()
     return(empty)
   }
   out$functions <- lapply(out$context, parse_cpp_function, is_attribute = TRUE)
-  is_template <- vapply(out$functions, \(x) attr(x, "cpp_template"), TRUE)
+  is_template <- lgl_apply(out$functions, \(x) attr(x, "cpp_template"))
   out <- vctrs::vec_cbind(out, vctrs::vec_rbind(!!!out$functions))
-  check_no_default_args(out)
+  out$args <- add_r_default_args(out$args)
   out$is_template <- is_template
   out$template_params <- lapply(out$context, function(x) {
     # Combine context lines into one string for regex
@@ -154,58 +184,227 @@ generate_cpp_functions <- function(funs, package = "cppally") {
     return(character())
   }
   funs <- funs[c("name", "return_type", "args", "file", "line", "decoration", "is_template", "template_params")]
-  funs$real_params <- vcapply(funs$args, glue_collapse_data, "{type} {name}")
-  funs$sexp_params <- vcapply(funs$args, glue_collapse_data, "SEXP {name}")
+  funs$real_params <- char_apply(funs$args, glue_collapse_data, "{type} {name}")
+  funs$sexp_params <- char_apply(funs$args, glue_collapse_data, "SEXP {name}")
 
   funs$calls <- mapply(wrap_call, funs$name, funs$return_type, funs$args, funs$is_template, funs$template_params, SIMPLIFY = TRUE)
   funs$package <- package
 
   funs$declaration <- ifelse(funs$is_template,
                              "",
-                             glue::glue_data(funs, "{return_type} {name}({real_params});"))
+                             paste0(glue::glue_data(funs, "{return_type} {name}({real_params});"), "\n"))
 
-  out <- ifelse(
-    funs$is_template,
-    glue::glue_data(funs,
-                    '
+  out <- glue::glue_data(funs,
+                         '
     // {basename(file)}
-    extern "C" attribute_visible SEXP _{package}_{name}({sexp_params}) {{
+    {declaration}extern "C" attribute_visible SEXP _{package}_{name}({sexp_params}) {{
       BEGIN_CPPALLY
       {calls}
       END_CPPALLY
     }}
     '
-    ),
-    glue::glue_data(funs,
-                    '
-    // {basename(file)}
-    {declaration}
-    extern "C" attribute_visible SEXP _{package}_{name}({sexp_params}) {{
-      BEGIN_CPPALLY
-      {calls}
-      END_CPPALLY
-    }}
-    '
-    )
   )
 
+  out <- c(out, generate_default_helpers(funs, package))
   out <- glue::glue_collapse(out, sep = "\n")
   unclass(out)
 }
 
-check_no_default_args <- function(funs) {
-  has_default <- vapply(funs$args, function(a) any(!is.na(a$default)), logical(1))
-  if (any(has_default)) {
-    bad <- vctrs::vec_slice(funs, has_default)
-    bad$defaulted <- vcapply(bad$args, function(a) paste(a$name[!is.na(a$default)], collapse = ", "))
-    msgs <- glue::glue_data(bad, "- `{name}` (args: {defaulted}) on line {line} in '{basename(file)}'.")
-    cli::cli_abort(
-      c(
-        "C++ default arguments are not supported in registered functions.",
-        {msgs}
-      )
-    )
+# Generate C++ routines for default args that do not have a 1-to-1 R mapping
+generate_default_helpers <- function(funs, package = "cppally") {
+  helpers <- character()
+  for (i in seq_len(NROW(funs))) {
+    args <- funs$args[[i]]
+    fn_name <- funs$name[[i]]
+    for (j in which(needs_default_helper(args))) {
+      type <- args$type[[j]]
+      if (funs$is_template[[i]] && length(used_template_params(type, funs$template_params[[i]])) > 0) {
+        # A template-typed default is evaluated as its own type, which then deduces the param
+        value <- args$default[[j]]
+      } else {
+        # One expression, so the default's temporaries outlive cpp_to_r() as they would the real call
+        value <- glue::glue("default_arg_copy_init<{type}>({args$default[[j]]})")
+      }
+      helpers <- c(helpers, glue::glue('
+        // {basename(funs$file[[i]])}
+        extern "C" attribute_visible SEXP {default_helper_name(package, fn_name, args$name[[j]])}(SEXP /* cpp_default */) {{
+          BEGIN_CPPALLY
+          return cpp_to_r({value});
+          END_CPPALLY
+        }}
+        '))
+    }
   }
+  if (length(helpers) > 0) {
+    helpers <- c("", "// Default arguments", "", helpers)
+  }
+  helpers
+}
+
+no_r_mapping <- structure("", class = "cppally_no_r_mapping")
+
+is_no_r_mapping <- function(x){
+  inherits(x, "cppally_no_r_mapping")
+}
+
+parse_cpp_expr_as_r_expr <- function(expr){
+
+  if (length(expr) != 1 || !is.character(expr) || is.na(expr)){
+    stop("expr must be a length 1 character vector")
+  }
+
+  out <- list(no_r_mapping)
+  names(out) <- expr
+
+  # String literal defaults
+
+  str_literal <- sub('^\\s*(cppally::)?r_str\\s*[({]\\s*(".*")\\s*[)}]\\s*$', "\\2", expr)
+  if (str_literal != expr){
+    parsed <- tryCatch(str2lang(str_literal), error = \(e) NULL)
+    if (is.character(parsed)){
+      out[[1]] <- parsed
+    }
+    return(out)
+  }
+
+  # Strip cppally namespace and whitespace, read `r_int{5}` as `r_int(5)` and `r_int::na()` as `na<r_int>()`
+  expr <- gsub("\\s+", "", gsub("cppally::", "", expr, fixed = TRUE))
+  expr <- sub("^(r_[[:alnum:]_]+)\\{(.*)\\}$", "\\1(\\2)", expr)
+  expr <- sub("^(r_[[:alnum:]_]+)::na\\(\\)$", "na<\\1>()", expr)
+
+  # Numeric literals
+
+  wrapper <- if (grepl("^r_(int|dbl)\\(.*\\)$", expr)) sub("\\(.*", "", expr) else ""
+  literal <- sub("^r_(int|dbl)\\((.*)\\)$", "\\2", expr)
+  int_syntax <- grepl("^[-+]?([0-9]+|0[xX][0-9a-fA-F]+)$", literal)
+  # Leading-zero integers are octal in C++ but decimal in R
+  is_int_literal <- int_syntax && !grepl("^[-+]?0[0-9]+$", literal) &&
+    abs(as.double(literal)) <= .Machine$integer.max
+  # Must start with a digit, as as.double() also accepts names like INFINITY
+  is_dbl_literal <- !int_syntax && grepl("^[-+]?\\.?[0-9]", literal) &&
+    !is.na(suppressWarnings(as.double(literal)))
+
+  if (is_int_literal && wrapper != "r_dbl"){
+    out[[1]] <- as.symbol(paste0(literal, "L"))
+    return(out)
+  }
+  if ((is_int_literal || is_dbl_literal) && wrapper != "r_int"){
+    out[[1]] <- as.symbol(literal)
+    return(out)
+  }
+
+  # Constants
+  out[1] <- list(
+    switch(
+      expr,
+
+      # NULL
+
+      r_null = NULL,
+      `std::nullopt` = NULL,
+
+      # Logical constants
+
+      r_true = TRUE,
+      r_false = FALSE,
+      r_na = NA,
+      true = TRUE,
+      false = FALSE,
+      `r_lgl(true)` = TRUE,
+      `r_lgl(false)` = FALSE,
+
+      # NA
+
+      `na<r_lgl>()` = NA,
+      `na<r_int>()` = NA_integer_,
+      `na<r_dbl>()` = NA_real_,
+      `na<r_str>()` = NA_character_,
+      `na<r_str_view>()` = NA_character_,
+      `na<r_cplx>()` = NA_complex_,
+      `na<r_date>()` = quote(as.Date(NA_real_)),
+      `na<r_psxct>()` = quote(as.POSIXct(NA_real_, tz = "")),
+
+      # double constants NaN and Inf
+
+      `r_dbl::nan()` = NaN,
+      `r_dbl::inf()` = Inf,
+      `-r_dbl::inf()` = -Inf,
+
+      # Limits
+
+      `r_limits<r_int>::max()` = quote(.Machine$integer.max),
+      `r_limits<r_int>::min()` = quote(-.Machine$integer.max),
+      `r_limits<r_dbl>::max()` = Inf,
+      `r_limits<r_dbl>::min()` = -Inf,
+      `std::numeric_limits<int>::max()` = quote(.Machine$integer.max),
+      `std::numeric_limits<double>::max()` = quote(.Machine$double.xmax),
+      `std::numeric_limits<double>::min()` = quote(.Machine$double.xmin),
+      `std::numeric_limits<double>::infinity()` = Inf,
+      `-std::numeric_limits<double>::infinity()` = -Inf,
+
+      # No R mapping, use a fallback
+      no_r_mapping
+    )
+  )
+
+  out
+
+}
+
+add_r_default_args <- function(args){
+
+  lapply(
+    args,
+    \(arg){
+      cpp_defaults <- arg$default
+      r_defaults <- rep_len(list(no_r_mapping), length(cpp_defaults))
+
+      for (i in seq_along(cpp_defaults)){
+
+        cpp_default <- cpp_defaults[i]
+
+        if (is.na(cpp_default)){
+          next
+        }
+
+        r_defaults[i] <- parse_cpp_expr_as_r_expr(cpp_default)
+      }
+
+      arg$r_default <- r_defaults
+      arg
+    }
+  )
+}
+
+needs_default_helper <- function(args){
+  !is.na(args$default) & lgl_apply(args$r_default, is_no_r_mapping)
+}
+
+default_helper_name <- function(package, fn_name, arg_name){
+  glue::glue("_{package}_{fn_name}_arg_{arg_name}")
+}
+
+generate_cpp_preamble <- function(includes = character()){
+  c(
+    "#include <cppally/r_dispatch.h>",
+    includes,
+    "",
+    "using namespace cppally;",
+    "using internal::cpp_to_r;",
+    "using internal::r_to_cpp;",
+    "using internal::dispatch_template_impl;",
+    "using internal::default_arg_copy_init;"
+  )
+}
+
+# Names of all generated .Call routines
+generated_routines <- function(funs, package){
+  helpers <- Map(\(name, args) default_helper_name(package, name, args$name[needs_default_helper(args)]), funs$name, funs$args)
+  as.character(c(glue::glue("_{package}_{funs$name}"), unlist(helpers)))
+}
+
+used_template_params <- function(type, template_params){
+  template_params[lgl_apply(template_params, \(p) is_template_arg(type, p))]
 }
 
 check_init_signatures <- function(funs) {
@@ -268,24 +467,19 @@ generate_r_functions <- function(funs, package = "cppally", use_package = FALSE)
 
   funs <- funs[c("name", "return_type", "args")]
 
-  if (use_package) {
-    package_call <- glue::glue(', PACKAGE = "{package}"')
-    package_names <- glue::glue_data(funs, '"_{package}_{name}"')
-  } else {
-    package_names <- glue::glue_data(funs, '`_{package}_{name}`')
-    package_call <- ""
-  }
-
-  funs$package <- package
-  funs$package_call <- package_call
-  funs$formals <- vcapply(funs$args, r_formals)
-  funs$list_params <- vcapply(funs$args, glue_collapse_data, "{name}")
-  funs$params <- vcapply(funs$list_params, function(x) if (nzchar(x)) paste0(", ", x) else x)
+  funs$formals <- mapply(r_formals, funs$args, funs$name,
+                         MoreArgs = list(package = package, use_package = use_package),
+                         SIMPLIFY = TRUE, USE.NAMES = FALSE)
+  funs$list_params <- char_apply(funs$args, glue_collapse_data, "{name}")
+  funs$params <- char_apply(funs$list_params, function(x) if (nzchar(x)) paste0(", ", x) else x)
+  funs$calls <- dot_call(
+  routine = glue::glue("_{package}_{funs$name}"),
+  args = funs$params,
+  package = package,
+  use_package = use_package
+)
   is_void <- type_is_void(funs$return_type)
-  funs$calls <- ifelse(is_void,
-                       glue::glue_data(funs, 'invisible(.Call({package_names}{params}{package_call}))'),
-                       glue::glue_data(funs, '.Call({package_names}{params}{package_call})')
-  )
+  funs$calls[is_void] <- paste0("invisible(", funs$calls[is_void], ")")
 
   out <- glue::glue_data(funs, '
     {name} <- function({formals}) {{
@@ -388,26 +582,18 @@ wrap_call_template <- function(name, return_type, args, template_params) {
     call <- glue::glue("return cpp_to_r({call_str});")
   }
 
-  if (decls == ""){
-    result <- glue::glue('
-    return dispatch_template_impl<{num_template_params}, {num_args}, std::array<int, {num_args}>{map_str}>(
-        []<{template_args_def}>({lambda_params}) -> {ret_type} {{
-            {call}
-        }},
-        {outer_args}
-      );
-    ')
-  } else {
-    result <- glue::glue('
-    return dispatch_template_impl<{num_template_params}, {num_args}, std::array<int, {num_args}>{map_str}>(
-        []<{template_args_def}>({lambda_params}) -> {ret_type} {{
-            {decls}
-            {call}
-        }},
-        {outer_args}
-      );
-    ')
+  if (decls != ""){
+    decls <- paste0(decls, "\n        ")
   }
+
+  result <- glue::glue('
+    return dispatch_template_impl<{num_template_params}, {num_args}, std::array<int, {num_args}>{map_str}>(
+        []<{template_args_def}>({lambda_params}) -> {ret_type} {{
+            {decls}{call}
+        }},
+        {outer_args}
+      );
+    ')
 
   unclass(result)
 }
@@ -415,7 +601,7 @@ wrap_call_template <- function(name, return_type, args, template_params) {
 
 
 
-get_call_entries <- function(path, names, package) {
+get_call_entries <- function(path, routines) {
   con <- textConnection("res", local = TRUE, open = "w")
 
   withr::with_collate("C",
@@ -436,10 +622,10 @@ get_call_entries <- function(path, names, package) {
     return("")
   }
 
-  redundant <- glue::glue_collapse(glue::glue('extern SEXP _{package}_{names}'), sep = '|')
-
-  if (length(redundant) > 0 && nzchar(redundant)) {
-    redundant <- paste0("^", redundant)
+  # Routines generated above are already defined in the generated file
+  # A package's other routines are kept
+  if (length(routines) > 0) {
+    redundant <- paste0("^extern SEXP (", paste(routines, collapse = "|"), ")\\(")
     res <- res[!grepl(redundant, res)]
   }
 
@@ -569,17 +755,15 @@ cpp_register <- function(
   }
 
 
-  call_entries <- get_call_entries(path, funs$name, package)
-
-  cpp_function_registration <- glue::glue_data(funs, '    {{
-    "_cppally_{name}", (DL_FUNC) &_{package}_{name}, {n_args}}}, ',
-                                               n_args = viapply(funs$args, nrow)
-  )
-
-  cpp_function_registration <- glue::glue_collapse(cpp_function_registration, sep = "\n")
+  call_entries <- get_call_entries(path, generated_routines(funs, package))
 
   user_header_files <- unique(funs$file[is_header(funs$file)])
-  user_includes <- paste0(c("", glue::glue('#include "{basename(user_header_files)}"')), collapse = "\n")
+  preamble <- generate_cpp_preamble(c(
+    glue::glue("#include <{cppally_header}>"),
+    "#include <R_ext/Visibility.h>",
+    glue::glue('#include "{basename(user_header_files)}"')
+  ))
+  preamble <- paste(preamble, collapse = "\n")
 
   # Adjust in the case of 0-registered fns but
   # 1 or more cppally::init declarations
@@ -598,14 +782,7 @@ cpp_register <- function(
       // Generated by cppally: do not edit by hand
       // clang-format off
 
-      #include <cppally/r_dispatch.h>
-      #include <{cppally_header}>
-      #include <R_ext/Visibility.h>{user_includes}
-
-      using namespace cppally;
-      using internal::cpp_to_r;
-      using internal::r_to_cpp;
-      using internal::dispatch_template_impl;
+      {preamble}
 
       {cpp_functions_definitions}
 
