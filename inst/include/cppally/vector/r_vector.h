@@ -11,6 +11,7 @@
 #include <cppally/scalar/coerce_scalars.h>
 #include <cppally/vector/vector_utils.h>
 #include <cppally/vector/vector_names.h>
+#include <cppally/time/zone.h>
 #include <cppally/r_function.h>
 #include <cppally/identical.h>
 #include <cppally/named_arg.h>
@@ -153,6 +154,9 @@ struct r_vec {
   // Any two r_vec wrappers around the same SEXP point to the same names_map via the registry
   mutable internal::names_map::ptr cached_names;
 
+  // Cached time-zone
+  [[no_unique_address]] std::conditional_t<RPsxctType<T>, const internal::zone_record*, internal::no_zone> m_zone{};
+
   void initialise_data_pointer(){
 #ifdef CPPALLY_PRESERVE_ALTREP
     // For ALTREP leave m_data null so get/view go through elt<T>
@@ -163,6 +167,21 @@ struct r_vec {
       m_data = is_altrep() ? safe[internal::vector_ptr_ro<T>](value) : internal::vector_ptr_ro<T>(value);
     } else {
       m_data = is_altrep() ? safe[internal::vector_ptr<T>](value) : internal::vector_ptr<T>(value);
+    }
+  }
+
+  void cache_zone(){
+    if constexpr (RPsxctType<T>){
+      if (is_null()){
+        m_zone = nullptr;
+        return;
+      }
+      r_vec<r_str_view> tz(Rf_getAttrib(value, cached_sym<"tzone">()), internal::view_tag{});
+      if (tz.is_empty()){
+        m_zone = internal::zone_registry::get().find_or_add(std::string_view());
+      } else {
+        m_zone = internal::zone_registry::get().find_or_add(tz.view(r_size_t(0)));
+      }
     }
   }
 
@@ -188,6 +207,7 @@ struct r_vec {
     r_vec<T> new_vec = copy();
     *this = std::move(new_vec);
   }
+
 
   public:
 
@@ -240,6 +260,7 @@ struct r_vec {
       validate_class<T>();
       initialise_length_and_capacity();
       initialise_data_pointer();
+      cache_zone();
     }
   }
 
@@ -252,11 +273,18 @@ struct r_vec {
     if (!is_null()){
       initialise_length_and_capacity();
       initialise_data_pointer();
+      cache_zone();
     }
   }
   explicit r_vec(SEXP s, internal::view_tag, internal::no_checks_tag) : r_vec(r_sexp(s, internal::view_tag{}), internal::no_checks_tag{}){}
 
   explicit r_vec(std::initializer_list<T> elements) : r_vec(static_cast<r_size_t>(elements.size())) {
+
+    if constexpr (is<T, r_psxct>){
+      if (elements.size() > 0){
+        set_tzone(elements.begin()->tz());
+      }
+    }
     
     r_size_t i = 0;
     for (const auto& elem : elements) {
@@ -410,6 +438,7 @@ struct r_vec {
     #endif
 
     safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
+    new_vec.m_zone = m_zone;
     return new_vec;
   }
 
@@ -450,6 +479,7 @@ struct r_vec {
     if (auto sp = internal::levels_cache().try_lookup(*this)) [[unlikely]] {
       sp->invalidate();
     }
+    cache_zone();
   }
 
   // ----- Names -----
@@ -1326,17 +1356,7 @@ struct r_vec {
 
   // POSIXct-only members
   r_str tzone() const requires RPsxctType<T> {
-    r_vec<r_str_view> tz(Rf_getAttrib(*this, cached_sym<"tzone">()));
-    
-    if (tz.length() == 0){
-      return cached_str<"">();
-    } else {
-      r_str_view tz_str = tz.view(0);
-      if (is_na(tz_str)) [[unlikely]] {
-        abort("tzone cannot be NA");
-      }
-      return r_str(tz_str);
-    }
+    return m_zone ? r_str(m_zone->name.c_str()) : cached_str<"UTC">();
   }
 
   void set_tzone(const char* tz) requires RPsxctType<T> {
@@ -1345,6 +1365,7 @@ struct r_vec {
     }
     maybe_ensure_exclusive();
     safe[Rf_setAttrib](*this, cached_sym<"tzone">(), r_vec<r_str>({ r_str(tz) }));
+    cache_zone();
   }
 
   private:
