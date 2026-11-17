@@ -952,7 +952,7 @@ r_psxct get_now(){
 get_today()
 #> [1] "2026-11-17"
 get_now()
-#> [1] "2026-11-17 11:43:34 UTC"
+#> [1] "2026-11-17 13:28:56 UTC"
 ```
 
 **Note:** `r_psxct` currently only supports UTC and no other time-zones.
