@@ -392,7 +392,7 @@ test_default_lgls <- function(x = FALSE, y = TRUE, xx = FALSE, yy = TRUE, zz = .
   .Call(`_cppallytest_test_default_lgls`, x, y, xx, yy, zz)
 }
 
-test_default_ints <- function(x = -1L, y = 2L, z = 0L, xx = .Call(`_cppallytest_test_default_ints_arg_xx`, cpp_default = "1 + 2"), yy = .Call(`_cppallytest_test_default_ints_arg_yy`, cpp_default = "r_int(2) + 3"), zz = 2.5) {
+test_default_ints <- function(x = -1L, y = 2L, z = 0L, xx = .Call(`_cppallytest_test_default_ints_arg_xx`, cpp_default = "1 + 2"), yy = .Call(`_cppallytest_test_default_ints_arg_yy`, cpp_default = "r_int(2) + 3"), zz = 2.0) {
   .Call(`_cppallytest_test_default_ints`, x, y, z, xx, yy, zz)
 }
 
