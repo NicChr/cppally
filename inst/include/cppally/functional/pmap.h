@@ -79,8 +79,8 @@ auto pmap_impl(F fn, const r_vec<T>& vec) {
 
     [&, n](auto* RESTRICT p_out, auto* RESTRICT p_x){
 
-      auto body = [&fn, p_out, p_x](r_size_t i){
-        p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x[i])));
+      auto body = [&fn, &vec, p_out, p_x](r_size_t i){
+        p_out[i] = unwrap(fn(i, vec.unsafe_reconstruct_view(p_x[i])));
       };
 
       CPPALLY_OMP_DISPATCH(body, n, parallel, simd)
@@ -117,8 +117,8 @@ auto pmap_impl(F fn, const r_vec<T>& vec1, const r_vec<U>& vec2) {
       if constexpr (RVectorisable<U> && RVectorisable<out_t> && (simd || parallel)){
         [&, n](auto* RESTRICT p_out, auto* RESTRICT p_x){
           
-          auto body = [&fn, val, p_out, p_x](r_size_t i){
-            p_out[i] = unwrap(fn(i, val, internal::unsafe_reconstruct_view<U>(p_x[i])));
+          auto body = [&fn, &vec2, val, p_out, p_x](r_size_t i){
+            p_out[i] = unwrap(fn(i, val, vec2.unsafe_reconstruct_view(p_x[i])));
           };
           
           CPPALLY_OMP_DISPATCH(body, n, parallel, simd)
@@ -132,8 +132,8 @@ auto pmap_impl(F fn, const r_vec<T>& vec1, const r_vec<U>& vec2) {
       if constexpr (RVectorisable<T> && RVectorisable<out_t> && (simd || parallel)){
         [&, n](auto* RESTRICT p_out, auto* RESTRICT p_x){
           
-          auto body = [&fn, val, p_out, p_x](r_size_t i){
-            p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x[i]), val));
+          auto body = [&fn, &vec1, val, p_out, p_x](r_size_t i){
+            p_out[i] = unwrap(fn(i, vec1.unsafe_reconstruct_view(p_x[i]), val));
           };
 
           CPPALLY_OMP_DISPATCH(body, n, parallel, simd)
@@ -165,8 +165,8 @@ auto pmap_impl(F fn, const r_vec<T>& vec1, const r_vec<U>& vec2) {
 
     [&, n](auto* RESTRICT p_out, auto* RESTRICT p_x1, auto* RESTRICT p_x2){
       
-      auto body = [&fn, p_out, p_x1, p_x2](r_size_t i){
-        p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x1[i]), internal::unsafe_reconstruct_view<U>(p_x2[i])));
+      auto body = [&fn, &vec1, &vec2, p_out, p_x1, p_x2](r_size_t i){
+        p_out[i] = unwrap(fn(i, vec1.unsafe_reconstruct_view(p_x1[i]), vec2.unsafe_reconstruct_view(p_x2[i])));
       };
 
       CPPALLY_OMP_DISPATCH(body, n, parallel, simd)
@@ -220,8 +220,8 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
       
       [&, n](auto* RESTRICT p_out, auto* RESTRICT ... ps){
         
-        auto body = [&fn, p_out, ps...](r_size_t i){
-          p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<Ts>(ps[i])...));
+        auto body = [&fn, &vecs..., p_out, ps...](r_size_t i){
+          p_out[i] = unwrap(fn(i, vecs.unsafe_reconstruct_view(ps[i])...));
         };
         
         CPPALLY_OMP_DISPATCH(body, n, parallel, simd)

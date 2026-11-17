@@ -30,14 +30,33 @@ inline uint64_t r_hash_impl(const r_factors& x);
 
 inline uint64_t r_hash_impl(const r_df& x);
 
+// R scalar from a primitive (unwrapped) hash map key, skipping any checks like SEXP type-checks.
+// Where applicable, it also returns a short-lived view. 
+template <typename T>
+constexpr T r_scalar_from_key(const unwrap_t<T>& x) noexcept(
+    std::is_constructible_v<T, const unwrap_t<T>&, view_tag, no_checks_tag>
+    ? std::is_nothrow_constructible_v<T, const unwrap_t<T>&, view_tag, no_checks_tag>
+    : std::is_constructible_v<T, const unwrap_t<T>&, view_tag>
+    ? std::is_nothrow_constructible_v<T, const unwrap_t<T>&, view_tag>
+    : std::is_nothrow_constructible_v<T, const unwrap_t<T>&>
+) {
+    if constexpr (std::is_constructible_v<T, const unwrap_t<T>&, view_tag, no_checks_tag>){
+        return T(x, view_tag{}, no_checks_tag{});
+    } else if constexpr (std::is_constructible_v<T, const unwrap_t<T>&, view_tag>){
+        return T(x, view_tag{});
+    } else {
+        return T(x);
+    }
+}
+
 template <typename T>
 struct r_hash_fn_impl {
     using is_avalanching = void; // Tells ankerl this is already a good quality hash
     using is_transparent = void;
     // For hash map memory efficiency we use the underlying type
     using base_t = unwrap_t<T>;
-    uint64_t operator()(const base_t& x) const noexcept(noexcept(r_hash_impl(internal::unsafe_reconstruct_view<T>(x)))) {
-        return r_hash_impl(internal::unsafe_reconstruct_view<T>(x));
+    uint64_t operator()(const base_t& x) const noexcept(noexcept(r_hash_impl(r_scalar_from_key<T>(x)))) {
+        return r_hash_impl(r_scalar_from_key<T>(x));
     }
 };
 
@@ -49,8 +68,8 @@ struct r_hash_eq_impl {
     using is_transparent = void;
     using base_t = unwrap_t<T>;
 
-    bool operator()(const base_t& a, const base_t& b) const noexcept(noexcept(identical(internal::unsafe_reconstruct_view<T>(a), internal::unsafe_reconstruct_view<T>(b)))) {
-        return identical(internal::unsafe_reconstruct_view<T>(a), internal::unsafe_reconstruct_view<T>(b));
+    bool operator()(const base_t& a, const base_t& b) const noexcept(noexcept(identical(r_scalar_from_key<T>(a), r_scalar_from_key<T>(b)))) {
+        return identical(r_scalar_from_key<T>(a), r_scalar_from_key<T>(b));
     }
 };
 
