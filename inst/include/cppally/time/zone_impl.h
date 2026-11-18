@@ -219,11 +219,25 @@ CPPALLY_NOINLINE bool tzdb_utc_offset(const zone_record* zone, std::chrono::sys_
   }
 }
 
-CPPALLY_NOINLINE bool tzdb_local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chrono::sys_seconds& out) noexcept {
+CPPALLY_NOINLINE bool tzdb_local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chrono::sys_seconds& out, roll on_impossible, roll on_ambiguous) noexcept {
   try {
     tz::local_info info = zone->tzdb_zone->get_info(tp);
-    if (info.result != tz::local_info::unique) {
-      return false;
+    if (info.result == tz::local_info::nonexistent) {
+      if (on_impossible == roll::none) {
+        return false;
+      }
+      out = info.second.begin;
+      return true;
+    }
+    if (info.result == tz::local_info::ambiguous) {
+      on_ambiguous = resolve_roll(on_ambiguous, true);
+      if (on_ambiguous == roll::none) {
+        return false;
+      }
+      // first is the earlier period, so it gives the earlier instant
+      const std::chrono::seconds offset = on_ambiguous == roll::forward ? info.second.offset : info.first.offset;
+      out = std::chrono::sys_seconds{(tp - offset).time_since_epoch()};
+      return true;
     }
     out = std::chrono::sys_seconds{(tp - info.first.offset).time_since_epoch()};
     return true;

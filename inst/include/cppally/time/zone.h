@@ -4,6 +4,7 @@
 #include <cppally/r_setup.h>
 #include <cppally/scalar/r_str.h>
 #include <cppally/time/tz_fwd.h>
+#include <cppally/time/roll.h>
 #include <R_ext/Visibility.h>
 #include <atomic>
 #include <chrono>
@@ -142,7 +143,7 @@ struct attribute_hidden zone_registry {
 
 // tzdb lookups for instants beyond a zone's offset_table, kept out of line off the hot path
 attribute_hidden bool tzdb_utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out, std::string* abbrev) noexcept;
-attribute_hidden bool tzdb_local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chrono::sys_seconds& out) noexcept;
+attribute_hidden bool tzdb_local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chrono::sys_seconds& out, roll on_impossible, roll on_ambiguous) noexcept;
 
 // UTC offset in force at `tp` (0 for UTC), plus its abbreviation if `abbrev` is given. False for an unknown zone or if the lookup fails
 inline bool utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out, std::string* abbrev = nullptr) noexcept {
@@ -171,8 +172,11 @@ inline bool utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std
   return tzdb_utc_offset(zone, tp, out, abbrev);
 }
 
-// Local wall-clock instant. Returns false if non-existant or ambiguous, or if zone is unknown or lookup fails.
-inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chrono::sys_seconds& out) noexcept {
+// Local wall-clock instant. A nonexistent reading rolls to the DST transition and an ambiguous one to the earlier/later instant,
+// unless its roll is none. Returns false for an unresolved reading, an unknown zone or a failed lookup.
+// away/nearest act as if adding, callers with a direction resolve them first
+inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chrono::sys_seconds& out,
+                         roll on_impossible = roll::none, roll on_ambiguous = roll::none) noexcept {
   if (!zone) {
     out = std::chrono::sys_seconds{tp.time_since_epoch()};
     return true;
@@ -181,28 +185,50 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
     return false;
   }
   const offset_table& table = zone->table;
-  const int64_t local = tp.time_since_epoch().count();
+  int64_t local = tp.time_since_epoch().count();
 
-  const int lo = table.period(local - 86400);
-  const int hi = table.period(local + 86400);
+  int lo = table.period(local - 86400);
+  int hi = table.period(local + 86400);
   if (lo >= 0 && hi >= 0) [[likely]] {
-    int matches = 0;
-    int64_t sys = 0;
+    int matches = 0; // 1 = unique, 0 = gap (non-existent), 2 = overlap (ambiguous)
+    int64_t earliest = 0;
+    int64_t latest = 0;
     for (int i = lo; i <= hi; ++i) {
-      const int64_t s = local - table.offsets[i];
+      int64_t s = local - table.offsets[i];
       if (s >= table.starts[i] && s < table.starts[i + 1]) {
-        sys = s;
+        if (matches == 0) {
+          earliest = s;
+        }
+        latest = s;
         ++matches;
       }
     }
-    // 0 matches is a gap (nonexistent), 2 an overlap (ambiguous)
-    if (matches != 1) {
+    if (matches == 1) [[likely]] {
+      out = std::chrono::sys_seconds{std::chrono::seconds{earliest}};
+      return true;
+    }
+    // Overlap (ambiguous)
+    if (matches > 1) {
+      on_ambiguous = resolve_roll(on_ambiguous, /*forward=*/ true);
+      if (on_ambiguous == roll::none) {
+        return false;
+      }
+      out = std::chrono::sys_seconds{std::chrono::seconds{on_ambiguous == roll::forward ? latest : earliest}};
+      return true;
+    }
+    // Gap (nonexistent): the reading is past the end of period i - 1 but before the start of period i
+    if (on_impossible == roll::none) {
       return false;
     }
-    out = std::chrono::sys_seconds{std::chrono::seconds{sys}};
-    return true;
+    for (int i = lo + 1; i <= hi; ++i) {
+      if (local - table.offsets[i - 1] >= table.starts[i] && local - table.offsets[i] < table.starts[i]) {
+        out = std::chrono::sys_seconds{std::chrono::seconds{table.starts[i]}};
+        return true;
+      }
+    }
+    return false;
   }
-  return tzdb_local_to_sys(zone, tp, out);
+  return tzdb_local_to_sys(zone, tp, out, on_impossible, on_ambiguous);
 }
 
 }

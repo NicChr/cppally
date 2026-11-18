@@ -151,21 +151,23 @@ struct r_psxct {
 
     // Same wall clock, different timezone.
     // If the UTC offset of the timezone is different, then this UTC instant will be different.
-    // NA is returned in ambiguous or non-existent date-times.
-    [[nodiscard]] r_psxct replace_tzone(const char* tz) const {
-        return r_psxct(unwrap(*this), tz).from_clock(to_clock());
+    // NA is returned for ambiguous or non-existent date-times.
+    // Supply a roll strategy to `on_impossible_date` and/or `on_ambiguous_time` to handle rolling.
+    [[nodiscard]] r_psxct replace_tzone(const char* tz, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const {
+        return r_psxct(unwrap(*this), tz).from_clock(to_clock(), on_impossible_date, on_ambiguous_time);
     }
 
     // Construct r_psxct from the year/month/day hour:minute:second wall-clock reading in `zone`.
-    // Nonexistent and ambiguous readings, and unknown zones, are NA
     constexpr explicit r_psxct(
     int year, int month, int day,
     int hour, int minute, double second,
-    const char* zone = "UTC"
+    const char* zone = "UTC",
+    roll on_impossible_date = roll::none,
+    roll on_ambiguous_time = roll::none
     ) : value{utc_offset(year, month, day, hour, minute, second)} {
         if (zone && std::string_view(zone) != "UTC") {
             m_tzone = internal::zone_registry::get().find_or_add(zone);
-            *this = from_clock(r_psxct(unwrap(value)));
+            *this = from_clock(r_psxct(unwrap(value)), on_impossible_date, on_ambiguous_time);
         }
     }
 
@@ -219,7 +221,7 @@ struct r_psxct {
     }
 
     // Same wall clock but in this timezone (i.e. different UTC offset)
-    constexpr r_psxct from_clock(r_psxct clock) const noexcept {
+    constexpr r_psxct from_clock(r_psxct clock, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept {
         if (is_utc()){
             return clock;
         }
@@ -227,16 +229,17 @@ struct r_psxct {
             return zoned_psxct(unwrap(clock));
         }
         std::chrono::sys_seconds sys{};
-        if (!internal::local_to_sys(m_tzone, internal::tz::local_seconds{clock.chrono_tp().time_since_epoch()}, sys)){
+        if (!internal::local_to_sys(m_tzone, internal::tz::local_seconds{clock.chrono_tp().time_since_epoch()}, sys, on_impossible_date, on_ambiguous_time)){
             return zoned_psxct(r_dbl::na());
         }
         return zoned_psxct(static_cast<double>(sys.time_since_epoch().count()) + clock.chrono_frac());
     }
 
     template <string_literal Unit>
-    constexpr r_psxct from_clock(r_psxct before, r_psxct after) const noexcept {
+    constexpr r_psxct from_clock(r_psxct before, r_psxct after, roll on_impossible_date, roll on_ambiguous_time) const noexcept {
         if constexpr (internal::is_period_unit<Unit>()){
-            return from_clock(after);
+            bool left_to_right = unwrap(after.seconds_since_epoch()) >= unwrap(before.seconds_since_epoch());
+            return from_clock(after, internal::resolve_roll(on_impossible_date, left_to_right), internal::resolve_roll(on_ambiguous_time, left_to_right));
         } else {
             return add_seconds(after.seconds_since_epoch() - before.seconds_since_epoch());
         }
@@ -341,19 +344,20 @@ struct r_psxct {
 
     // Apply fn to the wall-clock reading, mapping the result back into the input timezone
     template <typename F>
-    constexpr r_psxct using_clock(F fn) const noexcept(noexcept(fn(std::declval<r_psxct>()))) {
-        return is_utc() ? fn(*this) : from_clock(fn(to_clock()));
+    constexpr r_psxct using_clock(F fn, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept(noexcept(fn(std::declval<r_psxct>()))) {
+        return is_utc() ? fn(*this) : from_clock(fn(to_clock()), on_impossible_date, on_ambiguous_time);
     }
 
     template <string_literal Unit, Number N>
-    constexpr r_psxct add(N n, roll on_impossible_date = roll::none, r_dbl width = r_dbl(1.0)) const noexcept {
+    constexpr r_psxct add(N n, roll on_impossible_date = roll::none, r_dbl width = r_dbl(1.0), roll on_ambiguous_time = roll::none) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
         // units >= "days" use wall-clock
         if constexpr (internal::is_period_unit<Unit>()){
             if (!is_utc()){
-                return from_clock(to_clock().template add<Unit>(n, on_impossible_date, width));
+                r_psxct cl = to_clock();
+                return from_clock<Unit>(cl, cl.template add<Unit>(n, on_impossible_date, width), on_impossible_date, on_ambiguous_time);
             }
         }
 
@@ -519,7 +523,7 @@ struct r_psxct {
     // Rounding
 
     template <string_literal Unit>
-    constexpr r_psxct floor(int week_start = 7) const noexcept {
+    constexpr r_psxct floor(int week_start = 7, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
@@ -530,7 +534,7 @@ struct r_psxct {
         // In a zone, rounding happens on its wall clock
         if (!is_utc()){
             r_psxct cl = to_clock();
-            return from_clock<Unit>(cl, cl.template floor<Unit>(week_start));
+            return from_clock<Unit>(cl, cl.template floor<Unit>(week_start), on_impossible_date, on_ambiguous_time);
         }
 
         using namespace std::chrono;
@@ -569,7 +573,7 @@ struct r_psxct {
     }
 
     template <string_literal Unit>
-    constexpr r_psxct ceiling(int week_start = 7) const noexcept {
+    constexpr r_psxct ceiling(int week_start = 7, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
@@ -579,7 +583,7 @@ struct r_psxct {
 
         if (!is_utc()){
             r_psxct cl = to_clock();
-            return from_clock<Unit>(cl, cl.template ceiling<Unit>(week_start));
+            return from_clock<Unit>(cl, cl.template ceiling<Unit>(week_start), on_impossible_date, on_ambiguous_time);
         }
 
         r_psxct lower = floor<Unit>(week_start);
@@ -597,7 +601,7 @@ struct r_psxct {
     }
 
     template <string_literal Unit>
-    constexpr r_psxct round(int week_start = 7) const noexcept {
+    constexpr r_psxct round(int week_start = 7, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
@@ -607,7 +611,7 @@ struct r_psxct {
 
         if (!is_utc()){
             r_psxct cl = to_clock();
-            return from_clock<Unit>(cl, cl.template round<Unit>(week_start));
+            return from_clock<Unit>(cl, cl.template round<Unit>(week_start), on_impossible_date, on_ambiguous_time);
         }
 
         r_psxct lower = floor<Unit>(week_start);

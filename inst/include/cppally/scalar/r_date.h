@@ -8,21 +8,12 @@
 #include <cppally/scalar/r_str.h>
 #include <cppally/scalar/arithmetic_ops.h>
 #include <cppally/utils.h>
+#include <cppally/time/roll.h>
 #include <cstdint>
 #include <chrono> // For r_date/r_psxt
 #include <cstdio> // For snprintf
 
 namespace cppally {
-
-// Rollover policy for month arithmetic that lands on a day that doesn't exist
-// (e.g. Jan 31 + 1 month)
-enum roll : uint8_t {
-    none = 0,       // does not roll and impossible dates are returned as NA
-    backward = 1,   // rolls backwards until the last day of the current month is reached
-    forward = 2,    // rolls to first day of next month
-    away = 3,       // rolls forward when adding and backward when subtracting (my favourite)
-    nearest = 4     // rolls backward when adding and forward when subtracting
-};
 
 // Is the time unit valid?
 // Valid for 'years', 'months', 'weeks', 'days', 'hours', 'minutes' and 'seconds'
