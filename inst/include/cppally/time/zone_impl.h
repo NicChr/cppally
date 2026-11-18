@@ -4,10 +4,10 @@
 // The out-of-line half of zone.h, compiled once per package: only in the translation unit that defines
 // CPPALLY_COMPILE_ONCE (the generated cppally.cpp), so tz.h is parsed there and nowhere else.
 // Everything here is non-inline and attribute_hidden, so each package keeps its own copy
-// Define CPPALLY_NO_TZDB if you don't want tz.h and tzdata.h. If defined, only UTC date-times work everywhere and dates are unaffected.
+// Define CPPALLY_WITHOUT_TZDB if you don't want tz.h and tzdata.h. If defined, only UTC date-times work everywhere and dates are unaffected.
 
 #include <cppally/time/zone.h>
-#ifndef CPPALLY_NO_TZDB
+#ifndef CPPALLY_WITHOUT_TZDB
 #include <cppally/time/tz.h>
 #include <cppally/time/tzdata.h>
 #endif
@@ -22,7 +22,7 @@ namespace cppally {
 
 namespace internal {
 
-#ifndef CPPALLY_NO_TZDB
+#ifndef CPPALLY_WITHOUT_TZDB
 
 namespace tz {
 
@@ -177,7 +177,7 @@ void zone_registry::cache_session_zone() {
 void zone_registry::resolve(zone_record& zone) noexcept {
   zone.tzdb_zone = nullptr;
   zone.table = offset_table();
-#ifdef CPPALLY_NO_TZDB
+#ifdef CPPALLY_WITHOUT_TZDB
   zone.invalid = false;
 #else
   zone.invalid = true;
@@ -199,7 +199,7 @@ void zone_registry::resolve(zone_record& zone) noexcept {
 #endif
 }
 
-#ifndef CPPALLY_NO_TZDB
+#ifndef CPPALLY_WITHOUT_TZDB
 
 // Parses the embedded database on first use. Call with the mutex held
 bool zone_registry::ensure_db() {
@@ -239,7 +239,7 @@ std::string zone_registry::find_sys_timezone() {
 
 // Lookups beyond a zone's offset_table, only reached for resolved zones
 
-#ifdef CPPALLY_NO_TZDB
+#ifdef CPPALLY_WITHOUT_TZDB
 
 bool tzdb_utc_offset(const zone_record*, std::chrono::sys_seconds, std::chrono::seconds&, std::string*) noexcept {
   return false;
