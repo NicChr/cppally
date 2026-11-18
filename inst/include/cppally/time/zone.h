@@ -9,6 +9,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -32,21 +33,32 @@ struct no_zone {};
 // Period i covers POSIX seconds [starts[i], starts[i + 1]) with offsets[i] in force
 struct attribute_hidden offset_table {
 
-  // Tabulated up to the first transition after this year, later instants fall back to tzdb
+  // Minimum extent of the table, later instants fall back to tzdb unless the zone's offsets cycle
   static constexpr int horizon_year = 2100;
   // 2^20 second (~12 day) buckets, rarely holding more than one transition
   static constexpr int bucket_shift = 20;
+  // The Gregorian calendar repeats every 400 years (146097 days), so do offsets once a zone's rules stop changing
+  static constexpr int64_t cycle_seconds = int64_t{146097} * 86400;
 
   std::vector<int64_t> starts; // One per period plus the end of the last, starts[0] is the minimum
   std::vector<int32_t> offsets;
   std::vector<uint16_t> abbrev_ids; // Index into abbrevs
   std::vector<std::string> abbrevs;
   std::vector<uint16_t> buckets; // Period in force at starts[1] + (k << bucket_shift)
+  int64_t cycle_end = std::numeric_limits<int64_t>::max(); // The table's final 400 years before this repeat forever
 
   offset_table() = default;
 
   // Not thread-safe, zone_registry serialises calls
   explicit offset_table(const tz::time_zone& zone);
+
+  // Whole cycles to subtract from an instant past cycle_end to land it in the table's final 400 years
+  int64_t cycle_shift(int64_t s) const noexcept {
+    if (s < cycle_end) [[likely]] {
+      return 0;
+    }
+    return ((s - cycle_end) / cycle_seconds + 1) * cycle_seconds;
+  }
 
   // Period associated with POSIX second, -1 if it's beyond the table
   int period(int64_t s) const noexcept {
@@ -160,7 +172,9 @@ inline bool utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std
     if (!zone->known()) {
       return false;
     }
-    const int i = zone->table.period(tp.time_since_epoch().count());
+    int64_t s = tp.time_since_epoch().count();
+    s -= zone->table.cycle_shift(s);
+    const int i = zone->table.period(s);
     if (i >= 0) [[likely]] {
       out = std::chrono::seconds{zone->table.offsets[i]};
       if (abbrev) {
@@ -188,6 +202,9 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
   }
   const offset_table& table = zone->table;
   int64_t local = tp.time_since_epoch().count();
+  // Solved within the table's final 400 years, then shifted back
+  const int64_t shift = table.cycle_shift(local);
+  local -= shift;
 
   int lo = table.period(local - 86400);
   int hi = table.period(local + 86400);
@@ -206,7 +223,7 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
       }
     }
     if (matches == 1) [[likely]] {
-      out = std::chrono::sys_seconds{std::chrono::seconds{earliest}};
+      out = std::chrono::sys_seconds{std::chrono::seconds{earliest + shift}};
       return true;
     }
     // Overlap (ambiguous)
@@ -215,7 +232,7 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
       if (on_ambiguous == roll::none) {
         return false;
       }
-      out = std::chrono::sys_seconds{std::chrono::seconds{on_ambiguous == roll::forward ? latest : earliest}};
+      out = std::chrono::sys_seconds{std::chrono::seconds{(on_ambiguous == roll::forward ? latest : earliest) + shift}};
       return true;
     }
     // Gap (nonexistent): the reading is past the end of period i - 1 but before the start of period i
@@ -224,7 +241,7 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
     }
     for (int i = lo + 1; i <= hi; ++i) {
       if (local - table.offsets[i - 1] >= table.starts[i] && local - table.offsets[i] < table.starts[i]) {
-        out = std::chrono::sys_seconds{std::chrono::seconds{table.starts[i]}};
+        out = std::chrono::sys_seconds{std::chrono::seconds{table.starts[i] + shift}};
         return true;
       }
     }

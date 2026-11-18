@@ -1106,6 +1106,21 @@ public:
         return i;
     }
 
+    // First year the last zonelet and its rules are in force unchanged, max() if that zonelet has a fixed offset. Call after adjust()
+    chrono::year steady_year() const {
+        const zonelet& z = zonelets_.back();
+        if (z.tag_ != zonelet::has_rule) {
+            return chrono::year::max();
+        }
+        chrono::year y = zonelets_.size() > 1 ? zonelets_.end()[-2].until_year_ + chrono::years{1} : chrono::year::min();
+        auto const& rules = db_rules();
+        auto eqr = std::equal_range(rules.data(), rules.data() + rules.size(), z.rule_);
+        for (const rule* r = eqr.first; r != eqr.second; ++r) {
+            y = std::max(y, r->ending_year() == chrono::year::max() ? r->starting_year() : r->ending_year() + chrono::years{1});
+        }
+        return y;
+    }
+
     friend bool operator<(const time_zone& x, const time_zone& y) noexcept {
         return x.name_ < y.name_;
     }

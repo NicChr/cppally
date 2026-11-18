@@ -44,7 +44,16 @@ offset_table::offset_table(const tz::time_zone& zone) {
 
   namespace chrono = std::chrono;
 
-  const chrono::sys_seconds horizon{chrono::sys_days{chrono::year{horizon_year} / chrono::January / 1}};
+  chrono::sys_seconds end{chrono::sys_days{chrono::year{horizon_year} / chrono::January / 1}};
+
+  // Tabulate 400 years from a year after the rules stop changing (margin for local_to_sys's +-1 day lookups)
+  const chrono::year steady = zone.steady_year();
+  if (steady != chrono::year::max()) {
+    const chrono::sys_seconds cycle_start{chrono::sys_days{(steady + chrono::years{1}) / chrono::January / 1}};
+    cycle_end = cycle_start.time_since_epoch().count() + cycle_seconds;
+    end = std::max(end, chrono::sys_seconds{chrono::seconds{cycle_end + 2 * 86400}});
+  }
+
   chrono::sys_seconds t{chrono::sys_days{chrono::year::min() / chrono::January / 1}};
 
   while (true) {
@@ -60,7 +69,7 @@ offset_table::offset_table(const tz::time_zone& zone) {
       abbrev_ids.push_back(id);
     }
 
-    if (info.end <= t || info.end >= horizon) {
+    if (info.end <= t || info.end >= end) {
       starts.push_back(info.end.time_since_epoch().count());
       break;
     }
