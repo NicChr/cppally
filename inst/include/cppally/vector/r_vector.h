@@ -108,6 +108,11 @@ r_sexp r_function::operator()(Args&&... args) const {
   struct resizable {};
 #endif
 
+namespace internal {
+template <typename T>
+void resync_tzone(T& x);
+}
+
 template <RVal T>
 struct r_vec {
 
@@ -169,6 +174,9 @@ struct r_vec {
       m_data = is_altrep() ? safe[internal::vector_ptr<T>](value) : internal::vector_ptr<T>(value);
     }
   }
+
+  template <typename U>
+  friend void internal::resync_tzone(U& x);
 
   void cache_zone(){
     if constexpr (RPsxctType<T>){
@@ -1402,6 +1410,15 @@ struct r_vec {
   #endif
 
 };
+
+namespace internal {
+template <typename T>
+void resync_tzone(T& x){
+  if constexpr (is<T, r_vec<r_psxct>>){
+    x.cache_zone();
+  }
+}
+}
 
 template <RVector U>
 inline void r_copy_n(U& target, const unwrap_t<typename std::remove_cvref_t<U>::data_type>* source, r_size_t target_offset, r_size_t n) {
