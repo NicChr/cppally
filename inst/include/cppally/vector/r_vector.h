@@ -1374,7 +1374,14 @@ struct r_vec {
     if (is_null()) [[unlikely]] {
       *this = r_vec<T>();
     }
-    if (std::string_view(tz) == (m_zone ? std::string_view(m_zone->name) : std::string_view("UTC"))){
+    std::string_view current_tz = m_zone ? std::string_view(m_zone->name) : std::string_view("UTC");
+    std::string_view new_tz(tz);
+    if (new_tz == current_tz){
+      bool is_session_tz = new_tz.empty();
+      if (is_session_tz) {
+        // "" is session timezone which may have changed since last cache, so refresh the cache with the current session zone_record
+        m_zone = internal::zone_registry::get().find_or_add(new_tz);
+      }
       return;
     }
     maybe_ensure_exclusive();
