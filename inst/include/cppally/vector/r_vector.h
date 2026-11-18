@@ -188,7 +188,7 @@ struct r_vec {
       if (tz.is_empty()){
         m_zone = internal::zone_registry::get().find_or_add(std::string_view());
       } else {
-        m_zone = internal::zone_registry::get().find_or_add(tz.view(r_size_t(0)));
+        m_zone = internal::zone_registry::get().find_or_add(tz.view(r_size_t(0)).cpp_str());
       }
     }
   }

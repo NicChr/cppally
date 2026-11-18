@@ -122,11 +122,6 @@ struct attribute_hidden zone_registry {
     return add(name, std::string_view());
   }
 
-  // NA is the session zone, like ""
-  const zone_record* find_or_add(r_str_view name) {
-    return find_or_add(name.is_na() ? std::string_view() : name.cpp_str());
-  }
-
   // Main thread: cache Sys.timezone(), the session zone when TZ is unset
   void cache_session_zone();
 
