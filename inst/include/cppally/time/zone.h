@@ -80,19 +80,23 @@ struct attribute_hidden offset_table {
   uint16_t abbrev_id(const std::string& abbrev);
 };
 
-// One for each unique time-zone name except UTC, which is nullptr.
+// One for each unique time-zone name except UTC, which is nullptr, plus one session record for each zone "" has resolved to.
 // A zone is known once its offset table is built.
-// It stays unknown if tzdb rejects the timezone, or there if there is no tzdb.
+// It stays unknown if tzdb rejects the timezone, or if there is no tzdb.
 struct zone_record {
-  std::string name;
-  std::string session_name; // Zone a session record ("") resolved to
+  std::string name; // The zone, e.g. "Europe/London"
   const tz::time_zone* tzdb_zone = nullptr; // tzdb's definition of the zone
   offset_table table; // Built from `tzdb_zone` when it's resolved
   zone_record* next = nullptr; // Registry list
   bool invalid = false; // Rejected by the database
+  bool session = false; // Is this a session timezone?
 
   bool known() const noexcept {
     return !table.offsets.empty();
+  }
+
+  const char* label() const noexcept {
+    return session ? "" : name.c_str();
   }
 };
 
@@ -118,7 +122,7 @@ struct attribute_hidden zone_registry {
     if (const zone_record* zone = find(name)) {
       return zone;
     }
-    return add(name, std::string_view());
+    return add(name, /*session=*/ false);
   }
 
   // Main thread: cache Sys.timezone(), the session zone when TZ is unset
@@ -134,25 +138,24 @@ struct attribute_hidden zone_registry {
   const zone_record* find(std::string_view name) const noexcept {
     // Start at newest record, traversing older records until zone name is found or end of list
     for (const zone_record* zone = head.load(std::memory_order_acquire); zone; zone = zone->next) {
-      if (zone->name == name) {
+      if (!zone->session && zone->name == name) {
         return zone;
       }
     }
     return nullptr;
   }
 
-  const zone_record* find_session(std::string_view session_name) const noexcept {
+  const zone_record* find_session(std::string_view name) const noexcept {
     for (const zone_record* zone = head.load(std::memory_order_acquire); zone; zone = zone->next) {
-      if (zone->name.empty() && zone->session_name == session_name) {
+      if (zone->session && zone->name == name) {
         return zone;
       }
     }
     return nullptr;
   }
 
-  // Defined in zone_impl.h, along with the mutex that serialises them (kept there so <mutex> stays out of this header)
-  // Creates and publishes the record for `name` (or the session record for `session_name`), unless another thread got there first
-  const zone_record* add(std::string_view name, std::string_view session_name);
+  // Creates and publishes the record for `name`, unless another thread got there first
+  const zone_record* add(std::string_view name, bool session);
   const zone_record* session_zone();
   void resolve(zone_record& zone) noexcept;
   bool ensure_db();

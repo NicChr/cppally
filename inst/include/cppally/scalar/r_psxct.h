@@ -142,7 +142,7 @@ struct r_psxct {
 
     // timezone as a const char*
     const char* tzone() const noexcept {
-        return is_utc() ? "UTC" : m_tzone->name.c_str();
+        return is_utc() ? "UTC" : m_tzone->label();
     }
 
     // Same UTC instant, different timezone

@@ -288,7 +288,7 @@ struct r_vec {
 
   explicit r_vec(std::initializer_list<T> elements) : r_vec(static_cast<r_size_t>(elements.size())) {
 
-    if constexpr (is<T, r_psxct>){
+    if constexpr (RPsxctType<T>){
       if (elements.size() > 0){
         set_tzone(elements.begin()->tzone());
       }
@@ -1364,7 +1364,7 @@ struct r_vec {
 
   // POSIXct-only members
   r_str tzone() const requires RPsxctType<T> {
-    return m_zone ? r_str(m_zone->name.c_str()) : cached_str<"UTC">();
+    return m_zone ? r_str(m_zone->label()) : cached_str<"UTC">();
   }
 
   void set_tzone(const char* tz) requires RPsxctType<T> {
@@ -1374,18 +1374,13 @@ struct r_vec {
     if (is_null()) [[unlikely]] {
       *this = r_vec<T>();
     }
-    std::string_view current_tz = m_zone ? std::string_view(m_zone->name) : std::string_view("UTC");
+    std::string_view current_tz = m_zone ? std::string_view(m_zone->label()) : std::string_view("UTC");
     std::string_view new_tz(tz);
-    if (new_tz == current_tz){
-      bool is_session_tz = new_tz.empty();
-      if (is_session_tz) {
-        // "" is session timezone which may have changed since last cache, so refresh the cache with the current session zone_record
-        m_zone = internal::zone_registry::get().find_or_add(new_tz);
-      }
-      return;
+    if (new_tz != current_tz){
+      maybe_ensure_exclusive();
+      safe[Rf_setAttrib](*this, cached_sym<"tzone">(), r_vec<r_str>({ r_str(tz) }));
     }
-    maybe_ensure_exclusive();
-    safe[Rf_setAttrib](*this, cached_sym<"tzone">(), r_vec<r_str>({ r_str(tz) }));
+    // Always re-cache because the session timezone may have also changed since last cache
     cache_zone();
   }
 

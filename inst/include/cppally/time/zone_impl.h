@@ -114,15 +114,14 @@ attribute_hidden std::mutex& zone_registry_mutex() {
   return m;
 }
 
-CPPALLY_NOINLINE const zone_record* zone_registry::add(std::string_view name, std::string_view session_name) {
+CPPALLY_NOINLINE const zone_record* zone_registry::add(std::string_view name, bool session) {
   std::lock_guard<std::mutex> lock(zone_registry_mutex());
-  // Session records keyed by session_name, named records by name
-  if (const zone_record* zone = name.empty() ? find_session(session_name) : find(name)) {
+  if (const zone_record* zone = session ? find_session(name) : find(name)) {
     return zone;
   }
   auto zone = std::make_unique<zone_record>();
   zone->name = name;
-  zone->session_name = session_name;
+  zone->session = session;
   resolve(*zone);
   zone->next = head.load(std::memory_order_relaxed);
   head.store(zone.get(), std::memory_order_release);
@@ -154,7 +153,7 @@ CPPALLY_NOINLINE const zone_record* zone_registry::session_zone() {
   if (const zone_record* zone = find_session(session_name)) {
     return zone;
   }
-  return add(std::string_view(), session_name);
+  return add(session_name, /*session=*/ true);
 }
 
 // Sys.timezone() returns TZ (uncached) when it's set, so wait until TZ is unset to get the OS zone
@@ -174,40 +173,32 @@ void zone_registry::cache_session_zone() {
   }
 }
 
-// Resolves `zone` against the database, leaving it invalid on any failure. Call with the mutex held
+// Resolves a new, unpublished `zone` against the database, leaving it invalid on any failure. Call with the mutex held
 void zone_registry::resolve(zone_record& zone) noexcept {
-  zone.tzdb_zone = nullptr;
-  zone.table = offset_table();
-  const std::string& zone_name = zone.name.empty() ? zone.session_name : zone.name;
 #ifdef CPPALLY_WITHOUT_TZDB
-  zone.invalid = false;
   // UTC aliases don't need tzdb, just a period with offset 0
-  if (zone_name == "UTC" || zone_name == "Etc/UTC" || zone_name == "GMT" || zone_name == "Etc/GMT") {
+  if (zone.name == "UTC" || zone.name == "Etc/UTC" || zone.name == "GMT" || zone.name == "Etc/GMT") {
     try {
       offset_table utc;
       utc.starts = {std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max()};
       utc.offsets = {0};
       utc.abbrev_ids = {0};
-      utc.abbrevs = {zone_name.ends_with("GMT") ? "GMT" : "UTC"};
+      utc.abbrevs = {zone.name.ends_with("GMT") ? "GMT" : "UTC"};
       zone.table = std::move(utc);
     } catch (...) {}
   }
 #else
   zone.invalid = true;
   try {
-    if (zone_name.empty() || !ensure_db()) {
+    if (zone.name.empty() || !ensure_db()) {
       return;
     }
-    const tz::time_zone* resolved = tz::find_zone(zone_name);
-    if (resolved) {
+    if (const tz::time_zone* resolved = tz::find_zone(zone.name)) {
       zone.table = offset_table(*resolved);
       zone.tzdb_zone = resolved;
       zone.invalid = false;
     }
-  } catch (...) {
-    zone.tzdb_zone = nullptr;
-    zone.table = offset_table();
-  }
+  } catch (...) {}
 #endif
 }
 
