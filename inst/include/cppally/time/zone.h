@@ -81,8 +81,8 @@ struct attribute_hidden offset_table {
 };
 
 // One for each unique time-zone name except UTC, which is nullptr.
-// `tzdb_zone` is nullptr if unresolved.
-// An unresolved `tzdb_zone` can occur if the db rejects the timezone, or there is no database.
+// A zone is known once its offset table is built.
+// It stays unknown if tzdb rejects the timezone, or there if there is no tzdb.
 struct zone_record {
   std::string name;
   std::string session_name; // Zone a session record ("") resolved to
@@ -92,7 +92,7 @@ struct zone_record {
   bool invalid = false; // Rejected by the database
 
   bool known() const noexcept {
-    return tzdb_zone != nullptr;
+    return !table.offsets.empty();
   }
 };
 

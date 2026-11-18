@@ -178,12 +178,23 @@ void zone_registry::cache_session_zone() {
 void zone_registry::resolve(zone_record& zone) noexcept {
   zone.tzdb_zone = nullptr;
   zone.table = offset_table();
+  const std::string& zone_name = zone.name.empty() ? zone.session_name : zone.name;
 #ifdef CPPALLY_WITHOUT_TZDB
   zone.invalid = false;
+  // UTC aliases don't need tzdb, just a period with offset 0
+  if (zone_name == "UTC" || zone_name == "Etc/UTC" || zone_name == "GMT" || zone_name == "Etc/GMT") {
+    try {
+      offset_table utc;
+      utc.starts = {std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max()};
+      utc.offsets = {0};
+      utc.abbrev_ids = {0};
+      utc.abbrevs = {zone_name.ends_with("GMT") ? "GMT" : "UTC"};
+      zone.table = std::move(utc);
+    } catch (...) {}
+  }
 #else
   zone.invalid = true;
   try {
-    const std::string& zone_name = zone.name.empty() ? zone.session_name : zone.name;
     if (zone_name.empty() || !ensure_db()) {
       return;
     }
