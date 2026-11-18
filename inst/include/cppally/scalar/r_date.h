@@ -58,6 +58,13 @@ consteval auto normalise_time_unit() noexcept {
 template <string_literal Unit>
 constexpr auto normalised_unit = normalise_time_unit<Unit>();
 
+// "period" is borrowed from lubridate, which are objects which align with clock time
+template <string_literal Unit>
+consteval bool is_period_unit() noexcept {
+    constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
+    return unit == "days" || unit == "weeks" || unit == "months" || unit == "years";
+}
+
 }
 
 // R date that captures the number of days since epoch (1st Jan 1970)
