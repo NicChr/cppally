@@ -580,8 +580,6 @@ struct r_psxct {
     template <string_literal Unit>
     constexpr r_psxct ceiling(int week_start = 7, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept {
 
-        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
-
         if (!seconds_since_epoch().is_finite()){
             return *this;
         }
@@ -606,8 +604,6 @@ struct r_psxct {
 
     template <string_literal Unit>
     constexpr r_psxct round(int week_start = 7, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept {
-
-        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
         if (!seconds_since_epoch().is_finite()){
             return *this;
