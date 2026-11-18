@@ -2,7 +2,8 @@
 #define CPPALLY_R_NAS_H
 
 #include <cppally/r_setup.h>
-#include <cppally/scalar/scalars.h>
+#include <cppally/r_sexp/r_sexp.h>
+#include <cppally/scalar/r_dbl.h>
 #include <cppally/scalar/arithmetic_ops.h> // for any_arithmetic_na
 
 namespace cppally {

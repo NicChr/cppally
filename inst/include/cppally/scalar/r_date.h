@@ -7,6 +7,7 @@
 #include <cppally/scalar/r_dbl.h>
 #include <cppally/scalar/r_str.h>
 #include <cppally/scalar/arithmetic_ops.h>
+#include <cppally/scalar/relational_ops.h>
 #include <cppally/utils.h>
 #include <cppally/time/roll.h>
 #include <cstdint>
@@ -249,7 +250,7 @@ struct r_date {
         r_dbl whole_blocks = r_dbl(internal::floor2(n));
         r_date lhs = add_months(whole_blocks * k, on_impossible_date);
 
-        if (unwrap(n) == unwrap(whole_blocks)){
+        if ((n == whole_blocks).is_true()){
             return lhs;
         }
 
@@ -454,7 +455,7 @@ struct r_date {
         }
 
         // If on the boundary, return the boundary
-        if ( unwrap(lower.days_since_epoch() - days_since_epoch()) == 0 ){
+        if ((lower == *this).is_true()){
             return lower;
         }
 
@@ -475,7 +476,7 @@ struct r_date {
 
         // If we're at exactly the halfway point, floor the date to the nearest time unit
         // So for example, if we're rounding to the nearest day and the date is at noon, we floor to midnight on the same day.
-        if (unwrap(lower_diff) <= unwrap(upper_diff)){
+        if ((lower_diff <= upper_diff).is_true()){
             return lower;
         } else {
             return upper;
@@ -539,7 +540,7 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl k = r_dbl(1.0), boo
     r_int emd = y.day();
 
     // Approximate whole months between x and y
-    r_int whole_months = r_int(12) * (ey - sy) + (em - sm) - r_int(static_cast<int>(unwrap(emd) < unwrap(smd)));
+    r_int whole_months = r_int(12) * (ey - sy) + (em - sm) - r_int(static_cast<int>((emd < smd).is_true()));
 
     if (whole_months.is_na()){
         return r_dbl::na();

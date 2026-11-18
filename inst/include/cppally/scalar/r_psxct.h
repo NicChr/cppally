@@ -7,6 +7,7 @@
 #include <cppally/scalar/r_dbl.h>
 #include <cppally/scalar/r_str.h>
 #include <cppally/scalar/arithmetic_ops.h>
+#include <cppally/scalar/relational_ops.h>
 #include <cppally/scalar/r_date.h>
 #include <cppally/time/zone.h>
 #include <cstdint>
@@ -238,7 +239,7 @@ struct r_psxct {
     template <string_literal Unit>
     constexpr r_psxct from_clock(r_psxct before, r_psxct after, roll on_impossible_date, roll on_ambiguous_time) const noexcept {
         if constexpr (internal::is_period_unit<Unit>()){
-            bool left_to_right = unwrap(after.seconds_since_epoch()) >= unwrap(before.seconds_since_epoch());
+            bool left_to_right = (after >= before).is_true();
             return from_clock(after, internal::resolve_roll(on_impossible_date, left_to_right), internal::resolve_roll(on_ambiguous_time, left_to_right));
         } else {
             return add_seconds(after.seconds_since_epoch() - before.seconds_since_epoch());
@@ -332,7 +333,7 @@ struct r_psxct {
         r_dbl whole_blocks = r_dbl(internal::floor2(n));
         r_psxct lhs = add_months(whole_blocks * k, on_impossible_date);
 
-        if (unwrap(n) == unwrap(whole_blocks)){
+        if ((n == whole_blocks).is_true()){
             return lhs;
         }
 
@@ -593,7 +594,7 @@ struct r_psxct {
         }
 
         // If on the boundary, return the boundary
-        if ( unwrap(lower.seconds_since_epoch() - seconds_since_epoch()) == 0 ){
+        if ((lower == *this).is_true()){
             return lower;
         }
 
@@ -621,7 +622,7 @@ struct r_psxct {
 
         // If we're at exactly the halfway point, floor the date to the nearest time unit
         // So for example, if we're rounding to the nearest day and the date is at noon, we floor to midnight on the same day.
-        if (unwrap(lower_diff) <= unwrap(upper_diff)){
+        if ((lower_diff <= upper_diff).is_true()){
             return lower;
         } else {
             return upper;
