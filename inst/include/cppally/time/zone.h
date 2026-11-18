@@ -110,7 +110,7 @@ struct attribute_hidden zone_registry {
   }
 
   // Main thread: cache the session zone
-  void cache_r_components();
+  void cache_session_zone();
 
   // Main thread: Update a stale session zone
   void update_session();
@@ -119,7 +119,7 @@ struct attribute_hidden zone_registry {
 
   std::atomic<zone_record*> head{nullptr};  // Linked list
   std::string session_name;                 // Cached session name
-  bool r_components_done = false;           // Whether the session zone has been cached
+  bool session_cached = false;              // Whether the session zone has been cached
   bool db_failed = false;                   // Whether the embedded db failed to parse
 
   const zone_record* find(std::string_view name) const noexcept {
@@ -135,7 +135,7 @@ struct attribute_hidden zone_registry {
   // Defined in zone_impl.h, along with the mutex that serialises them (kept there so <mutex> stays out of this header)
   // Creates and publishes the record for `name`, unless another thread got there first
   const zone_record* add(std::string_view name);
-  bool needs_r_components();
+  bool is_session_cached();
   void resolve(zone_record& zone) noexcept;
   bool ensure_db();
   static std::string find_session_zone_name();

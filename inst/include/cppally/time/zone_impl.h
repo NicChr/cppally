@@ -107,8 +107,8 @@ attribute_hidden std::mutex& zone_registry_mutex() {
 
 CPPALLY_NOINLINE const zone_record* zone_registry::add(std::string_view name) {
   // Only the session zone ("") needs R, named zones resolve from the embedded database
-  if (name.empty() && !OMP_IN_PARALLEL && needs_r_components()) {
-    cache_r_components();
+  if (name.empty() && !OMP_IN_PARALLEL && !is_session_cached()) {
+    cache_session_zone();
   }
   std::lock_guard<std::mutex> lock(zone_registry_mutex());
   if (const zone_record* zone = find(name)) {
@@ -122,11 +122,11 @@ CPPALLY_NOINLINE const zone_record* zone_registry::add(std::string_view name) {
   return zone.release();
 }
 
-void zone_registry::cache_r_components() {
+void zone_registry::cache_session_zone() {
   std::string session = find_session_zone_name();
   std::lock_guard<std::mutex> lock(zone_registry_mutex());
   session_name = std::move(session);
-  r_components_done = true;
+  session_cached = true;
 }
 
 void zone_registry::update_session() {
@@ -140,9 +140,9 @@ void zone_registry::update_session() {
   }
 }
 
-bool zone_registry::needs_r_components() {
+bool zone_registry::is_session_cached() {
   std::lock_guard<std::mutex> lock(zone_registry_mutex());
-  return !r_components_done;
+  return session_cached;
 }
 
 // Resolves `zone` against the database, leaving it unknown on any failure. Call with the mutex held
