@@ -33,14 +33,6 @@ inline tzdb& get_tzdb() noexcept {
 
 }
 
-// First element of character vector, NA if no elements
-inline r_str first_str(SEXP x) {
-  if (TYPEOF(x) == STRSXP && Rf_xlength(x) > 0) {
-    return r_str(STRING_ELT(x, 0), internal::no_checks_tag{});
-  }
-  return r_str::na();
-}
-
 // offset_table
 
 offset_table::offset_table(const tz::time_zone& zone) {
@@ -191,7 +183,14 @@ std::string zone_registry::find_session_zone_name() {
   if (tz_env && tz_env[0] != '\0'){
     name = tz_env;
   } else {
-    r_str zone = first_str(r_function(cached_sym<"Sys.timezone">(), env::base_env)());
+    r_str zone = r_str::na();
+    r_sexp r_tzone = r_function(cached_sym<"Sys.timezone">(), env::base_env)();
+
+    // zone_impl.h cannot include r_vector.h - so we have to use R C API vector access
+    if (TYPEOF(r_tzone) == STRSXP && Rf_xlength(r_tzone) > 0) {
+      zone = r_str(STRING_ELT(r_tzone, 0));
+    }
+
     if (zone.is_na()){
       return std::string();
     }
