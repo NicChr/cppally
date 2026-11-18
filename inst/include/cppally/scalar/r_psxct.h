@@ -246,6 +246,12 @@ struct r_psxct {
         }
     }
 
+    template <string_literal Unit, typename F>
+    CPPALLY_NOINLINE constexpr r_psxct on_clock(F fn, roll on_impossible_date, roll on_ambiguous_time) const noexcept {
+        r_psxct cl = to_clock();
+        return from_clock<Unit>(cl, fn(cl), on_impossible_date, on_ambiguous_time);
+    }
+
 
     constexpr r_psxct add_seconds(r_dbl n) const noexcept {
         return zoned_psxct(seconds_since_epoch() + n);
@@ -357,8 +363,7 @@ struct r_psxct {
         // units >= "days" use wall-clock
         if constexpr (internal::is_period_unit<Unit>()){
             if (!is_utc()){
-                r_psxct cl = to_clock();
-                return from_clock<Unit>(cl, cl.template add<Unit>(n, on_impossible_date, width), on_impossible_date, on_ambiguous_time);
+                return on_clock<Unit>([&](r_psxct cl){ return cl.template add<Unit>(n, on_impossible_date, width); }, on_impossible_date, on_ambiguous_time);
             }
         }
 
@@ -534,8 +539,7 @@ struct r_psxct {
 
         // In a zone, rounding happens on its wall clock
         if (!is_utc()){
-            r_psxct cl = to_clock();
-            return from_clock<Unit>(cl, cl.template floor<Unit>(week_start), on_impossible_date, on_ambiguous_time);
+            return on_clock<Unit>([&](r_psxct cl){ return cl.template floor<Unit>(week_start); }, on_impossible_date, on_ambiguous_time);
         }
 
         using namespace std::chrono;
@@ -583,8 +587,7 @@ struct r_psxct {
         }
 
         if (!is_utc()){
-            r_psxct cl = to_clock();
-            return from_clock<Unit>(cl, cl.template ceiling<Unit>(week_start), on_impossible_date, on_ambiguous_time);
+            return on_clock<Unit>([&](r_psxct cl){ return cl.template ceiling<Unit>(week_start); }, on_impossible_date, on_ambiguous_time);
         }
 
         r_psxct lower = floor<Unit>(week_start);
@@ -611,8 +614,7 @@ struct r_psxct {
         }
 
         if (!is_utc()){
-            r_psxct cl = to_clock();
-            return from_clock<Unit>(cl, cl.template round<Unit>(week_start), on_impossible_date, on_ambiguous_time);
+            return on_clock<Unit>([&](r_psxct cl){ return cl.template round<Unit>(week_start); }, on_impossible_date, on_ambiguous_time);
         }
 
         r_psxct lower = floor<Unit>(week_start);
