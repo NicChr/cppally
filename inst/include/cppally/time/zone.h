@@ -2,7 +2,6 @@
 #define CPPALLY_ZONE_H
 
 #include <cppally/r_setup.h>
-#include <cppally/scalar/r_str.h>
 #include <cppally/time/tz_fwd.h>
 #include <cppally/time/roll.h>
 #include <R_ext/Visibility.h>

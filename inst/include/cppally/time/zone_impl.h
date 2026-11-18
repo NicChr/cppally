@@ -12,6 +12,7 @@
 #include <cppally/time/tzdata.h>
 #endif
 #include <cppally/r_sym.h>
+#include <cppally/scalar/r_str.h>
 #include <cppally/r_function.h>
 #include <cstdlib>
 #include <limits>
