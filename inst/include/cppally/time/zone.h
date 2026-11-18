@@ -32,7 +32,7 @@ struct no_zone {};
 // Period i covers POSIX seconds [starts[i], starts[i + 1]) with offsets[i] in force
 struct attribute_hidden offset_table {
 
-  // Minimum extent of the table, later instants fall back to tzdb unless the zone's offsets cycle
+  // Minimum extent of the table, beyond this, a DST zone's offsets repeat and a fixed-offset zone's last period is extended indefinitely
   static constexpr int horizon_year = 2100;
   // 2^20 second (~12 day) buckets, rarely holding more than one transition
   static constexpr int bucket_shift = 20;
@@ -85,8 +85,7 @@ struct attribute_hidden offset_table {
 // It stays unknown if tzdb rejects the timezone, or if there is no tzdb.
 struct zone_record {
   std::string name; // The zone, e.g. "Europe/London"
-  const tz::time_zone* tzdb_zone = nullptr; // tzdb's definition of the zone
-  offset_table table; // Built from `tzdb_zone` when it's resolved
+  offset_table table; // Built from tzdb when it's resolved
   zone_record* next = nullptr; // Registry list
   bool invalid = false; // Rejected by the database
   bool session = false; // Is this a session timezone?
@@ -162,10 +161,6 @@ struct attribute_hidden zone_registry {
   static std::string find_sys_timezone();
 };
 
-// tzdb lookups for instants beyond a zone's offset_table, kept out of line off the hot path
-attribute_hidden bool tzdb_utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out, std::string* abbrev) noexcept;
-attribute_hidden bool tzdb_local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chrono::sys_seconds& out, roll on_impossible, roll on_ambiguous) noexcept;
-
 // UTC offset in force at `tp` (0 for UTC), plus its abbreviation if `abbrev` is given. False for an unknown zone or if the lookup fails
 inline bool utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out, std::string* abbrev = nullptr) noexcept {
   try {
@@ -192,7 +187,7 @@ inline bool utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std
   } catch (...) {
     return false;
   }
-  return tzdb_utc_offset(zone, tp, out, abbrev);
+  return false;
 }
 
 // Local wall-clock instant. A nonexistent reading rolls to the DST transition and an ambiguous one to the earlier/later instant,
@@ -254,7 +249,7 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
     }
     return false;
   }
-  return tzdb_local_to_sys(zone, tp, out, on_impossible, on_ambiguous);
+  return false;
 }
 
 }

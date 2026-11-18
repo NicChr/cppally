@@ -77,6 +77,12 @@ offset_table::offset_table(const tz::time_zone& zone) {
     t = info.end;
   }
 
+  // A fixed-offset final zonelet lasts indefinitely.
+  // It assumes that tzdata lists no changes beyond the horizon_year (currently 2100)
+  if (steady == chrono::year::max()) {
+    starts.back() = std::numeric_limits<int64_t>::max();
+  }
+
   const size_t n = offsets.size();
 
   // If > 1 offset (e.g. a zone that observes DST will have at least 2)
@@ -195,7 +201,6 @@ void zone_registry::resolve(zone_record& zone) noexcept {
     }
     if (const tz::time_zone* resolved = tz::find_zone(zone.name)) {
       zone.table = offset_table(*resolved);
-      zone.tzdb_zone = resolved;
       zone.invalid = false;
     }
   } catch (...) {}
@@ -239,64 +244,6 @@ std::string zone_registry::find_sys_timezone() {
   }
   return std::string(zone.cpp_str());
 }
-
-// Lookups beyond a zone's offset_table, only reached for resolved zones
-
-#ifdef CPPALLY_WITHOUT_TZDB
-
-bool tzdb_utc_offset(const zone_record*, std::chrono::sys_seconds, std::chrono::seconds&, std::string*) noexcept {
-  return false;
-}
-
-bool tzdb_local_to_sys(const zone_record*, tz::local_seconds, std::chrono::sys_seconds&, roll, roll) noexcept {
-  return false;
-}
-
-#else
-
-// Ask tzdb for UTC offset info.
-// Should be unreachable now that utc offset tables are pre-computed and use 400-year shifting, but kept as an unlikely fallback.
-CPPALLY_NOINLINE bool tzdb_utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out, std::string* abbrev) noexcept {
-  try {
-    tz::sys_info info = zone->tzdb_zone->get_info(tp);
-    out = info.offset;
-    if (abbrev) {
-      *abbrev = std::move(info.abbrev);
-    }
-    return true;
-  } catch (...) {
-    return false;
-  }
-}
-
-CPPALLY_NOINLINE bool tzdb_local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chrono::sys_seconds& out, roll on_impossible, roll on_ambiguous) noexcept {
-  try {
-    tz::local_info info = zone->tzdb_zone->get_info(tp);
-    if (info.result == tz::local_info::nonexistent) {
-      if (on_impossible == roll::none) {
-        return false;
-      }
-      out = info.second.begin;
-      return true;
-    }
-    if (info.result == tz::local_info::ambiguous) {
-      on_ambiguous = resolve_roll(on_ambiguous, true);
-      if (on_ambiguous == roll::none) {
-        return false;
-      }
-      // first is the earlier period, so it gives the earlier instant
-      const std::chrono::seconds offset = on_ambiguous == roll::forward ? info.second.offset : info.first.offset;
-      out = std::chrono::sys_seconds{(tp - offset).time_since_epoch()};
-      return true;
-    }
-    out = std::chrono::sys_seconds{(tp - info.first.offset).time_since_epoch()};
-    return true;
-  } catch (...) {
-    return false;
-  }
-}
-
-#endif
 
 }
 
