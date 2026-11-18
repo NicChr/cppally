@@ -386,6 +386,8 @@ default_helper_name <- function(package, fn_name, arg_name){
 
 generate_cpp_preamble <- function(includes = character()){
   c(
+    "// Compile out-of-line headers of cppally in this translation unit only",
+    "#define CPPALLY_COMPILE_ONCE",
     "#include <cppally/r_dispatch.h>",
     includes,
     "",
@@ -792,7 +794,8 @@ cpp_register <- function(
 
       {init_declarations}
       static SEXP cppally_init([[maybe_unused]] DllInfo* dll){{
-        BEGIN_CPPALLY{init$calls}
+        BEGIN_CPPALLY
+        cppally::internal::zone_registry::get().cache_session_zone();{init$calls}
         END_CPPALLY
       }}
 
