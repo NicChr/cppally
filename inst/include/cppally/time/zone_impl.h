@@ -206,9 +206,13 @@ std::string zone_registry::find_session_zone_name() {
 
 // Lookups beyond a zone's offset_table
 
-CPPALLY_NOINLINE bool tzdb_utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out) noexcept {
+CPPALLY_NOINLINE bool tzdb_utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out, std::string* abbrev) noexcept {
   try {
-    out = zone->tzdb_zone->get_info(tp).offset;
+    tz::sys_info info = zone->tzdb_zone->get_info(tp);
+    out = info.offset;
+    if (abbrev) {
+      *abbrev = std::move(info.abbrev);
+    }
     return true;
   } catch (...) {
     return false;
@@ -222,31 +226,6 @@ CPPALLY_NOINLINE bool tzdb_local_to_sys(const zone_record* zone, tz::local_secon
       return false;
     }
     out = std::chrono::sys_seconds{(tp - info.first.offset).time_since_epoch()};
-    return true;
-  } catch (...) {
-    return false;
-  }
-}
-
-bool utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out, std::string& abbrev) noexcept {
-  try {
-    if (!zone) {
-      out = std::chrono::seconds{0};
-      abbrev = "UTC";
-      return true;
-    }
-    if (!zone->known()) {
-      return false;
-    }
-    const int i = zone->table.period(tp.time_since_epoch().count());
-    if (i >= 0) {
-      out = std::chrono::seconds{zone->table.offsets[i]};
-      abbrev = zone->table.abbrevs[zone->table.abbrev_ids[i]];
-      return true;
-    }
-    tz::sys_info info = zone->tzdb_zone->get_info(tp);
-    out = info.offset;
-    abbrev = std::move(info.abbrev);
     return true;
   } catch (...) {
     return false;

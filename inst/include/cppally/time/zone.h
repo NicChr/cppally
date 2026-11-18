@@ -141,28 +141,35 @@ struct attribute_hidden zone_registry {
 };
 
 // tzdb lookups for instants beyond a zone's offset_table, kept out of line off the hot path
-attribute_hidden bool tzdb_utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out) noexcept;
+attribute_hidden bool tzdb_utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out, std::string* abbrev) noexcept;
 attribute_hidden bool tzdb_local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chrono::sys_seconds& out) noexcept;
 
-// UTC offset in force at `tp`, 0 for UTC. False for an unknown zone or if the lookup fails
-inline bool utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out) noexcept {
-  if (!zone) {
-    out = std::chrono::seconds{0};
-    return true;
-  }
-  if (!zone->known()) {
+// UTC offset in force at `tp` (0 for UTC), plus its abbreviation if `abbrev` is given. False for an unknown zone or if the lookup fails
+inline bool utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out, std::string* abbrev = nullptr) noexcept {
+  try {
+    if (!zone) {
+      out = std::chrono::seconds{0};
+      if (abbrev) {
+        *abbrev = "UTC";
+      }
+      return true;
+    }
+    if (!zone->known()) {
+      return false;
+    }
+    const int i = zone->table.period(tp.time_since_epoch().count());
+    if (i >= 0) [[likely]] {
+      out = std::chrono::seconds{zone->table.offsets[i]};
+      if (abbrev) {
+        *abbrev = zone->table.abbrevs[zone->table.abbrev_ids[i]];
+      }
+      return true;
+    }
+  } catch (...) {
     return false;
   }
-  const int i = zone->table.period(tp.time_since_epoch().count());
-  if (i >= 0) [[likely]] {
-    out = std::chrono::seconds{zone->table.offsets[i]};
-    return true;
-  }
-  return tzdb_utc_offset(zone, tp, out);
+  return tzdb_utc_offset(zone, tp, out, abbrev);
 }
-
-// As above but also updates abbreviation
-attribute_hidden bool utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out, std::string& abbrev) noexcept;
 
 // Local wall-clock instant. Returns false if non-existant or ambiguous, or if zone is unknown or lookup fails.
 inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chrono::sys_seconds& out) noexcept {
