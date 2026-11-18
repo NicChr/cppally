@@ -4,10 +4,13 @@
 // The out-of-line half of zone.h, compiled once per package: only in the translation unit that defines
 // CPPALLY_COMPILE_ONCE (the generated cppally.cpp), so tz.h is parsed there and nowhere else.
 // Everything here is non-inline and attribute_hidden, so each package keeps its own copy
+// Define CPPALLY_NO_TZDB if you don't want tz.h and tzdata.h. If defined, only UTC date-times work everywhere and dates are unaffected.
 
 #include <cppally/time/zone.h>
+#ifndef CPPALLY_NO_TZDB
 #include <cppally/time/tz.h>
 #include <cppally/time/tzdata.h>
+#endif
 #include <cppally/r_sym.h>
 #include <cppally/r_function.h>
 #include <cstdlib>
@@ -18,6 +21,8 @@
 namespace cppally {
 
 namespace internal {
+
+#ifndef CPPALLY_NO_TZDB
 
 namespace tz {
 
@@ -89,6 +94,8 @@ uint16_t offset_table::abbrev_id(const std::string& abbrev) {
   return static_cast<uint16_t>(abbrevs.size() - 1);
 }
 
+#endif
+
 // zone_registry
 
 // Needed to prevent multi-threaded tzdb load and R C API calls. One per dll, never destroyed
@@ -137,10 +144,14 @@ bool zone_registry::is_session_cached() {
   return session_cached;
 }
 
-// Resolves `zone` against the database, leaving it unknown on any failure. Call with the mutex held
+// Resolves `zone` against the database, leaving it invalid on any failure. Call with the mutex held
 void zone_registry::resolve(zone_record& zone) noexcept {
   zone.tzdb_zone = nullptr;
   zone.table = offset_table();
+#ifdef CPPALLY_NO_TZDB
+  zone.invalid = false;
+#else
+  zone.invalid = true;
   try {
     const std::string& zone_name = zone.name.empty() ? session_name : zone.name;
     if (zone_name.empty() || !ensure_db()) {
@@ -150,12 +161,16 @@ void zone_registry::resolve(zone_record& zone) noexcept {
     if (resolved) {
       zone.table = offset_table(*resolved);
       zone.tzdb_zone = resolved;
+      zone.invalid = false;
     }
   } catch (...) {
     zone.tzdb_zone = nullptr;
     zone.table = offset_table();
   }
+#endif
 }
+
+#ifndef CPPALLY_NO_TZDB
 
 // Parses the embedded database on first use. Call with the mutex held
 bool zone_registry::ensure_db() {
@@ -173,6 +188,8 @@ bool zone_registry::ensure_db() {
     return false;
   }
 }
+
+#endif
 
 // TZ if set, else Sys.timezone() (which returns its cache before checking TZ), ":" prefix removed
 std::string zone_registry::find_session_zone_name() {
@@ -203,7 +220,19 @@ std::string zone_registry::find_session_zone_name() {
   return name;
 }
 
-// Lookups beyond a zone's offset_table
+// Lookups beyond a zone's offset_table, only reached for resolved zones
+
+#ifdef CPPALLY_NO_TZDB
+
+bool tzdb_utc_offset(const zone_record*, std::chrono::sys_seconds, std::chrono::seconds&, std::string*) noexcept {
+  return false;
+}
+
+bool tzdb_local_to_sys(const zone_record*, tz::local_seconds, std::chrono::sys_seconds&, roll, roll) noexcept {
+  return false;
+}
+
+#else
 
 CPPALLY_NOINLINE bool tzdb_utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out, std::string* abbrev) noexcept {
   try {
@@ -244,6 +273,8 @@ CPPALLY_NOINLINE bool tzdb_local_to_sys(const zone_record* zone, tz::local_secon
     return false;
   }
 }
+
+#endif
 
 }
 

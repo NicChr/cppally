@@ -125,7 +125,7 @@ struct r_psxct {
     // r_psxct constructor using an already known zone_record
     explicit constexpr r_psxct(double seconds_since_epoch, const internal::zone_record* zone, internal::no_checks_tag) noexcept : r_psxct(seconds_since_epoch) {
         m_tzone = zone;
-        if (zone && !zone->known()) {
+        if (zone && zone->invalid) {
             value = r_dbl::na();
         }
     }

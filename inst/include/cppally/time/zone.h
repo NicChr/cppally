@@ -69,13 +69,15 @@ struct attribute_hidden offset_table {
   uint16_t abbrev_id(const std::string& abbrev);
 };
 
-// One for each unique time-zone name. `tzdb_zone` is nullptr for an unknown name (or a missing database)
-// date-times for an unknown zone are NA
+// One for each unique time-zone name except UTC, which is nullptr.
+// `tzdb_zone` is nullptr if unresolved.
+// An unresolved `tzdb_zone` can occur if the db rejects the timezone, or there is no database.
 struct zone_record {
   std::string name;
   const tz::time_zone* tzdb_zone = nullptr; // tzdb's definition of the zone
   offset_table table; // Built from `tzdb_zone` when it's resolved
   zone_record* next = nullptr; // Registry list
+  bool invalid = false; // Rejected by the database
 
   bool known() const noexcept {
     return tzdb_zone != nullptr;
