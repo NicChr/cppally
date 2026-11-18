@@ -172,6 +172,12 @@ struct r_psxct {
         }
     }
 
+    // Apply fn to the wall-clock reading, mapping the result back into the input timezone
+    template <typename F>
+    constexpr r_psxct using_clock(F fn, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept(noexcept(fn(std::declval<r_psxct>()))) {
+        return is_utc() ? fn(*this) : using_clock_impl(fn, on_impossible_date, on_ambiguous_time);
+    }
+
     private:
 
     static constexpr double utc_offset(int year, int month, int day, int hour, int minute, double second) noexcept {
@@ -252,6 +258,10 @@ struct r_psxct {
         return from_clock<Unit>(cl, fn(cl), on_impossible_date, on_ambiguous_time);
     }
 
+    template <typename F>
+    CPPALLY_NOINLINE constexpr r_psxct using_clock_impl(F fn, roll on_impossible_date, roll on_ambiguous_time) const noexcept(noexcept(fn(std::declval<r_psxct>()))) {
+        return from_clock(fn(to_clock()), on_impossible_date, on_ambiguous_time);
+    }
 
     constexpr r_psxct add_seconds(r_dbl n) const noexcept {
         return zoned_psxct(seconds_since_epoch() + n);
@@ -348,12 +358,6 @@ struct r_psxct {
     }
 
     public:
-
-    // Apply fn to the wall-clock reading, mapping the result back into the input timezone
-    template <typename F>
-    constexpr r_psxct using_clock(F fn, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept(noexcept(fn(std::declval<r_psxct>()))) {
-        return is_utc() ? fn(*this) : from_clock(fn(to_clock()), on_impossible_date, on_ambiguous_time);
-    }
 
     template <string_literal Unit, Number N>
     constexpr r_psxct add(N n, roll on_impossible_date = roll::none, r_dbl width = r_dbl(1.0), roll on_ambiguous_time = roll::none) const noexcept {
