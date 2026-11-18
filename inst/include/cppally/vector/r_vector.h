@@ -1368,8 +1368,14 @@ struct r_vec {
   }
 
   void set_tzone(const char* tz) requires RPsxctType<T> {
+    if (!tz) {
+      tz = "UTC";
+    }
     if (is_null()) [[unlikely]] {
       *this = r_vec<T>();
+    }
+    if (std::string_view(tz) == (m_zone ? std::string_view(m_zone->name) : std::string_view("UTC"))){
+      return;
     }
     maybe_ensure_exclusive();
     safe[Rf_setAttrib](*this, cached_sym<"tzone">(), r_vec<r_str>({ r_str(tz) }));
