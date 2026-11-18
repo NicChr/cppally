@@ -113,44 +113,64 @@ attribute_hidden std::mutex& zone_registry_mutex() {
   return m;
 }
 
-CPPALLY_NOINLINE const zone_record* zone_registry::add(std::string_view name) {
-  // Only the session zone ("") needs R, named zones resolve from the embedded database
-  if (name.empty() && !OMP_IN_PARALLEL && !is_session_cached()) {
-    cache_session_zone();
-  }
+CPPALLY_NOINLINE const zone_record* zone_registry::add(std::string_view name, std::string_view session_name) {
   std::lock_guard<std::mutex> lock(zone_registry_mutex());
-  if (const zone_record* zone = find(name)) {
+  // Session records keyed by session_name, named records by name
+  if (const zone_record* zone = name.empty() ? find_session(session_name) : find(name)) {
     return zone;
   }
   auto zone = std::make_unique<zone_record>();
   zone->name = name;
+  zone->session_name = session_name;
   resolve(*zone);
   zone->next = head.load(std::memory_order_relaxed);
   head.store(zone.get(), std::memory_order_release);
   return zone.release();
 }
 
-void zone_registry::cache_session_zone() {
-  std::string session = find_session_zone_name();
-  std::lock_guard<std::mutex> lock(zone_registry_mutex());
-  session_name = std::move(session);
-  session_cached = true;
-}
+// TZ if environment variable TZ is set, otherwise base::Sys.timezone() (cached)
+CPPALLY_NOINLINE const zone_record* zone_registry::session_zone() {
+  std::string_view session_name;
+  const char* tz_env = std::getenv("TZ");
+  if (tz_env && tz_env[0] != '\0') {
+    session_name = tz_env;
+  } else {
 
-void zone_registry::update_session() {
-  std::string session = find_session_zone_name();
-  std::lock_guard<std::mutex> lock(zone_registry_mutex());
-  session_name = std::move(session);
-  for (zone_record* zone = head.load(std::memory_order_relaxed); zone; zone = zone->next) {
-    if (zone->name.empty()) {
-      resolve(*zone);
+    // Cache the Sys.timezone() fallback if needed
+    if (!session_cached.load(std::memory_order_acquire) && !OMP_IN_PARALLEL) {
+      cache_session_zone();
+    }
+    // If cached use it
+    if (session_cached.load(std::memory_order_acquire)) {
+      session_name = sys_timezone;
     }
   }
+  // Remove ":" prefix if it exists
+  if (!session_name.empty() && session_name.front() == ':') {
+    session_name.remove_prefix(1);
+  }
+  // Find the zone_record using session timezone name
+  if (const zone_record* zone = find_session(session_name)) {
+    return zone;
+  }
+  return add(std::string_view(), session_name);
 }
 
-bool zone_registry::is_session_cached() {
+// Sys.timezone() returns TZ (uncached) when it's set, so wait until TZ is unset to get the OS zone
+void zone_registry::cache_session_zone() {
+  const char* tz_env = std::getenv("TZ");
+  // Avoid re-cache when:
+  // session timezone already cached or
+  // TZ is a non-empty string
+  if (session_cached.load(std::memory_order_acquire) || (tz_env && tz_env[0] != '\0')) {
+    return;
+  }
+  std::string zone = find_sys_timezone(); // base::Sys.timezone()
   std::lock_guard<std::mutex> lock(zone_registry_mutex());
-  return session_cached;
+  if (!session_cached.load(std::memory_order_relaxed)) {
+    sys_timezone = std::move(zone);
+    session_cached.store(true, std::memory_order_release);
+  }
 }
 
 // Resolves `zone` against the database, leaving it invalid on any failure. Call with the mutex held
@@ -162,7 +182,7 @@ void zone_registry::resolve(zone_record& zone) noexcept {
 #else
   zone.invalid = true;
   try {
-    const std::string& zone_name = zone.name.empty() ? session_name : zone.name;
+    const std::string& zone_name = zone.name.empty() ? zone.session_name : zone.name;
     if (zone_name.empty() || !ensure_db()) {
       return;
     }
@@ -200,33 +220,21 @@ bool zone_registry::ensure_db() {
 
 #endif
 
-// TZ if set, else Sys.timezone() (which returns its cache before checking TZ), ":" prefix removed
-std::string zone_registry::find_session_zone_name() {
+// Sys.timezone(), "" if NA
+std::string zone_registry::find_sys_timezone() {
 
-  std::string name;
-  const char* tz_env = std::getenv("TZ");
+  r_str zone = r_str::na();
+  r_sexp r_tzone = r_function(cached_sym<"Sys.timezone">(), env::base_env)();
 
-  if (tz_env && tz_env[0] != '\0'){
-    name = tz_env;
-  } else {
-    r_str zone = r_str::na();
-    r_sexp r_tzone = r_function(cached_sym<"Sys.timezone">(), env::base_env)();
-
-    // zone_impl.h cannot include r_vector.h - so we have to use R C API vector access
-    if (TYPEOF(r_tzone) == STRSXP && Rf_xlength(r_tzone) > 0) {
-      zone = r_str(STRING_ELT(r_tzone, 0));
-    }
-
-    if (zone.is_na()){
-      return std::string();
-    }
-    name = zone.cpp_str();
+  // zone_impl.h cannot include r_vector.h - so we have to use R C API vector access
+  if (TYPEOF(r_tzone) == STRSXP && Rf_xlength(r_tzone) > 0) {
+    zone = r_str(STRING_ELT(r_tzone, 0));
   }
 
-  if (!name.empty() && name.front() == ':'){
-    name.erase(0, 1);
+  if (zone.is_na()){
+    return std::string();
   }
-  return name;
+  return std::string(zone.cpp_str());
 }
 
 // Lookups beyond a zone's offset_table, only reached for resolved zones
@@ -243,6 +251,8 @@ bool tzdb_local_to_sys(const zone_record*, tz::local_seconds, std::chrono::sys_s
 
 #else
 
+// Ask tzdb for UTC offset info.
+// Should be unreachable now that utc offset tables are pre-computed and use 400-year shifting, but kept as an unlikely fallback.
 CPPALLY_NOINLINE bool tzdb_utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out, std::string* abbrev) noexcept {
   try {
     tz::sys_info info = zone->tzdb_zone->get_info(tp);

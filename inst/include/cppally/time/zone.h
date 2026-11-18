@@ -18,7 +18,7 @@
 // Handle loading tzdb and getting the session time-zone.
 // On first time-zone usage, lazy-parse the IANA data embedded in tzdata.h.
 // For each first-usage of a distinct time-zone, lazily build its offset table.
-// Important: for multi-threading to work safely, session_name must be cached (on package load).
+// Important: for the session zone to work in parallel, Sys.timezone() must be cached (on package load).
 // This header is depended on by r_vector.h, so we have to use R C API for vector operations.
 // Only the hot path lives here: everything needing tz.h is compiled once per package, in the translation unit
 // that defines CPPALLY_COMPILE_ONCE (the generated cppally.cpp), see zone_impl.h
@@ -86,6 +86,7 @@ struct attribute_hidden offset_table {
 // An unresolved `tzdb_zone` can occur if the db rejects the timezone, or there is no database.
 struct zone_record {
   std::string name;
+  std::string session_name; // Zone a session record ("") resolved to
   const tz::time_zone* tzdb_zone = nullptr; // tzdb's definition of the zone
   offset_table table; // Built from `tzdb_zone` when it's resolved
   zone_record* next = nullptr; // Registry list
@@ -97,7 +98,7 @@ struct zone_record {
 };
 
 // Thread-safe time-zone registry.
-// The only part that is not thread-safe is the session zone, which is cached on package load
+// The session zone is TZ if set, else Sys.timezone(), which needs R and so is cached on package load.
 // A linked list is used to support r_psxct construction by name in parallel. Other threads need to be able to read the list without a lock while another thread is adding to it.
 struct attribute_hidden zone_registry {
 
@@ -112,10 +113,13 @@ struct attribute_hidden zone_registry {
     if (name == "UTC") {
       return nullptr;
     }
+    if (name.empty()) {
+      return session_zone();
+    }
     if (const zone_record* zone = find(name)) {
       return zone;
     }
-    return add(name);
+    return add(name, std::string_view());
   }
 
   // NA is the session zone, like ""
@@ -123,17 +127,14 @@ struct attribute_hidden zone_registry {
     return find_or_add(name.is_na() ? std::string_view() : name.cpp_str());
   }
 
-  // Main thread: cache the session zone
+  // Main thread: cache Sys.timezone(), the session zone when TZ is unset
   void cache_session_zone();
-
-  // Main thread: Update a stale session zone
-  void update_session();
 
   private:
 
   std::atomic<zone_record*> head{nullptr};  // Linked list
-  std::string session_name;                 // Cached session name
-  bool session_cached = false;              // Whether the session zone has been cached
+  std::string sys_timezone;                 // Cached Sys.timezone(), never changed once cached
+  std::atomic<bool> session_cached{false};  // Whether sys_timezone has been cached
   bool db_failed = false;                   // Whether the embedded db failed to parse
 
   const zone_record* find(std::string_view name) const noexcept {
@@ -146,13 +147,22 @@ struct attribute_hidden zone_registry {
     return nullptr;
   }
 
+  const zone_record* find_session(std::string_view session_name) const noexcept {
+    for (const zone_record* zone = head.load(std::memory_order_acquire); zone; zone = zone->next) {
+      if (zone->name.empty() && zone->session_name == session_name) {
+        return zone;
+      }
+    }
+    return nullptr;
+  }
+
   // Defined in zone_impl.h, along with the mutex that serialises them (kept there so <mutex> stays out of this header)
-  // Creates and publishes the record for `name`, unless another thread got there first
-  const zone_record* add(std::string_view name);
-  bool is_session_cached();
+  // Creates and publishes the record for `name` (or the session record for `session_name`), unless another thread got there first
+  const zone_record* add(std::string_view name, std::string_view session_name);
+  const zone_record* session_zone();
   void resolve(zone_record& zone) noexcept;
   bool ensure_db();
-  static std::string find_session_zone_name();
+  static std::string find_sys_timezone();
 };
 
 // tzdb lookups for instants beyond a zone's offset_table, kept out of line off the hot path
@@ -250,11 +260,6 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
   return tzdb_local_to_sys(zone, tp, out, on_impossible, on_ambiguous);
 }
 
-}
-
-// Resync cppally's session time-zone to the current system time-zone
-inline void resync_session_tz() {
-  internal::zone_registry::get().update_session();
 }
 
 }
