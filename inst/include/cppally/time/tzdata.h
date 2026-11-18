@@ -14,8 +14,7 @@ namespace internal {
 namespace tz {
 
 // Not inline: internal linkage keeps one copy per package, never merged across DLLs
-constexpr std::string_view tzdata_chunks[] = {
-R"tzdata(# version 2026f
+constexpr char tzdata_chunk_0[] = R"tzdata(# version 2026f
 Rule	Algeria	1916	only	-	Jun	14	23:00s	1:00	S
 Rule	Algeria	1916	1919	-	Oct	Sun>=1	23:00s	0	-
 Rule	Algeria	1917	only	-	Mar	24	23:00s	1:00	S
@@ -1683,8 +1682,8 @@ Link	Asia/Shanghai	Asia/Chongqing
 Link	Asia/Shanghai	Asia/Harbin
 Link	Asia/Urumqi	Asia/Kashgar
 Link	Asia/Jerusalem	Asia/Tel_Aviv
-)tzdata",
-R"tzdata(Link	Europe/Berlin	Atlantic/Jan_Mayen
+)tzdata";
+constexpr char tzdata_chunk_1[] = R"tzdata(Link	Europe/Berlin	Atlantic/Jan_Mayen
 Link	Australia/Sydney	Australia/Canberra
 Link	Australia/Hobart	Australia/Currie
 Link	Europe/London	Europe/Belfast
@@ -3332,8 +3331,8 @@ Zone	America/Iqaluit	0	-	-00	1942	Aug
 	-5:00	NT_YK	E%sT	1999	Oct	31	2:00
 	-6:00	Canada	C%sT	2000	Oct	29	2:00
 	-5:00	Canada	E%sT
-)tzdata",
-R"tzdata(Zone	America/Resolute	0	-	-00	1947	Aug	31
+)tzdata";
+constexpr char tzdata_chunk_2[] = R"tzdata(Zone	America/Resolute	0	-	-00	1947	Aug	31
 	-6:00	NT_YK	C%sT	2000	Oct	29	2:00
 	-5:00	-	EST	2001	Apr	1	3:00
 	-6:00	Canada	C%sT	2006	Oct	29	2:00
@@ -4233,7 +4232,12 @@ Zone	America/Caracas	-4:27:44	-	LMT	1890
 	-4:00	-	%z	2007	Dec	9	3:00
 	-4:30	-	%z	2016	May	1	2:30
 	-4:00	-	%z
-)tzdata"
+)tzdata";
+// Pointer + size, so the chunks aren't scanned during constant evaluation
+constexpr std::string_view tzdata_chunks[] = {
+  {tzdata_chunk_0, sizeof(tzdata_chunk_0) - 1},
+  {tzdata_chunk_1, sizeof(tzdata_chunk_1) - 1},
+  {tzdata_chunk_2, sizeof(tzdata_chunk_2) - 1}
 };
 
 }
