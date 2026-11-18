@@ -1382,6 +1382,10 @@ struct r_vec {
     cache_zone();
   }
 
+  void set_tzone(r_str_view tz) requires RPsxctType<T> {
+    set_tzone(tz.c_str());
+  }
+
   private:
 
   #if R_VERSION >= R_Version(4, 5, 0)
