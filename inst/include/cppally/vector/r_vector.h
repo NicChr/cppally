@@ -282,7 +282,7 @@ struct r_vec {
 
     if constexpr (is<T, r_psxct>){
       if (elements.size() > 0){
-        set_tzone(elements.begin()->tz());
+        set_tzone(elements.begin()->tzone());
       }
     }
     

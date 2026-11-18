@@ -8,18 +8,36 @@
 #include <cppally/scalar/r_str.h>
 #include <cppally/scalar/arithmetic_ops.h>
 #include <cppally/scalar/r_date.h>
+#include <cppally/time/zone.h>
 #include <cstdint>
 #include <chrono> // For r_date/r_psxt
 #include <cstdio> // For snprintf
 
 namespace cppally {
 
-// R date-time that captures the number of seconds since epoch (1st Jan 1970) and hence implicitly UTC.
+template <string_literal Unit>
+constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width = r_dbl(1.0), roll on_impossible_date = roll::none) noexcept;
+
+// R date-time: seconds since epoch (1st Jan 1970 UTC).
 // Fractional seconds are supported.
 struct r_psxct {
 
     r_dbl value;
     using value_type = r_dbl;
+
+    private:
+
+    const internal::zone_record* m_tzone = nullptr; // nullptr is UTC
+
+    template <string_literal Unit>
+    friend constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width, roll on_impossible_date) noexcept;
+
+    // r_psxct from epoch + this->m_tzone
+    constexpr r_psxct zoned_psxct(double seconds) const noexcept {
+        return r_psxct(seconds, m_tzone, internal::no_checks_tag{});
+    }
+
+    public:
 
     constexpr r_psxct() noexcept : value{0.0} {}
     constexpr explicit operator r_dbl() const noexcept { return value; }
@@ -31,6 +49,11 @@ struct r_psxct {
 
     constexpr r_dbl epoch_offset() const noexcept {
         return seconds_since_epoch();
+    }
+
+    // Is r_psxct's timezone "UTC"?
+    constexpr bool is_utc() const noexcept {
+        return m_tzone == nullptr;
     }
 
     private:
@@ -95,6 +118,17 @@ struct r_psxct {
         (!r_dbl(seconds_since_epoch).is_na() && (seconds_since_epoch < chrono_min_seconds() || seconds_since_epoch >= chrono_max_seconds()) && r_dbl(seconds_since_epoch).is_finite()) ? r_dbl::na() : seconds_since_epoch
     } {}
 
+    explicit r_psxct(double seconds_since_epoch, const char* tz)
+      : r_psxct(seconds_since_epoch, tz ? internal::zone_registry::get().find_or_add(tz) : nullptr, internal::no_checks_tag{}) {}
+
+    // r_psxct constructor using an already known zone_record
+    explicit constexpr r_psxct(double seconds_since_epoch, const internal::zone_record* zone, internal::no_checks_tag) noexcept : r_psxct(seconds_since_epoch) {
+        m_tzone = zone;
+        if (zone && !zone->known()) {
+            value = r_dbl::na();
+        }
+    }
+
     static constexpr r_psxct na() noexcept {
         r_psxct out;
         out.value = r_dbl::na();
@@ -105,22 +139,48 @@ struct r_psxct {
         return seconds_since_epoch().is_na();
     }
 
-    // Construct r_psxct from year/month/day hour:minute:second
+    // timezone as a const char*
+    const char* tzone() const noexcept {
+        return is_utc() ? "UTC" : m_tzone->name.c_str();
+    }
+
+    // Same UTC instant, different timezone
+    [[nodiscard]] r_psxct in_tzone(const char* tz) const {
+        return r_psxct(unwrap(*this), tz);
+    }
+
+    // Same wall clock, different timezone.
+    // If the UTC offset of the timezone is different, then this UTC instant will be different.
+    // NA is returned in ambiguous or non-existent date-times.
+    [[nodiscard]] r_psxct replace_tzone(const char* tz) const {
+        return r_psxct(unwrap(*this), tz).from_clock(to_clock());
+    }
+
+    // Construct r_psxct from the year/month/day hour:minute:second wall-clock reading in `zone`.
+    // Nonexistent and ambiguous readings, and unknown zones, are NA
     constexpr explicit r_psxct(
     int year, int month, int day,
-    int hour, int minute, double second
-    ) noexcept {
+    int hour, int minute, double second,
+    const char* zone = "UTC"
+    ) : value{utc_offset(year, month, day, hour, minute, second)} {
+        if (zone && std::string_view(zone) != "UTC") {
+            m_tzone = internal::zone_registry::get().find_or_add(zone);
+            *this = from_clock(r_psxct(unwrap(value)));
+        }
+    }
+
+    private:
+
+    static constexpr double utc_offset(int year, int month, int day, int hour, int minute, double second) noexcept {
 
         namespace chrono = std::chrono;
 
         if (r_int(year).is_na()){
-            value = r_dbl::na();
-            return;
+            return r_dbl::na();
         }
 
         if (year < static_cast<int>(chrono::year::min()) || year > static_cast<int>(chrono::year::max())) {
-            value = r_dbl::na();
-            return;
+            return r_dbl::na();
         }
 
         unsigned int mo = static_cast<unsigned int>(month);
@@ -129,29 +189,62 @@ struct r_psxct {
         unsigned int mi = static_cast<unsigned int>(minute);
 
         if (mo > 12 || d > 31 || h > 23 || mi > 59 || !(second >= 0.0 && second < 60.0)) {
-            value = r_dbl::na();
-            return;
+            return r_dbl::na();
         }
 
         auto ymd = chrono::year{year} / chrono::month{mo} / chrono::day{d};
 
-        r_dbl out;
-
         if (!ymd.ok()) {
-            out = r_dbl::na();
-        } else {
-            int64_t whole = static_cast<int64_t>(second);
-            auto tp = chrono::sys_days{ymd} + chrono::hours{h} + chrono::minutes{mi} + chrono::seconds{whole};
-            out = r_dbl(static_cast<double>(tp.time_since_epoch().count()) + (second - static_cast<double>(whole)));
+            return r_dbl::na();
         }
 
-        value = out;
+        int64_t whole = static_cast<int64_t>(second);
+        auto tp = chrono::sys_days{ymd} + chrono::hours{h} + chrono::minutes{mi} + chrono::seconds{whole};
+        return static_cast<double>(tp.time_since_epoch().count()) + (second - static_cast<double>(whole));
     }
 
-    private: 
+    // Wall-clock, e.g. "01-01-2000 00:00:00 America/New_York" is just "01-01-2000 00:00:00 UTC"
+    constexpr r_psxct to_clock() const noexcept {
+        if (is_utc()){
+            return *this;
+        }
+        if (!is_chrono_safe()){
+            return r_psxct(unwrap(*this));
+        }
+        std::chrono::seconds offset{0};
+        if (!internal::utc_offset(m_tzone, chrono_tp(), offset)){
+            return na();
+        }
+        return r_psxct(unwrap(*this) + static_cast<double>(offset.count()));
+    }
+
+    // Same wall clock but in this timezone (i.e. different UTC offset)
+    constexpr r_psxct from_clock(r_psxct clock) const noexcept {
+        if (is_utc()){
+            return clock;
+        }
+        if (!clock.is_chrono_safe()){
+            return zoned_psxct(unwrap(clock));
+        }
+        std::chrono::sys_seconds sys{};
+        if (!internal::local_to_sys(m_tzone, internal::tz::local_seconds{clock.chrono_tp().time_since_epoch()}, sys)){
+            return zoned_psxct(r_dbl::na());
+        }
+        return zoned_psxct(static_cast<double>(sys.time_since_epoch().count()) + clock.chrono_frac());
+    }
+
+    template <string_literal Unit>
+    constexpr r_psxct from_clock(r_psxct before, r_psxct after) const noexcept {
+        if constexpr (internal::is_period_unit<Unit>()){
+            return from_clock(after);
+        } else {
+            return add_seconds(after.seconds_since_epoch() - before.seconds_since_epoch());
+        }
+    }
+
 
     constexpr r_psxct add_seconds(r_dbl n) const noexcept {
-        return r_psxct(seconds_since_epoch() + n);
+        return zoned_psxct(seconds_since_epoch() + n);
     }
 
     // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls 
@@ -164,7 +257,7 @@ struct r_psxct {
         if (n.is_na()){
             return na();
         }
-        
+
         if (!is_chrono_safe()){
             return *this;
         }
@@ -246,10 +339,23 @@ struct r_psxct {
 
     public:
 
+    // Apply fn to the wall-clock reading, mapping the result back into the input timezone
+    template <typename F>
+    constexpr r_psxct using_clock(F fn) const noexcept(noexcept(fn(std::declval<r_psxct>()))) {
+        return is_utc() ? fn(*this) : from_clock(fn(to_clock()));
+    }
+
     template <string_literal Unit, Number N>
     constexpr r_psxct add(N n, roll on_impossible_date = roll::none, r_dbl width = r_dbl(1.0)) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
+
+        // units >= "days" use wall-clock
+        if constexpr (internal::is_period_unit<Unit>()){
+            if (!is_utc()){
+                return from_clock(to_clock().template add<Unit>(n, on_impossible_date, width));
+            }
+        }
 
         r_dbl n_units = internal::coerce_number<r_dbl>(n);
 
@@ -321,15 +427,18 @@ struct r_psxct {
     }
 
     constexpr r_int hour() const noexcept {
-        return is_chrono_safe() ? r_int(static_cast<int>(chrono_hms().hours().count())) : r_int::na();
+        r_psxct cl = to_clock();
+        return cl.is_chrono_safe() ? r_int(static_cast<int>(cl.chrono_hms().hours().count())) : r_int::na();
     }
 
     constexpr r_int minute() const noexcept {
-        return is_chrono_safe() ? r_int(static_cast<int>(chrono_hms().minutes().count())) : r_int::na();
+        r_psxct cl = to_clock();
+        return cl.is_chrono_safe() ? r_int(static_cast<int>(cl.chrono_hms().minutes().count())) : r_int::na();
     }
 
     constexpr r_dbl second() const noexcept {
-        return is_chrono_safe() ? r_dbl(static_cast<double>(chrono_hms().seconds().count()) + chrono_frac()) : r_dbl::na();
+        r_psxct cl = to_clock();
+        return cl.is_chrono_safe() ? r_dbl(static_cast<double>(cl.chrono_hms().seconds().count()) + cl.chrono_frac()) : r_dbl::na();
     }
 
     constexpr r_lgl is_leap_year() const noexcept {
@@ -348,14 +457,26 @@ struct r_psxct {
 
         if (!is_chrono_safe()){
             return r_str::na();
-        }    
+        }
 
-        auto ymd = chrono_ymd();
-        auto hms = chrono_hms();
+        std::chrono::seconds offset{0};
+        std::string abbrev;
+        if (!internal::utc_offset(m_tzone, chrono_tp(), offset, &abbrev)){
+            return r_str::na();
+        }
+
+        // The local wall-clock reading, formatted as if UTC
+        r_psxct cl(unwrap(*this) + static_cast<double>(offset.count()));
+        if (!cl.is_chrono_safe()){
+            return r_str::na();
+        }
+
+        auto ymd = cl.chrono_ymd();
+        auto hms = cl.chrono_hms();
 
         // "0.500000" -> "0.5" -> ".5", and "0.000000" -> "0" -> "" once the leading digit is skipped
         char frac[10];
-        int n = std::snprintf(frac, sizeof(frac), "%.6f", chrono_frac());
+        int n = std::snprintf(frac, sizeof(frac), "%.6f", cl.chrono_frac());
         while (frac[n - 1] == '0') {
             --n;
         }
@@ -364,16 +485,17 @@ struct r_psxct {
         }
         frac[n] = '\0';
 
-        char buf[48];
+        char buf[64];
         std::snprintf(buf, sizeof(buf),
-            "%04d-%02u-%02u %02u:%02u:%02u%s UTC",
+            "%04d-%02u-%02u %02u:%02u:%02u%s %s",
             static_cast<int32_t>(ymd.year()),
             static_cast<uint32_t>(ymd.month()),
             static_cast<uint32_t>(ymd.day()),
             static_cast<uint32_t>(hms.hours().count()),
             static_cast<uint32_t>(hms.minutes().count()),
             static_cast<uint32_t>(hms.seconds().count()),
-            frac + 1
+            frac + 1,
+            abbrev.c_str()
         );
         return r_str(static_cast<const char*>(buf));
     }
@@ -382,10 +504,9 @@ struct r_psxct {
         return datetime_str();
     }
 
-
+    // The date on the zone's wall clock
     constexpr r_date as_date() const noexcept {
-        // return is_chrono_safe() ? r_date(static_cast<double>(chrono_days().time_since_epoch().count())) : r_date(seconds_since_epoch());
-        return r_date(r_dbl(internal::floor2(seconds_since_epoch() / r_dbl(86400.0))));
+        return r_date(r_dbl(internal::floor2(to_clock().seconds_since_epoch() / r_dbl(86400.0))));
     }
 
     // today's time based on unix time in fractional seconds (to microsecond level)
@@ -404,6 +525,12 @@ struct r_psxct {
 
         if (!seconds_since_epoch().is_finite()){
             return *this;
+        }
+
+        // In a zone, rounding happens on its wall clock
+        if (!is_utc()){
+            r_psxct cl = to_clock();
+            return from_clock<Unit>(cl, cl.template floor<Unit>(week_start));
         }
 
         using namespace std::chrono;
@@ -444,8 +571,15 @@ struct r_psxct {
     template <string_literal Unit>
     constexpr r_psxct ceiling(int week_start = 7) const noexcept {
 
+        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
+
         if (!seconds_since_epoch().is_finite()){
             return *this;
+        }
+
+        if (!is_utc()){
+            r_psxct cl = to_clock();
+            return from_clock<Unit>(cl, cl.template ceiling<Unit>(week_start));
         }
 
         r_psxct lower = floor<Unit>(week_start);
@@ -465,8 +599,15 @@ struct r_psxct {
     template <string_literal Unit>
     constexpr r_psxct round(int week_start = 7) const noexcept {
 
+        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
+
         if (!seconds_since_epoch().is_finite()){
             return *this;
+        }
+
+        if (!is_utc()){
+            r_psxct cl = to_clock();
+            return from_clock<Unit>(cl, cl.template round<Unit>(week_start));
         }
 
         r_psxct lower = floor<Unit>(week_start);
@@ -555,7 +696,7 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k = r_dbl(1.0), b
 }
 
 template <string_literal Unit>
-inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width = r_dbl(1.0), roll on_impossible_date = roll::none) noexcept {
+inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width, roll on_impossible_date) noexcept {
 
     constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
@@ -567,13 +708,11 @@ inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width = r_dbl(1.0),
 
         return internal::diff_months(x, y, width, true, on_impossible_date);
 
-    } else if constexpr (unit == "weeks"){
+    } else if constexpr (unit == "weeks" || unit == "days"){
 
-        return internal::diff_seconds(x, y, width * r_dbl(604800.0));
-
-    } else if constexpr (unit == "days"){
-
-        return internal::diff_seconds(x, y, width * r_dbl(86400.0));
+        // Units >= days are counted on x's wall clock and y in x's timezone
+        constexpr double unit_seconds = unit == "weeks" ? 604800.0 : 86400.0;
+        return internal::diff_seconds(x.to_clock(), x.zoned_psxct(unwrap(y)).to_clock(), width * r_dbl(unit_seconds));
 
     } else if constexpr (unit == "hours"){
 
