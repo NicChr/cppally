@@ -751,3 +751,7 @@ test_find <- function(x, y) {
 test_valgrind <- function() {
   invisible(.Call(`_cppallytest_test_valgrind`))
 }
+
+test_timezones <- function() {
+  invisible(.Call(`_cppallytest_test_timezones`))
+}
