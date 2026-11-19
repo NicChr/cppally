@@ -525,6 +525,19 @@ public:
     }
 };
 
+// Input is almost sorted in update_tzdata.R so insertion_sort() has little to sort
+template <typename T>
+void insertion_sort(T* x, std::size_t n) {
+    for (std::size_t i = 1; i < n; ++i) {
+        T curr = std::move(x[i]);
+        std::size_t j = i;
+        for (; j > 0 && curr < x[j - 1]; --j) {
+            x[j] = std::move(x[j - 1]);
+        }
+        x[j] = std::move(curr);
+    }
+}
+
 // Rule
 
 // A rule specifies one or more set of datetimes without using an offset.
@@ -749,14 +762,12 @@ private:
     }
 
     static void split_overlaps(std::vector<rule>& rules, std::size_t i, std::size_t& e) {
-        using difference_type = std::vector<rule>::iterator::difference_type;
         auto j = i;
         for (; i + 1 < e; ++i) {
             for (auto k = i + 1; k < e; ++k) {
                 if (overlaps(rules[i], rules[k])) {
                     split(rules, i, k, e);
-                    std::sort(rules.begin() + static_cast<difference_type>(i),
-                              rules.begin() + static_cast<difference_type>(e));
+                    insertion_sort(rules.data() + i, e - i);
                 }
             }
         }
@@ -1369,7 +1380,7 @@ struct tzdb {
             db->zones.back().add(line);
         }
     }
-    std::sort(db->rules.begin(), db->rules.end());
+    insertion_sort(db->rules.data(), db->rules.size());
     rule::split_overlaps(db->rules);
     // update_tzdata.R emits zones and links sorted by name
     if (!std::is_sorted(db->zones.begin(), db->zones.end()) || !std::is_sorted(db->links.begin(), db->links.end())) {

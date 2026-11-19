@@ -24,7 +24,7 @@ read_tzdata <- function(src) {
 
 # Puts zones and links in name order so that tz.h doesn't need to sort them.
 # A link's name is its alias, the last field, not its target.
-# Rules keep their order, tz.h sorts those.
+# Rules are grouped by name, keeping file order within a name, so tz.h's insertion sort has little to do.
 # Strings are sorted using `order(method = "radix")`
 # which means the sorting is done on bytes in C locale (matching std::string).
 sort_tzdata <- function(lines) {
@@ -42,17 +42,18 @@ sort_tzdata <- function(lines) {
     stop("Unexpected line type in the time zone data: ", paste(setdiff(types, c("Rule", "Zone", "Link")), collapse = ", "))
   }
 
-  keys <- vapply(entry_fields, \(f) switch(f[1], Zone = f[2], Link = f[3], ""), character(1))
+  keys <- vapply(entry_fields, \(f) switch(f[1], Rule = f[2], Zone = f[2], Link = f[3]), character(1))
 
   zones <- which(types == "Zone")
   links <- which(types == "Link")
   rules <- which(types == "Rule")
 
-  # Zone and link entries in name order
+  # Entries in name order, order() is stable so rules sharing a name stay in file order
+  rules_order <- rules[order(keys[rules], method = "radix")]
   zones_order <- zones[order(keys[zones], method = "radix")]
   links_order <- links[order(keys[links], method = "radix")]
-  # Rules in file order, then zones, then links
-  entry_order <- c(rules, zones_order, links_order)
+  # Rules, then zones, then links
+  entry_order <- c(rules_order, zones_order, links_order)
   c(version, unlist(entries[entry_order], use.names = FALSE))
 }
 
