@@ -72,22 +72,20 @@ struct local_info {
     sys_info second;
 };
 
-inline constexpr chrono::year min_year = chrono::year::min();
-inline constexpr chrono::year max_year = chrono::year::max();
 inline constexpr chrono::month_day min_day = chrono::January/1;
 inline constexpr chrono::month_day max_day = chrono::December/31;
 
 // Parsing
+
+[[noreturn]] inline void fail() {
+    throw std::runtime_error("malformed time zone database");
+}
 
 // Stand-in for the std::istringstream (failbit exceptions on) the original parses with
 class line_reader {
 
     std::string_view s_;
     std::size_t pos_ = 0;
-
-    [[noreturn]] static void fail() {
-        throw std::runtime_error("malformed line in time zone database");
-    }
 
 public:
 
@@ -190,7 +188,7 @@ inline unsigned parse_month(line_reader& in) {
             return m + 1;
         }
     }
-    throw std::runtime_error("bad month name in time zone database: " + s);
+    fail();
 }
 
 inline unsigned parse_dow(line_reader& in) {
@@ -204,7 +202,7 @@ inline unsigned parse_dow(line_reader& in) {
             return d;
         }
     }
-    throw std::runtime_error("bad weekday name in time zone database: " + s);
+    fail();
 }
 
 inline chrono::seconds parse_unsigned_time(line_reader& in) {
@@ -468,23 +466,23 @@ public:
                     char c2{};
                     is.read(c2);
                     if (c2 != '=') {
-                        throw std::runtime_error(std::string("bad operator in time zone database: ") + c + c2);
+                        fail();
                     }
                     int d;
                     is.read(d);
                     if (d < 1 || d > 31) {
-                        throw std::runtime_error(std::string("bad operator in time zone database: ") + c + c2 + std::to_string(d));
+                        fail();
                     }
                     x.type_ = c == '<' ? lteq : gteq;
                     x.u = pair{chrono::month(m)/d, chrono::weekday(dow)};
                 } else {
-                    throw std::runtime_error(std::string("bad operator in time zone database: ") + c);
+                    fail();
                 }
             } else {
                 int d;
                 is.read(d);
                 if (d < 1 || d > 31) {
-                    throw std::runtime_error("bad day of month in time zone database: " + std::to_string(d));
+                    fail();
                 }
                 x.type_ = month_day;
                 x.u = chrono::month(m)/d;
@@ -572,7 +570,7 @@ public:
             if (word == "min") {
                 starting_year_ = chrono::year::min();
             } else {
-                throw std::runtime_error("didn't find expected word in time zone database: " + word);
+                fail();
             }
         } else {
             in.read(x);
@@ -586,7 +584,7 @@ public:
             } else if (word == "max") {
                 ending_year_ = chrono::year::max();
             } else {
-                throw std::runtime_error("didn't find expected word in time zone database: " + word);
+                fail();
             }
         } else {
             in.read(x);
@@ -629,26 +627,23 @@ public:
         return save_;
     }
 
+    // Order by name, starting year, month, ending year, day
     friend bool operator<(const rule& x, const rule& y) {
+        if (int c = x.name_.compare(y.name_); c != 0) {
+            return c < 0;
+        }
+        if (x.starting_year_ != y.starting_year_) {
+            return x.starting_year_ < y.starting_year_;
+        }
         auto const xm = x.month();
         auto const ym = y.month();
-        if (std::tie(x.name_, x.starting_year_, xm, x.ending_year_) <
-            std::tie(y.name_, y.starting_year_, ym, y.ending_year_)) {
-            return true;
+        if (xm != ym) {
+            return xm < ym;
         }
-        if (std::tie(x.name_, x.starting_year_, xm, x.ending_year_) >
-            std::tie(y.name_, y.starting_year_, ym, y.ending_year_)) {
-            return false;
+        if (x.ending_year_ != y.ending_year_) {
+            return x.ending_year_ < y.ending_year_;
         }
         return x.day() < y.day();
-    }
-
-    friend bool operator<(const rule& x, const chrono::year& y) {
-        return x.ending_year_ < y;
-    }
-
-    friend bool operator<(const chrono::year& x, const rule& y) {
-        return x < y.starting_year_;
     }
 
     friend bool operator<(const rule& x, const std::string& y) {
@@ -659,34 +654,14 @@ public:
         return x < y.name_;
     }
 
+    // Rules must be pre-sorted
     static void split_overlaps(std::vector<rule>& rules) {
-        using difference_type = std::vector<rule>::iterator::difference_type;
         for (std::size_t i = 0; i < rules.size();) {
-            auto e = static_cast<std::size_t>(std::upper_bound(
-                rules.cbegin() + static_cast<difference_type>(i), rules.cend(), rules[i].name(),
-                [](const std::string& nm, const rule& x) {
-                    return nm < x.name();
-                }) - rules.cbegin());
+            std::size_t e = i + 1;
+            while (e < rules.size() && rules[e].name_ == rules[i].name_) {
+                ++e;
+            }
             split_overlaps(rules, i, e);
-            auto first_rule = rules.begin() + static_cast<difference_type>(i);
-            auto last_rule = rules.begin() + static_cast<difference_type>(e);
-            auto t = std::lower_bound(first_rule, last_rule, min_year);
-            if (t > first_rule + 1) {
-                if (t == last_rule || t->starting_year() >= min_year) {
-                    --t;
-                }
-                auto d = static_cast<std::size_t>(t - first_rule);
-                rules.erase(first_rule, t);
-                e -= d;
-            }
-            first_rule = rules.begin() + static_cast<difference_type>(i);
-            last_rule = rules.begin() + static_cast<difference_type>(e);
-            t = std::upper_bound(first_rule, last_rule, max_year);
-            if (t != last_rule) {
-                auto d = static_cast<std::size_t>(last_rule - t);
-                rules.erase(t, last_rule);
-                e -= d;
-            }
             i = e;
         }
         rules.shrink_to_fit();
@@ -873,7 +848,7 @@ inline const rule* find_first_std_rule(const std::pair<const rule*, const rule*>
     while (r->save() != chrono::minutes{0}) {
         std::tie(r, ry) = find_next_rule(eqr.first, eqr.second, r, ry);
         if (r == nullptr) {
-            throw std::runtime_error("could not find standard offset in time zone rule " + eqr.first->name());
+            fail();
         }
     }
     return r;
@@ -1159,10 +1134,6 @@ private:
             read(in, zl.until_date_);
             zl.until_date_.canonicalize(zl.until_year_);
         }
-        if ((zl.until_year_ < min_year) ||
-                (zonelets_.size() > 1 && zonelets_.end()[-2].until_year_ > max_year)) {
-            zonelets_.pop_back();
-        }
     }
 
     void adjust_infos(const std::vector<rule>& rules) {
@@ -1227,9 +1198,6 @@ private:
 
     sys_info get_info_impl(chrono::sys_seconds tp, rule_clock kind) const {
         auto y = chrono::year_month_day(chrono::floor<chrono::days>(tp)).year();
-        if (y < min_year || y > max_year) {
-            throw std::runtime_error("the year " + std::to_string(static_cast<int>(y)) + " is out of range");
-        }
         auto i = std::upper_bound(zonelets_.begin(), zonelets_.end(), tp,
             [kind](chrono::sys_seconds t, const zonelet& zl) {
                 return kind == rule_clock::utc ? t < zl.until_utc_ :
@@ -1310,27 +1278,23 @@ struct tzdb {
     std::vector<time_zone_link> links;
     std::vector<rule> rules;
 
-    // nullptr if `tz_name` is neither a zone nor a link to one
-    time_zone* locate_zone(std::string_view tz_name, int depth = 0) {
-        // If a link-to-link chain exceeds this limit, give up
-        if (depth > 10) {
-            return nullptr;
+    // nullptr if `tz_name` is neither a zone nor a link to one.
+    time_zone* locate_zone(std::string_view tz_name) {
+        auto li = std::lower_bound(links.begin(), links.end(), tz_name,
+            [](const time_zone_link& z, std::string_view nm) {
+                return z.name() < nm;
+            });
+        if (li != links.end() && li->name() == tz_name) {
+            tz_name = li->target();
         }
         auto zi = std::lower_bound(zones.begin(), zones.end(), tz_name,
             [](const time_zone& z, std::string_view nm) {
                 return z.name() < nm;
             });
-        if (zi == zones.end() || zi->name() != tz_name) {
-            auto li = std::lower_bound(links.begin(), links.end(), tz_name,
-                [](const time_zone_link& z, std::string_view nm) {
-                    return z.name() < nm;
-                });
-            if (li != links.end() && li->name() == tz_name) {
-                return locate_zone(li->target(), depth + 1);
-            }
-            return nullptr;
+        if (zi != zones.end() && zi->name() == tz_name) {
+            return &*zi;
         }
-        return &*zi;
+        return nullptr;
     }
 };
 

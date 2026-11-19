@@ -48,6 +48,12 @@ sort_tzdata <- function(lines) {
   links <- which(types == "Link")
   rules <- which(types == "Rule")
 
+  # tz.h follows at most one link, straight to a zone
+  targets <- vapply(entry_fields[links], `[`, character(1), 2)
+  if (!all(targets %in% keys[zones]) || any(keys[links] %in% keys[zones])) {
+    stop("Links must point directly at zones, with no link-to-link chains or names shared with zones")
+  }
+
   # Entries in name order, order() is stable so rules sharing a name stay in file order
   rules_order <- rules[order(keys[rules], method = "radix")]
   zones_order <- zones[order(keys[zones], method = "radix")]
