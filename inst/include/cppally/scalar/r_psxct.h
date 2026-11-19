@@ -146,11 +146,11 @@ struct r_psxct {
     }
 
     // Same UTC instant, different timezone
-    [[nodiscard]] r_psxct in_tzone(const char* tz) const {
+    [[nodiscard]] r_psxct with_tzone(const char* tz) const {
         return r_psxct(unwrap(*this), tz);
     }
-    [[nodiscard]] r_psxct in_tzone(r_str_view tz) const {
-        return tz.is_na() ? na() : in_tzone(tz.c_str());
+    [[nodiscard]] r_psxct with_tzone(r_str_view tz) const {
+        return tz.is_na() ? na() : with_tzone(tz.c_str());
     }
 
     // Same wall clock, different timezone.
