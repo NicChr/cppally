@@ -220,7 +220,8 @@ bool zone_registry::ensure_db() {
   }
   try {
     std::string text(tz::tzdata_size, '\0');
-    zlib::puff::inflate(reinterpret_cast<unsigned char*>(text.data()), text.size(), tz::tzdata_deflated, sizeof(tz::tzdata_deflated));
+    // - 1 for the literal's terminating NUL
+    zlib::puff::inflate(reinterpret_cast<unsigned char*>(text.data()), text.size(), tz::tzdata_deflated, sizeof(tz::tzdata_deflated) - 1);
     tz::tzdb_ptr() = tz::init_tzdb(text).release();
     return true;
   } catch (...) {
