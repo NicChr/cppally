@@ -43,7 +43,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
-#include <span>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -1324,59 +1323,59 @@ struct tzdb {
     }
 };
 
-// Parses zic input text: the IANA source files joined into one and split on line boundaries into chunks
-// (see tzdata.h and data-raw/update_tzdata.R). Throws std::runtime_error on failure
-inline std::unique_ptr<tzdb> init_tzdb(std::span<const std::string_view> chunks) {
+// Parses zic input text: the IANA source files joined into one string (see tzdata.h and data-raw/update_tzdata.R).
+// Throws std::runtime_error on failure
+[[gnu::cold]] inline std::unique_ptr<tzdb> init_tzdb(std::string_view text) {
     auto db = std::make_unique<tzdb>();
     constexpr std::string_view version_tag = "# version ";
     bool continue_zone = false;
-    for (std::string_view text : chunks) {
-        while (!text.empty()) {
-            std::size_t eol = text.find('\n');
-            std::string_view line = text.substr(0, eol);
-            text = eol == std::string_view::npos ? std::string_view{} : text.substr(eol + 1);
-            if (!line.empty() && line.back() == '\r') {
-                line.remove_suffix(1);
+    while (!text.empty()) {
+        std::size_t eol = text.find('\n');
+        std::string_view line = text.substr(0, eol);
+        text = eol == std::string_view::npos ? std::string_view{} : text.substr(eol + 1);
+        if (!line.empty() && line.back() == '\r') {
+            line.remove_suffix(1);
+        }
+        if (line.empty()) {
+            continue;
+        }
+        if (line[0] == '#') {
+            // "# version 2026d", as in IANA's own tzdata.zi
+            if (db->version.empty() && line.substr(0, version_tag.size()) == version_tag) {
+                db->version = std::string(line.substr(version_tag.size()));
             }
-            if (line.empty()) {
-                continue;
-            }
-            if (line[0] == '#') {
-                // "# version 2026d", as in IANA's own tzdata.zi
-                if (db->version.empty() && line.substr(0, version_tag.size()) == version_tag) {
-                    db->version = std::string(line.substr(version_tag.size()));
-                }
-                continue;
-            }
-            line_reader in(line);
-            in.ws();
-            if (in.eof()) {
-                continue;
-            }
-            std::string word;
-            in.read(word);
-            to_lower(word);
-            if (is_prefix_of(word, "rule")) {
-                db->rules.push_back(rule(line));
-                continue_zone = false;
-            } else if (is_prefix_of(word, "link")) {
-                db->links.push_back(time_zone_link(line));
-                continue_zone = false;
-            } else if (is_prefix_of(word, "leap")) {
-                continue_zone = false;
-            } else if (is_prefix_of(word, "zone")) {
-                db->zones.push_back(time_zone(line));
-                continue_zone = true;
-            } else if ((line[0] == '\t' || line[0] == ' ') && continue_zone) {
-                db->zones.back().add(line);
-            }
+            continue;
+        }
+        line_reader in(line);
+        in.ws();
+        if (in.eof()) {
+            continue;
+        }
+        std::string word;
+        in.read(word);
+        to_lower(word);
+        if (is_prefix_of(word, "rule")) {
+            db->rules.push_back(rule(line));
+            continue_zone = false;
+        } else if (is_prefix_of(word, "link")) {
+            db->links.push_back(time_zone_link(line));
+            continue_zone = false;
+        } else if (is_prefix_of(word, "leap")) {
+            continue_zone = false;
+        } else if (is_prefix_of(word, "zone")) {
+            db->zones.push_back(time_zone(line));
+            continue_zone = true;
+        } else if ((line[0] == '\t' || line[0] == ' ') && continue_zone) {
+            db->zones.back().add(line);
         }
     }
     std::sort(db->rules.begin(), db->rules.end());
     rule::split_overlaps(db->rules);
-    std::sort(db->zones.begin(), db->zones.end());
+    // update_tzdata.R emits zones and links sorted by name
+    if (!std::is_sorted(db->zones.begin(), db->zones.end()) || !std::is_sorted(db->links.begin(), db->links.end())) {
+        throw std::runtime_error("tzdata zones and links are not sorted by name");
+    }
     db->zones.shrink_to_fit();
-    std::sort(db->links.begin(), db->links.end());
     db->links.shrink_to_fit();
     return db;
 }
@@ -1390,7 +1389,7 @@ inline const std::vector<rule>& db_rules() {
 
 // Locates `name` (following links) and readies it for get_info(); nullptr if unknown.
 // Requires a loaded database. Not thread-safe, zone_registry serialises calls
-inline const time_zone* find_zone(std::string_view name) {
+[[gnu::cold]] inline const time_zone* find_zone(std::string_view name) {
     time_zone* zone = get_tzdb().locate_zone(name);
     if (zone) {
         zone->adjust(get_tzdb().rules);

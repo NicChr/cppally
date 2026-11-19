@@ -10,8 +10,9 @@
 #ifndef CPPALLY_WITHOUT_TZDB
 #include <cppally/time/tz.h>
 #include <cppally/time/tzdata.h>
+#include <zlib/puff.h>
+#include <string>
 #endif
-#include <cppally/r_sym.h>
 #include <cppally/scalar/r_str.h>
 #include <cppally/r_function.h>
 #include <cstdlib>
@@ -209,7 +210,7 @@ void zone_registry::resolve(zone_record& zone) noexcept {
 
 #ifndef CPPALLY_WITHOUT_TZDB
 
-// Parses the embedded database on first use. Call with the mutex held
+// Inflates and parses the embedded database on first use. Call with the mutex held
 bool zone_registry::ensure_db() {
   if (tz::tzdb_ptr()) {
     return true;
@@ -218,7 +219,9 @@ bool zone_registry::ensure_db() {
     return false;
   }
   try {
-    tz::tzdb_ptr() = tz::init_tzdb(tz::tzdata_chunks).release();
+    std::string text(tz::tzdata_size, '\0');
+    zlib::puff::inflate(reinterpret_cast<unsigned char*>(text.data()), text.size(), tz::tzdata_deflated, sizeof(tz::tzdata_deflated));
+    tz::tzdb_ptr() = tz::init_tzdb(text).release();
     return true;
   } catch (...) {
     db_failed = true;
@@ -232,7 +235,7 @@ bool zone_registry::ensure_db() {
 std::string zone_registry::find_sys_timezone() {
 
   r_str zone = r_str::na();
-  r_sexp r_tzone = r_function(cached_sym<"Sys.timezone">(), env::base_env)();
+  r_sexp r_tzone = r_function("Sys.timezone", env::base_env)();
 
   // zone_impl.h cannot include r_vector.h - so we have to use R C API vector access
   if (TYPEOF(r_tzone) == STRSXP && Rf_xlength(r_tzone) > 0) {
