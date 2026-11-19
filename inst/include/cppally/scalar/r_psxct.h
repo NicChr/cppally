@@ -149,6 +149,9 @@ struct r_psxct {
     [[nodiscard]] r_psxct in_tzone(const char* tz) const {
         return r_psxct(unwrap(*this), tz);
     }
+    [[nodiscard]] r_psxct in_tzone(r_str_view tz) const {
+        return tz.is_na() ? na() : in_tzone(tz.c_str());
+    }
 
     // Same wall clock, different timezone.
     // If the UTC offset of the timezone is different, then this UTC instant will be different.
@@ -156,6 +159,9 @@ struct r_psxct {
     // Supply a roll strategy to `on_impossible_date` and/or `on_ambiguous_time` to handle rolling.
     [[nodiscard]] r_psxct replace_tzone(const char* tz, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const {
         return r_psxct(unwrap(*this), tz).from_clock(to_clock(), on_impossible_date, on_ambiguous_time);
+    }
+    [[nodiscard]] r_psxct replace_tzone(r_str_view tz, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const {
+        return tz.is_na() ? na() : replace_tzone(tz.c_str(), on_impossible_date, on_ambiguous_time);
     }
 
     // Construct r_psxct from the year/month/day hour:minute:second wall-clock reading in `zone`.
