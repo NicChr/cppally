@@ -190,9 +190,6 @@ inline bool utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std
   return false;
 }
 
-// Local wall-clock instant. A nonexistent reading rolls to the DST transition and an ambiguous one to the earlier/later instant,
-// unless its roll is none. Returns false for an unresolved reading, an unknown zone or a failed lookup.
-// away/nearest act as if adding, callers with a direction resolve them first
 inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chrono::sys_seconds& out,
                          roll on_impossible = roll::none, roll on_ambiguous = roll::none) noexcept {
   if (!zone) {
@@ -205,7 +202,7 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
   const offset_table& table = zone->table;
   int64_t local = tp.time_since_epoch().count();
   // Solved within the table's final 400 years, then shifted back
-  const int64_t shift = table.cycle_shift(local);
+  int64_t shift = table.cycle_shift(local);
   local -= shift;
 
   int lo = table.period(local - 86400);
@@ -238,16 +235,28 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
       return true;
     }
     // Gap (nonexistent): the reading is past the end of period i - 1 but before the start of period i
+    on_impossible = resolve_roll(on_impossible, /*forward=*/ true);
     if (on_impossible == roll::none) {
       return false;
     }
+    
     for (int i = lo + 1; i <= hi; ++i) {
-      if (local - table.offsets[i - 1] >= table.starts[i] && local - table.offsets[i] < table.starts[i]) {
-        out = std::chrono::sys_seconds{std::chrono::seconds{table.starts[i] + shift}};
+      int64_t transition_boundary = table.starts[i];
+      int32_t prev_offset = table.offsets[i - 1]; // Before the transition
+      int32_t curr_offset = table.offsets[i];     // After the transition
+      // Too late for the old offset and too early for the new one
+      bool in_gap = local - prev_offset >= transition_boundary && local - curr_offset < transition_boundary;
+      if (in_gap) {
+        int64_t s = transition_boundary; // roll::boundary
+        if (on_impossible == roll::forward) {
+          s = local - prev_offset; // Shift forward by the gap
+        } else if (on_impossible == roll::backward) {
+          s = local - curr_offset; // Shift backward by the gap
+        }
+        out = std::chrono::sys_seconds{std::chrono::seconds{s + shift}};
         return true;
       }
     }
-    return false;
   }
   return false;
 }
