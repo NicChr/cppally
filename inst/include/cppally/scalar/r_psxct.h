@@ -171,7 +171,7 @@ struct r_psxct {
     const char* zone = "UTC",
     roll on_impossible_date = roll::none,
     roll on_ambiguous_time = roll::none
-    ) : value{utc_offset(year, month, day, hour, minute, second)} {
+    ) : value{unix_seconds(year, month, day, hour, minute, second)} {
         if (zone && std::string_view(zone) != "UTC") {
             m_tzone = internal::zone_registry::get().find_or_add(zone);
             *this = from_clock(r_psxct(unwrap(value)), on_impossible_date, on_ambiguous_time);
@@ -186,7 +186,7 @@ struct r_psxct {
 
     private:
 
-    static constexpr double utc_offset(int year, int month, int day, int hour, int minute, double second) noexcept {
+    static constexpr double unix_seconds(int year, int month, int day, int hour, int minute, double second) noexcept {
 
         namespace chrono = std::chrono;
 
