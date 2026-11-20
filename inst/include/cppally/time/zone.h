@@ -238,7 +238,13 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
       if (on_ambiguous == roll::none) {
         return false;
       }
-      out = std::chrono::sys_seconds{std::chrono::seconds{(on_ambiguous == roll::forward ? latest : earliest) + shift}};
+      utc_instant = earliest; // roll::backward
+      if (on_ambiguous == roll::forward) {
+        utc_instant = latest;
+      } else if (on_ambiguous == roll::boundary) {
+        utc_instant = table.starts[latest_i]; // Transition boundary, when the clocks went back
+      }
+      out = std::chrono::sys_seconds{std::chrono::seconds{utc_instant + shift}};
       return true;
     }
     // Gap (nonexistent): the reading is past the end of period i - 1 but before the start of period i
