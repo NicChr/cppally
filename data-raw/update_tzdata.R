@@ -124,9 +124,12 @@ update_tzdata <- function() {
   dir.create(tmp)
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
 
-  tarball <- file.path(tmp, "tzdata-latest.tar.gz")
+  tarball_file <- "tzdata-latest.tar.gz"
+  tarball <- file.path(tmp, tarball_file)
   utils::download.file(
-    "https://data.iana.org/time-zones/tzdata-latest.tar.gz", tarball, mode = "wb"
+    file.path("https://data.iana.org/time-zones", tarball_file),
+    destfile = tarball,
+    mode = "wb"
   )
   utils::untar(tarball, files = c(tzdata_files, "version"), exdir = tmp)
   write_tzdata_header(sort_tzdata(read_tzdata(tmp)))
