@@ -207,24 +207,31 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
 
   int lo = table.period(local - 86400);
   int hi = table.period(local + 86400);
+
+  int64_t utc_instant;
+
   if (lo >= 0 && hi >= 0) [[likely]] {
     int matches = 0; // 1 = unique, 0 = gap (non-existent), 2 = overlap (ambiguous)
     int64_t earliest = 0;
     int64_t latest = 0;
+    int latest_i = 0; // Period whose offset gives latest instant showing this reading
     for (int i = lo; i <= hi; ++i) {
-      int64_t s = local - table.offsets[i];
-      if (s >= table.starts[i] && s < table.starts[i + 1]) {
+      utc_instant = local - table.offsets[i];
+      if (utc_instant >= table.starts[i] && utc_instant < table.starts[i + 1]) {
         if (matches == 0) {
-          earliest = s;
+          earliest = utc_instant;
         }
-        latest = s;
+        latest = utc_instant;
+        latest_i = i;
         ++matches;
       }
     }
+    // Most likely case is there are no ambiguous or non-existent results
     if (matches == 1) [[likely]] {
       out = std::chrono::sys_seconds{std::chrono::seconds{earliest + shift}};
       return true;
     }
+
     // Overlap (ambiguous)
     if (matches > 1) {
       on_ambiguous = resolve_roll(on_ambiguous, /*forward=*/ true);
@@ -247,13 +254,13 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
       // Too late for the old offset and too early for the new one
       bool in_gap = local - prev_offset >= transition_boundary && local - curr_offset < transition_boundary;
       if (in_gap) {
-        int64_t s = transition_boundary; // roll::boundary
+        utc_instant = transition_boundary; // roll::boundary
         if (on_impossible == roll::forward) {
-          s = local - prev_offset; // Shift forward by the gap
+          utc_instant = local - prev_offset; // Shift forward by the gap
         } else if (on_impossible == roll::backward) {
-          s = local - curr_offset; // Shift backward by the gap
+          utc_instant = local - curr_offset; // Shift backward by the gap
         }
-        out = std::chrono::sys_seconds{std::chrono::seconds{s + shift}};
+        out = std::chrono::sys_seconds{std::chrono::seconds{utc_instant + shift}};
         return true;
       }
     }
