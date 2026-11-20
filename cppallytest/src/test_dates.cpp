@@ -78,6 +78,13 @@ void test_date_add(){
     expect_identical(mar31.add<"months">(-1, roll::away), r_date(2024, 2, 29), "roll away, subtracting");
     expect_identical(mar31.add<"months">(-1, roll::nearest), r_date(2024, 3, 1), "roll nearest, subtracting");
 
+    // boundary is the start of the next month in either direction and drops a fractional day, forward keeps it
+    expect_identical(jan31.add<"months">(1, roll::boundary), r_date(2024, 3, 1), "roll boundary, adding");
+    expect_identical(mar31.add<"months">(-1, roll::boundary), r_date(2024, 3, 1), "roll boundary, subtracting");
+    r_date jan31_noon = jan31.add<"days">(0.5);
+    expect_identical(jan31_noon.add<"months">(1, roll::forward), r_date(2024, 3, 1).add<"days">(0.5), "roll forward keeps a fractional day");
+    expect_identical(jan31_noon.add<"months">(1, roll::boundary), r_date(2024, 3, 1), "roll boundary drops a fractional day");
+
     expect_identical(mar31.add<"months">(12, roll::none), r_date(2025, 3, 31), "month arithmetic with valid date");
 }
 

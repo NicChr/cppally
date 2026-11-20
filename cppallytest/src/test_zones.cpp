@@ -62,7 +62,9 @@ void test_timezones(){
     expect_identical(before_gap.add<"hours">(1), r_psxct(2024, 3, 31, 1, 30, 0.0), "duration hour over the gap");
     expect_identical(before_gap.add<"hours">(1).hour(), r_int(2), "duration hour over the gap is 02:30 BST");
     expect_identical(before_gap.using_clock(add_clock_hour), r_psxct::na(), "clock hour into the gap");
-    expect_identical(before_gap.using_clock(add_clock_hour, roll::forward), r_psxct(2024, 3, 31, 1, 0, 0.0), "clock hour into the gap, rolled to the transition");
+    expect_identical(before_gap.using_clock(add_clock_hour, roll::boundary), r_psxct(2024, 3, 31, 1, 0, 0.0), "clock hour into the gap, rolled to the transition");
+    expect_identical(before_gap.using_clock(add_clock_hour, roll::forward), r_psxct(2024, 3, 31, 1, 30, 0.0), "clock hour into the gap, shifted forward to 02:30 BST");
+    expect_identical(before_gap.using_clock(add_clock_hour, roll::backward), before_gap, "clock hour into the gap, shifted backward to 00:30 GMT");
 
     r_psxct before_overlap(2024, 10, 27, 0, 30, 0.0, "Europe/London"); // 00:30 BST, then 02:00 BST -> 01:00 GMT
     expect_identical(before_overlap.add<"hours">(1), r_psxct(2024, 10, 27, 0, 30, 0.0), "duration hour, 01:30 BST");
@@ -79,8 +81,30 @@ void test_timezones(){
 
     r_psxct day_before(2024, 10, 26, 1, 30, 0.0, "Europe/London"); // BST
     expect_identical(day_before.add<"days">(1), r_psxct::na(), "period day into the overlap");
-    expect_identical(day_before.add<"days">(1, roll::none, r_dbl(1.0), roll::away), r_psxct(2024, 10, 27, 1, 30, 0.0), "period day into the overlap, away");
-    expect_identical(day_before.add<"days">(1, roll::none, r_dbl(1.0), roll::nearest), r_psxct(2024, 10, 27, 0, 30, 0.0), "period day into the overlap, nearest");
+    expect_identical(day_before.add<"days">(1, roll::none, roll::away), r_psxct(2024, 10, 27, 1, 30, 0.0), "period day into the overlap, away");
+    expect_identical(day_before.add<"days">(1, roll::none, roll::nearest), r_psxct(2024, 10, 27, 0, 30, 0.0), "period day into the overlap, nearest");
+
+    // forward/backward keep the reading's time of day and fraction, boundary is the exact edge instant
+
+    r_psxct jan31(2024, 1, 31, 13, 45, 15.25, "Europe/London"); // GMT
+    expect_identical(jan31.add<"months">(1, roll::forward), r_psxct(2024, 3, 1, 13, 45, 15.25), "month into an impossible date, forward keeps the time of day");
+    expect_identical(jan31.add<"months">(1, roll::backward), r_psxct(2024, 2, 29, 13, 45, 15.25), "month into an impossible date, backward keeps the time of day");
+    expect_identical(jan31.add<"months">(1, roll::boundary), r_psxct(2024, 3, 1, 0, 0, 0.0), "month into an impossible date, boundary is midnight");
+
+    auto add_clock_minutes = [](r_psxct cl){ return cl.add<"minutes">(20); };
+
+    r_psxct gap_frac(2024, 3, 31, 0, 50, 15.25, "Europe/London"); // 00:50:15.25 GMT, + 20 clock minutes is 01:10:15.25 (gap)
+    expect_identical(gap_frac.using_clock(add_clock_minutes), r_psxct::na(), "clock minutes into the gap");
+    expect_identical(gap_frac.using_clock(add_clock_minutes, roll::forward), r_psxct(2024, 3, 31, 1, 10, 15.25), "clock minutes into the gap, forward is 02:10:15.25 BST");
+    expect_identical(gap_frac.using_clock(add_clock_minutes, roll::forward), gap_frac.add<"minutes">(20), "clock minutes into the gap, forward matches duration minutes");
+    expect_identical(gap_frac.using_clock(add_clock_minutes, roll::backward), r_psxct(2024, 3, 31, 0, 10, 15.25), "clock minutes into the gap, backward is 00:10:15.25 GMT");
+    expect_identical(gap_frac.using_clock(add_clock_minutes, roll::boundary), r_psxct(2024, 3, 31, 1, 0, 0.0), "clock minutes into the gap, boundary drops the fraction");
+
+    r_psxct overlap_frac(2024, 10, 27, 0, 50, 15.25, "Europe/London"); // 00:50:15.25 BST, + 40 clock minutes is 01:30:15.25 (overlap)
+    auto add_clock_40_minutes = [](r_psxct cl){ return cl.add<"minutes">(40); };
+    expect_identical(overlap_frac.using_clock(add_clock_40_minutes, roll::none, roll::backward), r_psxct(2024, 10, 27, 0, 30, 15.25), "clock minutes into the overlap, earlier keeps the fraction");
+    expect_identical(overlap_frac.using_clock(add_clock_40_minutes, roll::none, roll::forward), r_psxct(2024, 10, 27, 1, 30, 15.25), "clock minutes into the overlap, later keeps the fraction");
+    expect_identical(overlap_frac.using_clock(add_clock_40_minutes, roll::none, roll::boundary), r_psxct(2024, 10, 27, 1, 0, 0.0), "clock minutes into the overlap, boundary drops the fraction");
 
     // Flooring: days on the wall clock, hours by the wall clock's distance to the hour (never ambiguous)
 
@@ -146,7 +170,9 @@ void test_timezones(){
 
     r_psxct gap_clock(2024, 3, 10, 2, 30, 0.0); // doesn't exist in New York
     expect_identical(gap_clock.replace_tzone("America/New_York"), r_psxct::na(), "replace_tzone into the gap");
-    expect_identical(gap_clock.replace_tzone("America/New_York", roll::forward), r_psxct(2024, 3, 10, 7, 0, 0.0), "replace_tzone into the gap, rolled to the transition");
+    expect_identical(gap_clock.replace_tzone("America/New_York", roll::boundary), r_psxct(2024, 3, 10, 7, 0, 0.0), "replace_tzone into the gap, rolled to the transition");
+    expect_identical(gap_clock.replace_tzone("America/New_York", roll::forward), r_psxct(2024, 3, 10, 7, 30, 0.0), "replace_tzone into the gap, shifted forward to 03:30 EDT");
+    expect_identical(gap_clock.replace_tzone("America/New_York", roll::backward), r_psxct(2024, 3, 10, 6, 30, 0.0), "replace_tzone into the gap, shifted backward to 01:30 EST");
 
     r_psxct overlap_clock(2024, 11, 3, 1, 30, 0.0); // happens twice in New York
     expect_identical(overlap_clock.replace_tzone("America/New_York"), r_psxct::na(), "replace_tzone into the overlap");
