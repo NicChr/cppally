@@ -36,6 +36,8 @@ template <AnySexp T, typename U>
 inline T as_impl(const U& x) {
   if constexpr (std::is_constructible_v<r_sexp, const U&>){
     return static_cast<T>(x);
+  } else if constexpr (std::is_enum_v<U>){
+    return as<T>(static_cast<std::underlying_type_t<U>>(x));
   } else {
     using scalar_t = as_r_scalar_t<U>;
     return static_cast<T>(static_cast<r_sexp>(r_vec<scalar_t>({ scalar_t(x) })));
@@ -99,6 +101,17 @@ inline T as_impl(const U& x) {
 template <RScalar T, RScalar U>
 inline T as_impl(const U& x) {
   return scalar_coerce<T>(x);
+}
+
+template <typename T, typename U>
+requires (std::is_enum_v<T>)
+inline T as_impl(const U& x) {
+  using underlying_t = std::underlying_type_t<T>;
+  double val = unwrap(as<r_dbl>(x));
+  if (!numeric_cast_is_lossless<underlying_t>(val)) [[unlikely]] {
+    bad_coercion(type_str<r_dbl>(), type_str<T>());
+  }
+  return static_cast<T>(static_cast<underlying_t>(val));
 }
 
 // ----- Vectors -----

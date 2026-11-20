@@ -95,6 +95,8 @@ template <> inline constexpr auto type_name<r_factors> = string_literal("r_facto
 template <> inline constexpr auto type_name<r_df> = string_literal("r_df");
 template <> inline constexpr auto type_name<r_function> = string_literal("r_function");
 
+template <> inline constexpr auto type_name<roll> = string_literal("roll");
+
 template <RVector T>
 inline constexpr auto type_name<T> = string_literal("r_vec<").concat(type_name<typename T::data_type>).concat(">");
 
