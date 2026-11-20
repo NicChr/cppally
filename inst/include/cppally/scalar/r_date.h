@@ -197,7 +197,7 @@ struct r_date {
         
         if (!ymd.ok()) {
             bool forward = false;
-            on_impossible_date = internal::resolve_roll(on_impossible_date, /*forward = */ unwrap(n) >= 0);
+            on_impossible_date = internal::resolve_roll(on_impossible_date, /*moving_forward = */ unwrap(n) >= 0);
             switch (on_impossible_date) {
                 case roll::forward:  { forward = true;      break; }
                 case roll::backward: { forward = false;     break; }

@@ -235,7 +235,7 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
 
     // Overlap (ambiguous)
     if (matches > 1) {
-      on_ambiguous = resolve_roll(on_ambiguous, /*forward=*/ true);
+      on_ambiguous = resolve_roll(on_ambiguous, /*moving_forward=*/ true);
       if (on_ambiguous == roll::none) {
         return false;
       }
@@ -250,7 +250,7 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
       return true;
     }
     // Gap (nonexistent): the reading is past the end of period i - 1 but before the start of period i
-    on_impossible = resolve_roll(on_impossible, /*forward=*/ true);
+    on_impossible = resolve_roll(on_impossible, /*moving_forward=*/ true);
     if (on_impossible == roll::none) {
       return false;
     }

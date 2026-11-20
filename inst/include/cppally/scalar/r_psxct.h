@@ -253,8 +253,8 @@ struct r_psxct {
     template <string_literal Unit>
     constexpr r_psxct from_clock(r_psxct before, r_psxct after, roll on_impossible_date, roll on_ambiguous_time) const noexcept {
         if constexpr (internal::is_period_unit<Unit>()){
-            bool left_to_right = (after >= before).is_true();
-            return from_clock(after, internal::resolve_roll(on_impossible_date, left_to_right), internal::resolve_roll(on_ambiguous_time, left_to_right));
+            bool moving_forward = !(after < before).is_true();
+            return from_clock(after, internal::resolve_roll(on_impossible_date, moving_forward), internal::resolve_roll(on_ambiguous_time, moving_forward));
         } else {
             return add_seconds(after.seconds_since_epoch() - before.seconds_since_epoch());
         }
@@ -268,7 +268,10 @@ struct r_psxct {
 
     template <typename F>
     CPPALLY_NOINLINE constexpr r_psxct using_clock_impl(F fn, roll on_impossible_date, roll on_ambiguous_time) const noexcept(noexcept(fn(std::declval<r_psxct>()))) {
-        return from_clock(fn(to_clock()), on_impossible_date, on_ambiguous_time);
+        r_psxct cl = to_clock();
+        r_psxct after = fn(cl);
+        bool moving_forward = !(after < cl).is_true();
+        return from_clock(after, internal::resolve_roll(on_impossible_date, moving_forward), internal::resolve_roll(on_ambiguous_time, moving_forward));
     }
 
     constexpr r_psxct add_seconds(r_dbl n) const noexcept {
@@ -306,7 +309,7 @@ struct r_psxct {
 
         if (!ymd.ok()) {
             bool forward = false;
-            on_impossible_date = internal::resolve_roll(on_impossible_date, /*forward = */ unwrap(n) >= 0);
+            on_impossible_date = internal::resolve_roll(on_impossible_date, /*moving_forward = */ unwrap(n) >= 0);
             switch (on_impossible_date) {
                 case roll::forward:  { forward = true;      break; }
                 case roll::backward: { forward = false;     break; }

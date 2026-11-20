@@ -19,13 +19,13 @@ enum class roll : uint8_t {
 
 namespace internal {
 
-constexpr roll resolve_roll(roll r, bool forward) noexcept {
+constexpr roll resolve_roll(roll r, bool moving_forward) noexcept {
     switch (r) {
         case roll::away: {
-            return forward ? roll::forward : roll::backward;
+            return moving_forward ? roll::forward : roll::backward;
         }
         case roll::nearest: {
-            return forward ? roll::backward : roll::forward;
+            return moving_forward ? roll::backward : roll::forward;
         }
         default: {
             return r;
