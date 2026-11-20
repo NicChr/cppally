@@ -66,6 +66,13 @@ void test_timezones(){
     expect_identical(before_gap.using_clock(add_clock_hour, roll::forward), r_psxct(2024, 3, 31, 1, 30, 0.0), "clock hour into the gap, shifted forward to 02:30 BST");
     expect_identical(before_gap.using_clock(add_clock_hour, roll::backward), before_gap, "clock hour into the gap, shifted backward to 00:30 GMT");
 
+    auto sub_clock_hour = [](r_psxct cl){ return cl.add<"hours">(-1); };
+    r_psxct after_gap(2024, 3, 31, 2, 45, 0.0, "Europe/London"); // 02:45 BST, - 1 clock hour is 01:45 (gap)
+    expect_identical(before_gap.using_clock(add_clock_hour, roll::away), before_gap.add<"hours">(1), "clock hour into the gap, away when adding");
+    expect_identical(before_gap.using_clock(add_clock_hour, roll::nearest), before_gap, "clock hour into the gap, nearest when adding");
+    expect_identical(after_gap.using_clock(sub_clock_hour, roll::away), after_gap.add<"hours">(-1), "clock hour back into the gap, away when subtracting");
+    expect_identical(after_gap.using_clock(sub_clock_hour, roll::nearest), after_gap, "clock hour back into the gap, nearest when subtracting");
+
     r_psxct before_overlap(2024, 10, 27, 0, 30, 0.0, "Europe/London"); // 00:30 BST, then 02:00 BST -> 01:00 GMT
     expect_identical(before_overlap.add<"hours">(1), r_psxct(2024, 10, 27, 0, 30, 0.0), "duration hour, 01:30 BST");
     expect_identical(before_overlap.add<"hours">(2), r_psxct(2024, 10, 27, 1, 30, 0.0), "duration 2 hours, 01:30 GMT");
