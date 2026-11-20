@@ -2,11 +2,19 @@
 #define CPPALLY_TZ_H
 
 // IANA time zone database, adapted from Howard Hinnant's date library (tz.cpp, tz.h,
-// tz_private.h) as vendored by the tzdb R package. Changes from the original: text
-// database only, <chrono> in place of date.h, a string_view reader in place of
-// iostreams, zones adjusted when located rather than via call_once, lookups of unknown
-// zones return nullptr rather than throwing, zonelet's rule/save union replaced by plain
-// members, and no remote/OS/Windows/leap-second code.
+// tz_private.h).
+// --- ALTERED ---
+// - text database only
+// - <chrono> in place of date.h
+// - links are followed straight to a zone (no link-to-link chaining)
+// - zones and links are assumed sorted, rules grouped by name and mostly sorted (data-raw/update_tzdata.R), rules are then fully sorted here with insertion sort
+// - no year-range checks
+// - error messages are generic
+// - string_view reader in place of iostreams
+// - zones adjusted when located rather than via call_once
+// - lookups of unknown zones return nullptr rather than throwing
+// - zonelet's rule/save union replaced by plain members
+// - no remote/OS/Windows/leap-second code
 //
 // The MIT License (MIT)
 //
