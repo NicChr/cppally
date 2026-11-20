@@ -366,7 +366,7 @@ struct r_psxct {
     public:
 
     template <string_literal Unit, Number N>
-    constexpr r_psxct add(N n, roll on_impossible_date = roll::none, r_dbl width = r_dbl(1.0), roll on_ambiguous_time = roll::none) const noexcept {
+    constexpr r_psxct add(N n, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none, r_dbl width = r_dbl(1.0)) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
@@ -408,6 +408,12 @@ struct r_psxct {
             return add_months(n_units, on_impossible_date, width * r_dbl(12.0));
 
         }
+    }
+
+    // Legacy deprecated overload - Use add(N, on_impossible_date, on_ambiguous_time, width)
+    template <string_literal Unit, Number N>
+    constexpr r_psxct add(N n, roll on_impossible_date, r_dbl width) const noexcept {
+        return add<Unit>(n, on_impossible_date, roll::none, width);
     }
 
     constexpr r_int year() const noexcept {
