@@ -373,7 +373,7 @@ struct r_psxct {
         // units >= "days" use wall-clock
         if constexpr (internal::is_period_unit<Unit>()){
             if (!is_utc()){
-                return on_clock<Unit>([&](r_psxct cl){ return cl.template add<Unit>(n, on_impossible_date, width); }, on_impossible_date, on_ambiguous_time);
+                return on_clock<Unit>([&](r_psxct cl){ return cl.template add<Unit>(n, on_impossible_date, roll::none, width); }, on_impossible_date, on_ambiguous_time);
             }
         }
 
