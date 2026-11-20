@@ -193,14 +193,15 @@ struct r_date {
         }
 
         ymd += months{unwrap(n)};
+        bool at_boundary = false;
         
         if (!ymd.ok()) {
             bool forward = false;
+            on_impossible_date = internal::resolve_roll(on_impossible_date, /*forward = */ unwrap(n) >= 0);
             switch (on_impossible_date) {
                 case roll::forward:  { forward = true;      break; }
                 case roll::backward: { forward = false;     break; }
-                case roll::away:     { forward = (unwrap(n) >= 0);  break; }
-                case roll::nearest:  { forward = (unwrap(n) < 0);   break; }
+                case roll::boundary: { forward = true; at_boundary = true; break; }
                 default:             { return na(); }
             }
             if (forward) {
@@ -211,8 +212,7 @@ struct r_date {
         }
 
         // Re-add fractional part that gets dropped by chrono
-        double rem = unwrap(*this) - internal::floor2(unwrap(*this));
-
+        double rem = at_boundary ? 0.0 : unwrap(*this) - internal::floor2(unwrap(*this));
         return r_date(static_cast<double>(sys_days{ymd}.time_since_epoch().count()) + rem);
     }
 

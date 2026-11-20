@@ -242,10 +242,12 @@ struct r_psxct {
             return zoned_psxct(unwrap(clock));
         }
         std::chrono::sys_seconds sys{};
-        if (!internal::local_to_sys(m_tzone, internal::tz::local_seconds{clock.chrono_tp().time_since_epoch()}, sys, on_impossible_date, on_ambiguous_time)){
+        bool at_boundary = false;
+        if (!internal::local_to_sys(m_tzone, internal::tz::local_seconds{clock.chrono_tp().time_since_epoch()}, sys, on_impossible_date, on_ambiguous_time, at_boundary)){
             return zoned_psxct(r_dbl::na());
         }
-        return zoned_psxct(static_cast<double>(sys.time_since_epoch().count()) + clock.chrono_frac());
+        // Sub-second fractions are dropped at transition boundaries
+        return zoned_psxct(static_cast<double>(sys.time_since_epoch().count()) + (at_boundary ? 0.0 : clock.chrono_frac()));
     }
 
     template <string_literal Unit>
@@ -300,14 +302,15 @@ struct r_psxct {
         }
 
         ymd += months{unwrap(n)};
+        bool at_boundary = false;
 
         if (!ymd.ok()) {
             bool forward = false;
+            on_impossible_date = internal::resolve_roll(on_impossible_date, /*forward = */ unwrap(n) >= 0);
             switch (on_impossible_date) {
                 case roll::forward:  { forward = true;      break; }
                 case roll::backward: { forward = false;     break; }
-                case roll::away:     { forward = (unwrap(n) >= 0);  break; }
-                case roll::nearest:  { forward = (unwrap(n) < 0);   break; }
+                case roll::boundary: { forward = true; at_boundary = true; break; }
                 default:             { return na(); }
             }
             if (forward) {
@@ -317,8 +320,8 @@ struct r_psxct {
             }
         }
 
-        double rem = unwrap(*this) - static_cast<double>(dp.time_since_epoch().count()) * 86400.0;
-
+        // At transition boundary drop the time since midnight (including sub-seconds), otherwise keep it
+        double rem = at_boundary ? 0.0 : unwrap(*this) - static_cast<double>(dp.time_since_epoch().count()) * 86400.0;
         return r_psxct(static_cast<double>(sys_days{ymd}.time_since_epoch().count()) * 86400.0 + rem);
     }
 

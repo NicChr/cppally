@@ -191,7 +191,8 @@ inline bool utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std
 }
 
 inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chrono::sys_seconds& out,
-                         roll on_impossible = roll::none, roll on_ambiguous = roll::none) noexcept {
+                         roll on_impossible, roll on_ambiguous, bool& at_boundary) noexcept {
+  at_boundary = false;
   if (!zone) {
     out = std::chrono::sys_seconds{tp.time_since_epoch()};
     return true;
@@ -243,6 +244,7 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
         utc_instant = latest;
       } else if (on_ambiguous == roll::boundary) {
         utc_instant = table.starts[latest_i]; // Transition boundary, when the clocks went back
+        at_boundary = true;
       }
       out = std::chrono::sys_seconds{std::chrono::seconds{utc_instant + shift}};
       return true;
@@ -265,6 +267,8 @@ inline bool local_to_sys(const zone_record* zone, tz::local_seconds tp, std::chr
           utc_instant = local - prev_offset; // Shift forward by the gap
         } else if (on_impossible == roll::backward) {
           utc_instant = local - curr_offset; // Shift backward by the gap
+        } else {
+          at_boundary = true;
         }
         out = std::chrono::sys_seconds{std::chrono::seconds{utc_instant + shift}};
         return true;
