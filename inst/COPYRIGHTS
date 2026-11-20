@@ -23,6 +23,32 @@ License: MIT
   SEXP protection mechanism inspired by cpp11::sexp
   https://github.com/r-lib/cpp11/
 
+Files: inst/include/cppally/time/tz.h
+Copyright: 2015, 2016, 2017 Howard Hinnant
+           2015 Ville Voutilainen
+           2016 Alexander Kormanovsky
+           2016, 2017 Jiangang Zhuang
+           2017 Nicolas Veloz Savino
+           2017 Florian Dang
+           2017 Aaron Bishop
+License: MIT
+  Adapted from the date library (tz.cpp, tz.h, tz_private.h). Changes are
+  listed at the top of the file.
+  https://github.com/HowardHinnant/date/
+
+Files: inst/include/zlib/puff.h
+Copyright: 2002-2013 Mark Adler
+License: Zlib
+  C++ port of puff.c and puff.h from zlib 1.3.1 (contrib/puff). Altered
+  source, changes are listed at the top of the file.
+  https://github.com/madler/zlib/
+
+Files: inst/include/cppally/time/tzdata.h
+Copyright: none (public domain)
+License: public domain
+  Generated from the IANA time zone database by data-raw/update_tzdata.R
+  https://www.iana.org/time-zones
+
 License: BSL-1.0
   Boost Software License - Version 1.0 - August 17th, 2003
 
