@@ -6,7 +6,7 @@
 namespace cppally {
 
 // Timeline choices: automatic (default), clock time, or `stopwatch` time (UNIX seconds).
-// If you are unsure, use timeline::automatic which chooses `clock` time for arithmetic involving years, month, weeks, and days, and `stopwatch` time otherwise.
+// If you are unsure, use timeline::automatic which chooses `clock` time for arithmetic involving years, months, weeks, and days, and `stopwatch` time otherwise.
 enum class timeline {
     automatic,  // `stopwatch` (seconds-based) for sub-day units, otherwise `clock`
     clock,      // arithmetic uses the clock time though results may be ambiguous or non-existent
