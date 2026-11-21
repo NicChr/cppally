@@ -153,6 +153,11 @@ void test_timezones(){
     expect_identical(time_diff<"months">(april, march), r_dbl(-1.0), "period months over the gap, backwards");
     expect_identical(time_diff<"months">(march.with_tzone("UTC"), april.with_tzone("UTC")), r_dbl(743.0 / 744.0), "duration months over the gap, an hour short");
 
+    r_psxct sep_bst(2024, 9, 27, 1, 30, 0.0, "Europe/London"); // + 1 clock month is 01:30 on Oct 27 (overlap)
+    expect_identical(time_diff<"months">(sep_bst, r_psxct(2024, 10, 27, 1, 30, 0.0, "Europe/London", roll::none, roll::forward)), r_dbl(1.0), "period months into the overlap");
+    expect_identical(time_diff<"months">(sep_bst, r_psxct(2024, 10, 27, 1, 30, 0.0, "Europe/London", roll::none, roll::backward)), r_dbl(1.0), "period months into the overlap, earlier");
+    expect_identical(time_diff<"years">(r_psxct(2023, 3, 31, 1, 30, 0.0, "Europe/London"), r_psxct(2024, 3, 31, 3, 0, 0.0, "Europe/London")), r_dbl(1.0) + r_dbl(5400.0) / r_dbl(365.0 * 86400.0), "period years into the gap");
+
     // timeline
 
     expect_identical(before_gap.add<"hours", timeline::clock>(1), r_psxct::na(), "timeline clock hour into the gap");
