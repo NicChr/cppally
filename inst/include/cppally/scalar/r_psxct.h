@@ -18,7 +18,7 @@
 namespace cppally {
 
 template <string_literal Unit, timeline Axis = timeline::automatic>
-constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width = r_dbl(1.0), roll on_impossible_date = roll::none) noexcept;
+constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width = r_dbl(1.0), roll on_impossible = roll::none) noexcept;
 
 // R date-time: seconds since epoch (1st Jan 1970 UTC).
 // Fractional seconds are supported.
@@ -32,7 +32,7 @@ struct r_psxct {
     const internal::zone_record* m_tzone = nullptr; // nullptr is UTC
 
     template <string_literal Unit, timeline Axis>
-    friend constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width, roll on_impossible_date) noexcept;
+    friend constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width, roll on_impossible) noexcept;
 
     // r_psxct from epoch + this->m_tzone
     constexpr r_psxct zoned_psxct(double seconds) const noexcept {
@@ -157,12 +157,12 @@ struct r_psxct {
     // Same wall clock, different timezone.
     // If the UTC offset of the timezone is different, then this UTC instant will be different.
     // NA is returned for ambiguous or non-existent date-times.
-    // Supply a roll strategy to `on_impossible_date` and/or `on_ambiguous_time` to handle rolling.
-    [[nodiscard]] r_psxct replace_tzone(const char* tz, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const {
-        return r_psxct(unwrap(*this), tz).from_clock(to_clock(), on_impossible_date, on_ambiguous_time);
+    // Supply a roll strategy to `on_impossible` and/or `on_ambiguous` to handle rolling.
+    [[nodiscard]] r_psxct replace_tzone(const char* tz, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const {
+        return r_psxct(unwrap(*this), tz).from_clock(to_clock(), on_impossible, on_ambiguous);
     }
-    [[nodiscard]] r_psxct replace_tzone(r_str_view tz, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const {
-        return tz.is_na() ? na() : replace_tzone(tz.c_str(), on_impossible_date, on_ambiguous_time);
+    [[nodiscard]] r_psxct replace_tzone(r_str_view tz, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const {
+        return tz.is_na() ? na() : replace_tzone(tz.c_str(), on_impossible, on_ambiguous);
     }
 
     // Construct r_psxct from the year/month/day hour:minute:second clock time reading in `zone`.
@@ -170,19 +170,19 @@ struct r_psxct {
     int year, int month, int day,
     int hour, int minute, double second,
     const char* zone = "UTC",
-    roll on_impossible_date = roll::none,
-    roll on_ambiguous_time = roll::none
+    roll on_impossible = roll::none,
+    roll on_ambiguous = roll::none
     ) : value{unix_seconds(year, month, day, hour, minute, second)} {
         if (zone && std::string_view(zone) != "UTC") {
             m_tzone = internal::zone_registry::get().find_or_add(zone);
-            *this = from_clock(r_psxct(unwrap(value)), on_impossible_date, on_ambiguous_time);
+            *this = from_clock(r_psxct(unwrap(value)), on_impossible, on_ambiguous);
         }
     }
 
     // Apply fn(r_psxct) to the clock time reading, mapping the result back into the input timezone
     template <typename F>
-    constexpr r_psxct using_clock(F fn, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept(noexcept(fn(std::declval<r_psxct>()))) {
-        return is_utc() ? fn(*this) : using_clock_impl(fn, on_impossible_date, on_ambiguous_time);
+    constexpr r_psxct using_clock(F fn, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept(noexcept(fn(std::declval<r_psxct>()))) {
+        return is_utc() ? fn(*this) : using_clock_impl(fn, on_impossible, on_ambiguous);
     }
 
     private:
@@ -235,7 +235,7 @@ struct r_psxct {
     }
 
     // Same clock time but in this timezone (i.e. different UTC offset)
-    constexpr r_psxct from_clock(r_psxct clock, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept {
+    constexpr r_psxct from_clock(r_psxct clock, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
         if (is_utc()){
             return clock;
         }
@@ -244,7 +244,7 @@ struct r_psxct {
         }
         std::chrono::sys_seconds sys{};
         bool at_boundary = false;
-        if (!internal::local_to_sys(m_tzone, internal::tz::local_seconds{clock.chrono_tp().time_since_epoch()}, sys, on_impossible_date, on_ambiguous_time, at_boundary)){
+        if (!internal::local_to_sys(m_tzone, internal::tz::local_seconds{clock.chrono_tp().time_since_epoch()}, sys, on_impossible, on_ambiguous, at_boundary)){
             return zoned_psxct(r_dbl::na());
         }
         // Sub-second fractions are dropped at transition boundaries
@@ -252,27 +252,27 @@ struct r_psxct {
     }
 
     template <string_literal Unit>
-    constexpr r_psxct from_clock(r_psxct before, r_psxct after, roll on_impossible_date, roll on_ambiguous_time) const noexcept {
+    constexpr r_psxct from_clock(r_psxct before, r_psxct after, roll on_impossible, roll on_ambiguous) const noexcept {
         if constexpr (internal::timeline_from_unit<Unit>() == timeline::clock){
             bool moving_forward = !(after < before).is_true();
-            return from_clock(after, internal::resolve_roll(on_impossible_date, moving_forward), internal::resolve_roll(on_ambiguous_time, moving_forward));
+            return from_clock(after, internal::resolve_roll(on_impossible, moving_forward), internal::resolve_roll(on_ambiguous, moving_forward));
         } else {
             return add_seconds(after.seconds_since_epoch() - before.seconds_since_epoch());
         }
     }
 
     template <string_literal Unit, typename F>
-    CPPALLY_NOINLINE constexpr r_psxct on_clock(F fn, roll on_impossible_date, roll on_ambiguous_time) const noexcept {
+    CPPALLY_NOINLINE constexpr r_psxct on_clock(F fn, roll on_impossible, roll on_ambiguous) const noexcept {
         r_psxct cl = to_clock();
-        return from_clock<Unit>(cl, fn(cl), on_impossible_date, on_ambiguous_time);
+        return from_clock<Unit>(cl, fn(cl), on_impossible, on_ambiguous);
     }
 
     template <typename F>
-    CPPALLY_NOINLINE constexpr r_psxct using_clock_impl(F fn, roll on_impossible_date, roll on_ambiguous_time) const noexcept(noexcept(fn(std::declval<r_psxct>()))) {
+    CPPALLY_NOINLINE constexpr r_psxct using_clock_impl(F fn, roll on_impossible, roll on_ambiguous) const noexcept(noexcept(fn(std::declval<r_psxct>()))) {
         r_psxct cl = to_clock();
         r_psxct after = fn(cl);
         bool moving_forward = !(after < cl).is_true();
-        return from_clock(after, internal::resolve_roll(on_impossible_date, moving_forward), internal::resolve_roll(on_ambiguous_time, moving_forward));
+        return from_clock(after, internal::resolve_roll(on_impossible, moving_forward), internal::resolve_roll(on_ambiguous, moving_forward));
     }
 
     constexpr r_psxct add_seconds(r_dbl n) const noexcept {
@@ -282,7 +282,7 @@ struct r_psxct {
     // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls 
     // to the start of the next month when `n >= 0` and to the last day of the current month when 
     // `n < 0`
-    constexpr r_psxct add_months(r_int n, roll on_impossible_date = roll::none) const noexcept {
+    constexpr r_psxct add_months(r_int n, roll on_impossible = roll::none) const noexcept {
 
         using namespace std::chrono;
 
@@ -310,8 +310,8 @@ struct r_psxct {
 
         if (!ymd.ok()) {
             bool forward = false;
-            on_impossible_date = internal::resolve_roll(on_impossible_date, /*moving_forward = */ unwrap(n) >= 0);
-            switch (on_impossible_date) {
+            on_impossible = internal::resolve_roll(on_impossible, /*moving_forward = */ unwrap(n) >= 0);
+            switch (on_impossible) {
                 case roll::forward:  { forward = true;      break; }
                 case roll::backward: { forward = false;     break; }
                 case roll::boundary: { forward = true; at_boundary = true; break; }
@@ -335,52 +335,52 @@ struct r_psxct {
         return lhs.add_seconds(fraction * n_seconds);
     }
 
-    constexpr r_psxct add_months(r_dbl m, roll on_impossible_date) const noexcept {
+    constexpr r_psxct add_months(r_dbl m, roll on_impossible) const noexcept {
 
         double floored = internal::floor2(m);
         r_int whole_months = internal::coerce_number<r_int>(r_dbl(floored));
-        r_psxct lhs = add_months(whole_months, on_impossible_date);
+        r_psxct lhs = add_months(whole_months, on_impossible);
 
         if (unwrap(m) == floored){
             return lhs;
         }
 
-        r_psxct rhs = add_months(whole_months + r_int(1), on_impossible_date);
+        r_psxct rhs = add_months(whole_months + r_int(1), on_impossible);
         return interpolate(lhs, rhs, /*fraction = */ m - whole_months);
     }
 
-    constexpr r_psxct add_months(r_dbl n, roll on_impossible_date, r_dbl k) const noexcept {
+    constexpr r_psxct add_months(r_dbl n, roll on_impossible, r_dbl k) const noexcept {
 
         if (!is_chrono_safe() || !n.is_finite() || !k.is_finite()){
             return r_psxct(seconds_since_epoch() + (n * k));
         }
 
         if (unwrap(k) == 1.0){
-            return add_months(n, on_impossible_date);
+            return add_months(n, on_impossible);
         }
 
         r_dbl whole_blocks = r_dbl(internal::floor2(n));
-        r_psxct lhs = add_months(whole_blocks * k, on_impossible_date);
+        r_psxct lhs = add_months(whole_blocks * k, on_impossible);
 
         if ((n == whole_blocks).is_true()){
             return lhs;
         }
 
-        r_psxct rhs = add_months((whole_blocks + r_dbl(1.0)) * k, on_impossible_date);
+        r_psxct rhs = add_months((whole_blocks + r_dbl(1.0)) * k, on_impossible);
         return interpolate(lhs, rhs, /*fraction = */ n - whole_blocks);
     }
 
     public:
 
     template <string_literal Unit, timeline Axis = timeline::automatic, Number N>
-    constexpr r_psxct add(N n, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none, r_dbl width = r_dbl(1.0)) const noexcept {
+    constexpr r_psxct add(N n, roll on_impossible = roll::none, roll on_ambiguous = roll::none, r_dbl width = r_dbl(1.0)) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
         constexpr timeline time_axis = Axis == timeline::automatic ? internal::timeline_from_unit<Unit>() : Axis;
 
         if constexpr (time_axis == timeline::clock){
             if (!is_utc()){
-                return using_clock_impl([&](r_psxct cl) noexcept { return cl.template add<Unit, time_axis>(n, on_impossible_date, roll::none, width); }, on_impossible_date, on_ambiguous_time);
+                return using_clock_impl([&](r_psxct cl) noexcept { return cl.template add<Unit, time_axis>(n, on_impossible, roll::none, width); }, on_impossible, on_ambiguous);
             }
         }
 
@@ -388,11 +388,11 @@ struct r_psxct {
 
         if constexpr (time_axis == timeline::clock && unit == "months") {
 
-            return add_months(n_units, on_impossible_date, width);
+            return add_months(n_units, on_impossible, width);
 
         } else if constexpr (time_axis == timeline::clock && unit == "years") {
 
-            return add_months(n_units, on_impossible_date, width * r_dbl(12.0));
+            return add_months(n_units, on_impossible, width * r_dbl(12.0));
 
         } else {
 
@@ -401,10 +401,10 @@ struct r_psxct {
         }
     }
 
-    // Legacy deprecated overload - Use add(N, on_impossible_date, on_ambiguous_time, width)
+    // Legacy deprecated overload - Use add(N, on_impossible, on_ambiguous, width)
     template <string_literal Unit, Number N>
-    constexpr r_psxct add(N n, roll on_impossible_date, r_dbl width) const noexcept {
-        return add<Unit>(n, on_impossible_date, roll::none, width);
+    constexpr r_psxct add(N n, roll on_impossible, r_dbl width) const noexcept {
+        return add<Unit>(n, on_impossible, roll::none, width);
     }
 
     constexpr r_int year() const noexcept {
@@ -536,7 +536,7 @@ struct r_psxct {
     // Rounding
 
     template <string_literal Unit>
-    constexpr r_psxct floor(int week_start = 7, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept {
+    constexpr r_psxct floor(int week_start = 7, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
@@ -546,7 +546,7 @@ struct r_psxct {
 
         // In a zone, rounding happens on its clock time
         if (!is_utc()){
-            return on_clock<Unit>([&](r_psxct cl){ return cl.template floor<Unit>(week_start); }, on_impossible_date, on_ambiguous_time);
+            return on_clock<Unit>([&](r_psxct cl){ return cl.template floor<Unit>(week_start); }, on_impossible, on_ambiguous);
         }
 
         using namespace std::chrono;
@@ -585,14 +585,14 @@ struct r_psxct {
     }
 
     template <string_literal Unit>
-    constexpr r_psxct ceiling(int week_start = 7, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept {
+    constexpr r_psxct ceiling(int week_start = 7, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
 
         if (!seconds_since_epoch().is_finite()){
             return *this;
         }
 
         if (!is_utc()){
-            return on_clock<Unit>([&](r_psxct cl){ return cl.template ceiling<Unit>(week_start); }, on_impossible_date, on_ambiguous_time);
+            return on_clock<Unit>([&](r_psxct cl){ return cl.template ceiling<Unit>(week_start); }, on_impossible, on_ambiguous);
         }
 
         r_psxct lower = floor<Unit>(week_start);
@@ -610,14 +610,14 @@ struct r_psxct {
     }
 
     template <string_literal Unit>
-    constexpr r_psxct round(int week_start = 7, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept {
+    constexpr r_psxct round(int week_start = 7, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
 
         if (!seconds_since_epoch().is_finite()){
             return *this;
         }
 
         if (!is_utc()){
-            return on_clock<Unit>([&](r_psxct cl){ return cl.template round<Unit>(week_start); }, on_impossible_date, on_ambiguous_time);
+            return on_clock<Unit>([&](r_psxct cl){ return cl.template round<Unit>(week_start); }, on_impossible, on_ambiguous);
         }
 
         r_psxct lower = floor<Unit>(week_start);
@@ -651,10 +651,10 @@ inline constexpr r_dbl diff_seconds(r_psxct x, r_psxct y, r_dbl n) noexcept {
     return diff_seconds(x, y) / n;
 }
 
-inline constexpr r_dbl diff_month_blocks(r_psxct x, r_psxct y, r_dbl k, r_dbl estimate, bool fractional, roll on_impossible_date) noexcept {
+inline constexpr r_dbl diff_month_blocks(r_psxct x, r_psxct y, r_dbl k, r_dbl estimate, bool fractional, roll on_impossible) noexcept {
 
-    r_psxct small_int_start = x.add<"months">(estimate * k, on_impossible_date);
-    r_psxct big_int_end = x.add<"months">((estimate + r_dbl(1.0)) * k, on_impossible_date);
+    r_psxct small_int_start = x.add<"months">(estimate * k, on_impossible);
+    r_psxct big_int_end = x.add<"months">((estimate + r_dbl(1.0)) * k, on_impossible);
 
     r_dbl ratio = diff_seconds(small_int_start, y) / diff_seconds(small_int_start, big_int_end);
 
@@ -662,8 +662,8 @@ inline constexpr r_dbl diff_month_blocks(r_psxct x, r_psxct y, r_dbl k, r_dbl es
 
         estimate = estimate + r_dbl(unwrap(ratio) < 0.0 ? -1.0 : 1.0);
 
-        small_int_start = x.add<"months">(estimate * k, on_impossible_date);
-        big_int_end = x.add<"months">((estimate + r_dbl(1.0)) * k, on_impossible_date);
+        small_int_start = x.add<"months">(estimate * k, on_impossible);
+        big_int_end = x.add<"months">((estimate + r_dbl(1.0)) * k, on_impossible);
 
         ratio = diff_seconds(small_int_start, y) / diff_seconds(small_int_start, big_int_end);
     }
@@ -679,18 +679,18 @@ inline constexpr r_dbl diff_month_blocks(r_psxct x, r_psxct y, r_dbl k, r_dbl es
     return ratio.is_finite() ? estimate + ratio : r_dbl::na();
 }
 
-inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k = r_dbl(1.0), bool fractional = true, roll on_impossible_date = roll::none) noexcept {
+inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k = r_dbl(1.0), bool fractional = true, roll on_impossible = roll::none) noexcept {
 
     if (!k.is_finite() || unwrap(k) == 0.0){
         return ( y.seconds_since_epoch() - x.seconds_since_epoch() ) / k;
     }
 
-    r_dbl out = diff_months(x.as_date(), y.as_date(), r_dbl(1.0), false, on_impossible_date);
+    r_dbl out = diff_months(x.as_date(), y.as_date(), r_dbl(1.0), false, on_impossible);
 
     if (unwrap(k) != 1.0){
-        r_dbl exact_months = out.is_na() ? out : diff_month_blocks(x, y, r_dbl(1.0), out, true, on_impossible_date);
+        r_dbl exact_months = out.is_na() ? out : diff_month_blocks(x, y, r_dbl(1.0), out, true, on_impossible);
         if (exact_months.is_na()){
-            out = diff_months(x.as_date(), y.as_date(), k, false, on_impossible_date);
+            out = diff_months(x.as_date(), y.as_date(), k, false, on_impossible);
         } else {
             out = r_dbl(floor2(exact_months / k));
         }
@@ -700,13 +700,13 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k = r_dbl(1.0), b
         return out;
     }
 
-    return diff_month_blocks(x, y, k, /*estimate = */ out, fractional, on_impossible_date);
+    return diff_month_blocks(x, y, k, /*estimate = */ out, fractional, on_impossible);
 }
 
 }
 
 template <string_literal Unit, timeline Axis>
-inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width, roll on_impossible_date) noexcept {
+inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width, roll on_impossible) noexcept {
 
     constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
     constexpr timeline time_axis = Axis == timeline::automatic ? internal::timeline_from_unit<Unit>() : Axis;
@@ -722,11 +722,11 @@ inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width, roll on_impo
 
     } else if constexpr (unit == "years") {
 
-        return internal::diff_months(x, y, width * r_dbl(12.0), true, on_impossible_date);
+        return internal::diff_months(x, y, width * r_dbl(12.0), true, on_impossible);
 
     } else if constexpr (unit == "months") {
 
-        return internal::diff_months(x, y, width, true, on_impossible_date);
+        return internal::diff_months(x, y, width, true, on_impossible);
 
     } else {
 

@@ -130,7 +130,7 @@ struct r_date {
     // Impossible dates are handled via `roll` option, e.g. `roll::away` rolls
     // to the start of the next month when `n >= 0` and to the last day of the current month when 
     // `n < 0`
-    constexpr r_date add_months(r_int n, roll on_impossible_date = roll::none) const noexcept {
+    constexpr r_date add_months(r_int n, roll on_impossible = roll::none) const noexcept {
         
         using namespace std::chrono;
 
@@ -156,8 +156,8 @@ struct r_date {
         
         if (!ymd.ok()) {
             bool forward = false;
-            on_impossible_date = internal::resolve_roll(on_impossible_date, /*moving_forward = */ unwrap(n) >= 0);
-            switch (on_impossible_date) {
+            on_impossible = internal::resolve_roll(on_impossible, /*moving_forward = */ unwrap(n) >= 0);
+            switch (on_impossible) {
                 case roll::forward:  { forward = true;      break; }
                 case roll::backward: { forward = false;     break; }
                 case roll::boundary: { forward = true; at_boundary = true; break; }
@@ -182,45 +182,45 @@ struct r_date {
     }
 
     // Callers must have checked that both `*this` and `m` are finite
-    constexpr r_date add_months(r_dbl m, roll on_impossible_date) const noexcept {
+    constexpr r_date add_months(r_dbl m, roll on_impossible) const noexcept {
 
         double floored = internal::floor2(m);
         r_int whole_months = internal::coerce_number<r_int>(r_dbl(floored));
-        r_date lhs = add_months(whole_months, on_impossible_date);
+        r_date lhs = add_months(whole_months, on_impossible);
 
         if (unwrap(m) == floored){
             return lhs;
         }
 
-        r_date rhs = add_months(whole_months + r_int(1), on_impossible_date);
+        r_date rhs = add_months(whole_months + r_int(1), on_impossible);
         return interpolate(lhs, rhs, /*fraction = */ m - whole_months);
     }
 
-    constexpr r_date add_months(r_dbl n, roll on_impossible_date, r_dbl k) const noexcept {
+    constexpr r_date add_months(r_dbl n, roll on_impossible, r_dbl k) const noexcept {
 
         if (!is_chrono_safe() || !n.is_finite() || !k.is_finite()){
             return r_date(days_since_epoch() + (n * k));
         }
 
         if (unwrap(k) == 1.0){
-            return add_months(n, on_impossible_date);
+            return add_months(n, on_impossible);
         }
 
         r_dbl whole_blocks = r_dbl(internal::floor2(n));
-        r_date lhs = add_months(whole_blocks * k, on_impossible_date);
+        r_date lhs = add_months(whole_blocks * k, on_impossible);
 
         if ((n == whole_blocks).is_true()){
             return lhs;
         }
 
-        r_date rhs = add_months((whole_blocks + r_dbl(1.0)) * k, on_impossible_date);
+        r_date rhs = add_months((whole_blocks + r_dbl(1.0)) * k, on_impossible);
         return interpolate(lhs, rhs, /*fraction = */ n - whole_blocks);
     }
 
     public:
 
     template <string_literal Unit, timeline Axis = timeline::automatic, Number N>
-    constexpr r_date add(N n, roll on_impossible_date = roll::none, r_dbl width = r_dbl(1.0)) const noexcept {
+    constexpr r_date add(N n, roll on_impossible = roll::none, r_dbl width = r_dbl(1.0)) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
@@ -234,11 +234,11 @@ struct r_date {
 
         } else if constexpr (unit == "years") {
 
-            return add_months(n_units, on_impossible_date, width * r_dbl(12.0));
+            return add_months(n_units, on_impossible, width * r_dbl(12.0));
 
         } else if constexpr (unit == "months") {
 
-            return add_months(n_units, on_impossible_date, width);
+            return add_months(n_units, on_impossible, width);
 
         } else if constexpr (unit == "weeks") {
 
@@ -459,10 +459,10 @@ inline constexpr r_dbl diff_days(r_date x, r_date y) noexcept {
 }
 
 // Adjust the whole month estimate
-inline constexpr r_dbl diff_month_blocks(r_date x, r_date y, r_dbl k, r_dbl estimate, bool fractional, roll on_impossible_date) noexcept {
+inline constexpr r_dbl diff_month_blocks(r_date x, r_date y, r_dbl k, r_dbl estimate, bool fractional, roll on_impossible) noexcept {
 
-    r_date small_int_start = x.add<"months">(estimate * k, on_impossible_date);
-    r_date big_int_end = x.add<"months">((estimate + r_dbl(1.0)) * k, on_impossible_date);
+    r_date small_int_start = x.add<"months">(estimate * k, on_impossible);
+    r_date big_int_end = x.add<"months">((estimate + r_dbl(1.0)) * k, on_impossible);
 
     r_dbl ratio = diff_days(small_int_start, y) / diff_days(small_int_start, big_int_end);
 
@@ -470,8 +470,8 @@ inline constexpr r_dbl diff_month_blocks(r_date x, r_date y, r_dbl k, r_dbl esti
 
         estimate = estimate + r_dbl(unwrap(ratio) < 0.0 ? -1.0 : 1.0);
 
-        small_int_start = x.add<"months">(estimate * k, on_impossible_date);
-        big_int_end = x.add<"months">((estimate + r_dbl(1.0)) * k, on_impossible_date);
+        small_int_start = x.add<"months">(estimate * k, on_impossible);
+        big_int_end = x.add<"months">((estimate + r_dbl(1.0)) * k, on_impossible);
 
         ratio = diff_days(small_int_start, y) / diff_days(small_int_start, big_int_end);
     }
@@ -487,7 +487,7 @@ inline constexpr r_dbl diff_month_blocks(r_date x, r_date y, r_dbl k, r_dbl esti
     return ratio.is_finite() ? estimate + ratio : r_dbl::na();
 }
 
-inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl k = r_dbl(1.0), bool fractional = true, roll on_impossible_date = roll::none) noexcept {
+inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl k = r_dbl(1.0), bool fractional = true, roll on_impossible = roll::none) noexcept {
 
     if (!k.is_finite() || unwrap(k) == 0.0){
         return ( y.days_since_epoch() - x.days_since_epoch() ) / k;
@@ -514,19 +514,19 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl k = r_dbl(1.0), boo
     r_dbl months = coerce_number<r_dbl>(whole_months);
 
     if (unwrap(k) != 1.0){
-        r_dbl exact_months = diff_month_blocks(x, y, r_dbl(1.0), months, true, on_impossible_date);
+        r_dbl exact_months = diff_month_blocks(x, y, r_dbl(1.0), months, true, on_impossible);
         if (!exact_months.is_na()){
             months = exact_months;
         }
     }
 
-    return diff_month_blocks(x, y, k, /*estimate = */ r_dbl(floor2(months / k)), fractional, on_impossible_date);
+    return diff_month_blocks(x, y, k, /*estimate = */ r_dbl(floor2(months / k)), fractional, on_impossible);
 }
 
 }
 
 template <string_literal Unit, timeline Axis = timeline::automatic>
-inline constexpr r_dbl time_diff(r_date x, r_date y, r_dbl width = r_dbl(1.0), roll on_impossible_date = roll::none) noexcept {
+inline constexpr r_dbl time_diff(r_date x, r_date y, r_dbl width = r_dbl(1.0), roll on_impossible = roll::none) noexcept {
 
     constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
@@ -539,11 +539,11 @@ inline constexpr r_dbl time_diff(r_date x, r_date y, r_dbl width = r_dbl(1.0), r
 
     } else if constexpr (unit == "years") {
 
-        return internal::diff_months(x, y, width * r_dbl(12.0), true, on_impossible_date);
+        return internal::diff_months(x, y, width * r_dbl(12.0), true, on_impossible);
 
     } else if constexpr (unit == "months") {
 
-        return internal::diff_months(x, y, width, true, on_impossible_date);
+        return internal::diff_months(x, y, width, true, on_impossible);
 
     } else if constexpr (unit == "weeks"){
 
