@@ -8,7 +8,8 @@ is_windows <- function(){
 
 generate_cpp_name <- function (name, loaded_dlls = c("cppally", names(getLoadedDLLs()))){
   ext <- tools::file_ext(name)
-  root <- tools::file_path_sans_ext(basename(name))
+  # The DLL name forms R_init_<name>, so it must be a valid C identifier
+  root <- gsub("[^A-Za-z0-9_]", "_", tools::file_path_sans_ext(basename(name)), perl = TRUE)
   count <- 2
   new_name <- root
   while (new_name %in% loaded_dlls) {
@@ -366,9 +367,24 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
   check_valid_attributes(all_decorations, file = orig_file_path)
   funs <- get_registered_functions(all_decorations, "cppally::register", quiet = quiet)
   cpp_functions_definitions <- generate_cpp_functions(funs, package = package)
+  init <- generate_init_functions(get_registered_functions(all_decorations, "cppally::init", quiet))
+  # Run cppally_init on load only, no routine registration, so .Call still finds functions by name
+  cpp_init <- glue::glue('
+    {init$declarations}
+    static SEXP cppally_init([[maybe_unused]] DllInfo* dll){{
+      BEGIN_CPPALLY
+      cppally::internal::zone_registry::get().cache_session_zone();{init$calls}
+      END_CPPALLY
+    }}
+
+    extern "C" attribute_visible void R_init_{package}(DllInfo* dll){{
+      cppally_init(dll);
+    }}
+  ')
   cpp_path <- file.path(dirname(new_file_path), "cppally.cpp")
   brio::write_lines(c(generate_cpp_preamble(glue::glue('#include "{new_file_name}"')),
-                      cpp_functions_definitions),
+                      cpp_functions_definitions,
+                      cpp_init),
                     cpp_path)
   linking_to <- union(get_linking_to(all_decorations), "cppally")
   includes <- generate_include_paths(linking_to)
