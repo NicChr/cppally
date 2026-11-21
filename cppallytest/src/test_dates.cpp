@@ -310,6 +310,15 @@ void test_time_diff_units(){
     expect_identical(time_diff<"seconds">(p, q), time_diff<"seconds">(a, b), "seconds");
     expect_identical(time_diff<"weeks">(p, q), time_diff<"weeks">(a, b), "weeks");
     expect_identical(time_diff<"days">(p, q, r_dbl(4.0)), time_diff<"days">(a, b, r_dbl(4.0)), "4-day blocks");
+
+    // timeline::stopwatch
+
+    r_date c(2025, 3, 15);
+    expect_identical(time_diff<"months", timeline::stopwatch>(a, c), time_diff<"months", timeline::stopwatch>(a.as_datetime(), c.as_datetime()), "stopwatch months, date vs date-time");
+    expect_identical(time_diff<"years", timeline::stopwatch>(a, c), time_diff<"years", timeline::stopwatch>(a.as_datetime(), c.as_datetime()), "stopwatch years, date vs date-time");
+    expect_identical(time_diff<"years", timeline::stopwatch>(a, r_date(2025, 1, 1)), r_dbl(366.0 * 86400.0 / 31556952.0), "stopwatch leap year");
+    expect_identical(a.add<"months", timeline::stopwatch>(1), a.add<"days">(r_dbl(2629746.0 / 86400.0)), "stopwatch month on a date");
+    expect_identical(a.add<"months">(1), r_date(2024, 2, 1), "default month on a date");
 }
 
 [[cppally::register]]

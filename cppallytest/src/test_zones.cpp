@@ -153,6 +153,29 @@ void test_timezones(){
     expect_identical(time_diff<"months">(april, march), r_dbl(-1.0), "period months over the gap, backwards");
     expect_identical(time_diff<"months">(march.with_tzone("UTC"), april.with_tzone("UTC")), r_dbl(743.0 / 744.0), "duration months over the gap, an hour short");
 
+    // timeline
+
+    expect_identical(before_gap.add<"hours", timeline::clock>(1), r_psxct::na(), "timeline clock hour into the gap");
+    expect_identical(before_gap.add<"hours", timeline::clock>(1, roll::forward), before_gap.using_clock(add_clock_hour, roll::forward), "timeline clock hour into the gap matches using_clock");
+    expect_identical(before_overlap.add<"hours", timeline::clock>(1, roll::none, roll::backward), before_overlap.using_clock(add_clock_hour, roll::none, roll::backward), "timeline clock hour into the overlap matches using_clock");
+
+    expect_identical(ny_noon.add<"days", timeline::stopwatch>(1), ny_noon.add<"hours">(24), "stopwatch day over the gap is 24 hours");
+    expect_identical(ny_noon.add<"days", timeline::stopwatch>(1).hour(), r_int(13), "stopwatch day over the gap is 13:00 EDT");
+
+    expect_identical(time_diff<"hours", timeline::clock>(spring_start, spring_end), r_dbl(24.0), "timeline clock hours over the gap");
+    expect_identical(time_diff<"hours", timeline::clock>(fall_start, fall_end), r_dbl(24.0), "timeline clock hours over the overlap");
+    expect_identical(time_diff<"days">(spring_start, spring_end), r_dbl(1.0), "clock day over the gap");
+    expect_identical(time_diff<"days", timeline::stopwatch>(spring_start, spring_end), r_dbl(23.0 / 24.0), "stopwatch day over the gap");
+    expect_identical(time_diff<"days", timeline::stopwatch>(fall_start, fall_end), r_dbl(25.0 / 24.0), "stopwatch day over the overlap");
+
+    r_psxct jan1(2024, 1, 1, 0, 0, 0.0);
+    r_psxct stopwatch_month_end(2024, 1, 31, 10, 29, 6.0);
+    expect_identical(jan1.add<"months", timeline::stopwatch>(1), stopwatch_month_end, "stopwatch month is 2629746 seconds");
+    expect_identical(jan1.add<"years", timeline::stopwatch>(1), r_psxct(2024, 12, 31, 5, 49, 12.0), "stopwatch year is 31556952 seconds");
+    expect_identical(jan1.add<"years">(1), r_psxct(2025, 1, 1, 0, 0, 0.0), "default year is 12 clock months");
+    expect_identical(time_diff<"months", timeline::stopwatch>(jan1, stopwatch_month_end), r_dbl(1.0), "stopwatch month time_diff");
+    expect_identical(time_diff<"years", timeline::stopwatch>(jan1, jan1.add<"years", timeline::stopwatch>(2)), r_dbl(2.0), "stopwatch years time_diff");
+
     // with_tzone()
 
     r_psxct instant(2024, 7, 1, 12, 0, 0.0);
