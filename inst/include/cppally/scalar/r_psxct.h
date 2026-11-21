@@ -20,6 +20,10 @@ namespace cppally {
 template <string_literal Unit, timeline Axis = timeline::automatic>
 constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width = r_dbl(1.0), roll on_impossible = roll::none) noexcept;
 
+namespace internal {
+constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k = r_dbl(1.0), bool fractional = true, roll on_impossible = roll::none) noexcept;
+}
+
 // R date-time: seconds since epoch (1st Jan 1970 UTC).
 // Fractional seconds are supported.
 struct r_psxct {
@@ -33,6 +37,7 @@ struct r_psxct {
 
     template <string_literal Unit, timeline Axis>
     friend constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width, roll on_impossible) noexcept;
+    friend constexpr r_dbl internal::diff_months(r_psxct x, r_psxct y, r_dbl k, bool fractional, roll on_impossible) noexcept;
 
     // r_psxct from epoch + this->m_tzone
     constexpr r_psxct zoned_psxct(double seconds) const noexcept {
@@ -679,11 +684,14 @@ inline constexpr r_dbl diff_month_blocks(r_psxct x, r_psxct y, r_dbl k, r_dbl es
     return ratio.is_finite() ? estimate + ratio : r_dbl::na();
 }
 
-inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k = r_dbl(1.0), bool fractional = true, roll on_impossible = roll::none) noexcept {
+inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k, bool fractional, roll on_impossible) noexcept {
 
     if (!k.is_finite() || unwrap(k) == 0.0){
         return ( y.seconds_since_epoch() - x.seconds_since_epoch() ) / k;
     }
+
+    y = x.zoned_psxct(unwrap(y)).to_clock();
+    x = x.to_clock();
 
     r_dbl out = diff_months(x.as_date(), y.as_date(), r_dbl(1.0), false, on_impossible);
 
