@@ -12,6 +12,10 @@ directly into a UTF-8 marked `r_str`. They are now translated to UTF-8 first.
 qualified (e.g. `roll::away`) and will not implicitly convert to plain 
 integer types like `int`.
 
+## Improvements
+
+- `cpp_source()` now registers user-tagged `[[cppally::init]]` calls.
+
 ## Timezones
 
 cppally now supports timezone handling with date-times (`r_psxct`).
@@ -50,6 +54,7 @@ For example, `r_psxct(2026, 1, 30, 12, 0, 0).add<"months">(1, roll::boundary)` (
 
 - `tzone()` - Returns the timezone as a C string (`const char*`)
 - `is_utc()` - Returns whether the timezone is UTC
+- `utc_offset()` - Returns the UTC offset in seconds
 - `with_tzone()` - Same UTC time, new timezone
 - `replace_tzone()` - Same clock time, new timezone (usually a different UTC time)
 - `using_clock()` - Apply a function to the clock time
