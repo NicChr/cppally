@@ -10,13 +10,14 @@
 #include <cppally/scalar/relational_ops.h>
 #include <cppally/scalar/r_date.h>
 #include <cppally/time/zone.h>
+#include <cppally/time/timeline.h>
 #include <cstdint>
 #include <chrono> // For r_date/r_psxt
 #include <cstdio> // For snprintf
 
 namespace cppally {
 
-template <string_literal Unit>
+template <string_literal Unit, timeline Axis = timeline::automatic>
 constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width = r_dbl(1.0), roll on_impossible_date = roll::none) noexcept;
 
 // R date-time: seconds since epoch (1st Jan 1970 UTC).
@@ -30,7 +31,7 @@ struct r_psxct {
 
     const internal::zone_record* m_tzone = nullptr; // nullptr is UTC
 
-    template <string_literal Unit>
+    template <string_literal Unit, timeline Axis>
     friend constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width, roll on_impossible_date) noexcept;
 
     // r_psxct from epoch + this->m_tzone
@@ -164,7 +165,7 @@ struct r_psxct {
         return tz.is_na() ? na() : replace_tzone(tz.c_str(), on_impossible_date, on_ambiguous_time);
     }
 
-    // Construct r_psxct from the year/month/day hour:minute:second wall-clock reading in `zone`.
+    // Construct r_psxct from the year/month/day hour:minute:second clock time reading in `zone`.
     constexpr explicit r_psxct(
     int year, int month, int day,
     int hour, int minute, double second,
@@ -178,7 +179,7 @@ struct r_psxct {
         }
     }
 
-    // Apply fn to the wall-clock reading, mapping the result back into the input timezone
+    // Apply fn(r_psxct) to the clock time reading, mapping the result back into the input timezone
     template <typename F>
     constexpr r_psxct using_clock(F fn, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept(noexcept(fn(std::declval<r_psxct>()))) {
         return is_utc() ? fn(*this) : using_clock_impl(fn, on_impossible_date, on_ambiguous_time);
@@ -233,7 +234,7 @@ struct r_psxct {
         return r_psxct(unwrap(*this) + static_cast<double>(offset.count()));
     }
 
-    // Same wall clock but in this timezone (i.e. different UTC offset)
+    // Same clock time but in this timezone (i.e. different UTC offset)
     constexpr r_psxct from_clock(r_psxct clock, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none) const noexcept {
         if (is_utc()){
             return clock;
@@ -252,7 +253,7 @@ struct r_psxct {
 
     template <string_literal Unit>
     constexpr r_psxct from_clock(r_psxct before, r_psxct after, roll on_impossible_date, roll on_ambiguous_time) const noexcept {
-        if constexpr (internal::is_period_unit<Unit>()){
+        if constexpr (internal::timeline_from_unit<Unit>() == timeline::clock){
             bool moving_forward = !(after < before).is_true();
             return from_clock(after, internal::resolve_roll(on_impossible_date, moving_forward), internal::resolve_roll(on_ambiguous_time, moving_forward));
         } else {
@@ -371,47 +372,31 @@ struct r_psxct {
 
     public:
 
-    template <string_literal Unit, Number N>
+    template <string_literal Unit, timeline Axis = timeline::automatic, Number N>
     constexpr r_psxct add(N n, roll on_impossible_date = roll::none, roll on_ambiguous_time = roll::none, r_dbl width = r_dbl(1.0)) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
+        constexpr timeline time_axis = Axis == timeline::automatic ? internal::timeline_from_unit<Unit>() : Axis;
 
-        // units >= "days" use wall-clock
-        if constexpr (internal::is_period_unit<Unit>()){
+        if constexpr (time_axis == timeline::clock){
             if (!is_utc()){
-                return on_clock<Unit>([&](r_psxct cl){ return cl.template add<Unit>(n, on_impossible_date, roll::none, width); }, on_impossible_date, on_ambiguous_time);
+                return using_clock_impl([&](r_psxct cl) noexcept { return cl.template add<Unit, time_axis>(n, on_impossible_date, roll::none, width); }, on_impossible_date, on_ambiguous_time);
             }
         }
 
         r_dbl n_units = internal::coerce_number<r_dbl>(n);
 
-        if constexpr (unit == "seconds") {
-
-            return add_seconds(n_units * width);
-
-        } else if constexpr (unit == "minutes") {
-
-            return add_seconds((n_units * width) * r_dbl(60.0));
-
-        } else if constexpr (unit == "hours") {
-
-            return add_seconds((n_units * width) * r_dbl(3600.0));
-
-        } else if constexpr (unit == "days") {
-
-            return add_seconds((n_units * width) * r_dbl(86400.0));
-
-        } else if constexpr (unit == "weeks") {
-
-            return add_seconds((n_units * width) * r_dbl(604800.0));
-
-        } else if constexpr (unit == "months") {
+        if constexpr (time_axis == timeline::clock && unit == "months") {
 
             return add_months(n_units, on_impossible_date, width);
 
-        } else { // Years
+        } else if constexpr (time_axis == timeline::clock && unit == "years") {
 
             return add_months(n_units, on_impossible_date, width * r_dbl(12.0));
+
+        } else {
+
+            return add_seconds((n_units * width) * r_dbl(internal::average_seconds<Unit>()));
 
         }
     }
@@ -497,7 +482,7 @@ struct r_psxct {
             return r_str::na();
         }
 
-        // The local wall-clock reading, formatted as if UTC
+        // The clock time reading, formatted as if UTC
         r_psxct cl(unwrap(*this) + static_cast<double>(offset.count()));
         if (!cl.is_chrono_safe()){
             return r_str::na();
@@ -536,7 +521,7 @@ struct r_psxct {
         return datetime_str();
     }
 
-    // The date on the zone's wall clock
+    // The date on the zone's clock time
     constexpr r_date as_date() const noexcept {
         return r_date(r_dbl(internal::floor2(to_clock().seconds_since_epoch() / r_dbl(86400.0))));
     }
@@ -559,7 +544,7 @@ struct r_psxct {
             return *this;
         }
 
-        // In a zone, rounding happens on its wall clock
+        // In a zone, rounding happens on its clock time
         if (!is_utc()){
             return on_clock<Unit>([&](r_psxct cl){ return cl.template floor<Unit>(week_start); }, on_impossible_date, on_ambiguous_time);
         }
@@ -720,12 +705,22 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k = r_dbl(1.0), b
 
 }
 
-template <string_literal Unit>
+template <string_literal Unit, timeline Axis>
 inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width, roll on_impossible_date) noexcept {
 
     constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
+    constexpr timeline time_axis = Axis == timeline::automatic ? internal::timeline_from_unit<Unit>() : Axis;
 
-    if constexpr (unit == "years") {
+    if constexpr (time_axis == timeline::stopwatch && unit == "seconds") {
+
+        r_dbl out = internal::diff_seconds(x, y);
+        return unwrap(width) == 1.0 ? out : out / width;
+
+    } else if constexpr (time_axis == timeline::stopwatch) {
+
+        return internal::diff_seconds(x, y, width * r_dbl(internal::average_seconds<Unit>()));
+
+    } else if constexpr (unit == "years") {
 
         return internal::diff_months(x, y, width * r_dbl(12.0), true, on_impossible_date);
 
@@ -733,24 +728,9 @@ inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width, roll on_impo
 
         return internal::diff_months(x, y, width, true, on_impossible_date);
 
-    } else if constexpr (unit == "weeks" || unit == "days"){
-
-        // Units >= days are counted on x's wall clock and y in x's timezone
-        constexpr double unit_seconds = unit == "weeks" ? 604800.0 : 86400.0;
-        return internal::diff_seconds(x.to_clock(), x.zoned_psxct(unwrap(y)).to_clock(), width * r_dbl(unit_seconds));
-
-    } else if constexpr (unit == "hours"){
-
-        return internal::diff_seconds(x, y, width * r_dbl(3600.0));
-
-    } else if constexpr (unit == "minutes"){
-
-        return internal::diff_seconds(x, y, width * r_dbl(60.0));
-
     } else {
 
-        r_dbl out = internal::diff_seconds(x, y);
-        return unwrap(width) == 1.0 ? out : out / width;
+        return internal::diff_seconds(x.to_clock(), x.zoned_psxct(unwrap(y)).to_clock(), width * r_dbl(internal::average_seconds<Unit>()));
 
     }
 }

@@ -10,54 +10,13 @@
 #include <cppally/scalar/relational_ops.h>
 #include <cppally/utils.h>
 #include <cppally/time/roll.h>
+#include <cppally/time/unit.h>
+#include <cppally/time/timeline.h>
 #include <cstdint>
 #include <chrono> // For r_date/r_psxt
 #include <cstdio> // For snprintf
 
 namespace cppally {
-
-// Is the time unit valid?
-// Valid for 'years', 'months', 'weeks', 'days', 'hours', 'minutes' and 'seconds'
-template <string_literal Unit>
-consteval bool is_valid_time_unit() noexcept {
-    std::string_view unit = Unit.view();
-    return unit == "seconds" || unit == "minutes" || unit == "hours" || unit == "days" || unit == "weeks" || unit == "months" || unit == "years";
-}
-
-namespace internal {
-
-template <string_literal Unit>
-consteval void assert_valid_time_unit() noexcept {
-    static_assert(is_valid_time_unit<Unit>(), "Invalid time unit, please supply 'years', 'months', 'weeks', 'days', 'hours', 'minutes', or 'seconds'");
-}
-
-// Normalise time units into plural form, e.g. "month"
-template <string_literal Unit>
-consteval auto normalise_time_unit() noexcept {
-    if constexpr (is_valid_time_unit<Unit>()){
-        return Unit;
-    } else {
-        constexpr auto plural = Unit.concat("s");
-        if constexpr (is_valid_time_unit<plural>()){
-            return plural;
-        } else {
-            assert_valid_time_unit<Unit>();
-            return Unit;
-        }
-    }
-}
-
-template <string_literal Unit>
-constexpr auto normalised_unit = normalise_time_unit<Unit>();
-
-// "period" is borrowed from lubridate, which are objects which align with clock time
-template <string_literal Unit>
-consteval bool is_period_unit() noexcept {
-    constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
-    return unit == "days" || unit == "weeks" || unit == "months" || unit == "years";
-}
-
-}
 
 // R date that captures the number of days since epoch (1st Jan 1970)
 // Since r_date is stored as a double to match R storage, this means fractional dates are supported but highly discouraged - use `r_psxct` instead for date-times.
@@ -260,14 +219,20 @@ struct r_date {
 
     public:
 
-    template <string_literal Unit, Number N>
+    template <string_literal Unit, timeline Axis = timeline::automatic, Number N>
     constexpr r_date add(N n, roll on_impossible_date = roll::none, r_dbl width = r_dbl(1.0)) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
         r_dbl n_units = internal::coerce_number<r_dbl>(n);
 
-        if constexpr (unit == "years") {
+        if constexpr (Axis == timeline::stopwatch && (unit == "months" || unit == "years")) {
+
+            constexpr r_dbl unit_seconds = r_dbl(internal::average_seconds<Unit>());
+            constexpr r_dbl day_seconds = r_dbl(internal::average_seconds<"days">());
+            return add_days(( (n_units * width) * unit_seconds ) / day_seconds);
+
+        } else if constexpr (unit == "years") {
 
             return add_months(n_units, on_impossible_date, width * r_dbl(12.0));
 
@@ -560,12 +525,19 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl k = r_dbl(1.0), boo
 
 }
 
-template <string_literal Unit>
+template <string_literal Unit, timeline Axis = timeline::automatic>
 inline constexpr r_dbl time_diff(r_date x, r_date y, r_dbl width = r_dbl(1.0), roll on_impossible_date = roll::none) noexcept {
 
     constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
-    if constexpr (unit == "years") {
+    if constexpr (Axis == timeline::stopwatch && (unit == "months" || unit == "years")) {
+
+        constexpr r_dbl unit_seconds = r_dbl(internal::average_seconds<Unit>());
+        constexpr r_dbl day_seconds = r_dbl(internal::average_seconds<"days">());
+
+        return (internal::diff_days(x, y) * day_seconds) / (width * unit_seconds);
+
+    } else if constexpr (unit == "years") {
 
         return internal::diff_months(x, y, width * r_dbl(12.0), true, on_impossible_date);
 
