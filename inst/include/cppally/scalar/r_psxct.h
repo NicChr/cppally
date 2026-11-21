@@ -63,6 +63,21 @@ struct r_psxct {
         return m_tzone == nullptr;
     }
 
+    // Offset from UTC in seconds, e.g. 3600 for BST
+    constexpr r_int utc_offset() const noexcept {
+        if (!is_chrono_safe()){
+            return r_int::na();
+        }
+        if (is_utc()){
+            return r_int(0);
+        }
+        std::chrono::seconds offset{0};
+        if (!internal::utc_offset(m_tzone, chrono_tp(), offset)){
+            return r_int::na();
+        }
+        return r_int(static_cast<int>(offset.count()));
+    }
+
     private:
 
     static constexpr double chrono_min_seconds() noexcept {
@@ -232,11 +247,7 @@ struct r_psxct {
         if (!is_chrono_safe()){
             return r_psxct(unwrap(*this));
         }
-        std::chrono::seconds offset{0};
-        if (!internal::utc_offset(m_tzone, chrono_tp(), offset)){
-            return na();
-        }
-        return r_psxct(unwrap(*this) + static_cast<double>(offset.count()));
+        return r_psxct(epoch_offset() + utc_offset());
     }
 
     // Same clock time but in this timezone (i.e. different UTC offset)
