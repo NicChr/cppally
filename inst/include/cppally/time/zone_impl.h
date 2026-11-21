@@ -121,36 +121,35 @@ attribute_hidden std::mutex& zone_registry_mutex() {
   return m;
 }
 
-CPPALLY_NOINLINE const zone_record* zone_registry::add(std::string_view name, bool session) {
-  std::lock_guard<std::mutex> lock(zone_registry_mutex());
-  if (const zone_record* zone = session ? find_session(name) : find(name)) {
-    return zone;
+CPPALLY_NOINLINE const zone_record* zone_registry::add(std::string_view name, bool session) noexcept {
+  try {
+    std::lock_guard<std::mutex> lock(zone_registry_mutex());
+    if (const zone_record* zone = session ? find_session(name) : find(name)) {
+      return zone;
+    }
+    auto zone = std::make_unique<zone_record>();
+    zone->name = name;
+    zone->session = session;
+    resolve(*zone);
+    zone->next = head.load(std::memory_order_relaxed);
+    head.store(zone.get(), std::memory_order_release);
+    return zone.release();
+  } catch (...) {
+    // Unpublished, so values in it become NA
+    static const zone_record invalid_zone = [] { zone_record z; z.invalid = true; return z; }();
+    return &invalid_zone;
   }
-  auto zone = std::make_unique<zone_record>();
-  zone->name = name;
-  zone->session = session;
-  resolve(*zone);
-  zone->next = head.load(std::memory_order_relaxed);
-  head.store(zone.get(), std::memory_order_release);
-  return zone.release();
 }
 
 // TZ if environment variable TZ is set, otherwise base::Sys.timezone() (cached)
-CPPALLY_NOINLINE const zone_record* zone_registry::session_zone() {
+CPPALLY_NOINLINE const zone_record* zone_registry::session_zone() noexcept {
   std::string_view session_name;
   const char* tz_env = std::getenv("TZ");
   if (tz_env && tz_env[0] != '\0') {
     session_name = tz_env;
-  } else {
-
-    // Cache the Sys.timezone() fallback if needed
-    if (!session_cached.load(std::memory_order_acquire) && !OMP_IN_PARALLEL) {
-      cache_session_zone();
-    }
-    // If cached use it
-    if (session_cached.load(std::memory_order_acquire)) {
-      session_name = sys_timezone;
-    }
+  } else if (session_cached.load(std::memory_order_acquire)) {
+    // Cached on package load only, never lazily, as R calls can throw (e.g. interrupts). Uncached is an invalid zone
+    session_name = sys_timezone;
   }
   // Remove ":" prefix if it exists
   if (!session_name.empty() && session_name.front() == ':') {

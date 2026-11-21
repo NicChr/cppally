@@ -111,7 +111,7 @@ struct attribute_hidden zone_registry {
   }
 
   // Returns nullptr for UTC, "" is the session zone
-  const zone_record* find_or_add(std::string_view name) {
+  const zone_record* find_or_add(std::string_view name) noexcept {
     if (name == "UTC") {
       return nullptr;
     }
@@ -154,8 +154,8 @@ struct attribute_hidden zone_registry {
   }
 
   // Creates and publishes the record for `name`, unless another thread got there first
-  const zone_record* add(std::string_view name, bool session);
-  const zone_record* session_zone();
+  const zone_record* add(std::string_view name, bool session) noexcept;
+  const zone_record* session_zone() noexcept;
   void resolve(zone_record& zone) noexcept;
   bool ensure_db();
   static std::string find_sys_timezone();

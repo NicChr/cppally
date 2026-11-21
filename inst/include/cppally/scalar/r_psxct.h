@@ -140,7 +140,7 @@ struct r_psxct {
         (!r_dbl(seconds_since_epoch).is_na() && (seconds_since_epoch < chrono_min_seconds() || seconds_since_epoch >= chrono_max_seconds()) && r_dbl(seconds_since_epoch).is_finite()) ? r_dbl::na() : seconds_since_epoch
     } {}
 
-    explicit r_psxct(double seconds_since_epoch, const char* tz)
+    explicit r_psxct(double seconds_since_epoch, const char* tz) noexcept
       : r_psxct(seconds_since_epoch, tz ? internal::zone_registry::get().find_or_add(tz) : nullptr, internal::no_checks_tag{}) {}
 
     // r_psxct constructor using an already known zone_record
@@ -167,10 +167,10 @@ struct r_psxct {
     }
 
     // Same UTC instant, different timezone
-    [[nodiscard]] r_psxct with_tzone(const char* tz) const {
+    [[nodiscard]] r_psxct with_tzone(const char* tz) const noexcept {
         return r_psxct(unwrap(*this), tz);
     }
-    [[nodiscard]] r_psxct with_tzone(r_str_view tz) const {
+    [[nodiscard]] r_psxct with_tzone(r_str_view tz) const noexcept {
         return tz.is_na() ? na() : with_tzone(tz.c_str());
     }
 
@@ -178,10 +178,10 @@ struct r_psxct {
     // If the UTC offset of the timezone is different, then this UTC instant will be different.
     // NA is returned for ambiguous or non-existent date-times.
     // Supply a roll strategy to `on_impossible` and/or `on_ambiguous` to handle rolling.
-    [[nodiscard]] r_psxct replace_tzone(const char* tz, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const {
+    [[nodiscard]] r_psxct replace_tzone(const char* tz, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
         return r_psxct(unwrap(*this), tz).from_clock(to_clock(), on_impossible, on_ambiguous);
     }
-    [[nodiscard]] r_psxct replace_tzone(r_str_view tz, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const {
+    [[nodiscard]] r_psxct replace_tzone(r_str_view tz, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
         return tz.is_na() ? na() : replace_tzone(tz.c_str(), on_impossible, on_ambiguous);
     }
 
@@ -192,7 +192,7 @@ struct r_psxct {
     const char* zone = "UTC",
     roll on_impossible = roll::none,
     roll on_ambiguous = roll::none
-    ) : value{unix_seconds(year, month, day, hour, minute, second)} {
+    ) noexcept : value{unix_seconds(year, month, day, hour, minute, second)} {
         if (zone && std::string_view(zone) != "UTC") {
             m_tzone = internal::zone_registry::get().find_or_add(zone);
             *this = from_clock(r_psxct(unwrap(value)), on_impossible, on_ambiguous);
