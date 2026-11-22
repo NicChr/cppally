@@ -201,7 +201,7 @@ struct r_psxct {
 
     // Apply fn(r_psxct) to the clock time reading, mapping the result back into the input timezone
     template <typename F>
-    constexpr r_psxct using_clock(F fn, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept(noexcept(fn(std::declval<r_psxct>()))) {
+    [[nodiscard]] constexpr r_psxct using_clock(F fn, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept(noexcept(fn(std::declval<r_psxct>()))) {
         return is_utc() ? fn(*this) : using_clock_impl(fn, on_impossible, on_ambiguous);
     }
 
@@ -389,7 +389,7 @@ struct r_psxct {
     public:
 
     template <string_literal Unit, timeline Axis = timeline::automatic, Number N>
-    constexpr r_psxct add(N n, roll on_impossible = roll::none, roll on_ambiguous = roll::none, r_dbl width = r_dbl(1.0)) const noexcept {
+    [[nodiscard]] constexpr r_psxct add(N n, roll on_impossible = roll::none, roll on_ambiguous = roll::none, r_dbl width = r_dbl(1.0)) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
         constexpr timeline time_axis = Axis == timeline::automatic ? internal::timeline_from_unit<Unit>() : Axis;
@@ -419,7 +419,7 @@ struct r_psxct {
 
     // Legacy deprecated overload - Use add(N, on_impossible, on_ambiguous, width)
     template <string_literal Unit, Number N>
-    constexpr r_psxct add(N n, roll on_impossible, r_dbl width) const noexcept {
+    [[nodiscard]] constexpr r_psxct add(N n, roll on_impossible, r_dbl width) const noexcept {
         return add<Unit>(n, on_impossible, roll::none, width);
     }
 
@@ -552,7 +552,7 @@ struct r_psxct {
     // Rounding
 
     template <string_literal Unit>
-    constexpr r_psxct floor(int week_start = 7, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
+    [[nodiscard]] constexpr r_psxct floor(int week_start = 7, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
 
@@ -601,7 +601,7 @@ struct r_psxct {
     }
 
     template <string_literal Unit>
-    constexpr r_psxct ceiling(int week_start = 7, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
+    [[nodiscard]] constexpr r_psxct ceiling(int week_start = 7, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
 
         if (!seconds_since_epoch().is_finite()){
             return *this;
@@ -626,7 +626,7 @@ struct r_psxct {
     }
 
     template <string_literal Unit>
-    constexpr r_psxct round(int week_start = 7, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
+    [[nodiscard]] constexpr r_psxct round(int week_start = 7, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
 
         if (!seconds_since_epoch().is_finite()){
             return *this;
