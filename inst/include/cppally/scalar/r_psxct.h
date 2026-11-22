@@ -188,7 +188,7 @@ struct r_psxct {
     // Construct r_psxct from the year/month/day hour:minute:second clock time reading in `zone`.
     constexpr explicit r_psxct(
     int year, int month, int day,
-    int hour, int minute, double second,
+    int hour = 0, int minute = 0, double second = 0.0,
     const char* zone = "UTC",
     roll on_impossible = roll::none,
     roll on_ambiguous = roll::none
