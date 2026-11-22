@@ -14,7 +14,10 @@ integer types like `int`.
 
 ## Improvements
 
-- `cpp_source()` now registers user-tagged `[[cppally::init]]` calls.
+- `cpp_source()` now runs `[[cppally::init]]` calls when the code is loaded.
+
+- The year/month/day/hour/minute/second constructor for `r_psxct()` now defaults 
+hour, minute and second to 0. E.g. `r_psxct(2026, 1, 1)` is 2026-01-01 00:00:00 UTC.
 
 ## Timezones
 
