@@ -154,9 +154,19 @@ void test_timezones(){
     expect_identical(time_diff<"months">(march.with_tzone("UTC"), april.with_tzone("UTC")), r_dbl(743.0 / 744.0), "duration months over the gap, an hour short");
 
     r_psxct sep_bst(2024, 9, 27, 1, 30, 0.0, "Europe/London"); // + 1 clock month is 01:30 on Oct 27 (overlap)
-    expect_identical(time_diff<"months">(sep_bst, r_psxct(2024, 10, 27, 1, 30, 0.0, "Europe/London", roll::none, roll::forward)), r_dbl(1.0), "period months into the overlap");
+    // A block start in the overlap is the occurrence reached first, so the later 01:30 is an hour into a 31 day + 1 hour block
+    expect_identical(time_diff<"months">(sep_bst, r_psxct(2024, 10, 27, 1, 30, 0.0, "Europe/London", roll::none, roll::forward)), r_dbl(1.0) + r_dbl(3600.0) / r_dbl(2682000.0), "period months into the overlap, later");
     expect_identical(time_diff<"months">(sep_bst, r_psxct(2024, 10, 27, 1, 30, 0.0, "Europe/London", roll::none, roll::backward)), r_dbl(1.0), "period months into the overlap, earlier");
-    expect_identical(time_diff<"years">(r_psxct(2023, 3, 31, 1, 30, 0.0, "Europe/London"), r_psxct(2024, 3, 31, 3, 0, 0.0, "Europe/London")), r_dbl(1.0) + r_dbl(5400.0) / r_dbl(365.0 * 86400.0), "period years into the gap");
+    // Block starts in a gap take the transition, so 03:00 BST is an hour in, with the block 30 min short of 365 days
+    expect_identical(time_diff<"years">(r_psxct(2023, 3, 31, 1, 30, 0.0, "Europe/London"), r_psxct(2024, 3, 31, 3, 0, 0.0, "Europe/London")), r_dbl(1.0) + r_dbl(3600.0) / r_dbl(31534200.0), "period years into the gap");
+    // 01:00 GMT is the second 01:00, after the first 01:01 BST, so a full day plus 59 min of a 25 hour day
+    expect_identical(time_diff<"days">(r_psxct(2025, 10, 25, 1, 1, 0.0, "Europe/London"), r_psxct(2025, 10, 26, 1, 0, 0.0, "Europe/London", roll::none, roll::forward)), r_dbl(1.0) + r_dbl(3540.0) / r_dbl(90000.0), "period day into the overlap, later");
+    expect_identical(time_diff<"days">(r_psxct(2025, 10, 25, 1, 1, 0.0, "Europe/London"), r_psxct(2025, 10, 26, 1, 0, 0.0, "Europe/London", roll::none, roll::backward)), r_dbl(86340.0) / r_dbl(86400.0), "period day into the overlap, earlier");
+    // Clock minutes 01:00-01:59 start in the first pass, so the second 01:10 is 11 min into the 61 min block from 01:59 BST
+    expect_identical(time_diff<"minutes", timeline::clock>(before_overlap, r_psxct(2024, 10, 27, 1, 10, 0.0, "Europe/London", roll::none, roll::forward)), r_dbl(89.0) + r_dbl(660.0) / r_dbl(3660.0), "clock minutes into the overlap, later");
+    // x in an overlap: block starts are measured from x, so neighbours of x stay on their side of it
+    expect_identical(time_diff<"minutes", timeline::clock>(first_130, r_psxct(2024, 10, 27, 0, 29, 30.0).with_tzone("Europe/London")), r_dbl(-0.5), "clock minutes back from the first pass");
+    expect_identical(time_diff<"minutes", timeline::clock>(second_130, r_psxct(2024, 10, 27, 1, 30, 30.0).with_tzone("Europe/London")), r_dbl(0.5), "clock minutes forward from the second pass");
 
     // timeline
 

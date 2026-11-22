@@ -667,28 +667,46 @@ inline constexpr r_dbl diff_seconds(r_psxct x, r_psxct y, r_dbl n) noexcept {
     return diff_seconds(x, y) / n;
 }
 
-inline constexpr r_dbl diff_month_blocks(r_psxct x, r_psxct y, r_dbl k, r_dbl estimate, bool fractional, roll on_impossible) noexcept {
+// Start of block n relative to x: the first instant from x, in n's direction, showing x's clock + n units; skipped readings use the transition
+template <string_literal Unit>
+inline constexpr r_psxct block_start(r_psxct x, r_dbl n, roll on_impossible) noexcept {
+    if (unwrap(n) == 0.0){
+        return x;
+    }
+    auto fn = [n, on_impossible](r_psxct cl) noexcept { return cl.add<Unit>(n, on_impossible); };
+    r_psxct out = x.using_clock(fn, roll::boundary, roll::nearest);
+    // x in an overlap: the first occurrence can be before x (e.g. 01:31 BST when x is 01:30 GMT), so in this case we use the other occurrence
+    bool behind_x = unwrap(n) > 0.0 ? (out < x).is_true() : (out > x).is_true();
+    return behind_x ? x.using_clock(fn, roll::boundary, roll::away) : out;
+}
 
-    r_psxct small_int_start = x.add<"months">(estimate * k, on_impossible);
-    r_psxct big_int_end = x.add<"months">((estimate + r_dbl(1.0)) * k, on_impossible);
+template <string_literal Unit>
+inline constexpr r_dbl diff_blocks(r_psxct x, r_psxct y, r_dbl block_size, r_dbl estimate, bool fractional, roll on_impossible) noexcept {
 
-    r_dbl ratio = diff_seconds(small_int_start, y) / diff_seconds(small_int_start, big_int_end);
+    r_psxct small_intv_start = block_start<Unit>(x, estimate * block_size, on_impossible);
+    r_psxct big_intv_end = block_start<Unit>(x, (estimate + 1.0) * block_size, on_impossible);
 
-    if (ratio.is_finite() && (unwrap(ratio) < 0.0 || unwrap(ratio) >= 1.0)){
+    r_dbl ratio = diff_seconds(small_intv_start, y) / diff_seconds(small_intv_start, big_intv_end);
 
-        estimate = estimate + r_dbl(unwrap(ratio) < 0.0 ? -1.0 : 1.0);
-
-        small_int_start = x.add<"months">(estimate * k, on_impossible);
-        big_int_end = x.add<"months">((estimate + r_dbl(1.0)) * k, on_impossible);
-
-        ratio = diff_seconds(small_int_start, y) / diff_seconds(small_int_start, big_int_end);
+    // Adjust estimate until ratio is in [0, 1), usually a small number of steps
+    while (ratio.is_finite() && (unwrap(ratio) < 0.0 || unwrap(ratio) >= 1.0)){
+        if (unwrap(ratio) < 0.0){
+            estimate = estimate - 1.0;
+            big_intv_end = small_intv_start;
+            small_intv_start = block_start<Unit>(x, estimate * block_size, on_impossible);
+        } else {
+            estimate = estimate + 1.0;
+            small_intv_start = big_intv_end;
+            big_intv_end = block_start<Unit>(x, (estimate + 1.0) * block_size, on_impossible);
+        }
+        ratio = diff_seconds(small_intv_start, y) / diff_seconds(small_intv_start, big_intv_end);
     }
 
-    if (small_int_start.is_na()){
+    if (small_intv_start.is_na()){
         return r_dbl::na();
     }
 
-    if (!fractional || static_cast<double>(y) == static_cast<double>(small_int_start)){
+    if (!fractional || static_cast<double>(y) == static_cast<double>(small_intv_start)){
         return estimate;
     }
 
@@ -701,15 +719,17 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k, bool fractiona
         return ( y.seconds_since_epoch() - x.seconds_since_epoch() ) / k;
     }
 
-    y = x.zoned_psxct(unwrap(y)).to_clock();
-    x = x.to_clock();
+    // Clock dates for the estimate only
+    r_date x_date = x.to_clock().as_date();
+    r_date y_date = x.zoned_psxct(unwrap(y)).to_clock().as_date();
 
-    r_dbl out = diff_months(x.as_date(), y.as_date(), r_dbl(1.0), false, on_impossible);
+    // Whole month estimate
+    r_dbl out = diff_months(x_date, y_date, r_dbl(1.0), false, on_impossible);
 
     if (unwrap(k) != 1.0){
-        r_dbl exact_months = out.is_na() ? out : diff_month_blocks(x, y, r_dbl(1.0), out, true, on_impossible);
+        r_dbl exact_months = out.is_na() ? out : diff_blocks<"months">(x, y, r_dbl(1.0), out, true, on_impossible);
         if (exact_months.is_na()){
-            out = diff_months(x.as_date(), y.as_date(), k, false, on_impossible);
+            out = diff_months(x_date, y_date, k, false, on_impossible);
         } else {
             out = r_dbl(floor2(exact_months / k));
         }
@@ -719,7 +739,7 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k, bool fractiona
         return out;
     }
 
-    return diff_month_blocks(x, y, k, /*estimate = */ out, fractional, on_impossible);
+    return diff_blocks<"months">(x, y, k, /*estimate = */ out, fractional, on_impossible);
 }
 
 }
@@ -749,7 +769,15 @@ inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width, roll on_impo
 
     } else {
 
-        return internal::diff_seconds(x.to_clock(), x.zoned_psxct(unwrap(y)).to_clock(), width * r_dbl(internal::average_seconds<Unit>()));
+        r_dbl block = width * r_dbl(internal::average_seconds<Unit>());
+        if (x.is_utc()){
+            return internal::diff_seconds(x, y, block);
+        }
+        r_dbl clock_diff = internal::diff_seconds(x.to_clock(), x.zoned_psxct(unwrap(y)).to_clock(), block);
+        if (!clock_diff.is_finite()){
+            return clock_diff;
+        }
+        return internal::diff_blocks<Unit>(x, y, width, r_dbl(internal::floor2(unwrap(clock_diff))), true, roll::none);
 
     }
 }
