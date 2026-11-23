@@ -1067,7 +1067,7 @@ public:
         }
     }
 
-    // Must run before any get_info() call. Main thread only
+    // Must run before any get_info() call
     void adjust(const std::vector<rule>& rules) {
         if (!adjusted_) {
             adjust_infos(rules);

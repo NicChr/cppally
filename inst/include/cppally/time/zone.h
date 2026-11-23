@@ -48,7 +48,6 @@ struct attribute_hidden offset_table {
 
   offset_table() = default;
 
-  // Not thread-safe, zone_registry serialises calls
   [[gnu::cold]] explicit offset_table(const tz::time_zone& zone);
 
   // Whole cycles to subtract from an instant past cycle_end to land it in the table's final 400 years
