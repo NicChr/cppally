@@ -63,7 +63,7 @@ struct r_psxct {
         return m_tzone == nullptr;
     }
 
-    // Offset from UTC in seconds, e.g. 3600 for BST
+    // Offset from UTC in seconds (e.g. 3600 for BST, 0 for GMT)
     constexpr r_int utc_offset() const noexcept {
         if (!is_chrono_safe()){
             return r_int::na();
@@ -76,6 +76,23 @@ struct r_psxct {
             return r_int::na();
         }
         return r_int(static_cast<int>(offset.count()));
+    }
+
+    // Timezone offset abbreviation (e.g. GMT, BST, EST, EDT)
+    constexpr const char* offset_abbrev() const noexcept {
+        if (!is_chrono_safe()){
+            return "";
+        }
+        if (is_utc()){
+            return "UTC";
+        }
+        std::chrono::seconds offset{0};
+        const char* abbrev = "";
+        if (internal::utc_offset(m_tzone, chrono_tp(), offset, &abbrev)){
+            return abbrev;
+        } else {
+            return "";
+        }
     }
 
     private:
@@ -493,7 +510,7 @@ struct r_psxct {
         }
 
         std::chrono::seconds offset{0};
-        std::string abbrev;
+        const char* abbrev = "";
         if (!internal::utc_offset(m_tzone, chrono_tp(), offset, &abbrev)){
             return r_str::na();
         }
@@ -528,7 +545,7 @@ struct r_psxct {
             static_cast<uint32_t>(hms.minutes().count()),
             static_cast<uint32_t>(hms.seconds().count()),
             frac + 1,
-            abbrev.c_str()
+            abbrev
         );
         return r_str(static_cast<const char*>(buf));
     }

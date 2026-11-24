@@ -161,7 +161,7 @@ struct attribute_hidden zone_registry {
 };
 
 // UTC offset in force at `tp` (0 for UTC), plus its abbreviation if `abbrev` is given. False for an unknown zone or if the lookup fails
-inline bool utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out, std::string* abbrev = nullptr) noexcept {
+inline bool utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std::chrono::seconds& out, const char** abbrev = nullptr) noexcept {
   try {
     if (!zone) {
       out = std::chrono::seconds{0};
@@ -179,7 +179,7 @@ inline bool utc_offset(const zone_record* zone, std::chrono::sys_seconds tp, std
     if (i >= 0) [[likely]] {
       out = std::chrono::seconds{zone->table.offsets[i]};
       if (abbrev) {
-        *abbrev = zone->table.abbrevs[zone->table.abbrev_ids[i]];
+        *abbrev = zone->table.abbrevs[zone->table.abbrev_ids[i]].c_str();
       }
       return true;
     }
