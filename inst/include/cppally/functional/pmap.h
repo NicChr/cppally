@@ -67,11 +67,14 @@ auto pmap_impl(F fn, const r_vec<T>& vec) {
 
   const r_size_t n = vec.length();
 
-  if (n == 0){
-    return r_vec<out_t>();
+  r_vec<out_t> out(n);
+  if constexpr (RPsxctType<out_t> && RPsxctType<T>) {
+    out.set_tzone(vec.tzone());
   }
 
-  r_vec<out_t> out(n);
+  if (n == 0){
+    return out;
+  }
 
   constexpr bool vectorisable_or_parallelisable = RVectorisable<T> && RVectorisable<out_t>;
 
@@ -105,12 +108,16 @@ auto pmap_impl(F fn, const r_vec<T>& vec1, const r_vec<U>& vec2) {
   const std::array<r_size_t, 2> lens{ vec1.length(), vec2.length() };
   const r_size_t n = pmap_extent(lens, recycle);
 
+  r_vec<out_t> out(n);
+  if constexpr (RPsxctType<out_t> && RPsxctType<T>) {
+    out.set_tzone(vec1.tzone());
+  }
+
   if (n == 0){
-    return r_vec<out_t>();
+    return out;
   }
 
   if (recycle && (lens[0] == 1 || lens[1] == 1)){
-    r_vec<out_t> out(n);
 
     if (lens[0] == 1){ // If LHS is a scalar
       const T val = vec1.get(0);
@@ -145,8 +152,6 @@ auto pmap_impl(F fn, const r_vec<T>& vec1, const r_vec<U>& vec2) {
     }
     return out;
   }
-
-  r_vec<out_t> out(n);
 
   if (recycle){
     // Can't use SIMD or multiple threads here. Per-vector counters wrap via recycle_index
@@ -196,11 +201,18 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
     const std::array<r_size_t, n_vecs> lens{ vecs.length()... };
     const r_size_t n = pmap_extent(lens, recycle);
 
-    if (n == 0){
-      return r_vec<out_t>();
+    r_vec<out_t> out(n);
+    if constexpr (RPsxctType<out_t>) {
+      [&]<typename T0, typename... Rest>(const r_vec<T0>& first, const r_vec<Rest>&...) {
+        if constexpr (RPsxctType<T0>) {
+          out.set_tzone(first.tzone());
+        }
+      }(vecs...);
     }
 
-    r_vec<out_t> out(n);
+    if (n == 0){
+      return out;
+    }
 
     if (recycle){
       // Can't use SIMD or multiple threads here. Per-vector counters wrap via recycle_index
