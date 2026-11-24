@@ -17,7 +17,7 @@ namespace internal {
 
 template <string_literal Unit> 
 consteval timeline timeline_from_unit() noexcept {
-    constexpr std::string_view unit = normalised_unit<Unit>.view();
+    constexpr std::string_view unit = normalised_time_unit<Unit>.view();
     constexpr bool period_unit = unit == "days" || unit == "weeks" || unit == "months" || unit == "years";
     return period_unit ? timeline::clock : timeline::stopwatch;
 }

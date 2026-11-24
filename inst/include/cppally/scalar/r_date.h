@@ -222,7 +222,7 @@ struct r_date {
     template <string_literal Unit, timeline Axis = timeline::automatic, Number N>
     [[nodiscard]] constexpr r_date add(N n, roll on_impossible = roll::none, r_dbl width = r_dbl(1.0)) const noexcept {
 
-        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
+        constexpr std::string_view unit = internal::normalised_time_unit<Unit>.view();
         constexpr timeline time_axis = Axis == timeline::automatic ? internal::timeline_from_unit<Unit>() : Axis;
 
         r_dbl n_units = internal::coerce_number<r_dbl>(n);
@@ -366,7 +366,7 @@ struct r_date {
     template <string_literal Unit>
     [[nodiscard]] constexpr r_date floor(int week_start = 7) const noexcept {
 
-        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
+        constexpr std::string_view unit = internal::normalised_time_unit<Unit>.view();
 
         if (!days_since_epoch().is_finite()){
             return *this;
@@ -529,7 +529,7 @@ inline constexpr r_dbl diff_months(r_date x, r_date y, r_dbl k = r_dbl(1.0), boo
 template <string_literal Unit, timeline Axis = timeline::automatic>
 inline constexpr r_dbl time_diff(r_date x, r_date y, r_dbl width = r_dbl(1.0), roll on_impossible = roll::none) noexcept {
 
-    constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
+    constexpr std::string_view unit = internal::normalised_time_unit<Unit>.view();
     constexpr timeline time_axis = Axis == timeline::automatic ? internal::timeline_from_unit<Unit>() : Axis;
 
     if constexpr (time_axis == timeline::stopwatch && (unit == "months" || unit == "years")) {

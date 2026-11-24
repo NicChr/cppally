@@ -391,7 +391,7 @@ struct r_psxct {
     template <string_literal Unit, timeline Axis = timeline::automatic, Number N>
     [[nodiscard]] constexpr r_psxct add(N n, roll on_impossible = roll::none, roll on_ambiguous = roll::none, r_dbl width = r_dbl(1.0)) const noexcept {
 
-        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
+        constexpr std::string_view unit = internal::normalised_time_unit<Unit>.view();
         constexpr timeline time_axis = Axis == timeline::automatic ? internal::timeline_from_unit<Unit>() : Axis;
 
         if constexpr (time_axis == timeline::clock){
@@ -554,7 +554,7 @@ struct r_psxct {
     template <string_literal Unit>
     [[nodiscard]] constexpr r_psxct floor(int week_start = 7, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
 
-        constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
+        constexpr std::string_view unit = internal::normalised_time_unit<Unit>.view();
 
         if (!seconds_since_epoch().is_finite()){
             return *this;
@@ -747,7 +747,7 @@ inline constexpr r_dbl diff_months(r_psxct x, r_psxct y, r_dbl k, bool fractiona
 template <string_literal Unit, timeline Axis>
 inline constexpr r_dbl time_diff(r_psxct x, r_psxct y, r_dbl width, roll on_impossible) noexcept {
 
-    constexpr std::string_view unit = internal::normalised_unit<Unit>.view();
+    constexpr std::string_view unit = internal::normalised_time_unit<Unit>.view();
     constexpr timeline time_axis = Axis == timeline::automatic ? internal::timeline_from_unit<Unit>() : Axis;
 
     if constexpr (time_axis == timeline::stopwatch && unit == "seconds") {

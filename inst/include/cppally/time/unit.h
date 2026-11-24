@@ -37,13 +37,13 @@ consteval auto normalise_time_unit() noexcept {
 }
 
 template <string_literal Unit>
-constexpr auto normalised_unit = normalise_time_unit<Unit>();
+constexpr auto normalised_time_unit = normalise_time_unit<Unit>();
 
 // Average seconds based on Gregorian calendar
 template <string_literal Unit>
 consteval double average_seconds() noexcept {
     
-    constexpr std::string_view unit = normalised_unit<Unit>.view();
+    constexpr std::string_view unit = normalised_time_unit<Unit>.view();
 
     // Average number of seconds per unit in a 400-year period (ignoring leap seconds)
 
