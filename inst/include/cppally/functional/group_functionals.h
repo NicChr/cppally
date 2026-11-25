@@ -112,7 +112,11 @@ auto reduce_by_group(const r_vec<T>& x, const groups& g, F fn, bool na_skip = fa
 
     internal::reduce_by_group_impl<true>(x, g, accs, fn, na_skip);
 
-    return as<r_vec<acc_t>>(accs);
+    r_vec<acc_t> out = as<r_vec<acc_t>>(accs);
+    if constexpr (RPsxctType<acc_t> && RPsxctType<T>) {
+        out.set_tzone(x.tzone());
+    }
+    return out;
 }
 
 // Groups with no elements reduce to `init`
@@ -129,7 +133,11 @@ auto reduce_by_group(const r_vec<T>& x, const groups& g, F fn, Acc init, bool na
 
     internal::reduce_by_group_impl<false>(x, g, accs, fn, na_skip);
 
-    return as<r_vec<acc_t>>(accs);
+    r_vec<acc_t> out = as<r_vec<acc_t>>(accs);
+    if constexpr (RPsxctType<acc_t> && RPsxctType<T>) {
+        out.set_tzone(x.tzone());
+    }
+    return out;
 }
 
 // Apply fn to each group, in group ID order
@@ -189,6 +197,9 @@ CPPALLY_NOINLINE auto apply_by_group(const T& x, const groups& g, F fn) {
     #endif
 
     r_vec<ret_t> out(ng);
+    if constexpr (RPsxctType<ret_t> && RPsxctType<data_t>) {
+        out.set_tzone(x.tzone());
+    }
 
     for (int k = 0; k < ng; ++k){
 
