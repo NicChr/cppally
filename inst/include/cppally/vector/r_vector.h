@@ -949,6 +949,9 @@ struct r_vec {
     static_assert(!internal::fold_result<acc_t>::stops,
                   "cumulative_reduce combiner must not short-circuit (no `done()`)");
     r_vec<acc_t> out(length() - from);
+    if constexpr (RPsxctType<acc_t> && RPsxctType<T>) {
+      out.set_tzone(tzone());
+    }
     r_size_t k = 0;
     reduce([&](const acc_t& acc, T x){
       acc_t next = (na_skip && is_na(x)) ? acc : fn(acc, x);
@@ -967,6 +970,9 @@ struct r_vec {
       return as<r_vec<acc_t>>(*this);
     }
     r_vec<acc_t> out(n);
+    if constexpr (RPsxctType<acc_t> && RPsxctType<T>) {
+      out.set_tzone(tzone());
+    }
     acc_t acc = as<acc_t>(view(0));
     out.set(r_size_t{0}, acc);
     for (r_size_t i = 1; i < n; ++i){
