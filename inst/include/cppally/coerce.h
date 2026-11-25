@@ -178,6 +178,11 @@ template <RVector T, CppVector U>
 inline T as_impl(const U& x) {
   r_size_t n = x.size();
   T out(n);
+  if constexpr (RPsxctType<typename T::data_type> && RPsxctType<typename U::value_type>) {
+    if (n > 0) {
+      out.set_tzone(x[0].tzone());
+    }
+  }
   for (r_size_t i = 0; i < n; ++i) out.set(i, x[i]);
   return out;
 }
