@@ -363,7 +363,9 @@ struct r_date {
 
     // Rounding
 
-    template <string_literal Unit>
+    // timeline is ignored here but exists for flexible template programming with r_date/r_psxct
+    
+    template <string_literal Unit, timeline Axis = timeline::automatic>
     [[nodiscard]] constexpr r_date floor(int week_start = 7) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_time_unit<Unit>.view();
@@ -407,7 +409,7 @@ struct r_date {
         }
     }
 
-    template <string_literal Unit>
+    template <string_literal Unit, timeline Axis = timeline::automatic>
     [[nodiscard]] constexpr r_date ceiling(int week_start = 7) const noexcept {
 
         if (!days_since_epoch().is_finite()){
@@ -428,7 +430,7 @@ struct r_date {
         return add<Unit>(1, roll::backward).template floor<Unit>(week_start);
     }
 
-    template <string_literal Unit>
+    template <string_literal Unit, timeline Axis = timeline::automatic>
     [[nodiscard]] constexpr r_date round(int week_start = 7) const noexcept {
 
         if (!days_since_epoch().is_finite()){

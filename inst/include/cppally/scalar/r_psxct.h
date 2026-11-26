@@ -283,10 +283,11 @@ struct r_psxct {
         // Sub-second fractions are dropped at transition boundaries
         return zoned_psxct(static_cast<double>(sys.time_since_epoch().count()) + (at_boundary ? 0.0 : clock.chrono_frac()));
     }
-
-    template <string_literal Unit>
+    
+    template <string_literal Unit, timeline Axis>
     constexpr r_psxct from_clock(r_psxct before, r_psxct after, roll on_impossible, roll on_ambiguous) const noexcept {
-        if constexpr (internal::timeline_from_unit<Unit>() == timeline::clock){
+        constexpr timeline time_axis = Axis == timeline::automatic ? internal::timeline_from_unit<Unit>() : Axis;
+        if constexpr (time_axis == timeline::clock){
             bool moving_forward = !(after < before).is_true();
             return from_clock(after, internal::resolve_roll(on_impossible, moving_forward), internal::resolve_roll(on_ambiguous, moving_forward));
         } else {
@@ -294,10 +295,10 @@ struct r_psxct {
         }
     }
 
-    template <string_literal Unit, typename F>
+    template <string_literal Unit, timeline Axis, typename F>
     CPPALLY_NOINLINE constexpr r_psxct on_clock(F fn, roll on_impossible, roll on_ambiguous) const noexcept {
         r_psxct cl = to_clock();
-        return from_clock<Unit>(cl, fn(cl), on_impossible, on_ambiguous);
+        return from_clock<Unit, Axis>(cl, fn(cl), on_impossible, on_ambiguous);
     }
 
     template <typename F>
@@ -568,7 +569,7 @@ struct r_psxct {
 
     // Rounding
 
-    template <string_literal Unit>
+    template <string_literal Unit, timeline Axis = timeline::automatic>
     [[nodiscard]] constexpr r_psxct floor(int week_start = 7, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
 
         constexpr std::string_view unit = internal::normalised_time_unit<Unit>.view();
@@ -577,9 +578,8 @@ struct r_psxct {
             return *this;
         }
 
-        // In a zone, rounding happens on its clock time
         if (!is_utc()){
-            return on_clock<Unit>([&](r_psxct cl){ return cl.template floor<Unit>(week_start); }, on_impossible, on_ambiguous);
+            return on_clock<Unit, Axis>([&](r_psxct cl){ return cl.template floor<Unit>(week_start); }, on_impossible, on_ambiguous);
         }
 
         using namespace std::chrono;
@@ -617,7 +617,7 @@ struct r_psxct {
         }
     }
 
-    template <string_literal Unit>
+    template <string_literal Unit, timeline Axis = timeline::automatic>
     [[nodiscard]] constexpr r_psxct ceiling(int week_start = 7, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
 
         if (!seconds_since_epoch().is_finite()){
@@ -625,7 +625,7 @@ struct r_psxct {
         }
 
         if (!is_utc()){
-            return on_clock<Unit>([&](r_psxct cl){ return cl.template ceiling<Unit>(week_start); }, on_impossible, on_ambiguous);
+            return on_clock<Unit, Axis>([&](r_psxct cl){ return cl.template ceiling<Unit>(week_start); }, on_impossible, on_ambiguous);
         }
 
         r_psxct lower = floor<Unit>(week_start);
@@ -642,7 +642,7 @@ struct r_psxct {
         return add<Unit>(1, roll::backward).template floor<Unit>(week_start);
     }
 
-    template <string_literal Unit>
+    template <string_literal Unit, timeline Axis = timeline::automatic>
     [[nodiscard]] constexpr r_psxct round(int week_start = 7, roll on_impossible = roll::none, roll on_ambiguous = roll::none) const noexcept {
 
         if (!seconds_since_epoch().is_finite()){
@@ -650,7 +650,7 @@ struct r_psxct {
         }
 
         if (!is_utc()){
-            return on_clock<Unit>([&](r_psxct cl){ return cl.template round<Unit>(week_start); }, on_impossible, on_ambiguous);
+            return on_clock<Unit, Axis>([&](r_psxct cl){ return cl.template round<Unit>(week_start); }, on_impossible, on_ambiguous);
         }
 
         r_psxct lower = floor<Unit>(week_start);
