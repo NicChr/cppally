@@ -305,6 +305,12 @@ struct r_vec {
 
     r_vec<r_str> nms(static_cast<r_size_t>(elements.size()));
 
+    if constexpr (RPsxctType<T>){
+      if (elements.size() > 0){
+        set_tzone(elements.begin()->value.tzone());
+      }
+    }
+
     r_size_t i = 0;
     for (const auto& [name, val] : elements) {
       set(i, val);
