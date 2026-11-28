@@ -11,6 +11,7 @@
 #include <cppally/scalar/coerce_scalars.h>
 #include <cppally/vector/vector_utils.h>
 #include <cppally/vector/vector_names.h>
+#include <cppally/time/zone.h>
 #include <cppally/r_function.h>
 #include <cppally/identical.h>
 #include <cppally/named_arg.h>
@@ -71,47 +72,6 @@ inline r_sexp make_pairlist(Args... args) {
   }
 }
 
-// Internal unsafe constructors when we are reconstructing the value from its unwrapped value
-// Useful for avoiding re-checking SEXP types like for CHARSXP, where r_str(CHARSXP) would by default check that 
-// TYPEOF satisfies CHARSXP
-
-// the _view version is to avoid re-protecting underlying SEXP when it will immediately be protected by its parent vector
-
-template <RVal T, typename U>
-requires (is<unwrap_t<T>, U> && std::is_constructible_v<T, const U&, internal::view_tag, internal::no_checks_tag>)
-constexpr T unsafe_reconstruct_view(const U& x) noexcept {
-  // This must always be nothrow constructible as it is used in omp simd loops
-  static_assert(std::is_nothrow_constructible_v<T, const U&, internal::view_tag, internal::no_checks_tag>);
-  return T(x, internal::view_tag{}, internal::no_checks_tag{});
-}
-
-template <RVal T, typename U>
-requires (is<unwrap_t<T>, U> && !std::is_constructible_v<T, const U&, internal::view_tag, internal::no_checks_tag>)
-constexpr T unsafe_reconstruct_view(const U& x) noexcept(
-  std::is_constructible_v<T, const U&, internal::view_tag>
-  ? std::is_nothrow_constructible_v<T, const U&, internal::view_tag>
-  : std::is_nothrow_constructible_v<T, const U&>
-) {
-  if constexpr (std::is_constructible_v<T, const U&, internal::view_tag>){
-    return T(x, internal::view_tag{});
-  } else {
-    return T(x);
-  }
-}
-
-// No checks (like SEXP type checking)
-template <RVal T, typename U>
-requires (is<unwrap_t<T>, U> && std::is_constructible_v<T, const U&, internal::no_checks_tag>)
-constexpr T unsafe_reconstruct(const U& x) noexcept(std::is_nothrow_constructible_v<T, const U&, internal::no_checks_tag>) {
-  return T(x, internal::no_checks_tag{});
-}
-
-template <RVal T, typename U>
-requires (is<unwrap_t<T>, U> && !std::is_constructible_v<T, const U&, internal::no_checks_tag>)
-constexpr T unsafe_reconstruct(const U& x) noexcept(std::is_nothrow_constructible_v<T, const U&>){
-  return T(x);
-}
-
 // Concept helpers for location-based subset helpers
 template <typename T>
 concept RSubscript = any<T, r_lgl, r_int, r_int64, r_str_view, r_str>;
@@ -147,6 +107,11 @@ r_sexp r_function::operator()(Args&&... args) const {
 #ifdef CPPALLY_HAS_RESIZABLE_VECTORS
   struct resizable {};
 #endif
+
+namespace internal {
+template <typename T>
+void resync_tzone(T& x);
+}
 
 template <RVal T>
 struct r_vec {
@@ -194,6 +159,9 @@ struct r_vec {
   // Any two r_vec wrappers around the same SEXP point to the same names_map via the registry
   mutable internal::names_map::ptr cached_names;
 
+  // Cached time-zone
+  [[no_unique_address]] std::conditional_t<RPsxctType<T>, const internal::zone_record*, internal::no_zone> m_zone{};
+
   void initialise_data_pointer(){
 #ifdef CPPALLY_PRESERVE_ALTREP
     // For ALTREP leave m_data null so get/view go through elt<T>
@@ -204,6 +172,24 @@ struct r_vec {
       m_data = is_altrep() ? safe[internal::vector_ptr_ro<T>](value) : internal::vector_ptr_ro<T>(value);
     } else {
       m_data = is_altrep() ? safe[internal::vector_ptr<T>](value) : internal::vector_ptr<T>(value);
+    }
+  }
+
+  template <typename U>
+  friend void internal::resync_tzone(U& x);
+
+  void cache_zone(){
+    if constexpr (RPsxctType<T>){
+      if (is_null()){
+        m_zone = nullptr;
+        return;
+      }
+      r_vec<r_str_view> tz(Rf_getAttrib(value, cached_sym<"tzone">()), internal::view_tag{});
+      if (tz.is_empty()){
+        m_zone = internal::zone_registry::get().find_or_add(std::string_view());
+      } else {
+        m_zone = internal::zone_registry::get().find_or_add(tz.view(r_size_t(0)).cpp_str());
+      }
     }
   }
 
@@ -229,6 +215,7 @@ struct r_vec {
     r_vec<T> new_vec = copy();
     *this = std::move(new_vec);
   }
+
 
   public:
 
@@ -281,6 +268,7 @@ struct r_vec {
       validate_class<T>();
       initialise_length_and_capacity();
       initialise_data_pointer();
+      cache_zone();
     }
   }
 
@@ -293,11 +281,18 @@ struct r_vec {
     if (!is_null()){
       initialise_length_and_capacity();
       initialise_data_pointer();
+      cache_zone();
     }
   }
   explicit r_vec(SEXP s, internal::view_tag, internal::no_checks_tag) : r_vec(r_sexp(s, internal::view_tag{}), internal::no_checks_tag{}){}
 
   explicit r_vec(std::initializer_list<T> elements) : r_vec(static_cast<r_size_t>(elements.size())) {
+
+    if constexpr (RPsxctType<T>){
+      if (elements.size() > 0){
+        set_tzone(elements.begin()->tzone());
+      }
+    }
     
     r_size_t i = 0;
     for (const auto& elem : elements) {
@@ -309,6 +304,12 @@ struct r_vec {
   explicit r_vec(std::initializer_list<internal::named_arg<T>> elements) : r_vec(static_cast<r_size_t>(elements.size())) {
 
     r_vec<r_str> nms(static_cast<r_size_t>(elements.size()));
+
+    if constexpr (RPsxctType<T>){
+      if (elements.size() > 0){
+        set_tzone(elements.begin()->value.tzone());
+      }
+    }
 
     r_size_t i = 0;
     for (const auto& [name, val] : elements) {
@@ -451,6 +452,7 @@ struct r_vec {
     #endif
 
     safe[SHALLOW_DUPLICATE_ATTRIB](new_vec, *this);
+    new_vec.m_zone = m_zone;
     return new_vec;
   }
 
@@ -491,6 +493,7 @@ struct r_vec {
     if (auto sp = internal::levels_cache().try_lookup(*this)) [[unlikely]] {
       sp->invalidate();
     }
+    cache_zone();
   }
 
   // ----- Names -----
@@ -620,19 +623,60 @@ struct r_vec {
 
   // ----- Element access -----
 
+  // Internal, do NOT use.
+  // This exists to reconstruct r_psxct timezone.
+  T unsafe_reconstruct(const unwrap_t<T>& x) const noexcept(
+    std::is_constructible_v<T, const unwrap_t<T>&, internal::no_checks_tag>
+    ? std::is_nothrow_constructible_v<T, const unwrap_t<T>&, internal::no_checks_tag>
+    : std::is_nothrow_constructible_v<T, const unwrap_t<T>&>
+  ) {
+    if constexpr (RPsxctType<T>){
+      return T(x, m_zone, internal::no_checks_tag{});
+    } else if constexpr (std::is_constructible_v<T, const unwrap_t<T>&, internal::no_checks_tag>){
+      return T(x, internal::no_checks_tag{});
+    } else {
+      return T(x);
+    }
+  }
   
+  template <typename U>
+  T unsafe_reconstruct(const U&) const = delete;
+
+  // Internal, do NOT use.
+  T unsafe_reconstruct_view(const unwrap_t<T>& x) const noexcept(
+    std::is_constructible_v<T, const unwrap_t<T>&, internal::view_tag, internal::no_checks_tag>
+    ? std::is_nothrow_constructible_v<T, const unwrap_t<T>&, internal::view_tag, internal::no_checks_tag>
+    : std::is_constructible_v<T, const unwrap_t<T>&, internal::view_tag>
+    ? std::is_nothrow_constructible_v<T, const unwrap_t<T>&, internal::view_tag>
+    : std::is_nothrow_constructible_v<T, const unwrap_t<T>&>
+  ) {
+    if constexpr (RPsxctType<T>){
+      return T(x, m_zone, internal::no_checks_tag{});
+    } else if constexpr (std::is_constructible_v<T, const unwrap_t<T>&, internal::view_tag, internal::no_checks_tag>){
+      // Must be nothrow as it's used in OMP SIMD loops
+      static_assert(std::is_nothrow_constructible_v<T, const unwrap_t<T>&, internal::view_tag, internal::no_checks_tag>);
+      return T(x, internal::view_tag{}, internal::no_checks_tag{});
+    } else if constexpr (std::is_constructible_v<T, const unwrap_t<T>&, internal::view_tag>){
+      return T(x, internal::view_tag{});
+    } else {
+      return T(x);
+    }
+  }
+  template <typename U>
+  T unsafe_reconstruct_view(const U&) const = delete;
+
   #ifdef CPPALLY_PRESERVE_ALTREP
   // Get element by index (no bounds-check)
   template <IntegerNumber I>
   T get(I index) const {
     unwrap_t<I> i = unwrap(index);
-    return internal::unsafe_reconstruct<T>(is_materialised() ? m_data[i] : internal::elt<T>(*this, i));
+    return unsafe_reconstruct(is_materialised() ? m_data[i] : internal::elt<T>(*this, i));
   }
   #else
   // Get element by index (no bounds-check)
   template <IntegerNumber I>
-  T get(I index) const noexcept(noexcept(internal::unsafe_reconstruct<T>(m_data[unwrap(index)]))) {
-    return internal::unsafe_reconstruct<T>(m_data[unwrap(index)]);
+  T get(I index) const noexcept(noexcept(unsafe_reconstruct(m_data[unwrap(index)]))) {
+    return unsafe_reconstruct(m_data[unwrap(index)]);
   }
   #endif
   
@@ -652,14 +696,14 @@ struct r_vec {
   template <IntegerNumber I>
   T view(I index) const {
     unwrap_t<I> i = unwrap(index);
-    return internal::unsafe_reconstruct_view<T>(is_materialised() ? m_data[i] : internal::elt<T>(*this, i));
+    return unsafe_reconstruct_view(is_materialised() ? m_data[i] : internal::elt<T>(*this, i));
   }
   #else
   // View element (like `get()` but elements must be short-lived)
   // Element must not outlive the parent vector
   template <IntegerNumber I>
-  T view(I index) const noexcept(noexcept(internal::unsafe_reconstruct_view<T>(m_data[unwrap(index)]))) {
-    return internal::unsafe_reconstruct_view<T>(m_data[unwrap(index)]);
+  T view(I index) const noexcept(noexcept(unsafe_reconstruct_view(m_data[unwrap(index)]))) {
+    return unsafe_reconstruct_view(m_data[unwrap(index)]);
   }
   #endif
 
@@ -738,7 +782,7 @@ struct r_vec {
   template <bool simd = false, bool parallel = false, RVal U>
   void map_impl(r_vec<U>& target, std::invocable<r_size_t, T> auto fn) const {
 
-    #define CPPALLY_DO_APPLY for (r_size_t i = 0; i < n; ++i) p_target[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x[i])));
+    #define CPPALLY_DO_APPLY for (r_size_t i = 0; i < n; ++i) p_target[i] = unwrap(fn(i, unsafe_reconstruct_view(p_x[i])));
 
     r_size_t n = length();
 
@@ -911,6 +955,9 @@ struct r_vec {
     static_assert(!internal::fold_result<acc_t>::stops,
                   "cumulative_reduce combiner must not short-circuit (no `done()`)");
     r_vec<acc_t> out(length() - from);
+    if constexpr (RPsxctType<acc_t> && RPsxctType<T>) {
+      out.set_tzone(tzone());
+    }
     r_size_t k = 0;
     reduce([&](const acc_t& acc, T x){
       acc_t next = (na_skip && is_na(x)) ? acc : fn(acc, x);
@@ -929,6 +976,9 @@ struct r_vec {
       return as<r_vec<acc_t>>(*this);
     }
     r_vec<acc_t> out(n);
+    if constexpr (RPsxctType<acc_t> && RPsxctType<T>) {
+      out.set_tzone(tzone());
+    }
     acc_t acc = as<acc_t>(view(0));
     out.set(r_size_t{0}, acc);
     for (r_size_t i = 1; i < n; ++i){
@@ -950,7 +1000,7 @@ struct r_vec {
     r_size_t n = length();
 
     static_assert(
-      noexcept(is_na(internal::unsafe_reconstruct_view<T>(*m_data))),
+      noexcept(is_na(unsafe_reconstruct_view(*m_data))),
       "internal error in na_count: constructor must be non-throwing"
     );
 
@@ -963,12 +1013,12 @@ struct r_vec {
       if (n_threads > 1){
         OMP_PARALLEL_FOR_SIMD_REDUCTION1(n_threads, +:out)
         for (r_size_t i = 0; i < n; ++i){
-          out += static_cast<r_size_t>(is_na(internal::unsafe_reconstruct_view<T>(p[i])));
+          out += static_cast<r_size_t>(is_na(unsafe_reconstruct_view(p[i])));
         }
       } else {
         OMP_SIMD_REDUCTION1(+:out)
         for (r_size_t i = 0; i < n; ++i){
-          out += static_cast<r_size_t>(is_na(internal::unsafe_reconstruct_view<T>(p[i])));
+          out += static_cast<r_size_t>(is_na(unsafe_reconstruct_view(p[i])));
         }
       }
     } else {
@@ -1326,25 +1376,28 @@ struct r_vec {
 
   // POSIXct-only members
   r_str tzone() const requires RPsxctType<T> {
-    r_vec<r_str_view> tz(Rf_getAttrib(*this, cached_sym<"tzone">()));
-    
-    if (tz.length() == 0){
-      return cached_str<"">();
-    } else {
-      r_str_view tz_str = tz.view(0);
-      if (is_na(tz_str)) [[unlikely]] {
-        abort("tzone cannot be NA");
-      }
-      return r_str(tz_str);
-    }
+    return m_zone ? r_str(m_zone->label()) : cached_str<"UTC">();
   }
 
   void set_tzone(const char* tz) requires RPsxctType<T> {
+    if (!tz) {
+      tz = "UTC";
+    }
     if (is_null()) [[unlikely]] {
       *this = r_vec<T>();
     }
-    maybe_ensure_exclusive();
-    safe[Rf_setAttrib](*this, cached_sym<"tzone">(), r_vec<r_str>({ r_str(tz) }));
+    std::string_view current_tz = m_zone ? std::string_view(m_zone->label()) : std::string_view("UTC");
+    std::string_view new_tz(tz);
+    if (new_tz != current_tz){
+      maybe_ensure_exclusive();
+      safe[Rf_setAttrib](*this, cached_sym<"tzone">(), r_vec<r_str>({ r_str(tz) }));
+    }
+    // Always re-cache because the session timezone may have also changed since last cache
+    cache_zone();
+  }
+
+  void set_tzone(r_str_view tz) requires RPsxctType<T> {
+    set_tzone(tz.c_str());
   }
 
   private:
@@ -1382,6 +1435,15 @@ struct r_vec {
 
 };
 
+namespace internal {
+template <typename T>
+void resync_tzone(T& x){
+  if constexpr (is<T, r_vec<r_psxct>>){
+    x.cache_zone();
+  }
+}
+}
+
 template <RVector U>
 inline void r_copy_n(U& target, const unwrap_t<typename std::remove_cvref_t<U>::data_type>* source, r_size_t target_offset, r_size_t n) {
   
@@ -1395,7 +1457,7 @@ inline void r_copy_n(U& target, const unwrap_t<typename std::remove_cvref_t<U>::
     std::memmove(p_target + target_offset, source, n * sizeof(*p_target));
   } else {
     for (r_size_t i = 0; i < n; ++i) {
-      target.set(target_offset + i, internal::unsafe_reconstruct_view<data_t>(source[i]));
+      target.set(target_offset + i, target.unsafe_reconstruct_view(source[i]));
     }
   }
 }

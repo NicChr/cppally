@@ -120,6 +120,11 @@ void set_attr(T& x, r_sym sym, SEXP value){
   auto old = internal::get_core_attrs<T>(x);
   impl::set_attr_impl(x, sym, value);
   internal::restore_core_attrs<T>(x, old);
+  if constexpr (is<T, r_vec<r_psxct>>){
+    if (internal::r_addresses_equal(sym, cached_sym<"tzone">())){
+      internal::resync_tzone(x);
+    }
+  }
 }
 // Do not use, use equivalent `set_names()` member.
 template <RObject T, RStringType U>
@@ -174,6 +179,7 @@ void set_attrs(T& x, const r_vec<r_sexp>& attrs){
   impl::clear_attrs_impl(x);
   impl::modify_attrs_impl(x, attrs);
   internal::restore_core_attrs<T>(x, old);
+  internal::resync_tzone(x);
 }
 
 }

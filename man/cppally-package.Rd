@@ -30,6 +30,8 @@ Other contributors:
   \item Malte Skarupke (Author of ska_sort, from which to_radix_key in sort.h is adapted) [copyright holder]
   \item Ryo Suzuki (Author of bundled Xoshiro-cpp library) [copyright holder]
   \item Posit Software, PBC (SEXP protection mechanism in r_sexp.h inspired by cpp11) [copyright holder]
+  \item Howard Hinnant (Author of the date library, from which time/tz.h is adapted) [copyright holder]
+  \item Mark Adler (Author of puff, the inflater in zlib/puff.h) [copyright holder]
 }
 
 }

@@ -55,6 +55,7 @@ void modify_attrs(T& x, Args&&... args) {
   auto old = internal::get_core_attrs<T>(x);
   attr::impl::modify_attrs_impl(x, attrs);
   internal::restore_core_attrs<T>(x, old);
+  internal::resync_tzone(x);
 }
 
 }

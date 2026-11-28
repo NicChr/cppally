@@ -10,7 +10,8 @@
 
 #include <cppally/r_setup.h>
 #include <cppally/r_concepts.h>
-#include <cppally/scalar/scalars.h>
+#include <cppally/scalar/r_lgl.h>
+#include <cppally/scalar/r_str.h>
 #include <cppally/na.h>
 #include <string_view>
 

@@ -56,7 +56,6 @@ auto unique_impl(const T& x) {
 
 template <RVector T>
 T unique(const T& x) {
-  using data_t = typename T::data_type;
   auto uniques = internal::unique_impl(x);
   r_size_t n_unq = uniques.size();
   if (n_unq == x.length()) {
@@ -64,7 +63,7 @@ T unique(const T& x) {
   }
   T out(n_unq);
   for (r_size_t i = 0; i < n_unq; ++i) {
-    out.set(i, internal::unsafe_reconstruct_view<data_t>(uniques[i]));
+    out.set(i, x.unsafe_reconstruct_view(uniques[i]));
   }
   return out;
 }

@@ -17,6 +17,7 @@ cpp_source(
   check_data_frames = FALSE,
   copy_on_modify = FALSE,
   openmp = TRUE,
+  tzdb = TRUE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20"),
   dir = tempfile(),
   ...
@@ -33,6 +34,7 @@ cpp_eval(
   check_data_frames = FALSE,
   copy_on_modify = FALSE,
   openmp = TRUE,
+  tzdb = TRUE,
   simplify = TRUE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20"),
   cppally_header = c("cppally.hpp", "cppally_light.hpp"),
@@ -73,6 +75,9 @@ the chance of R crashing when passing factors with invalid levels.}
 \code{FALSE}.}
 
 \item{openmp}{Should code be compiled with OpenMP flags? Default is \code{TRUE}.}
+
+\item{tzdb}{Should the embedded time-zone database be included into
+the compiled code? The default is \code{TRUE}.}
 
 \item{cxx_std}{C++ standard to use. Should be >= C++20.}
 

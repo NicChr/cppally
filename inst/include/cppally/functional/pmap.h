@@ -67,11 +67,14 @@ auto pmap_impl(F fn, const r_vec<T>& vec) {
 
   const r_size_t n = vec.length();
 
-  if (n == 0){
-    return r_vec<out_t>();
+  r_vec<out_t> out(n);
+  if constexpr (RPsxctType<out_t> && RPsxctType<T>) {
+    out.set_tzone(vec.tzone());
   }
 
-  r_vec<out_t> out(n);
+  if (n == 0){
+    return out;
+  }
 
   constexpr bool vectorisable_or_parallelisable = RVectorisable<T> && RVectorisable<out_t>;
 
@@ -79,8 +82,8 @@ auto pmap_impl(F fn, const r_vec<T>& vec) {
 
     [&, n](auto* RESTRICT p_out, auto* RESTRICT p_x){
 
-      auto body = [&fn, p_out, p_x](r_size_t i){
-        p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x[i])));
+      auto body = [&fn, &vec, p_out, p_x](r_size_t i){
+        p_out[i] = unwrap(fn(i, vec.unsafe_reconstruct_view(p_x[i])));
       };
 
       CPPALLY_OMP_DISPATCH(body, n, parallel, simd)
@@ -105,20 +108,24 @@ auto pmap_impl(F fn, const r_vec<T>& vec1, const r_vec<U>& vec2) {
   const std::array<r_size_t, 2> lens{ vec1.length(), vec2.length() };
   const r_size_t n = pmap_extent(lens, recycle);
 
+  r_vec<out_t> out(n);
+  if constexpr (RPsxctType<out_t> && RPsxctType<T>) {
+    out.set_tzone(vec1.tzone());
+  }
+
   if (n == 0){
-    return r_vec<out_t>();
+    return out;
   }
 
   if (recycle && (lens[0] == 1 || lens[1] == 1)){
-    r_vec<out_t> out(n);
 
     if (lens[0] == 1){ // If LHS is a scalar
       const T val = vec1.get(0);
       if constexpr (RVectorisable<U> && RVectorisable<out_t> && (simd || parallel)){
         [&, n](auto* RESTRICT p_out, auto* RESTRICT p_x){
           
-          auto body = [&fn, val, p_out, p_x](r_size_t i){
-            p_out[i] = unwrap(fn(i, val, internal::unsafe_reconstruct_view<U>(p_x[i])));
+          auto body = [&fn, &vec2, val, p_out, p_x](r_size_t i){
+            p_out[i] = unwrap(fn(i, val, vec2.unsafe_reconstruct_view(p_x[i])));
           };
           
           CPPALLY_OMP_DISPATCH(body, n, parallel, simd)
@@ -132,8 +139,8 @@ auto pmap_impl(F fn, const r_vec<T>& vec1, const r_vec<U>& vec2) {
       if constexpr (RVectorisable<T> && RVectorisable<out_t> && (simd || parallel)){
         [&, n](auto* RESTRICT p_out, auto* RESTRICT p_x){
           
-          auto body = [&fn, val, p_out, p_x](r_size_t i){
-            p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x[i]), val));
+          auto body = [&fn, &vec1, val, p_out, p_x](r_size_t i){
+            p_out[i] = unwrap(fn(i, vec1.unsafe_reconstruct_view(p_x[i]), val));
           };
 
           CPPALLY_OMP_DISPATCH(body, n, parallel, simd)
@@ -145,8 +152,6 @@ auto pmap_impl(F fn, const r_vec<T>& vec1, const r_vec<U>& vec2) {
     }
     return out;
   }
-
-  r_vec<out_t> out(n);
 
   if (recycle){
     // Can't use SIMD or multiple threads here. Per-vector counters wrap via recycle_index
@@ -165,8 +170,8 @@ auto pmap_impl(F fn, const r_vec<T>& vec1, const r_vec<U>& vec2) {
 
     [&, n](auto* RESTRICT p_out, auto* RESTRICT p_x1, auto* RESTRICT p_x2){
       
-      auto body = [&fn, p_out, p_x1, p_x2](r_size_t i){
-        p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<T>(p_x1[i]), internal::unsafe_reconstruct_view<U>(p_x2[i])));
+      auto body = [&fn, &vec1, &vec2, p_out, p_x1, p_x2](r_size_t i){
+        p_out[i] = unwrap(fn(i, vec1.unsafe_reconstruct_view(p_x1[i]), vec2.unsafe_reconstruct_view(p_x2[i])));
       };
 
       CPPALLY_OMP_DISPATCH(body, n, parallel, simd)
@@ -196,11 +201,18 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
     const std::array<r_size_t, n_vecs> lens{ vecs.length()... };
     const r_size_t n = pmap_extent(lens, recycle);
 
-    if (n == 0){
-      return r_vec<out_t>();
+    r_vec<out_t> out(n);
+    if constexpr (RPsxctType<out_t>) {
+      [&]<typename T0, typename... Rest>(const r_vec<T0>& first, const r_vec<Rest>&...) {
+        if constexpr (RPsxctType<T0>) {
+          out.set_tzone(first.tzone());
+        }
+      }(vecs...);
     }
 
-    r_vec<out_t> out(n);
+    if (n == 0){
+      return out;
+    }
 
     if (recycle){
       // Can't use SIMD or multiple threads here. Per-vector counters wrap via recycle_index
@@ -220,8 +232,8 @@ auto pmap_impl(F fn, const r_vec<Ts>&... vecs) {
       
       [&, n](auto* RESTRICT p_out, auto* RESTRICT ... ps){
         
-        auto body = [&fn, p_out, ps...](r_size_t i){
-          p_out[i] = unwrap(fn(i, internal::unsafe_reconstruct_view<Ts>(ps[i])...));
+        auto body = [&fn, &vecs..., p_out, ps...](r_size_t i){
+          p_out[i] = unwrap(fn(i, vecs.unsafe_reconstruct_view(ps[i])...));
         };
         
         CPPALLY_OMP_DISPATCH(body, n, parallel, simd)

@@ -51,6 +51,8 @@ struct r_date;
 struct r_psxct;
 struct r_function;
 
+enum class roll : uint8_t;
+
 // Concepts to enable R type templates
 
 // RObject is any object that can be represented in R

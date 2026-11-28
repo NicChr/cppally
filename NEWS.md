@@ -6,6 +6,130 @@
 strings (and native strings in a non-UTF-8 session) by copying their bytes 
 directly into a UTF-8 marked `r_str`. They are now translated to UTF-8 first.
 
+## Breaking changes
+
+- `roll` has been changed from an `enum` to an `enum class`. Values must be 
+qualified (e.g. `roll::away`) and will not implicitly convert to plain 
+integer types like `int`.
+
+## Improvements
+
+- `cpp_source()` now runs `[[cppally::init]]` calls when the code is loaded.
+
+- The year/month/day/hour/minute/second constructor for `r_psxct()` now defaults 
+hour, minute and second to 0. E.g. `r_psxct(2026, 1, 1)` is 2026-01-01 00:00:00 UTC.
+
+## Timezones
+
+cppally now supports timezone handling with date-times (`r_psxct`).
+
+### Timezone data
+
+The IANA timezone database 2026f is embedded and compressed in `tzdata.h`.
+Each cppally version ships with a **fixed** IANA timezone database, which 
+may differ from R's, though in practice this is unlikely to matter.
+
+Newer timezone database versions may be released with newer versions of cppally.
+
+### Opting out of the timezone database
+
+Packages that need only UTC can opt out with `cppally::use_without_tzdb()`, a 
+function that defines the `CPPALLY_WITHOUT_TZDB` flag. This can speed up 
+compilation and reduce binary sizes. With this flag enabled, everything works the same
+except for non-UTC clock times, e.g. `hour()` on an `r_psxct` with 
+timezone `"Europe/London"` returns `NA`.
+
+### Ambiguous and non-existent clock times
+
+Ambiguous and non-existent clock times produce `NA` by default. Specify a
+`roll` option to either `on_impossible` or `on_ambiguous` to handle
+these.
+
+New option `roll::boundary` that rolls to the start of the interval after 
+the transition (start of next month or new UTC offset). 
+
+For example, `r_psxct(2026, 1, 30, 12, 0, 0).add<"months">(1, roll::boundary)` (30 Jan noon) returns 
+`r_psxct(2026, 3, 1, 0, 0, 0)` (1 Mar midnight), whereas 
+`r_psxct(2026, 1, 30, 12, 0, 0).add<"months">(1, roll::forward)` returns 
+`r_psxct(2026, 3, 1, 12, 0, 0)` (1 Mar noon), preserving the time of day.
+
+### New `r_psxct` members
+
+- `tzone()` - Returns the timezone as a C string (`const char*`)
+- `is_utc()` - Returns whether the timezone is UTC
+- `utc_offset()` - Returns the UTC offset in seconds
+- `with_tzone()` - Same UTC time, new timezone
+- `replace_tzone()` - Same clock time, new timezone (usually a different UTC time)
+- `using_clock()` - Apply a function to the clock time
+
+### `timeline`
+
+New `enum class timeline`, an optional template argument of `add<>` and `time_diff<>`, with three options:
+
+- `timeline::automatic`: Chooses `stopwatch` (seconds-based) for sub-day units, otherwise `clock` (clock time)
+- `timeline::clock`: Uses clock time for time arithmetic, which sometimes produces ambiguous or non-existent results
+- `timeline::stopwatch`: Always uses Unix seconds for time arithmetic
+
+`timeline::automatic` is the default and doesn't need to be specified.
+
+```cpp
+x.add<"hours">(1)   // time moves forward by 3600 seconds
+x.add<"months">(1)  // clock moves forward by 1 month
+```
+
+`timeline` options can be specified to override the default if wanted.
+
+```cpp
+x.add<"hours", timeline::clock>(1);              // clock moves forward 1 hour
+x.add<"hours", timeline::stopwatch>(1)           // time moves forward by 3600 seconds
+
+x.add<"months", timeline::clock>(1)              // clock moves forward 1 month
+x.add<"months", timeline::stopwatch>(1)          // time moves forward by 2629746 seconds
+```
+
+This distinction mostly matters at DST transitions, like when the clocks move forward:
+
+```cpp
+// Clocks go forward at 1AM, from GMT to BST
+r_psxct before_gap(2024, 3, 31, 0, 30, 0.0, "Europe/London");
+
+before_gap.add<"hours", timeline::stopwatch>(1) // 2024-03-31 02:30:00 BST
+before_gap.add<"hours", timeline::clock>(1)     // NA because 2024-03-31 01:30:00 doesn't exist
+```
+
+or backward:
+
+```cpp
+// Clocks go backward at 2AM, from BST to GMT
+r_psxct before_overlap(2024, 10, 27, 0, 30, 0.0, "Europe/London");
+
+before_overlap.add<"hours", timeline::stopwatch>(1) // 2024-10-27 01:30:00 BST
+before_overlap.add<"hours", timeline::stopwatch>(2) // 2024-10-27 01:30:00 GMT
+before_overlap.add<"hours", timeline::clock>(1)     // NA because 2024-10-27 01:30:00 is ambiguous
+```
+
+Impossible and ambiguous date-times can be handled by choosing a `roll` option.
+
+```cpp
+before_gap.add<"hours", timeline::clock>(1, /*on_impossible=*/ roll::forward, /*on_ambiguous=*/ roll::forward); // 2024-03-31 02:30:00 BST
+before_gap.add<"hours", timeline::clock>(1, /*on_impossible=*/ roll::backward, /*on_ambiguous=*/ roll::backward); // 2024-03-31 00:30:00 GMT
+```
+
+The `stopwatch` option always uses seconds, so time units are expressed as an average number of seconds based on the Gregorian calendar. 
+This results in years and months being 31556952 and 31556952/12 seconds long respectively.
+
+```cpp
+r_psxct year_start(2026, 1, 1, 0, 0, 0);
+year_start.add<"years">(1);                          // 2027-01-01 UTC
+year_start.add<"years", timeline::stopwatch>(1);     // 2027-01-01 05:49:12 UTC
+```
+
+### Date-time comparisons
+
+`==` and `identical()` compare UTC time as before, so an `r_psxct` in one 
+timezone is identical to an `r_psxct` in a different timezone, 
+provided they have the same UTC time.
+
 ## Default arguments
 
 Registering C++ functions to R with default arguments is now supported.

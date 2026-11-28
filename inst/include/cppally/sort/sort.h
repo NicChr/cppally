@@ -635,7 +635,7 @@ void sort_in_place(T& x, const r_vec<r_int>& order, unwrap_t<typename std::remov
     }
 
     for (int i = 0; i < n; ++i){
-        x.set(i, internal::unsafe_reconstruct_view<data_t>(buffer[unwrap(order.get(i))]));
+        x.set(i, x.unsafe_reconstruct_view(buffer[unwrap(order.get(i))]));
     }
 }
 
@@ -663,7 +663,7 @@ void unsort_in_place(T& x, const r_vec<r_int>& order, unwrap_t<typename std::rem
     }
 
     for (int i = 0; i < n; ++i){
-        x.set(unwrap(order.get(i)), internal::unsafe_reconstruct_view<data_t>(buffer[i]));
+        x.set(unwrap(order.get(i)), x.unsafe_reconstruct_view(buffer[i]));
     }
 }
 

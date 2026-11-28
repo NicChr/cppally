@@ -8,7 +8,8 @@ is_windows <- function(){
 
 generate_cpp_name <- function (name, loaded_dlls = c("cppally", names(getLoadedDLLs()))){
   ext <- tools::file_ext(name)
-  root <- tools::file_path_sans_ext(basename(name))
+  # The DLL name forms R_init_<name>, so it must be a valid C identifier
+  root <- gsub("[^A-Za-z0-9_]", "_", tools::file_path_sans_ext(basename(name)), perl = TRUE)
   count <- 2
   new_name <- root
   while (new_name %in% loaded_dlls) {
@@ -82,6 +83,8 @@ curr_env <- function(){
 #' @param copy_on_modify Should copy-on-modify be used everywhere? Default is
 #' `FALSE`.
 #' @param openmp Should code be compiled with OpenMP flags? Default is `TRUE`.
+#' @param tzdb Should the embedded time-zone database be included into
+#' the compiled code? The default is `TRUE`.
 #' @param dir Directory to store the source files.
 #' The default is a temporary directory via `tempfile()` which is removed when
 #' `clean = TRUE`.
@@ -313,6 +316,7 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
                        check_data_frames = FALSE,
                        copy_on_modify = FALSE,
                        openmp = TRUE,
+                       tzdb = TRUE,
                        cxx_std = Sys.getenv("CXX_STD", "CXX20"),
                        dir = tempfile(),
                        ...){
@@ -363,9 +367,24 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
   check_valid_attributes(all_decorations, file = orig_file_path)
   funs <- get_registered_functions(all_decorations, "cppally::register", quiet = quiet)
   cpp_functions_definitions <- generate_cpp_functions(funs, package = package)
+  init <- generate_init_functions(get_registered_functions(all_decorations, "cppally::init", quiet))
+  # Run cppally_init on load only, no routine registration, so .Call still finds functions by name
+  cpp_init <- glue::glue('
+    {init$declarations}
+    static SEXP cppally_init([[maybe_unused]] DllInfo* dll){{
+      BEGIN_CPPALLY
+      cppally::internal::zone_registry::get().cache_session_zone();{init$calls}
+      END_CPPALLY
+    }}
+
+    extern "C" attribute_visible void R_init_{package}(DllInfo* dll){{
+      cppally_init(dll);
+    }}
+  ')
   cpp_path <- file.path(dirname(new_file_path), "cppally.cpp")
   brio::write_lines(c(generate_cpp_preamble(glue::glue('#include "{new_file_name}"')),
-                      cpp_functions_definitions),
+                      cpp_functions_definitions,
+                      cpp_init),
                     cpp_path)
   linking_to <- union(get_linking_to(all_decorations), "cppally")
   includes <- generate_include_paths(linking_to)
@@ -384,6 +403,11 @@ cpp_source <- function(file = NULL, code = NULL, env = parent.frame(),
     if (openmp){
       use_openmp(quiet = TRUE)
     }
+
+    if (!tzdb){
+      use_without_tzdb(quiet = TRUE)
+    }
+
     use_symbol_visibility(quiet = TRUE)
     use_cxx_std(cxx_std, quiet = TRUE)
     set_makevars_value(
@@ -434,6 +458,7 @@ source_single_exprs <- function(exprs, env = parent.frame(),
                                 check_data_frames = FALSE,
                                 copy_on_modify = FALSE,
                                 openmp = TRUE,
+                                tzdb = TRUE,
                                 cxx_std = Sys.getenv("CXX_STD", "CXX20"),
                                 cppally_header = c("cppally.hpp", "cppally_light.hpp"),
                                 ...){
@@ -489,6 +514,7 @@ source_single_exprs <- function(exprs, env = parent.frame(),
     check_data_frames = check_data_frames,
     copy_on_modify = copy_on_modify,
     openmp = openmp,
+    tzdb = tzdb,
     ...
   )
 }
@@ -501,6 +527,7 @@ cpp_eval <- function(code, env = curr_env(), clean = TRUE,
                      check_data_frames = FALSE,
                      copy_on_modify = FALSE,
                      openmp = TRUE,
+                     tzdb = TRUE,
                      simplify = TRUE,
                      cxx_std = Sys.getenv("CXX_STD", "CXX20"),
                      cppally_header = c("cppally.hpp", "cppally_light.hpp"),
@@ -515,6 +542,7 @@ cpp_eval <- function(code, env = curr_env(), clean = TRUE,
     check_data_frames = check_data_frames,
     copy_on_modify = copy_on_modify,
     openmp = openmp,
+    tzdb = tzdb,
     cxx_std = cxx_std,
     cppally_header = cppally_header,
     ...
