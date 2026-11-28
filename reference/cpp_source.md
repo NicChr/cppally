@@ -28,6 +28,7 @@ cpp_source(
   check_data_frames = FALSE,
   copy_on_modify = FALSE,
   openmp = TRUE,
+  tzdb = TRUE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20"),
   dir = tempfile(),
   ...
@@ -44,6 +45,7 @@ cpp_eval(
   check_data_frames = FALSE,
   copy_on_modify = FALSE,
   openmp = TRUE,
+  tzdb = TRUE,
   simplify = TRUE,
   cxx_std = Sys.getenv("CXX_STD", "CXX20"),
   cppally_header = c("cppally.hpp", "cppally_light.hpp"),
@@ -105,6 +107,11 @@ cpp_eval(
 - openmp:
 
   Should code be compiled with OpenMP flags? Default is `TRUE`.
+
+- tzdb:
+
+  Should the embedded time-zone database be included into the compiled
+  code? The default is `TRUE`.
 
 - cxx_std:
 
@@ -277,13 +284,13 @@ mark(last_altrep_aware(1:10^5)) # No materialisation
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 3.65µs 4.62µs   209147.    3.18KB        0 10000     0     47.8ms
+#> 1 last_altrep… 2.89µs 4.03µs   231974.    3.18KB        0 10000     0     43.1ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 mark(last_altrep_unaware(1:10^5)) # Materialises full vector
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 last_altrep… 48.7µs 54.5µs    16415.     391KB     133.  3342    27      204ms
+#> 1 last_altrep… 30.9µs 31.6µs    26637.     391KB     216.  3580    29      134ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 ### Copy-on-modify
@@ -319,7 +326,7 @@ mark(reverse(x)) # Memory allocated, therefore x was copied before reversing
 #> # A tibble: 1 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr> <bch:tm> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 reverse(x)    298µs  315µs     3059.     391KB     22.5  1086     8      355ms
+#> 1 reverse(x)    265µs  338µs     2944.     391KB     22.7  1295    10      440ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 # The cppally preferred approach is to allocate a fresh vector or copy the
@@ -344,11 +351,11 @@ mark(
   cppally_no_copy_on_modify_reverse = cppally_reverse(x)
 )
 #> # A tibble: 3 × 13
-#>   expression     min  median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
-#>   <bch:expr> <bch:t> <bch:t>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 r_reverse  226.2µs 252.9µs     3868.     781KB     61.9  1188    19      307ms
-#> 2 cppally_c… 297.5µs   314µs     3171.     391KB     26.4  1441    12      454ms
-#> 3 cppally_n…  67.3µs  75.3µs    13035.     391KB    100.0  4823    37      370ms
+#>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
+#>   <bch:expr>  <bch:t> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
+#> 1 r_reverse   175.8µs  184µs     5189.     781KB     84.8  1592    26      307ms
+#> 2 cppally_co… 206.1µs  223µs     4446.     391KB     33.1  2015    15      453ms
+#> 3 cppally_no…  43.6µs  173µs     8260.     391KB     63.9  3232    25      391ms
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 
 ### Speeding up template-heavy compilation
@@ -407,7 +414,7 @@ mark(
 #> # A tibble: 2 × 13
 #>   expression      min median `itr/sec` mem_alloc `gc/sec` n_itr  n_gc total_time
 #>   <bch:expr>   <bch:> <bch:>     <dbl> <bch:byt>    <dbl> <int> <dbl>   <bch:tm>
-#> 1 unrestricted  8.54s  8.54s     0.117        NA        0     1     0      8.54s
+#> 1 unrestricted  7.82s  7.82s     0.128        NA        0     1     0      7.82s
 #> 2 restricted    5.38s  5.38s     0.186        NA        0     1     0      5.38s
 #> # ℹ 4 more variables: result <list>, memory <list>, time <list>, gc <list>
 

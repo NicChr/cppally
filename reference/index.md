@@ -47,3 +47,8 @@
 
 - [`use_template_dispatch_candidates()`](https://nicchr.github.io/cppally/reference/use_template_dispatch_candidates.md)
   : Restrict the R/C++ types a template function will dispatch on
+
+- [`use_without_tzdb()`](https://nicchr.github.io/cppally/reference/use_without_tzdb.md)
+  :
+
+  Adds the `CPPALLY_WITHOUT_TZDB` flag to Makevars

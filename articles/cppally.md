@@ -950,9 +950,9 @@ r_psxct get_now(){
 ``` r
 
 get_today()
-#> [1] "2026-11-17"
+#> [1] "2026-11-28"
 get_now()
-#> [1] "2026-11-17 13:28:56 UTC"
+#> [1] "2026-11-28 15:27:27 UTC"
 ```
 
 **Note:** `r_psxct` currently only supports UTC and no other time-zones.
@@ -1343,7 +1343,7 @@ r_date r_get_today(){
 ``` r
 
 r_get_today()
-#> [1] "2026-11-17"
+#> [1] "2026-11-28"
 ```
 
 To get a function from a specific package, use `pkg_env`, a helper that

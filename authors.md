@@ -17,10 +17,16 @@
 - **Posit Software, PBC**. Copyright holder.  
   SEXP protection mechanism in r_sexp.h inspired by cpp11
 
+- **Howard Hinnant**. Copyright holder.  
+  Author of the date library, from which time/tz.h is adapted
+
+- **Mark Adler**. Copyright holder.  
+  Author of puff, the inflater in zlib/puff.h
+
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/NicChr/cppally/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/NicChr/cppally/blob/feature/timezones/DESCRIPTION)
 
 Christofides N (2026). *cppally: A 'C++20' API for R*. R package version
 1.2.1.9000, <https://nicchr.github.io/cppally/>.
